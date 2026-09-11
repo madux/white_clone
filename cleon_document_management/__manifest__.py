@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CLEON DOCUMENT MANAGEMENT",
-    "version": "17.0.1.18.0",
+    "version": "17.0.1.26.0",
     "category": "CleonHR Document Management",
     "sequence": -1,
     "summary": "CLEON DOCUMENT MANAGEMENT",
@@ -18,6 +18,8 @@
         "data/compliance_cron.xml",
         "data/intelligence_data.xml",
         "data/intelligence_cron.xml",
+        "data/template_categories.xml",
+        "views/template_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
@@ -28,4 +30,7 @@
     "auto_install": True,
     "application": False,
     "license": "LGPL-3",
+    "external_dependencies": {
+        "python": ["sentence_transformers", "torch"],
+    },
 }

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { intelligenceApi, intelligenceDatasetApi } from "../lib/intelligence-api";
 
 export const INTELLIGENCE_KEYS = {
@@ -27,8 +27,10 @@ export function useCreateIntelligenceType() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: intelligenceApi.createDocumentType,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles });
+    },
   });
 }
 
@@ -36,8 +38,21 @@ export function useUpdateIntelligenceType() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: intelligenceApi.updateDocumentType,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles });
+    },
+  });
+}
+
+export function useDeleteIntelligenceTypes() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: intelligenceApi.deleteDocumentTypes,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles });
+    },
   });
 }
 
@@ -113,11 +128,13 @@ export function useIntelligenceWizardEstimate(payload: {
   document_type_ids: number[];
   auto_classify: boolean;
   id?: number;
+  upload_count?: number;
 }) {
   return useQuery({
     queryKey: ["intelligence", "wizard-estimate", payload],
     queryFn: () => intelligenceDatasetApi.wizardEstimate(payload),
     enabled: Boolean(payload.source && payload.source !== "external"),
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -1,5 +1,5 @@
-import ConfigurationScreen from "@/app/components/intelligence/ConfigurationScreen";
+import { redirect } from "next/navigation";
 
 export default function ConfigurationProfilesPage() {
-  return <ConfigurationScreen section="profiles" />;
+  redirect("/pages/document-intelligence/configuration/types");
 }

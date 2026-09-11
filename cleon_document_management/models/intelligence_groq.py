@@ -9,12 +9,8 @@ import urllib.request
 _logger = logging.getLogger(__name__)
 
 GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_EMBED_URL = "https://api.groq.com/openai/v1/embeddings"
 LLM_MODEL = "openai/gpt-oss-120b"
 VISION_MODEL = "qwen/qwen3.6-27b"
-EMBED_MODEL = "nomic-embed-text-v1_5"
-EMBED_MODELS = ("nomic-embed-text-v1_5", "nomic-embed-text-v1.5")
-EMBED_DIM = 768
 PARAM_KEY = "cleon_document_management.groq_api_key"
 
 
@@ -154,48 +150,15 @@ def transcribe_images(images, env=None):
     return "\n".join(parts).strip()
 
 
-def embed_texts(texts, env=None):
-    api_key = groq_api_key(env)
-    if not api_key:
-        raise RuntimeError("GROQ_API_KEY is not set.")
-    clean = [text.strip() for text in texts if (text or "").strip()]
-    if not clean:
-        return []
-    last_error = None
-    for model in EMBED_MODELS:
-        try:
-            vectors = []
-            for start in range(0, len(clean), 32):
-                batch = clean[start : start + 32]
-                data = _request(
-                    GROQ_EMBED_URL,
-                    {
-                        "model": model,
-                        "input": batch,
-                        "encoding_format": "float",
-                    },
-                    api_key,
-                    timeout=60,
-                )
-                rows = sorted(
-                    data.get("data") or [], key=lambda item: item.get("index", 0)
-                )
-                vectors.extend(row.get("embedding") or [] for row in rows)
-            return vectors
-        except Exception as error:
-            last_error = error
-            _logger.warning("Embedding model %s failed: %s", model, error)
-    raise last_error or RuntimeError("Embedding failed.")
-
-
 def _answer_messages(question, context, history=None):
     system = (
         "You are Cleon AI, the brain and AI agent of the Cleon HR app. "
         "You are not ChatGPT, Claude, Gemini, or any other third-party assistant. "
         "Speak as Cleon AI: helpful, clear, and professional for HR and people operations. "
         "Answer using the supplied evidence and the conversation so far. "
-        "If PRIMARY ATTACHED DOCUMENT excerpts are present, treat them as the "
-        "main source and use DATASET EXCERPT items only as extra context. "
+        "If YOUR FILE excerpts are present, they are this user's own or shared documents. "
+        "If PRIMARY ATTACHED DOCUMENT excerpts are present, treat them as extra files "
+        "the user attached to this chat. Use DATASET EXCERPT items only as extra context. "
         "Use markdown when it helps: headings (##), tables, **bold**, lists, "
         "and `code`. Keep tables compact: one markdown row per table row, every "
         "cell on that same line. If a table has a heading column and a details "

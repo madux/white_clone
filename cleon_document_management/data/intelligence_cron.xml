@@ -9,4 +9,13 @@
         <field name="interval_type">minutes</field>
         <field name="active">True</field>
     </record>
+    <record id="ir_cron_index_ask_library" model="ir.cron">
+        <field name="name">Index Ask AI library files</field>
+        <field name="model_id" ref="model_doc_document"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_index_ask_library()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">minutes</field>
+        <field name="active">True</field>
+    </record>
 </odoo>

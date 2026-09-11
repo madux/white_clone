@@ -86,6 +86,15 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [x] Validation presets explained + preview run summary
 - [x] Deploy Next export so Odoo serves the new wizard steps
 
+## Dataset wizard — document types from scope
+- [x] After Scope, Document types shows Automatic classification first
+- [x] Then only types that exist on the files in this scope (e.g. all CVs → only CV)
+- [x] Employee scope (one / multiple / department / etc.) uses types on matching files
+- [x] Click a type to add/remove fields for this dataset (no Business fields step)
+- [x] Five-step wizard: Repository → Scope → Document types → Validation → Preview
+- [x] Deploy Next export after document-type + field-picker change
+- [ ] Restart Odoo with `-u cleon_document_management` for wizard estimate type IDs
+
 ## Dataset wizard fixes
 - [x] Live file counts / employees / departments (wizard options no longer crash on hr.branch)
 - [x] Explain extraction vs accuracy metrics honestly
@@ -129,3 +138,40 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [x] Deploy Next export after removing New version
 - [x] Deploy Next export after profile Restore visibility
 - [x] Deploy Next export after Ask chat list recency sort
+- [x] Ask AI opens a full-screen workspace (hides DMS sidebar, header, and Intelligence nav)
+- [x] Ask welcome UI matches the AI Workspace design (history, suggestions, quick actions)
+- [x] Deploy Next export after Ask full-screen workspace UI
+- [x] Ask composer: one mic, send outside the bar, cycling example prompts, compact Figma scale
+- [x] Deploy Next export after Ask composer and scale polish
+- [x] Ask: remove Quick Actions, Select mode, Direct Answer badge, and right-rail slogan
+- [x] Ask composer focus ring follows the pill, not a rectangle inside it
+- [x] Ask uses a per-user library RAG (own files + shared files)
+- [x] Deleted / recycled / archived files are removed from the Ask library RAG
+- [x] Existing files are indexed by cron (local embeddings if Groq embeddings 404)
+- [x] Hybrid RAG: Qwen3-Embedding-0.6B + Qwen3-Reranker-0.6B via Python (Hugging Face)
+- [x] Remove Docker TEI containers
+- [x] Install sentence-transformers and download the Qwen3 models
+- [x] Load Qwen3 models from the local Hugging Face cache (no Hub warning if already downloaded)
+- [ ] Restart Odoo with `-u cleon_document_management` so 1024-d vectors and local Qwen3 RAG load
+- [x] Deploy Next export after settings health shows local Qwen3 models
+- [x] Ask chat bubbles: compact pink user, wide AI with robot avatar, time in/under bubbles
+- [x] Copy and Regenerate appear on hover only (no share or feedback)
+- [x] Deploy Next export after Ask chat bubble restyle
+- [ ] Restart Odoo so Ask regenerate replaces the last AI reply without a duplicate user message
+- [x] Ask composer grows with new lines; Copy pastes readable text (not ## / **)
+- [x] Document Intelligence nav: Ask & Insights sits after Overview
+- [x] Configuration: Document types chip also covers extraction profiles
+- [x] Document type modal includes extraction profile/fields
+- [x] Deactivate type confirms, then greys out at the bottom; delete + multi-select
+- [ ] Restart Odoo so document type delete and inactive listing load
+- [x] Edit document type loads existing extraction fields (not an empty profile)
+
+## Templates & Forms — generate editor crash
+- [x] Remember generated document id (URL + sessionStorage)
+- [x] Full-page open editor after generate
+- [x] Tiptap fallback if Univer crashes the page
+- [x] Deploy Next export so :8069 serves the fix
+- [x] Restore Tiptap formatting ribbon (Home / Insert / Layout / Review)
+- [x] Dataset wizard: Organizational scope is a folder table + per-file picker
+- [x] Deploy Next export after org scope file picker
+- [ ] Restart Odoo with `-u cleon_document_management` for selected_files scope

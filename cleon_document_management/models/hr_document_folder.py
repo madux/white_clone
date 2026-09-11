@@ -358,7 +358,21 @@ class DocumentFolder(models.Model):
             allowed = {"favorite_user_ids", "pinned_user_ids"}
             if set(vals) - allowed:
                 raise AccessError(_("You can only update your folder favorites and pins."))
-        return super().write(vals)
+        result = super().write(vals)
+        if {"deleted_at", "active", "distribution_status"} & set(vals):
+            dead = self.filtered(
+                lambda folder: folder.deleted_at
+                or not folder.active
+                or folder.distribution_status != "active"
+            )
+            if dead:
+                dead.mapped("document_ids")._drop_ask_index()
+            live = self - dead
+            if live:
+                live.mapped("document_ids").with_context(ask_indexing=True).write(
+                    {"ask_index_stamp": False}
+                )
+        return result
 
     def unlink(self):
         if not self._is_document_manager():

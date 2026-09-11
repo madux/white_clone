@@ -24,8 +24,46 @@ class DocumentIntelligenceController(http.Controller):
         )
         return {"success": False, "message": message}
 
+    def _profile_version_with_fields(self, profile):
+        if not profile:
+            return False
+        versions = profile.with_context(active_test=False).version_ids
+        current = profile.current_version_id
+        if current and current.field_ids:
+            return current
+        if not versions:
+            return current
+        return max(versions, key=lambda version: len(version.field_ids))
+
+    def _best_profile_for_type(self, document_type):
+        Profile = request.env["doc.intelligence.profile"].with_context(
+            active_test=False
+        )
+        profiles = Profile.search([("document_type_id", "=", document_type.id)])
+        default = document_type.with_context(active_test=False).default_profile_id
+        ranked = []
+        for profile in profiles:
+            version = self._profile_version_with_fields(profile)
+            ranked.append(
+                (
+                    len(version.field_ids) if version else 0,
+                    1 if profile == default else 0,
+                    profile,
+                    version,
+                )
+            )
+        ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        if ranked:
+            return ranked[0][2], ranked[0][3]
+        if default:
+            return default, self._profile_version_with_fields(default)
+        return False, False
+
     def _type_data(self, document_type):
-        profile = document_type.default_profile_id
+        profile, version = self._best_profile_for_type(document_type)
+        extraction_fields = [
+            self._field_data(field) for field in (version.field_ids if version else [])
+        ]
         return {
             "id": document_type.id,
             "name": document_type.name,
@@ -38,11 +76,10 @@ class DocumentIntelligenceController(http.Controller):
             "default_retention_years": document_type.default_retention_years,
             "default_profile_id": profile.id if profile else False,
             "default_profile": profile.name if profile else "",
-            "field_count": (
-                len(profile.current_version_id.field_ids)
-                if profile and profile.current_version_id
-                else 0
-            ),
+            "field_count": len(extraction_fields),
+            "extraction_instructions": version.extraction_instructions if version else "",
+            "extraction_fields": extraction_fields,
+            "profile": self._profile_data(profile, version) if profile else False,
         }
 
     def _field_data(self, field):
@@ -60,8 +97,8 @@ class DocumentIntelligenceController(http.Controller):
             "profile_version": field.version_id.version,
         }
 
-    def _profile_data(self, profile):
-        version = profile.current_version_id
+    def _profile_data(self, profile, version=None):
+        version = version or self._profile_version_with_fields(profile)
         fields_payload = [
             self._field_data(field) for field in (version.field_ids if version else [])
         ]
@@ -100,6 +137,41 @@ class DocumentIntelligenceController(http.Controller):
                 }
             )
 
+    def _save_type_profile(self, document_type, payload):
+        payload = payload or {}
+        fields_payload = payload.get("fields") or []
+        instructions = payload.get("extraction_instructions") or ""
+        examples = payload.get("examples") or ""
+        profile_name = (payload.get("name") or document_type.name or "").strip()
+        Profile = request.env["doc.intelligence.profile"].with_context(active_test=False)
+        profile, version = self._best_profile_for_type(document_type)
+        if not profile:
+            profile = Profile.create(
+                {
+                    "name": profile_name or document_type.name,
+                    "document_type_id": document_type.id,
+                    "is_system": False,
+                }
+            )
+            document_type.default_profile_id = profile.id
+            version = profile.current_version_id
+        else:
+            profile.write({"name": profile_name or profile.name})
+            if not document_type.default_profile_id:
+                document_type.default_profile_id = profile.id
+        if not version:
+            version = profile.action_new_version()
+        version.write(
+            {
+                "extraction_instructions": instructions,
+                "examples": examples,
+            }
+        )
+        self._replace_fields(version, fields_payload)
+        if not document_type.default_profile_id:
+            document_type.default_profile_id = profile.id
+        return profile
+
     @http.route(
         "/api/document-intelligence/document-types",
         type="json",
@@ -109,9 +181,12 @@ class DocumentIntelligenceController(http.Controller):
     )
     def document_types(self, **kwargs):
         domain = []
+        Type = request.env["doc.document.type"]
         if kwargs.get("active_only"):
             domain.append(("active", "=", True))
-        types = request.env["doc.document.type"].search(domain, order="sequence, name")
+        else:
+            Type = Type.with_context(active_test=False)
+        types = Type.search(domain, order="active desc, sequence, name")
         return {
             "success": True,
             "data": [self._type_data(item) for item in types],
@@ -142,6 +217,13 @@ class DocumentIntelligenceController(http.Controller):
         if kwargs.get("default_profile_id"):
             values["default_profile_id"] = int(kwargs["default_profile_id"])
         record = request.env["doc.document.type"].create(values)
+        profile_payload = kwargs.get("profile") if isinstance(kwargs.get("profile"), dict) else kwargs
+        if (
+            profile_payload.get("fields")
+            or profile_payload.get("extraction_instructions")
+            or profile_payload.get("name")
+        ):
+            self._save_type_profile(record, profile_payload)
         request.env["doc.intelligence.audit.event"].log_event(
             "rule",
             "document_type_created",
@@ -159,7 +241,12 @@ class DocumentIntelligenceController(http.Controller):
     def update_document_type(self, **kwargs):
         if not self._is_admin():
             return self._deny()
-        record = request.env["doc.document.type"].browse(int(kwargs.get("id") or 0)).exists()
+        record = (
+            request.env["doc.document.type"]
+            .with_context(active_test=False)
+            .browse(int(kwargs.get("id") or 0))
+            .exists()
+        )
         if not record:
             return {"success": False, "message": "Document type not found."}
         values = {}
@@ -176,12 +263,59 @@ class DocumentIntelligenceController(http.Controller):
             if key in kwargs:
                 values[key] = kwargs.get(key)
         record.write(values)
+        profile_payload = kwargs.get("profile") if isinstance(kwargs.get("profile"), dict) else None
+        if profile_payload is not None or "fields" in kwargs or "extraction_instructions" in kwargs:
+            self._save_type_profile(record, profile_payload or kwargs)
         request.env["doc.intelligence.audit.event"].log_event(
             "rule",
             "document_type_updated",
             target=record,
         )
         return {"success": True, "data": self._type_data(record)}
+
+    @http.route(
+        "/api/document-intelligence/document-types/delete",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def delete_document_types(self, **kwargs):
+        if not self._is_admin():
+            return self._deny()
+        ids = coerce_int_ids(kwargs.get("ids") or [kwargs.get("id")])
+        records = (
+            request.env["doc.document.type"]
+            .with_context(active_test=False)
+            .browse(ids)
+            .exists()
+        )
+        if not records:
+            return {"success": False, "message": "Document type not found."}
+        used = request.env["doc.document"].search(
+            [("document_type_id", "in", records.ids)],
+            limit=1,
+        )
+        if used:
+            return {
+                "success": False,
+                "message": "A document still uses %s. Deactivate it instead of deleting."
+                % (used.document_type_id.name,),
+            }
+        profiles = (
+            request.env["doc.intelligence.profile"]
+            .with_context(active_test=False)
+            .search([("document_type_id", "in", records.ids)])
+        )
+        profiles.with_context(allow_profile_unlink=True).unlink()
+        names = ", ".join(records.mapped("name"))
+        records.unlink()
+        request.env["doc.intelligence.audit.event"].log_event(
+            "rule",
+            "document_type_deleted",
+            detail=names,
+        )
+        return {"success": True, "data": {"ids": ids}}
 
     @http.route(
         "/api/document-intelligence/profiles",
@@ -359,11 +493,15 @@ class DocumentIntelligenceController(http.Controller):
         type_ids = [int(value) for value in (kwargs.get("document_type_ids") or [])]
         field_keys = [str(value) for value in (kwargs.get("field_keys") or []) if value]
         scope_ids = [int(value) for value in (kwargs.get("scope_ids") or []) if value]
+        source = kwargs.get("source") or False
+        scope_kind = kwargs.get("scope_kind") or "company"
+        if source == "organizational":
+            scope_kind = "selected_files"
         values = {
             "name": (kwargs.get("name") or "").strip(),
-            "source": kwargs.get("source") or False,
+            "source": source,
             "processing_mode": kwargs.get("processing_mode") or "balanced",
-            "scope_kind": kwargs.get("scope_kind") or "company",
+            "scope_kind": scope_kind,
             "scope_ids_json": json.dumps(scope_ids),
             "auto_classify": bool(kwargs.get("auto_classify")),
             "document_type_ids": [(6, 0, type_ids)],
@@ -842,12 +980,8 @@ class DocumentIntelligenceController(http.Controller):
         csrf=False,
     )
     def settings_health(self, **kwargs):
-        from ..models.intelligence_groq import (
-            EMBED_MODEL,
-            LLM_MODEL,
-            VISION_MODEL,
-            groq_configured,
-        )
+        from ..models.intelligence_groq import LLM_MODEL, VISION_MODEL, groq_configured
+        from ..models.intelligence_tei import embed_health
 
         env = request.env
         pgvector = False
@@ -858,6 +992,7 @@ class DocumentIntelligenceController(http.Controller):
             env.cr.execute("RELEASE SAVEPOINT di_health")
         except Exception:
             env.cr.execute("ROLLBACK TO SAVEPOINT di_health")
+        health = embed_health(env)
         return {
             "success": True,
             "data": {
@@ -865,10 +1000,21 @@ class DocumentIntelligenceController(http.Controller):
                 "pgvector": pgvector,
                 "llm_model": LLM_MODEL,
                 "vision_model": VISION_MODEL,
-                "embedding_model": EMBED_MODEL,
+                "embedding_model": health["embedding_model"],
+                "rerank_model": health["rerank_model"],
+                "retrieval": "hybrid",
+                "embed_ok": health["embed_ok"],
+                "rerank_ok": health["rerank_ok"],
+                "embed_loaded": health["embed_loaded"],
+                "rerank_loaded": health["rerank_loaded"],
+                "embed_cached": health["embed_cached"],
+                "rerank_cached": health["rerank_cached"],
+                "libraries_ok": health["libraries_ok"],
+                "device": health["device"],
                 "extraction": (
                     "Native text for PDF, Word, Excel, PowerPoint, and plain files. "
-                    "Groq vision only for images and scanned PDFs. Field values use rules, not an LLM."
+                    "Groq vision only for images and scanned PDFs. Ask retrieval is hybrid "
+                    "RAG: local Qwen3 embeddings + Postgres keyword search, then Qwen3 rerank."
                 ),
             },
         }
@@ -1059,8 +1205,9 @@ class DocumentIntelligenceController(http.Controller):
         records = request.env["doc.intelligence.conversation"].search(
             domain, limit=50, order="write_date desc, id desc"
         )
-        indexed = request.env["doc.intelligence.chunk"].search_count(
-            [("record_id.review_status", "in", ["approved", "overridden"])]
+        docs = request.env["doc.document"]._ask_library_documents()
+        indexed = request.env["doc.intelligence.library.chunk"].sudo().search_count(
+            [("document_id", "in", docs.ids or [0])]
         )
         return {
             "success": True,
@@ -1214,7 +1361,9 @@ class DocumentIntelligenceController(http.Controller):
                         )
                     if dataset_id:
                         conversation.dataset_id = dataset_id
-                    for event in conversation.iter_ask_events(question):
+                    for event in conversation.iter_ask_events(
+                        question, regenerate=bool(body.get("regenerate"))
+                    ):
                         yield json.dumps(event) + "\n"
                     cr.commit()
                 except (AccessError, UserError, ValidationError) as error:

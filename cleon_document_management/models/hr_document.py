@@ -1,7 +1,11 @@
 from datetime import timedelta
+import logging
 
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
+from odoo.osv import expression
+
+_logger = logging.getLogger(__name__)
 
 
 class Document(models.Model):
@@ -152,6 +156,12 @@ class Document(models.Model):
     )
 
     extracted_text = fields.Text(readonly=True)
+    ask_index_stamp = fields.Char(index=True)
+    ask_chunk_ids = fields.One2many(
+        "doc.intelligence.library.chunk",
+        "document_id",
+        string="Ask index chunks",
+    )
     ocr_state = fields.Selection(
         [
             ("pending", "Pending"),
@@ -252,11 +262,28 @@ class Document(models.Model):
         return self.env.user.has_group("cleon_document_management.group_document_manager")
 
     def write(self, vals):
+        if self.env.context.get("ask_indexing"):
+            return super().write(vals)
         if not self.env.context.get("intelligence_upload") and not self._is_document_manager():
             allowed = {"favorite_user_ids", "pinned_user_ids"}
             if set(vals) - allowed:
                 raise AccessError(_("You can only update your document favorites and pins."))
-        return super().write(vals)
+        result = super().write(vals)
+        drop_keys = {"deleted_at", "active", "distribution_status"}
+        if drop_keys & set(vals):
+            dead = self.filtered(
+                lambda document: document.deleted_at
+                or not document.active
+                or document.distribution_status != "active"
+            )
+            dead._drop_ask_index()
+            live = (self - dead).filtered(lambda document: document._ask_index_eligible())
+            if live:
+                live.with_context(ask_indexing=True).write({"ask_index_stamp": False})
+        if {"attachment_id", "extracted_text", "checksum"} & set(vals):
+            live = self.filtered(lambda document: document._ask_index_eligible())
+            live.with_context(ask_indexing=True).write({"ask_index_stamp": False})
+        return result
 
     def unlink(self):
         if not self.env.context.get("intelligence_upload") and not self._is_document_manager():
@@ -429,3 +456,201 @@ class Document(models.Model):
                 )
             else:
                 document.write({"approval_state": "pending"})
+
+    def _ask_index_eligible(self):
+        self.ensure_one()
+        folder = self.folder_id
+        return bool(
+            self.active
+            and not self.deleted_at
+            and self.attachment_id
+            and folder
+            and folder.active
+            and not folder.deleted_at
+            and folder.distribution_status == "active"
+            and folder.folder_type in ("employee", "organizational")
+        )
+
+    def _ask_index_stamp_value(self):
+        self.ensure_one()
+        return "%s:%s:qwen3-0.6" % (self.checksum or "", len(self.extracted_text or ""))
+
+    def _drop_ask_index(self):
+        chunks = self.sudo().mapped("ask_chunk_ids")
+        if chunks:
+            chunks.unlink()
+        stamped = self.filtered("ask_index_stamp")
+        if stamped:
+            stamped.sudo().with_context(ask_indexing=True).write(
+                {"ask_index_stamp": False}
+            )
+
+    def _index_for_ask(self):
+        from odoo.addons.cleon_document_management.models.intelligence_pipeline import (
+            extract_document_text,
+        )
+
+        for document in self.sudo():
+            if not document._ask_index_eligible():
+                document._drop_ask_index()
+                continue
+            text = (document.extracted_text or "").strip()
+            if not text and document.attachment_id:
+                try:
+                    text, _source, _pages = extract_document_text(
+                        document.attachment_id,
+                        ocr_fallback=True,
+                        env=document.env,
+                    )
+                except Exception:
+                    text = ""
+                if text:
+                    document.with_context(ask_indexing=True).write(
+                        {
+                            "extracted_text": text,
+                            "ocr_state": "completed",
+                            "ocr_error": False,
+                        }
+                    )
+            stamp = document._ask_index_stamp_value()
+            if document.ask_index_stamp == stamp and document.ask_chunk_ids:
+                continue
+            if not (document.extracted_text or "").strip():
+                document._drop_ask_index()
+                document.with_context(ask_indexing=True).write(
+                    {"ask_index_stamp": stamp}
+                )
+                continue
+            document.env["doc.intelligence.library.chunk"].index_document(document)
+            document.with_context(ask_indexing=True).write({"ask_index_stamp": stamp})
+        return True
+
+    @api.model
+    def _ask_library_documents(self):
+        user = self.env.user
+        employee = user.employee_id
+        live = [
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("folder_id.active", "=", True),
+            ("folder_id.deleted_at", "=", False),
+            ("folder_id.distribution_status", "=", "active"),
+            ("folder_id.folder_type", "in", ("employee", "organizational")),
+        ]
+        own = expression.AND(
+            [
+                live,
+                expression.OR(
+                    [
+                        [
+                            ("owner_id", "=", user.id),
+                            ("folder_id.folder_type", "=", "employee"),
+                        ],
+                        [("employee_id", "=", employee.id or 0)],
+                    ]
+                ),
+            ]
+        )
+        employee_id = employee.id if employee else 0
+        department_id = (
+            employee.department_id.id if employee and employee.department_id else 0
+        )
+        grade_id = employee.grade_id.id if employee and employee.grade_id else 0
+        employee_type_id = (
+            employee.employee_type_id.id if employee and employee.employee_type_id else 0
+        )
+        branch_id = employee.branch_id.id if employee and employee.branch_id else 0
+        shared_access = [
+            [("allowed_user_ids", "in", [user.id])],
+            [("allowed_group_ids", "in", user.groups_id.ids)],
+            [("folder_id.allowed_user_ids", "in", [user.id])],
+            [("folder_id.access_scope", "=", "all_staff")],
+            [
+                ("folder_id.access_scope", "=", "department"),
+                ("folder_id.department_ids", "in", [department_id]),
+            ],
+            [
+                ("folder_id.access_scope", "=", "grade"),
+                ("folder_id.grade_ids", "in", [grade_id]),
+            ],
+            [
+                ("folder_id.access_scope", "=", "employment_type"),
+                ("folder_id.employment_type_ids", "in", [employee_type_id]),
+            ],
+            [
+                ("folder_id.access_scope", "=", "business_unit"),
+                ("folder_id.branch_ids", "in", [branch_id]),
+            ],
+            [
+                ("folder_id.access_scope", "=", "role"),
+                ("folder_id.role_group_ids", "in", user.groups_id.ids),
+            ],
+            [
+                ("folder_id.access_scope", "=", "individual"),
+                ("folder_id.employee_ids", "in", [employee_id]),
+            ],
+        ]
+        if user.has_group("cleon_document_management.group_document_admin"):
+            shared_access.append([("folder_id.access_scope", "=", "admin_only")])
+        shared = expression.AND(
+            [
+                live,
+                [("folder_id.folder_type", "=", "organizational")],
+                [("state", "!=", "draft")],
+                expression.OR(shared_access),
+            ]
+        )
+        return self.search(expression.OR([own, shared]))
+
+    @api.model
+    def _cron_index_ask_library(self):
+        live = [
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("folder_id.active", "=", True),
+            ("folder_id.deleted_at", "=", False),
+            ("folder_id.distribution_status", "=", "active"),
+            ("folder_id.folder_type", "in", ("employee", "organizational")),
+            ("attachment_id", "!=", False),
+        ]
+        stale = self.sudo().search(
+            live + [("ask_chunk_ids", "=", False)],
+            limit=15,
+            order="write_date desc",
+        )
+        if len(stale) < 15:
+            extra = self.sudo().search(
+                live,
+                limit=40,
+                order="write_date desc",
+            )
+            stale |= extra.filtered(
+                lambda document: document.ask_index_stamp
+                != document._ask_index_stamp_value()
+            )[: 15 - len(stale)]
+        for document in stale[:15]:
+            try:
+                with self.env.cr.savepoint():
+                    document._index_for_ask()
+            except Exception:
+                _logger.exception(
+                    "Ask library index failed for document %s", document.id
+                )
+        gone = self.sudo().search(
+            [
+                ("ask_chunk_ids", "!=", False),
+                "|",
+                ("active", "=", False),
+                "|",
+                ("deleted_at", "!=", False),
+                "|",
+                ("folder_id.active", "=", False),
+                "|",
+                ("folder_id.deleted_at", "!=", False),
+                ("folder_id.distribution_status", "!=", "active"),
+            ],
+            limit=50,
+        )
+        if gone:
+            gone._drop_ask_index()
+        return True

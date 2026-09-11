@@ -79,6 +79,8 @@ class IntelligenceProfile(models.Model):
         return result
 
     def unlink(self):
+        if self.env.context.get("allow_profile_unlink"):
+            return super().unlink()
         raise UserError(
             _(
                 "Profiles cannot be deleted. Archive them so historical "

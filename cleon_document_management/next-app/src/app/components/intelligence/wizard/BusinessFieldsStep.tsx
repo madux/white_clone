@@ -229,7 +229,7 @@ export default function BusinessFieldsStep({
             A document type only tells us what the file is. Fields tell the job
             what to copy out of it. Add fields here, or open{" "}
             <Link
-              href="/pages/document-intelligence/configuration/profiles"
+              href="/pages/document-intelligence/configuration/types"
               className="font-semibold underline"
             >
               Configuration → Profiles

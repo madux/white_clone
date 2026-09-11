@@ -48,6 +48,7 @@ class IntelligenceDataset(models.Model):
             ("grade", "Grade"),
             ("employment_type", "Employment type"),
             ("company", "Entire company"),
+            ("selected_files", "Selected files"),
         ],
         default="company",
         required=True,
@@ -326,9 +327,15 @@ class IntelligenceDataset(models.Model):
         type_ids = [int(value) for value in (document_type_ids or []) if value]
         if not auto_classify and type_ids:
             domain.append(("document_type_id", "in", type_ids))
+        ids = [int(value) for value in (scope_ids or []) if value]
+        if source == "organizational":
+            if ids:
+                domain.append(("id", "in", ids))
+            else:
+                domain.append(("id", "=", 0))
+            return domain
         if source != "employee":
             return domain
-        ids = [int(value) for value in (scope_ids or []) if value]
         kind = scope_kind or "company"
         employee = self.env["hr.employee"]
         if kind in ("one_employee", "multiple_employees") and ids:
@@ -551,17 +558,55 @@ class IntelligenceDataset(models.Model):
             dataset.action_sync_review_state()
         return True
 
+    def _scope_document_type_stats(self, source, scope_kind, scope_ids, dataset=None):
+        Document = self.env["doc.document"]
+        if (source or "") == "upload":
+            docs = dataset.upload_document_ids if dataset else Document.browse()
+            type_ids = list(docs.mapped("document_type_id").ids)
+            untyped_count = len(docs.filtered(lambda doc: not doc.document_type_id))
+            return type_ids, untyped_count
+        domain = self._domain_from_values(
+            source, scope_kind or "company", scope_ids or [], None, True
+        )
+        groups = Document.read_group(
+            domain + [("document_type_id", "!=", False)],
+            ["document_type_id"],
+            ["document_type_id"],
+        )
+        type_ids = [
+            group["document_type_id"][0]
+            for group in groups
+            if group.get("document_type_id")
+        ]
+        untyped_count = Document.search_count(
+            domain + [("document_type_id", "=", False)]
+        )
+        return type_ids, untyped_count
+
     @api.model
     def wizard_estimate(self, values):
         values = values or {}
-        if (values.get("source") or "") == "upload":
-            dataset = self.browse(int(values.get("id") or values.get("dataset_id") or 0)).exists()
-            count = len(dataset.upload_document_ids) if dataset else 0
-            return {"document_count": count, "employee_count": 0}
+        source = values.get("source") or ""
+        scope_kind = values.get("scope_kind") or "company"
+        scope_ids = values.get("scope_ids") or []
+        dataset = self.browse(
+            int(values.get("id") or values.get("dataset_id") or 0)
+        ).exists()
+        if source == "upload":
+            docs = dataset.upload_document_ids if dataset else self.env["doc.document"]
+            untyped_count = len(docs.filtered(lambda doc: not doc.document_type_id))
+            return {
+                "document_count": len(docs),
+                "employee_count": 0,
+                "untyped_count": untyped_count,
+            }
+        type_ids, untyped_count = self._scope_document_type_stats(
+            source, scope_kind, scope_ids, dataset
+        )
         domain = self._domain_from_values(
-            values.get("source"),
-            values.get("scope_kind") or "company",
-            values.get("scope_ids") or [],
+            source,
+            scope_kind,
+            scope_ids,
             values.get("document_type_ids") or [],
             bool(values.get("auto_classify")),
         )
@@ -574,6 +619,8 @@ class IntelligenceDataset(models.Model):
         return {
             "document_count": document_count,
             "employee_count": len(groups),
+            "document_type_ids": type_ids,
+            "untyped_count": untyped_count,
         }
 
     def _snapshot_thresholds(self):
@@ -602,6 +649,10 @@ class IntelligenceDataset(models.Model):
         if self.source == "upload":
             if not self.upload_document_ids:
                 raise ValidationError(_("Upload at least one file before running extraction."))
+        if self.source == "organizational" and not self._scope_ids():
+            raise ValidationError(
+                _("Select at least one organizational file for this dataset.")
+            )
         if self.source == "employee" and self.scope_kind != "company" and not self._scope_ids():
             raise ValidationError(_("Select who this dataset covers."))
         if not self.auto_classify and not self.document_type_ids:

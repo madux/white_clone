@@ -22,6 +22,17 @@ SCAN_CHARS_PER_PAGE = 40
 MAX_VISION_PAGES = 8
 
 
+def _pymupdf():
+    try:
+        import pymupdf
+
+        return pymupdf
+    except ImportError:
+        import fitz
+
+        return fitz
+
+
 def attachment_bytes(attachment):
     raw = attachment.raw
     if raw:
@@ -105,8 +116,7 @@ def _pptx_text(raw):
 
 def _pdf_native(raw):
     try:
-        import fitz
-
+        fitz = _pymupdf()
         pdf = fitz.open(stream=raw, filetype="pdf")
         pages = pdf.page_count
         text = "\n".join((page.get_text() or "") for page in pdf)
@@ -127,7 +137,7 @@ def _pdf_native(raw):
 
 
 def _pdf_page_images(raw, limit=MAX_VISION_PAGES):
-    import fitz
+    fitz = _pymupdf()
 
     pdf = fitz.open(stream=raw, filetype="pdf")
     images = []
@@ -141,7 +151,7 @@ def _pdf_page_images(raw, limit=MAX_VISION_PAGES):
 
 def _image_png(raw, mime="image/png"):
     try:
-        import fitz
+        fitz = _pymupdf()
 
         pixmap = fitz.Pixmap(raw)
         if pixmap.n > 4:

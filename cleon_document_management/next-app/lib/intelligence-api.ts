@@ -13,6 +13,9 @@ export interface IntelligenceDocumentType {
   default_profile_id: number | false;
   default_profile: string;
   field_count?: number;
+  extraction_instructions?: string;
+  extraction_fields?: IntelligenceField[];
+  profile?: IntelligenceProfile | null | false;
 }
 
 export interface IntelligenceField {
@@ -68,6 +71,11 @@ export const intelligenceApi = {
       "/api/document-intelligence/document-types/update",
       payload,
     ),
+  deleteDocumentTypes: (ids: number[]) =>
+    unwrap<{ ids: number[] }>("/api/document-intelligence/document-types/delete", {
+      ids,
+      id: ids[0],
+    }),
   getProfiles: (params: Record<string, unknown> = {}) =>
     unwrap<IntelligenceProfile[]>(
       "/api/document-intelligence/profiles",
@@ -166,10 +174,12 @@ export const intelligenceDatasetApi = {
       locations: Array<{ id: number; name: string }>;
     }>("/api/document-intelligence/wizard/options"),
   wizardEstimate: (payload: Record<string, unknown>) =>
-    unwrap<{ document_count: number; employee_count: number }>(
-      "/api/document-intelligence/wizard/estimate",
-      payload,
-    ),
+    unwrap<{
+      document_count: number;
+      employee_count: number;
+      document_type_ids?: number[];
+      untyped_count?: number;
+    }>("/api/document-intelligence/wizard/estimate", payload),
   uploadFiles: async (datasetId: number, files: File[]) => {
     const form = new FormData();
     form.append("dataset_id", String(datasetId));
@@ -278,6 +288,16 @@ export const intelligenceDatasetApi = {
       llm_model: string;
       vision_model: string;
       embedding_model: string;
+      rerank_model?: string;
+      retrieval?: string;
+      embed_ok?: boolean;
+      rerank_ok?: boolean;
+      embed_loaded?: boolean;
+      rerank_loaded?: boolean;
+      embed_cached?: boolean;
+      rerank_cached?: boolean;
+      libraries_ok?: boolean;
+      device?: string;
       extraction: string;
     }>("/api/document-intelligence/settings/health"),
   overview: () =>
@@ -341,8 +361,13 @@ export const intelligenceDatasetApi = {
     unwrap<{ id: number }>("/api/document-intelligence/conversations/delete", {
       id,
     }),
-  conversationAskStream: async (
-    payload: { id?: number; question: string; dataset_id?: number },
+    conversationAskStream: async (
+    payload: {
+      id?: number;
+      question: string;
+      dataset_id?: number;
+      regenerate?: boolean;
+    },
     onEvent: (event: Record<string, unknown>) => void,
   ) => {
     const response = await fetch(

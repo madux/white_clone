@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { IntelligenceEmpty, IntelligenceError, IntelligenceLoading } from "./states";
-import ProfilesConfigPanel from "./ProfilesConfigPanel";
 import TypesConfigPanel from "./TypesConfigPanel";
 import {
   useIntelligenceAuditLogs,
@@ -15,11 +14,6 @@ const TABS = [
     key: "types" as const,
     name: "Document types",
     href: "/pages/document-intelligence/configuration/types",
-  },
-  {
-    key: "profiles" as const,
-    name: "Extraction profiles",
-    href: "/pages/document-intelligence/configuration/profiles",
   },
   {
     key: "settings" as const,
@@ -55,7 +49,10 @@ export default function ConfigurationScreen({
 
       <nav className="flex flex-wrap gap-2">
         {TABS.map((tab) => {
-          const active = section === tab.key;
+          const active =
+            tab.key === "types"
+              ? section === "types" || section === "profiles"
+              : section === tab.key;
           return (
             <Link
               key={tab.href}
@@ -73,8 +70,7 @@ export default function ConfigurationScreen({
         })}
       </nav>
 
-      {section === "types" ? <TypesConfigPanel /> : null}
-      {section === "profiles" ? <ProfilesConfigPanel /> : null}
+      {section === "types" || section === "profiles" ? <TypesConfigPanel /> : null}
       {section === "settings" ? (
         <SettingsHealthPanel />
       ) : null}
@@ -117,9 +113,51 @@ function SettingsHealthPanel() {
           <dt className="text-xs font-bold uppercase text-slate-400">Embeddings</dt>
           <dd>{data?.embedding_model}</dd>
         </div>
+        <div>
+          <dt className="text-xs font-bold uppercase text-slate-400">Reranker</dt>
+          <dd>{data?.rerank_model || "—"}</dd>
+        </div>
+        <div>
+          <dt className="text-xs font-bold uppercase text-slate-400">Retrieval</dt>
+          <dd className="font-semibold text-slate-900">
+            {data?.retrieval === "hybrid"
+              ? "Hybrid RAG (vectors + keywords, then rerank)"
+              : data?.retrieval || "—"}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-bold uppercase text-slate-400">Local embed</dt>
+          <dd className="font-semibold text-slate-900">
+            {data?.embed_loaded
+              ? "Loaded"
+              : data?.embed_cached
+                ? "Downloaded"
+                : data?.libraries_ok
+                  ? "Will download on first Ask"
+                  : "Python libraries missing"}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-bold uppercase text-slate-400">Local rerank</dt>
+          <dd className="font-semibold text-slate-900">
+            {data?.rerank_loaded
+              ? "Loaded"
+              : data?.rerank_cached
+                ? "Downloaded"
+                : data?.libraries_ok
+                  ? "Will download on first Ask"
+                  : "Python libraries missing"}
+            {data?.device ? (
+              <span className="block text-xs font-normal text-slate-500">
+                Device: {data.device}
+              </span>
+            ) : null}
+          </dd>
+        </div>
       </dl>
       <p className="text-xs text-slate-400">
-        Set <code>GROQ_API_KEY</code> in the Odoo process environment. The key
+        Set <code>GROQ_API_KEY</code> for chat and scan reading. Ask retrieval runs
+        Qwen3-Embedding-0.6B and Qwen3-Reranker-0.6B locally in Python. The Groq key
         never goes to the browser. Slack, Teams, and PagerDuty stay disconnected.
       </p>
     </div>

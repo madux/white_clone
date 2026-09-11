@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="template_category_employment_contracts" model="doc.template.category">
+        <field name="name">Employment Contracts</field>
+        <field name="applies_to">template</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="template_category_performance_reviews" model="doc.template.category">
+        <field name="name">Performance Reviews</field>
+        <field name="applies_to">both</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="template_category_resignation_letters" model="doc.template.category">
+        <field name="name">Resignation Letters</field>
+        <field name="applies_to">template</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="template_category_onboarding" model="doc.template.category">
+        <field name="name">Onboarding Documents</field>
+        <field name="applies_to">both</field>
+        <field name="sequence">40</field>
+    </record>
+    <record id="template_category_legal" model="doc.template.category">
+        <field name="name">Legal Documents</field>
+        <field name="applies_to">template</field>
+        <field name="sequence">50</field>
+    </record>
+    <record id="template_category_leave_forms" model="doc.template.category">
+        <field name="name">Leave Forms</field>
+        <field name="applies_to">form</field>
+        <field name="sequence">60</field>
+    </record>
+    <record id="template_category_disciplinary" model="doc.template.category">
+        <field name="name">Disciplinary Forms</field>
+        <field name="applies_to">form</field>
+        <field name="sequence">70</field>
+    </record>
+    <record id="template_category_financial" model="doc.template.category">
+        <field name="name">Financial Forms</field>
+        <field name="applies_to">form</field>
+        <field name="sequence">80</field>
+    </record>
+    <record id="template_category_staff" model="doc.template.category">
+        <field name="name">Staff</field>
+        <field name="applies_to">both</field>
+        <field name="sequence">90</field>
+    </record>
+    <record id="template_category_time_attendance" model="doc.template.category">
+        <field name="name">Time &amp; Attendance</field>
+        <field name="applies_to">form</field>
+        <field name="sequence">100</field>
+    </record>
+    <record id="template_category_recruitment" model="doc.template.category">
+        <field name="name">Recruitment</field>
+        <field name="applies_to">template</field>
+        <field name="sequence">110</field>
+    </record>
+</odoo>

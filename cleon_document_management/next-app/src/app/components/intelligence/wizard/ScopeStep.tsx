@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import OrgFilesScope from "./OrgFilesScope";
 
 type Option = { id: number; name: string; department?: string };
 
@@ -79,13 +80,18 @@ export default function ScopeStep({
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-bold text-slate-900">Who does this cover?</h2>
+        <h2 className="text-lg font-bold text-slate-900">
+          {source === "organizational" ? "Which files?" : "Who does this cover?"}
+        </h2>
         <p className="mt-1 text-sm text-slate-500">
           {source === "organizational"
-            ? "Organizational Files are company documents. The run will use every organizational file you can access."
+            ? "Open a shared folder, then tick the files to extract. You can visit more than one folder."
             : "Choose people or groups. The estimate below is recalculated from live files, not a saved snapshot."}
         </p>
       </div>
+      {source === "organizational" ? (
+        <OrgFilesScope selectedIds={scopeIds} onIds={onIds} />
+      ) : null}
       {source === "employee" ? (
         <div className="flex flex-wrap gap-2">
           {EMPLOYEE_SCOPES.filter(

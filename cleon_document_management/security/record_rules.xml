@@ -184,4 +184,37 @@
         <field name="groups" eval="[Command.link(ref('base.group_user'))]"/>
         <field name="domain_force">[('conversation_id.user_id', '=', user.id)]</field>
     </record>
+
+    <record id="rule_doc_template_company" model="ir.rule">
+        <field name="name">Templates: company</field>
+        <field name="model_id" ref="model_doc_template"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_doc_template_category_company" model="ir.rule">
+        <field name="name">Template categories: company</field>
+        <field name="model_id" ref="model_doc_template_category"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_doc_template_document_company" model="ir.rule">
+        <field name="name">Template documents: company</field>
+        <field name="model_id" ref="model_doc_template_document"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_doc_template_assignment_company" model="ir.rule">
+        <field name="name">Template assignments: company</field>
+        <field name="model_id" ref="model_doc_template_assignment"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_doc_template_submission_user" model="ir.rule">
+        <field name="name">Form submissions: own records</field>
+        <field name="model_id" ref="model_doc_template_submission"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
+        <field name="domain_force">[('user_id', '=', user.id), ('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_doc_template_submission_manager" model="ir.rule">
+        <field name="name">Form submissions: managers</field>
+        <field name="model_id" ref="model_doc_template_submission"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
 </odoo>

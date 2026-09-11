@@ -3,15 +3,23 @@
 import {
   ArrowUp,
   Bookmark,
+  ChevronRight,
+  Clock,
+  Copy,
   Eye,
   FileText,
+  History,
+  Layers,
   Link2,
   Loader2,
   Mic,
   Plus,
+  RefreshCw,
   Search,
+  ShieldAlert,
   Trash2,
   Upload,
+  Users,
   X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -34,18 +42,93 @@ import type {
 import ChatMarkdown from "./ChatMarkdown";
 import { IntelligenceError } from "./states";
 
-const MASCOT = "/cleon_document_management/static/src/nextapp/ask_ai.png";
+const MASCOT = "/document-management/ask_ai.png";
 
 const SUGGESTIONS = [
-  { category: "Contracts", text: "Which contracts expire in the next 90 days?" },
-  { category: "HR", text: "Show contracts with no notice period." },
-  { category: "Onboarding", text: "Which employees are still on probation?" },
-  { category: "Compliance", text: "Which employees are missing mandatory training certificates?" },
-  { category: "Contracts", text: "Who has expired certifications?" },
-  { category: "Conduct", text: "Employees with 3+ warnings" },
+  { category: "Compliance", text: "Who has expired certifications?", Icon: ShieldAlert },
+  { category: "Contracts", text: "Contracts expiring in 90 days", Icon: FileText },
+  { category: "HR", text: "Missing medical certificates", Icon: FileText },
+  { category: "Onboarding", text: "Employees missing onboarding docs", Icon: Users },
+  { category: "Compliance", text: "Missing mandatory training", Icon: ShieldAlert },
+  { category: "Contracts", text: "Contracts with no notice period", Icon: FileText },
+  { category: "Conduct", text: "Employees with 3+ warnings", Icon: ShieldAlert },
+  { category: "Onboarding", text: "Employees still on probation", Icon: Layers },
+  { category: "HR", text: "Policy acknowledgements pending", Icon: FileText },
+  { category: "Contracts", text: "Which contracts expire in the next 90 days?", Icon: FileText },
+  { category: "HR", text: "Show contracts with no notice period.", Icon: FileText },
+  { category: "Compliance", text: "Which employees are missing mandatory training certificates?", Icon: ShieldAlert },
 ];
 
 const CATEGORIES = ["All Suggestions", "HR", "Compliance", "Contracts", "Onboarding", "Conduct"];
+
+const PLACEHOLDER_EXAMPLES = [
+  "List employees",
+  "Who has expired certifications?",
+  "Contracts expiring in 90 days",
+  "Missing medical certificates",
+  "Employees missing onboarding docs",
+];
+
+function useTypedPlaceholder(paused: boolean) {
+  const [text, setText] = useState("");
+
+  useEffect(() => {
+    if (paused) {
+      setText("");
+      return;
+    }
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let index = 0;
+    let count = 0;
+    let deleting = false;
+    let timer = 0;
+    const tick = () => {
+      const full = PLACEHOLDER_EXAMPLES[index];
+      if (reduced) {
+        setText(full);
+        index = (index + 1) % PLACEHOLDER_EXAMPLES.length;
+        timer = window.setTimeout(tick, 2800);
+        return;
+      }
+      if (!deleting) {
+        count += 1;
+        setText(full.slice(0, count));
+        if (count >= full.length) {
+          deleting = true;
+          timer = window.setTimeout(tick, 1500);
+          return;
+        }
+        timer = window.setTimeout(tick, 42);
+        return;
+      }
+      count -= 1;
+      setText(full.slice(0, count));
+      if (count <= 0) {
+        deleting = false;
+        index = (index + 1) % PLACEHOLDER_EXAMPLES.length;
+        timer = window.setTimeout(tick, 320);
+        return;
+      }
+      timer = window.setTimeout(tick, 24);
+    };
+    timer = window.setTimeout(tick, 200);
+    return () => window.clearTimeout(timer);
+  }, [paused]);
+
+  return text;
+}
+
+function formatMessageTime(value: string) {
+  const parsed = value
+    ? new Date(value.includes("T") ? value : `${value.replace(" ", "T")}Z`)
+    : new Date();
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+  return parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 
 function sourceHref(source: IntelligenceConversation["sources"][number]) {
   if (source.kind === "url" && source.url) {
@@ -110,8 +193,13 @@ export default function AskScreen() {
     id: number;
     name: string;
   } | null>(null);
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false);
+  const [datasetPickerOpen, setDatasetPickerOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const attachRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const datasetRef = useRef<HTMLSelectElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const datasets = useIntelligenceDatasets();
@@ -120,6 +208,20 @@ export default function AskScreen() {
   const suggestions = SUGGESTIONS.filter(
     (item) => category === "All Suggestions" || item.category === category,
   );
+  const visibleSuggestions = showAllSuggestions ? suggestions : suggestions.slice(0, 9);
+
+  function fitComposer() {
+    const el = composerRef.current;
+    if (!el) {
+      return;
+    }
+    el.style.height = "auto";
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, 32), 220)}px`;
+  }
+
+  useEffect(() => {
+    fitComposer();
+  }, [question]);
 
   useEffect(() => {
     const thread = threadRef.current;
@@ -156,6 +258,44 @@ export default function AskScreen() {
     const ids = new Set((conversation?.sources || []).map((source) => source.id));
     setSourceSelected((current) => current.filter((id) => ids.has(id)));
   }, [conversation?.sources]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+      if (attachOpen) {
+        setAttachOpen(false);
+        return;
+      }
+      if (urlOpen) {
+        setUrlOpen(false);
+        return;
+      }
+      if (libraryOpen) {
+        setLibraryOpen(false);
+        setLibrarySelected([]);
+        return;
+      }
+      if (viewingSource) {
+        setViewingSource(null);
+        return;
+      }
+      if (pendingDelete) {
+        setPendingDelete(null);
+        return;
+      }
+      router.push("/pages/document-intelligence");
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [attachOpen, urlOpen, libraryOpen, viewingSource, pendingDelete, router]);
+
+  useEffect(() => {
+    if (datasetPickerOpen) {
+      datasetRef.current?.focus();
+    }
+  }, [datasetPickerOpen]);
 
   async function refreshList() {
     await queryClient.invalidateQueries({ queryKey: ["intelligence", "conversations"] });
@@ -198,8 +338,9 @@ export default function AskScreen() {
     };
   }, [sourceDocumentId, queryClient, router]);
 
-  async function send(text = question) {
+  async function send(text = question, options?: { regenerate?: boolean }) {
     const trimmed = text.trim();
+    const regenerate = Boolean(options?.regenerate);
     if (!trimmed || busy) {
       return;
     }
@@ -212,23 +353,31 @@ export default function AskScreen() {
       fact_based: false,
       model: "",
       insufficient_evidence: false,
-      create_date: "",
+      create_date: new Date().toISOString(),
     };
     setBusy(true);
     setThinking(true);
     setError("");
     setQuestion("");
-    setConversation((current) => ({
-      id: current?.id || 0,
-      name: current?.name || "New chat",
-      saved: current?.saved || false,
-      dataset_id: current?.dataset_id || false,
-      dataset: current?.dataset || "",
-      write_date: current?.write_date || "",
-      preview: trimmed,
-      sources: current?.sources || [],
-      messages: [...(current?.messages || []), pendingUser],
-    }));
+    setConversation((current) => {
+      const rows = [...(current?.messages || [])];
+      const nextRows = regenerate
+        ? rows[rows.length - 1]?.role === "assistant"
+          ? rows.slice(0, -1)
+          : rows
+        : [...rows, pendingUser];
+      return {
+        id: current?.id || 0,
+        name: current?.name || "New chat",
+        saved: current?.saved || false,
+        dataset_id: current?.dataset_id || false,
+        dataset: current?.dataset || "",
+        write_date: current?.write_date || "",
+        preview: trimmed,
+        sources: current?.sources || [],
+        messages: nextRows,
+      };
+    });
     let draft = "";
     try {
       await intelligenceDatasetApi.conversationAskStream(
@@ -236,6 +385,7 @@ export default function AskScreen() {
           id: conversation?.id,
           question: trimmed,
           dataset_id: conversation?.dataset_id || undefined,
+          regenerate,
         },
         (event) => {
           const type = String(event.event || "");
@@ -243,16 +393,21 @@ export default function AskScreen() {
             throw new Error(String(event.message || "The question could not be answered."));
           }
           if (type === "meta") {
-            const userMessage = event.user_message as IntelligenceChatMessage;
-            setConversation((current) => ({
-              ...(current as IntelligenceConversation),
-              id: Number(event.id || current?.id || 0),
-              name: String(event.name || current?.name || "New chat"),
-              messages: [
-                ...(current?.messages || []).filter((item) => item.id !== pendingUser.id),
-                userMessage,
-              ],
-            }));
+            const userMessage = event.user_message as IntelligenceChatMessage | undefined;
+            setConversation((current) => {
+              const withoutPending = (current?.messages || []).filter(
+                (item) => item.id !== pendingUser.id,
+              );
+              return {
+                ...(current as IntelligenceConversation),
+                id: Number(event.id || current?.id || 0),
+                name: String(event.name || current?.name || "New chat"),
+                messages:
+                  regenerate || !userMessage
+                    ? withoutPending
+                    : [...withoutPending, userMessage],
+              };
+            });
             void refreshList();
             return;
           }
@@ -435,6 +590,54 @@ export default function AskScreen() {
     setViewingSource({ name: source.name, href, external: false });
   }
 
+  async function startNewConversation() {
+    const created = await intelligenceDatasetApi.conversationCreate();
+    setConversation(created);
+    setQuestion("");
+    setError("");
+    await refreshList();
+  }
+
+  async function copyMessage(message: IntelligenceChatMessage) {
+    const rendered = document.querySelector(
+      `[data-ask-copy="${message.id}"]`,
+    ) as HTMLElement | null;
+    const plain = (rendered?.innerText || message.content || "").replace(/\n{3,}/g, "\n\n").trim();
+    try {
+      const html = rendered?.innerHTML;
+      if (html && navigator.clipboard.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/plain": new Blob([plain], { type: "text/plain" }),
+            "text/html": new Blob([html], { type: "text/html" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(plain);
+      }
+      setCopiedId(message.id);
+      window.setTimeout(() => setCopiedId((current) => (current === message.id ? null : current)), 1500);
+    } catch {
+      try {
+        await navigator.clipboard.writeText(plain);
+        setCopiedId(message.id);
+      } catch {
+        setError("The reply could not be copied.");
+      }
+    }
+  }
+
+  function regenerateMessage(index: number) {
+    const previous = [...messages.slice(0, index)]
+      .reverse()
+      .find((item) => item.role === "user");
+    if (!previous?.content) {
+      setError("There is no question to regenerate.");
+      return;
+    }
+    void send(previous.content, { regenerate: true });
+  }
+
   function startVoice() {
     const SpeechRecognition =
       typeof window !== "undefined"
@@ -470,68 +673,92 @@ export default function AskScreen() {
     String(right.write_date || "").localeCompare(String(left.write_date || "")),
   );
   const hasThread = messages.length > 0 || thinking;
+  const typedPlaceholder = useTypedPlaceholder(Boolean(question) || listening);
+
+  const activeDataset = conversation?.dataset || "";
 
   return (
-    <div className="grid h-full min-h-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[16.5rem_minmax(0,1fr)_15rem]">
-      <aside className="flex min-h-0 flex-col border-b border-slate-100 bg-slate-50 lg:border-b-0 lg:border-r">
-        <div className="shrink-0 p-3">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white text-[13px]">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-2">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl">
+            <img src={MASCOT} alt="" className="h-full w-full object-contain" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-sm font-semibold tracking-tight text-slate-900">AI Workspace</h1>
+            <p className="text-[11px] text-slate-400">
+              {indexed.toLocaleString()} indexed documents connected
+            </p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-sm font-semibold text-slate-800 shadow-sm hover:border-pink-200 hover:text-brand-text"
-            onClick={async () => {
-              const created = await intelligenceDatasetApi.conversationCreate();
-              setConversation(created);
-              await refreshList();
-            }}
+            aria-label="Close Ask AI"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            onClick={() => router.push("/pages/document-intelligence")}
           >
-            + New chat
+            <X className="h-4 w-4" />
           </button>
-          <p className="mt-4 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            {indexed.toLocaleString()} indexed documents
-          </p>
-          <div className="mt-3 flex gap-4 px-1 text-sm font-semibold">
+        </div>
+      </header>
+
+      <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[15rem_minmax(0,1fr)_15rem]">
+      <aside className="flex min-h-0 flex-col border-b border-slate-200 bg-white lg:border-b-0 lg:border-r">
+        <div className="shrink-0 px-3 pt-3">
+          <div className="flex gap-4 text-[12px] font-semibold">
             <button
               type="button"
               className={tab === "recent" ? "text-slate-900" : "text-slate-400"}
               onClick={() => setTab("recent")}
             >
-              Chats
+              <span className="inline-flex items-center gap-1.5">
+                <History className="h-3.5 w-3.5" />
+                Recent
+              </span>
               {tab === "recent" ? (
-                <span className="mt-1 block h-0.5 rounded-full bg-brand-pink" />
-              ) : null}
+                <span className="mt-1.5 block h-0.5 rounded-full bg-brand-pink" />
+              ) : (
+                <span className="mt-1.5 block h-0.5" />
+              )}
             </button>
             <button
               type="button"
               className={tab === "saved" ? "text-slate-900" : "text-slate-400"}
               onClick={() => setTab("saved")}
             >
-              Saved
+              <span className="inline-flex items-center gap-1.5">
+                <Bookmark className="h-3.5 w-3.5" />
+                Saved Queries
+              </span>
               {tab === "saved" ? (
-                <span className="mt-1 block h-0.5 rounded-full bg-brand-pink" />
-              ) : null}
+                <span className="mt-1.5 block h-0.5 rounded-full bg-brand-pink" />
+              ) : (
+                <span className="mt-1.5 block h-0.5" />
+              )}
             </button>
           </div>
           <label className="relative mt-3 block">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
             <input
-              className="field pl-10"
+              className="w-full rounded-lg border border-slate-200 bg-[#f7f8fb] py-1.5 pl-8 pr-2 text-[12px] text-slate-800 outline-none placeholder:text-slate-400 focus:border-brand-pink/40 focus:bg-white"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search chats"
+              placeholder="Search conversations..."
             />
           </label>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 py-4">
           {rows.length ? (
             <ul className="space-y-0.5">
               {rows.map((item) => (
                 <li key={item.id} className="group relative">
                   <button
                     type="button"
-                    className={`w-full truncate rounded-lg py-2 pl-3 pr-9 text-left text-sm ${
+                    className={`w-full truncate rounded-xl py-2.5 pl-3 pr-9 text-left text-sm ${
                       conversation?.id === item.id
-                        ? "bg-white font-medium text-slate-900 shadow-sm"
-                        : "text-slate-700 hover:bg-white/80"
+                        ? "bg-[#f7f8fb] font-medium text-slate-900"
+                        : "text-slate-700 hover:bg-[#f7f8fb]"
                     }`}
                     title={item.name}
                     onClick={async () => {
@@ -556,103 +783,173 @@ export default function AskScreen() {
               ))}
             </ul>
           ) : (
-            <p className="px-3 py-6 text-sm text-slate-400">
-              Your chats will show up here.
-            </p>
+            <div className="flex h-full flex-col items-center justify-center px-5 text-center">
+              <Clock className="h-7 w-7 text-slate-200" />
+              <p className="mt-2 text-[12px] leading-5 text-slate-400">
+                Conversations will appear here after you run a query.
+              </p>
+            </div>
           )}
+        </div>
+        <div className="shrink-0 p-3">
+          <button
+            type="button"
+            className="w-full rounded-lg bg-brand-pink px-3 py-2 text-[12px] font-semibold text-white hover:bg-brand-text"
+            onClick={() => void startNewConversation()}
+          >
+            + New Conversation
+          </button>
         </div>
       </aside>
 
-      <section className="flex min-h-0 min-w-0 flex-col">
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-pink">
-              Cleon AI
-            </p>
-            <h1 className="truncate text-sm font-semibold text-slate-900">
-              {conversation?.name || "Ask about your HR documents"}
-            </h1>
-          </div>
-        </div>
+      <section className="flex min-h-0 min-w-0 flex-col bg-white">
         {error ? (
-          <div className="shrink-0 px-5 pt-3">
+          <div className="shrink-0 px-6 pt-4">
             <IntelligenceError message={error} />
           </div>
         ) : null}
-        <div ref={threadRef} className="min-h-0 flex-1 overflow-y-auto px-5 py-6">
+        <div ref={threadRef} className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
           {hasThread ? (
-            <div className="mx-auto max-w-3xl space-y-4">
-              {messages.map((message) => (
-                <article
-                  key={message.id}
-                  className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-6 ${
-                    message.role === "user"
-                      ? "ml-auto bg-pink-50 text-slate-800"
-                      : "mr-auto bg-slate-50 text-slate-800"
-                  }`}
-                >
-                  {message.role === "assistant" ? (
-                    <ChatMarkdown text={message.content} />
-                  ) : (
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                  )}
-                </article>
-              ))}
+            <div className="mx-auto max-w-[720px] space-y-5">
+              {messages.map((message, index) =>
+                message.role === "user" ? (
+                  <article key={message.id} className="flex justify-end">
+                    <div className="max-w-[72%] rounded-2xl bg-gradient-to-br from-brand-pink to-brand-text px-3.5 py-2 text-white shadow-sm">
+                      <p className="whitespace-pre-wrap text-[13px] leading-5">{message.content}</p>
+                      <p className="mt-1 text-right text-[10px] text-white/80">
+                        {formatMessageTime(message.create_date)}
+                      </p>
+                    </div>
+                  </article>
+                ) : (
+                  <article key={message.id} className="group">
+                    <div className="flex items-start gap-2">
+                      <img
+                        src={MASCOT}
+                        alt=""
+                        className="mt-0.5 h-8 w-8 shrink-0 object-contain"
+                      />
+                      <div
+                        data-ask-copy={message.id}
+                        className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] leading-5 text-slate-800"
+                      >
+                        <ChatMarkdown text={message.content} />
+                      </div>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2 pl-10">
+                      <span className="text-[11px] text-slate-400">
+                        {formatMessageTime(message.create_date)}
+                      </span>
+                      {message.id > 0 ? (
+                        <div className="flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 hover:border-pink-200 hover:text-brand-text"
+                            onClick={() => void copyMessage(message)}
+                          >
+                            <Copy className="h-3 w-3" />
+                            {copiedId === message.id ? "Copied" : "Copy"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 hover:border-pink-200 hover:text-brand-text disabled:opacity-40"
+                            onClick={() => regenerateMessage(index)}
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                            Regenerate
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+                ),
+              )}
               {thinking ? (
-                <p className="animate-pulse text-sm text-slate-400">Thinking…</p>
+                <article className="flex items-start gap-2">
+                  <img src={MASCOT} alt="" className="mt-0.5 h-8 w-8 shrink-0 object-contain" />
+                  <p className="rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-400">
+                    Thinking…
+                  </p>
+                </article>
               ) : null}
               <div ref={endRef} />
             </div>
           ) : (
-            <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center py-6 text-center">
-              <div className="h-24 w-28 overflow-hidden rounded-full bg-black shadow-lg ring-4 ring-slate-100">
-                <img src={MASCOT} alt="Ask Cleon AI" className="h-full w-full object-cover" />
+            <div className="mx-auto flex min-h-full max-w-[720px] flex-col items-center py-2 text-center">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-brand-pink/20 blur-xl" />
+                <img
+                  src={MASCOT}
+                  alt="Ask Cleon AI"
+                  className="relative h-16 w-16 object-contain"
+                />
               </div>
-              <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-900">
-                Welcome to Ask Cleon AI
+              <h2 className="mt-4 text-[22px] font-semibold tracking-tight text-slate-900">
+                Welcome to{" "}
+                <span className="text-brand-pink">Ask Cleon AI</span>
               </h2>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
+              <p className="mt-1.5 max-w-md text-[12px] leading-5 text-slate-500">
                 {conversation?.sources?.length
                   ? `This chat is focused on ${conversation.sources[0].name}. Approved datasets can still fill in extra context.`
                   : "Ask anything about your HR documents — contracts, employee files, certifications, and compliance records."}
               </p>
-              <div className="mt-5 flex flex-wrap justify-center gap-2">
+              <div className="mt-4 flex flex-wrap justify-center gap-1.5">
                 {CATEGORIES.map((item) => (
                   <button
                     key={item}
                     type="button"
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                    className={`rounded-full px-3 py-1 text-[12px] font-medium ${
                       category === item
                         ? "bg-brand-pink text-white"
                         : "border border-slate-200 bg-white text-slate-500 hover:border-pink-200"
                     }`}
-                    onClick={() => setCategory(item)}
+                    onClick={() => {
+                      setCategory(item);
+                      setShowAllSuggestions(false);
+                    }}
                   >
-                    {item}
+                    {item === "All Suggestions" ? "✨ All Suggestions" : item}
                   </button>
                 ))}
               </div>
-              <div className="mt-5 grid w-full gap-3 sm:grid-cols-2">
-                {suggestions.map((item) => (
-                  <button
-                    key={item.text}
-                    type="button"
-                    className="rounded-2xl border border-slate-200 bg-white p-4 text-left text-sm font-semibold leading-6 text-slate-700 transition hover:border-brand-pink hover:shadow-sm"
-                    onClick={() => send(item.text)}
-                  >
-                    <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                      {item.category}
-                    </span>
-                    {item.text}
-                  </button>
-                ))}
+              <div className="mt-5 w-full text-left">
+                <div className="mb-2 flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[13px] font-semibold text-slate-900">Suggested Questions</p>
+                    <p className="text-[11px] text-slate-400">{visibleSuggestions.length} prompts</p>
+                  </div>
+                  {suggestions.length > 9 ? (
+                    <button
+                      type="button"
+                      className="text-[12px] font-medium text-brand-pink"
+                      onClick={() => setShowAllSuggestions((open) => !open)}
+                    >
+                      {showAllSuggestions ? "View less" : "View more →"}
+                    </button>
+                  ) : null}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  {visibleSuggestions.map((item) => (
+                    <button
+                      key={item.text}
+                      type="button"
+                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left text-[12px] font-medium text-slate-700 hover:border-brand-pink"
+                      onClick={() => send(item.text)}
+                    >
+                      <item.Icon className="h-3.5 w-3.5 shrink-0 text-brand-pink" />
+                      <span className="min-w-0 flex-1 leading-4">{item.text}</span>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
         </div>
 
         <form
-          className="shrink-0 border-t border-slate-100 bg-white px-5 py-4"
+          className="shrink-0 bg-white px-4 pb-3 pt-1"
           onSubmit={(event: FormEvent) => {
             event.preventDefault();
             send();
@@ -720,91 +1017,100 @@ export default function AskScreen() {
               ))}
             </div>
           ) : null}
-          <div className="mx-auto max-w-3xl">
-            <div className="relative flex items-end gap-2 rounded-[1.6rem] border border-slate-200 bg-slate-50 px-2 py-2 shadow-sm focus-within:border-brand-pink/40 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-pink/10">
+          <div className="mx-auto max-w-[640px]">
+            <div className="flex items-end gap-2">
+            <div className="relative flex min-w-0 flex-1 items-end rounded-[1.4rem] border border-slate-200 bg-white px-1 py-0.5 shadow-[0_6px_18px_rgba(15,23,42,0.06)] focus-within:border-brand-pink/40">
               <div className="relative" ref={attachRef}>
                 <button
                   type="button"
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-white disabled:opacity-50"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-50 disabled:opacity-50"
                   aria-label={uploadingFiles.length ? "Uploading files" : "Attach a source"}
                   disabled={Boolean(uploadingFiles.length)}
                   onClick={() => setAttachOpen((open) => !open)}
                 >
                   {uploadingFiles.length ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-brand-pink" />
+                    <Loader2 className="h-4 w-4 animate-spin text-brand-pink" />
                   ) : (
-                    <Plus className="h-5 w-5" />
+                    <Plus className="h-4 w-4" />
                   )}
                 </button>
                 {attachOpen ? (
-                  <div className="absolute bottom-12 left-0 z-20 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+                  <div className="absolute bottom-10 left-0 z-20 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
                     <button
                       type="button"
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[12px] text-slate-700 hover:bg-slate-50"
                       onClick={() => fileRef.current?.click()}
                     >
-                      <Upload className="h-4 w-4" />
+                      <Upload className="h-3.5 w-3.5" />
                       Upload files from computer
                     </button>
                     <button
                       type="button"
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[12px] text-slate-700 hover:bg-slate-50"
                       onClick={() => {
                         setAttachOpen(false);
                         setUrlOpen(true);
                       }}
                     >
-                      <Link2 className="h-4 w-4" />
+                      <Link2 className="h-3.5 w-3.5" />
                       Paste a URL
                     </button>
                     <button
                       type="button"
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[12px] text-slate-700 hover:bg-slate-50"
                       onClick={async () => {
                         setAttachOpen(false);
                         setLibraryOpen(true);
                         setLibrarySelected([]);
                         setLibrarySearch("");
-                        const rows = await intelligenceDatasetApi.libraryDocuments();
-                        setLibraryRows(rows);
+                        const library = await intelligenceDatasetApi.libraryDocuments();
+                        setLibraryRows(library);
                       }}
                     >
-                      <FileText className="h-4 w-4" />
+                      <FileText className="h-3.5 w-3.5" />
                       From document library
                     </button>
                   </div>
                 ) : null}
               </div>
-              <textarea
-                className="max-h-32 min-h-10 flex-1 resize-none border-0 bg-transparent py-2 text-sm text-slate-800 outline-none"
-                value={question}
-                maxLength={4000}
-                placeholder="Ask Cleon AI anything about your documents"
-                onChange={(event) => setQuestion(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    send();
-                  }
-                }}
-              />
+              <div className="relative min-h-8 min-w-0 flex-1">
+                {!question ? (
+                  <span className="pointer-events-none absolute inset-0 flex items-center text-[13px] text-slate-400">
+                    {typedPlaceholder}
+                    {typedPlaceholder ? (
+                      <span className="ml-px inline-block h-3.5 w-px bg-slate-300" />
+                    ) : null}
+                  </span>
+                ) : null}
+                <textarea
+                  ref={composerRef}
+                  rows={1}
+                  className={`ask-composer-input max-h-[220px] min-h-8 w-full resize-none overflow-y-auto border-0 bg-transparent py-1.5 text-[13px] leading-5 text-slate-800 shadow-none outline-none ring-0 ${
+                    question ? "" : "caret-transparent"
+                  }`}
+                  value={question}
+                  maxLength={4000}
+                  placeholder=""
+                  aria-label="Ask Cleon AI"
+                  onChange={(event) => setQuestion(event.target.value)}
+                  onInput={fitComposer}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      send();
+                    }
+                  }}
+                />
+              </div>
               <button
                 type="button"
-                className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                  listening ? "bg-brand-pink text-white" : "text-slate-500 hover:bg-white"
+                className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                  listening ? "bg-brand-pink text-white" : "text-slate-400 hover:bg-slate-50"
                 }`}
                 aria-label="Speak your question"
                 onClick={startVoice}
               >
-                <Mic className="h-5 w-5" />
-              </button>
-              <button
-                type="submit"
-                disabled={busy || Boolean(uploadingFiles.length) || !question.trim()}
-                aria-label="Send message"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-text to-brand-pink text-white shadow-sm disabled:opacity-40"
-              >
-                <ArrowUp className="h-4 w-4" />
+                <Mic className="h-4 w-4" />
               </button>
               <input
                 ref={fileRef}
@@ -822,25 +1128,76 @@ export default function AskScreen() {
                 }}
               />
             </div>
-            <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
-              <span>{question.length}/4000</span>
-              <span>AI can make mistakes. Double-check important info.</span>
-         
+              <button
+                type="submit"
+                disabled={busy || Boolean(uploadingFiles.length) || !question.trim()}
+                aria-label="Send message"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-secondary text-white disabled:opacity-40"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
             </div>
+            <p className="mt-2 text-center text-[11px] text-slate-400">
+              Smarter Documents. Stronger Decisions. ✨ {question.length}/4000
+            </p>
           </div>
         </form>
       </section>
 
-      <aside className="hidden min-h-0 flex-col overflow-hidden border-l border-slate-100 bg-slate-50/80 lg:flex">
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-bold text-slate-900">Attached files</p>
-            {(conversation?.sources || []).length || uploadingFiles.length ? (
-              <span className="text-xs font-semibold text-slate-400">
-                {(conversation?.sources.length || 0) + uploadingFiles.length}
-              </span>
-            ) : null}
-          </div>
+      <aside className="hidden min-h-0 flex-col overflow-hidden border-l border-slate-100 bg-white lg:flex">
+        <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+            Working Set
+          </p>
+          {activeDataset ? (
+            <p className="mt-1.5 text-[12px] text-slate-600">
+              Queries are focused on <span className="font-semibold">{activeDataset}</span>.
+            </p>
+          ) : (
+            <p className="mt-1.5 text-[12px] text-slate-500">
+              No active dataset. Select one to focus all queries.
+            </p>
+          )}
+          {datasetPickerOpen || activeDataset ? (
+            <select
+              ref={datasetRef}
+              className="mt-3 w-full rounded-xl border border-slate-200 bg-[#f7f8fb] px-3 py-2.5 text-sm text-slate-800 outline-none"
+              value={conversation?.dataset_id || ""}
+              onChange={async (event) => {
+                const current = await ensureConversation();
+                const next = await intelligenceDatasetApi.conversationUpdate({
+                  id: current.id,
+                  dataset_id: event.target.value ? Number(event.target.value) : 0,
+                });
+                setConversation({
+                  ...next,
+                  messages: current.messages || next.messages,
+                });
+              }}
+            >
+              <option value="">All approved records</option>
+              {(datasets.data || []).map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <button
+              type="button"
+              className="mt-2 text-[12px] font-semibold text-brand-pink"
+              onClick={() => {
+                setDatasetPickerOpen(true);
+                window.setTimeout(() => datasetRef.current?.focus(), 0);
+              }}
+            >
+              Select dataset →
+            </button>
+          )}
+
+          <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+            Attached files
+          </p>
           {(conversation?.sources || []).length || uploadingFiles.length ? (
             <>
               {uploadingFiles.length ? (
@@ -950,38 +1307,14 @@ export default function AskScreen() {
               ) : null}
             </>
           ) : (
-            <p className="mt-3 text-sm text-slate-500">
-              Files from your computer, Employee Files, or Organizational Files
-              appear here. You can view or remove them at any time.
+            <p className="mt-2 text-sm text-slate-400">
+              Files you attach from your computer or the document library appear here.
             </p>
           )}
-          <p className="mt-6 text-sm font-bold text-slate-900">Working set</p>
-          <select
-            className="field mt-2"
-            value={conversation?.dataset_id || ""}
-            onChange={async (event) => {
-              const current = await ensureConversation();
-              const next = await intelligenceDatasetApi.conversationUpdate({
-                id: current.id,
-                dataset_id: event.target.value ? Number(event.target.value) : 0,
-              });
-              setConversation({
-                ...next,
-                messages: current.messages || next.messages,
-              });
-            }}
-          >
-            <option value="">All approved records</option>
-            {(datasets.data || []).map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
           {conversation?.id ? (
             <button
               type="button"
-              className="mt-2 flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-700"
+              className="mt-4 flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-700"
               onClick={async () => {
                 const next = await intelligenceDatasetApi.conversationSave(
                   conversation.id,
@@ -992,11 +1325,15 @@ export default function AskScreen() {
               }}
             >
               <Bookmark className="h-4 w-4" />
-              {conversation.saved ? "Saved chat" : "Save this chat"}
+              {conversation.saved ? "Saved query" : "Save this query"}
             </button>
           ) : null}
         </div>
+        <div className="shrink-0 p-3">
+          <p className="text-right text-[10px] text-slate-400">Esc close · ↵ send</p>
+        </div>
       </aside>
+      </div>
 
       {urlOpen ? (
         <div

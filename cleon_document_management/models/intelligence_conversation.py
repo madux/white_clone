@@ -196,28 +196,42 @@ class IntelligenceConversation(models.Model):
         self._store_assistant(result)
         return self.to_api(with_messages=True)
 
-    def iter_ask_events(self, question):
+    def iter_ask_events(self, question, regenerate=False):
         self.ensure_one()
         self._ensure_owner()
         question = (question or "").strip()
         if not question:
             raise UserError("Enter a question.")
-        user_message = self.env["doc.intelligence.message"].create(
-            {
-                "conversation_id": self.id,
-                "role": "user",
-                "content": question,
-            }
-        )
-        user_turns = self.message_ids.filtered(lambda item: item.role == "user")
-        needs_title = len(user_turns) == 1 or self._untitled()
-        if needs_title:
-            self.name = fallback_conversation_title(question)
+        user_message = False
+        needs_title = False
+        if regenerate:
+            last_user = self.message_ids.filtered(lambda item: item.role == "user").sorted("id")[-1:]
+            if not last_user:
+                raise UserError("There is no question to regenerate.")
+            question = last_user.content
+            last_assistant = self.message_ids.filtered(
+                lambda item: item.role == "assistant"
+            ).sorted("id")[-1:]
+            if last_assistant:
+                last_assistant.unlink()
+            user_message = last_user
+        else:
+            user_message = self.env["doc.intelligence.message"].create(
+                {
+                    "conversation_id": self.id,
+                    "role": "user",
+                    "content": question,
+                }
+            )
+            user_turns = self.message_ids.filtered(lambda item: item.role == "user")
+            needs_title = len(user_turns) == 1 or self._untitled()
+            if needs_title:
+                self.name = fallback_conversation_title(question)
         yield {
             "event": "meta",
             "id": self.id,
             "name": self.name,
-            "user_message": user_message.to_api(),
+            "user_message": user_message.to_api() if not regenerate else None,
         }
         yield {"event": "thinking"}
         if needs_title:

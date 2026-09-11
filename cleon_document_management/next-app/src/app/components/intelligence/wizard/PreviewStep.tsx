@@ -70,7 +70,9 @@ export default function PreviewStep({
           <dd className="mt-1 font-medium capitalize text-slate-800">
             {source === "upload"
               ? "Files you uploaded"
-              : scopeKind.replace(/_/g, " ")}
+              : source === "organizational"
+                ? "Selected files"
+                : scopeKind.replace(/_/g, " ")}
           </dd>
         </div>
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">

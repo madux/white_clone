@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   useIntelligenceDataset,
-  useIntelligenceProfiles,
   useIntelligenceTypes,
   useIntelligenceWizardEstimate,
   useIntelligenceWizardOptions,
@@ -14,12 +13,11 @@ import {
   useUploadIntelligenceFiles,
 } from "../../../../hooks/useIntelligence";
 import { useRouter, useSearchParams } from "next/navigation";
-import { api } from "../../../../lib/api";
+import type { IntelligenceDocumentType } from "../../../../lib/intelligence-api";
 import RepositoryStep from "./wizard/RepositoryStep";
 import ScopeStep from "./wizard/ScopeStep";
 import UploadFilesStep from "./wizard/UploadFilesStep";
 import DocumentTypesStep from "./wizard/DocumentTypesStep";
-import BusinessFieldsStep from "./wizard/BusinessFieldsStep";
 import ValidationStep from "./wizard/ValidationStep";
 import PreviewStep from "./wizard/PreviewStep";
 
@@ -27,7 +25,6 @@ const STEPS = [
   "Repository",
   "Scope",
   "Document types",
-  "Business fields",
   "Validation rules",
   "Preview and run",
 ] as const;
@@ -50,7 +47,8 @@ type Draft = {
     | "location"
     | "grade"
     | "employment_type"
-    | "company";
+    | "company"
+    | "selected_files";
   autoClassify: boolean;
   documentTypes: number[];
   fields: string[];
@@ -78,6 +76,29 @@ const INITIAL: Draft = {
   auditLogging: true,
 };
 
+function fieldsForType(type?: IntelligenceDocumentType) {
+  if (!type) return [];
+  if (type.extraction_fields?.length) return type.extraction_fields;
+  const profile = type.profile;
+  if (profile && typeof profile === "object") return profile.fields || [];
+  return [];
+}
+
+function fieldKeysForTypes(
+  typeIds: number[],
+  typeById: Map<number, IntelligenceDocumentType>,
+) {
+  return new Set(
+    typeIds.flatMap((id) => fieldsForType(typeById.get(id)).map((field) => field.key)),
+  );
+}
+
+function seedKeysForType(type?: IntelligenceDocumentType) {
+  const fields = fieldsForType(type);
+  const required = fields.filter((field) => field.required).map((field) => field.key);
+  return required.length ? required : fields.map((field) => field.key);
+}
+
 export default function DatasetWizardScreen() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -88,7 +109,6 @@ export default function DatasetWizardScreen() {
   const [attempted, setAttempted] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const types = useIntelligenceTypes();
-  const profiles = useIntelligenceProfiles();
   const wizardOptions = useIntelligenceWizardOptions();
   const existing = useIntelligenceDataset(datasetId);
   const saveDataset = useSaveIntelligenceDataset();
@@ -105,20 +125,20 @@ export default function DatasetWizardScreen() {
   >([]);
   const [uploadError, setUploadError] = useState("");
   const [hydrated, setHydrated] = useState(!datasetId);
-  const isAdmin = Boolean(
-    api.injectedUser()?.is_admin || api.injectedUser()?.is_document_manager,
-  );
 
   useEffect(() => {
     if (!existing.data) return;
     const item = existing.data;
     setDatasetPk(item.id);
-    setStep(Math.min(item.wizard_step || 0, 5));
+    setStep(Math.min(item.wizard_step || 0, 4));
     setDraft({
       name: item.name === "Untitled draft" ? "" : item.name,
       source: (item.source as Draft["source"]) || "",
       processingMode: (item.processing_mode as Draft["processingMode"]) || "balanced",
-      scopeKind: (item.scope_kind as Draft["scopeKind"]) || "company",
+      scopeKind:
+        item.source === "organizational"
+          ? "selected_files"
+          : (item.scope_kind as Draft["scopeKind"]) || "company",
       autoClassify: item.auto_classify,
       documentTypes: item.document_type_ids,
       fields: item.field_keys,
@@ -133,58 +153,21 @@ export default function DatasetWizardScreen() {
     setHydrated(true);
   }, [existing.data]);
 
-  const catalog = useMemo(() => {
-    const selectedTypes = new Set(draft.documentTypes);
-    const sourceScope =
-      draft.source === "organizational" ? "organization" : "employee";
-    const typeById = new Map((types.data || []).map((item) => [item.id, item]));
-    const selectedProfiles = (profiles.data || []).filter((profile) => {
-      if (!profile.active) return false;
-      const type = typeById.get(profile.document_type_id);
-      if (draft.autoClassify) {
-        if (!type?.active) return false;
-        return (type.intelligence_scope || "employee") === sourceScope;
-      }
-      return selectedTypes.size === 0 || selectedTypes.has(profile.document_type_id);
-    });
-    const fields = selectedProfiles.flatMap((profile) => {
-      const type = typeById.get(profile.document_type_id);
-      return profile.fields.map((field) => ({
-        ...field,
-        profile: `${profile.name} v${profile.version}`,
-        typeName: type?.name || profile.name,
-      }));
-    });
-    const unique = new Map(
-      fields.map((field) => [`${field.typeName}:${field.key}`, field]),
-    );
-    return Array.from(unique.values());
-  }, [
-    draft.autoClassify,
-    draft.documentTypes,
-    draft.source,
-    profiles.data,
-    types.data,
-  ]);
+  const typeById = useMemo(
+    () => new Map((types.data || []).map((item) => [item.id, item])),
+    [types.data],
+  );
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !types.data) return;
     setDraft((current) => {
-      if (!catalog.length) {
-        if (!current.fields.length) return current;
-        return { ...current, fields: [] };
-      }
-      const allowed = new Set(catalog.map((field) => field.key));
+      if (current.documentTypes.some((id) => !typeById.has(id))) return current;
+      const allowed = fieldKeysForTypes(current.documentTypes, typeById);
       const next = current.fields.filter((key) => allowed.has(key));
-      const seeded = next.length
-        ? next
-        : current.autoClassify
-          ? catalog.map((field) => field.key)
-          : catalog.filter((field) => field.required).map((field) => field.key);
-      if (seeded.join() === current.fields.join()) return current;
-      return { ...current, fields: seeded };
+      if (next.join() === current.fields.join()) return current;
+      return { ...current, fields: next };
     });
-  }, [catalog, hydrated]);
+  }, [draft.documentTypes, hydrated, typeById, types.data]);
 
   const selectedTypeNames = (types.data || [])
     .filter((item) => draft.documentTypes.includes(item.id))
@@ -194,11 +177,28 @@ export default function DatasetWizardScreen() {
   const estimate = useIntelligenceWizardEstimate({
     id: datasetPk,
     source: draft.source,
-    scope_kind: draft.source === "organizational" ? "company" : draft.scopeKind,
-    scope_ids: draft.source === "employee" ? draft.scopeIds : [],
-    document_type_ids: draft.documentTypes,
-    auto_classify: draft.autoClassify,
+    scope_kind:
+      draft.source === "organizational" ? "selected_files" : draft.scopeKind,
+    scope_ids:
+      draft.source === "employee" || draft.source === "organizational"
+        ? draft.scopeIds
+        : [],
+    document_type_ids: [],
+    auto_classify: true,
+    upload_count: uploads.length,
   });
+
+  const scopedTypeIds = estimate.data?.document_type_ids;
+
+  useEffect(() => {
+    if (!Array.isArray(scopedTypeIds)) return;
+    const allowed = new Set(scopedTypeIds);
+    setDraft((current) => {
+      const next = current.documentTypes.filter((id) => allowed.has(id));
+      if (next.length === current.documentTypes.length) return current;
+      return { ...current, documentTypes: next };
+    });
+  }, [scopedTypeIds]);
 
   const stepError = useMemo(() => {
     if (step === 0 && !draft.source) return "Choose a repository source.";
@@ -207,6 +207,13 @@ export default function DatasetWizardScreen() {
     }
     if (step === 1 && draft.source === "upload" && uploads.length === 0) {
       return "Upload at least one file.";
+    }
+    if (
+      step === 1 &&
+      draft.source === "organizational" &&
+      draft.scopeIds.length === 0
+    ) {
+      return "Open a folder and select at least one file.";
     }
     if (
       step === 1 &&
@@ -219,14 +226,17 @@ export default function DatasetWizardScreen() {
     if (step === 2 && !draft.autoClassify && draft.documentTypes.length === 0) {
       return "Select at least one document type, or enable automatic classification.";
     }
-    if (step === 3 && !draft.autoClassify && draft.fields.length === 0) {
-      return "These document types have no fields to extract yet. Add at least one field, or pick types that already have a profile.";
+    if (step === 2 && !draft.autoClassify && draft.fields.length === 0) {
+      return "Open a selected type and choose at least one field to extract.";
     }
-    if (step === 5 && !draft.name.trim()) return "Give the dataset a name.";
-    if (step === 5 && draft.documentTypes.length === 0 && !draft.autoClassify) {
+    if (step === 4 && draft.source === "organizational" && draft.scopeIds.length === 0) {
+      return "Open a folder and select at least one file.";
+    }
+    if (step === 4 && !draft.name.trim()) return "Give the dataset a name.";
+    if (step === 4 && draft.documentTypes.length === 0 && !draft.autoClassify) {
       return "A dataset cannot run with zero document types.";
     }
-    if (step === 5 && !draft.autoClassify && draft.fields.length === 0) {
+    if (step === 4 && !draft.autoClassify && draft.fields.length === 0) {
       return "A dataset cannot run with zero fields.";
     }
     return "";
@@ -237,7 +247,8 @@ export default function DatasetWizardScreen() {
     name: draft.name.trim(),
     source: draft.source || false,
     processing_mode: draft.processingMode,
-    scope_kind: draft.scopeKind,
+    scope_kind:
+      draft.source === "organizational" ? "selected_files" : draft.scopeKind,
     scope_ids: draft.scopeIds,
     auto_classify: draft.autoClassify,
     document_type_ids: draft.documentTypes,
@@ -247,7 +258,7 @@ export default function DatasetWizardScreen() {
     deduplicate: draft.deduplicate,
     masking: draft.masking,
     audit_logging: draft.auditLogging,
-    wizard_step: forRun ? 5 : step,
+    wizard_step: forRun ? 4 : step,
   });
 
   const ensureDraft = async () => {
@@ -348,12 +359,12 @@ export default function DatasetWizardScreen() {
         </p>
         <h1 className="text-3xl font-medium text-slate-900">Extraction wizard</h1>
         <p className="max-w-2xl text-sm font-light text-slate-400">
-          Six steps. Choose Employee Files, Organizational Files, or upload from
+          Five steps. Choose Employee Files, Organizational Files, or upload from
           your computer. Continue saves a draft so you can leave and come back.
         </p>
       </section>
 
-      <ol className="grid gap-2 sm:grid-cols-6">
+      <ol className="grid gap-2 sm:grid-cols-5">
         {STEPS.map((label, index) => (
           <li
             key={index}
@@ -402,7 +413,8 @@ export default function DatasetWizardScreen() {
               setDraft({
                 ...draft,
                 source: value,
-                scopeKind: value === "organizational" ? "company" : draft.scopeKind,
+                scopeKind:
+                  value === "organizational" ? "selected_files" : draft.scopeKind,
                 scopeIds: value === draft.source ? draft.scopeIds : [],
               })
             }
@@ -447,64 +459,66 @@ export default function DatasetWizardScreen() {
             source={draft.source}
             autoClassify={draft.autoClassify}
             selectedIds={draft.documentTypes}
-            isAdmin={isAdmin}
-            onAutoClassify={(value) => setDraft({ ...draft, autoClassify: value })}
-            onToggle={(id) =>
-              setDraft({
-                ...draft,
-                documentTypes: draft.documentTypes.includes(id)
-                  ? draft.documentTypes.filter((item) => item !== id)
-                  : [...draft.documentTypes, id],
-              })
+            selectedKeys={draft.fields}
+            allowedTypeIds={scopedTypeIds}
+            untypedCount={estimate.data?.untyped_count || 0}
+            loadingEstimate={
+              draft.source !== "upload" &&
+              estimate.isFetching &&
+              !Array.isArray(scopedTypeIds)
             }
-            onCreated={(type) =>
+            onAutoClassify={(value) => setDraft({ ...draft, autoClassify: value })}
+            onToggle={(id) => {
+              setDraft((current) => {
+                const type = typeById.get(id);
+                if (current.documentTypes.includes(id)) {
+                  const remaining = current.documentTypes.filter((item) => item !== id);
+                  const allowed = fieldKeysForTypes(remaining, typeById);
+                  return {
+                    ...current,
+                    documentTypes: remaining,
+                    fields: current.fields.filter((key) => allowed.has(key)),
+                  };
+                }
+                return {
+                  ...current,
+                  documentTypes: [...current.documentTypes, id],
+                  fields: Array.from(
+                    new Set([...current.fields, ...seedKeysForType(type)]),
+                  ),
+                };
+              });
+            }}
+            onToggleField={(key) =>
               setDraft((current) => ({
                 ...current,
-                documentTypes: current.documentTypes.includes(type.id)
-                  ? current.documentTypes
-                  : [...current.documentTypes, type.id],
+                fields: current.fields.includes(key)
+                  ? current.fields.filter((item) => item !== key)
+                  : [...current.fields, key],
               }))
             }
+            onSetTypeFields={(typeId, mode) => {
+              const typeKeys = fieldsForType(typeById.get(typeId)).map(
+                (field) => field.key,
+              );
+              setDraft((current) => {
+                if (mode === "all") {
+                  return {
+                    ...current,
+                    fields: Array.from(new Set([...current.fields, ...typeKeys])),
+                  };
+                }
+                const drop = new Set(typeKeys);
+                return {
+                  ...current,
+                  fields: current.fields.filter((key) => !drop.has(key)),
+                };
+              });
+            }}
           />
         )}
 
         {step === 3 && (
-          <BusinessFieldsStep
-            catalog={catalog}
-            selectedKeys={draft.fields}
-            types={(() => {
-              const scope =
-                draft.source === "organizational" ? "organization" : "employee";
-              const selected = (types.data || []).filter(
-                (item) =>
-                  draft.documentTypes.includes(item.id) ||
-                  (draft.autoClassify &&
-                    item.active &&
-                    (item.intelligence_scope || "employee") === scope),
-              );
-              return selected.length
-                ? selected
-                : (types.data || []).filter((item) => item.active);
-            })()}
-            profiles={profiles.data || []}
-            isAdmin={isAdmin}
-            autoClassify={draft.autoClassify}
-            onChange={(keys) => setDraft({ ...draft, fields: keys })}
-            onAddedField={(typeId, key) =>
-              setDraft((current) => ({
-                ...current,
-                documentTypes: current.documentTypes.includes(typeId)
-                  ? current.documentTypes
-                  : [...current.documentTypes, typeId],
-                fields: current.fields.includes(key)
-                  ? current.fields
-                  : [...current.fields, key],
-              }))
-            }
-          />
-        )}
-
-        {step === 4 && (
           <ValidationStep
             confidencePreset={draft.confidencePreset}
             ocrFallback={draft.ocrFallback}
@@ -516,7 +530,7 @@ export default function DatasetWizardScreen() {
           />
         )}
 
-        {step === 5 && (
+        {step === 4 && (
           <PreviewStep
             name={draft.name}
             source={draft.source}

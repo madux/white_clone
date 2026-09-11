@@ -2,12 +2,12 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Header from "@/app/components/Header";
-import Sidebar from "@/app/components/Sidebar";
+import AppChrome from "@/app/components/AppChrome";
 import Providers from "@/app/providers";
 import "@/app/globals.css";
 import { SortableTableManager } from "@/app/components/SortableTable";
 import OnboardingGuide from "@/app/components/OnboardingGuide";
+
 export const metadata: Metadata = {
   title: "CLEONHR — Document Management",
   description: "Enterprise Document Management System",
@@ -20,18 +20,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <Providers>
           <SortableTableManager />
-          <div className="flex h-screen overflow-hidden">
-            <Sidebar />
-            <div className="flex flex-col flex-1 gap-4 overflow-hidden">
-              <Suspense fallback={null}><Header /></Suspense>
-
-              <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50">
-                <div className="min-h-0 flex-1 overflow-y-auto">
-                  {children}
-                </div>
-              </main>
-            </div>
-          </div>
+          <Suspense fallback={null}>
+            <AppChrome>{children}</AppChrome>
+          </Suspense>
           <OnboardingGuide />
         </Providers>
       </body>

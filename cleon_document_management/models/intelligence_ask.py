@@ -281,49 +281,58 @@ def start_answer(
     extra_context = (extra_context or "").strip()
     if not extra_context and not has_attachments:
         structured = answer_structured(env, question, dataset_id=dataset_id)
-        if structured.get("fact_based"):
+        if (
+            structured.get("fact_based")
+            and not structured.get("insufficient_evidence")
+        ):
             intent = structured.get("intent") or {}
             return {
                 "mode": "ready",
                 "result": {
                     "answer": structured["answer"],
-                    "insufficient_evidence": structured.get("insufficient_evidence", True),
+                    "insufficient_evidence": False,
                     "citations": [],
                     "fact_based": True,
                     "intent": intent.get("label") or intent.get("kind") or "",
                     "model": "structured-fields",
                 },
             }
-    chunks = env["doc.intelligence.chunk"].search_similar(
-        question, dataset_id=dataset_id
-    )
+    library = env["doc.intelligence.library.chunk"].search_similar(question, limit=8)
     evidence = []
     if extra_context:
         evidence.append(extra_context)
-    for chunk in chunks[:6]:
+    for chunk in library:
         document = chunk.document_id
         evidence.append(
-            "DATASET EXCERPT — Document: %s | Employee: %s | Page: %s\n%s"
+            "YOUR FILE — %s%s\n%s"
             % (
                 document.name,
-                chunk.employee_id.name or "n/a",
-                chunk.page,
+                (" · %s" % document.employee_id.name) if document.employee_id else "",
                 chunk.content,
             )
         )
+    if dataset_id:
+        chunks = env["doc.intelligence.chunk"].search_similar(
+            question, dataset_id=dataset_id
+        )
+        for chunk in chunks[:4]:
+            document = chunk.document_id
+            evidence.append(
+                "DATASET EXCERPT — Document: %s | Employee: %s | Page: %s\n%s"
+                % (
+                    document.name,
+                    chunk.employee_id.name or "n/a",
+                    chunk.page,
+                    chunk.content,
+                )
+            )
     if not evidence:
         return {
             "mode": "ready",
             "result": {
                 "answer": (
-                    "There is not enough indexed evidence to answer. "
-                    "Attach a file to this chat, or run a dataset, review records, "
-                    "and approve them first."
-                    if has_attachments
-                    else (
-                        "There is not enough approved, indexed evidence to answer. "
-                        "Run a dataset, review records, and approve them first or attach a file."
-                    )
+                    "There is not enough indexed text in your files or shared files "
+                    "to answer. If a file was just added, wait a minute for it to be indexed."
                 ),
                 "insufficient_evidence": True,
                 "citations": [],

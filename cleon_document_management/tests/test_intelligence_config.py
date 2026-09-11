@@ -1,6 +1,7 @@
 from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase
+import json
 
 
 class TestIntelligenceConfig(TransactionCase):
@@ -66,6 +67,25 @@ class TestIntelligenceConfig(TransactionCase):
         document_type = self.env["doc.document.type"].create(
             {"name": "Run Type", "category": "employment"}
         )
+        folder = self.env["doc.folder"].create(
+            {"folder_name": "Run Org", "folder_type": "organizational"}
+        )
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": "run.txt",
+                "type": "binary",
+                "mimetype": "text/plain",
+                "raw": b"Contract",
+            }
+        )
+        document = self.env["doc.document"].create(
+            {
+                "name": "Run contract",
+                "folder_id": folder.id,
+                "document_type_id": document_type.id,
+                "attachment_id": attachment.id,
+            }
+        )
         dataset = self.env["doc.intelligence.dataset"].create(
             {
                 "name": "Empty run",
@@ -78,6 +98,8 @@ class TestIntelligenceConfig(TransactionCase):
             {
                 "document_type_ids": [(6, 0, [document_type.id])],
                 "field_keys_json": '["employee_name"]',
+                "scope_kind": "selected_files",
+                "scope_ids_json": json.dumps([document.id]),
             }
         )
         job = dataset.action_run()
@@ -96,16 +118,63 @@ class TestIntelligenceConfig(TransactionCase):
         scoped = Dataset._domain_from_values("employee", "one_employee", [99])
         self.assertIn(("employee_id", "in", [99]), scoped)
         self.assertEqual(Dataset._domain_from_values("upload"), [("id", "=", 0)])
+        empty_org = Dataset._domain_from_values("organizational", "selected_files", [])
+        self.assertIn(("id", "=", 0), empty_org)
+        scoped_org = Dataset._domain_from_values("organizational", "selected_files", [7])
+        self.assertIn(("id", "in", [7]), scoped_org)
         estimate = Dataset.wizard_estimate(
-            {"source": "organizational", "scope_kind": "company"}
+            {
+                "source": "organizational",
+                "scope_kind": "selected_files",
+                "scope_ids": [],
+            }
         )
-        self.assertIn("document_count", estimate)
+        self.assertEqual(estimate["document_count"], 0)
+        self.assertEqual(estimate["document_type_ids"], [])
+        self.assertEqual(estimate["untyped_count"], 0)
         options = Dataset.wizard_options()
         self.assertIn("employee", options["sources"])
         self.assertIn("organizational", options["sources"])
         self.assertIn("employees", options)
         self.assertIn("departments", options)
         self.assertIn("business_units", options)
+
+    def test_wizard_estimate_types_match_selected_files(self):
+        folder = self.env["doc.folder"].create(
+            {"folder_name": "Org Types", "folder_type": "organizational"}
+        )
+        cv = self.env["doc.document.type"].create(
+            {"name": "CV Scope", "category": "identity"}
+        )
+        other = self.env["doc.document.type"].create(
+            {"name": "Other Scope Type", "category": "other"}
+        )
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": "cv.txt",
+                "type": "binary",
+                "mimetype": "text/plain",
+                "raw": b"Curriculum Vitae",
+            }
+        )
+        document = self.env["doc.document"].create(
+            {
+                "name": "Jane CV",
+                "folder_id": folder.id,
+                "document_type_id": cv.id,
+                "attachment_id": attachment.id,
+            }
+        )
+        estimate = self.env["doc.intelligence.dataset"].wizard_estimate(
+            {
+                "source": "organizational",
+                "scope_kind": "selected_files",
+                "scope_ids": [document.id],
+            }
+        )
+        self.assertEqual(estimate["document_count"], 1)
+        self.assertEqual(estimate["document_type_ids"], [cv.id])
+        self.assertNotIn(other.id, estimate["document_type_ids"])
 
     def test_upload_files_are_source_documents(self):
         document_type = self.env["doc.document.type"].create(
@@ -208,6 +277,8 @@ class TestIntelligenceConfig(TransactionCase):
             {
                 "name": "Slice run",
                 "source": "organizational",
+                "scope_kind": "selected_files",
+                "scope_ids_json": json.dumps([document.id]),
                 "document_type_ids": [(6, 0, [document_type.id])],
                 "field_keys_json": '["employee_name"]',
             }
@@ -271,6 +342,8 @@ class TestIntelligenceConfig(TransactionCase):
             {
                 "name": "PDF run",
                 "source": "organizational",
+                "scope_kind": "selected_files",
+                "scope_ids_json": json.dumps([document.id]),
                 "document_type_ids": [(6, 0, [document_type.id])],
                 "field_keys_json": '["employee_name"]',
             }

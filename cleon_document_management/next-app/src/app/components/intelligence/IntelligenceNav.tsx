@@ -12,9 +12,9 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { name: "Overview", href: "/pages/document-intelligence", icon: LayoutDashboard },
+  { name: "Ask & Insights", href: "/pages/document-intelligence/ask", icon: MessageSquareText },
   { name: "Dataset", href: "/pages/document-intelligence/datasets", icon: Database },
   { name: "Validate", href: "/pages/document-intelligence/validate", icon: ClipboardCheck },
-  { name: "Ask & Insights", href: "/pages/document-intelligence/ask", icon: MessageSquareText },
   { name: "Configuration", href: "/pages/document-intelligence/configuration", icon: Settings2 },
 ];
 
