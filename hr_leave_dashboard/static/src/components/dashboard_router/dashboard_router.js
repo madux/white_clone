@@ -100,13 +100,10 @@ export class LeaveDashboardRouter extends Component {
             additionalContext: { request_workspace_tab: tab },
         });
     }
-    openCalendar() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar"); }
     openBalances() { return this.openConfiguration("balances"); }
     openLeaveTypes() { return this.openConfiguration("policies"); }
     openHolidays() { return this.openConfiguration("holidays"); }
-    openBlackouts() { return this.openConfiguration("blackouts"); }
     openApprovalSettings() { return this.openConfiguration("approvals"); }
-    openAllRequests() { return this.openRequestWorkspace("records"); }
     openConfiguration(tab = "policies") {
         return this.action.doAction("hr_leave_dashboard.action_hr_leave_configuration", {
             additionalContext: { configuration_tab: tab },

@@ -8,54 +8,6 @@
           <i class="fa fa-spinner fa-spin"/> Loading leave dashboard...
         </div>
         <t t-else="">
-          <!-- Top Unified Header & View Switcher -->
-          <header t-att-class="'o_leave_unified_header ' + (state.viewMode === 'organisation' ? 'organisation' : 'personal')">
-            <div class="o_leave_unified_title_area" t-if="state.viewMode === 'personal'">
-              <button class="o_leave_panel_toggle d-lg-none" t-on-click="toggleSidebar" title="Toggle Leave navigation">
-                <i class="fa fa-columns"/>
-              </button>
-              <div>
-                <h2>Leave Dashboard</h2>
-                <p t-if="state.viewMode === 'organisation'">Organisation leave metrics, trends, and workforce coverage</p>
-                <p t-else="">Your personal leave balances, requests, and time off calendar</p>
-              </div>
-            </div>
-
-            <!-- View Switcher (when user has both organisation and personal capabilities) -->
-            <div class="o_leave_view_switcher" t-if="state.access.show_organisation_dashboard and state.access.has_personal_scope">
-              <button type="button"
-                      t-att-class="'o_lvs_btn ' + (state.viewMode === 'organisation' ? 'active' : '')"
-                      t-on-click="() => this.switchView('organisation')">
-                <i class="fa fa-building-o me-1"/> Organisation Overview
-              </button>
-              <button type="button"
-                      t-att-class="'o_lvs_btn ' + (state.viewMode === 'personal' ? 'active' : '')"
-                      t-on-click="() => this.switchView('personal')">
-                <i class="fa fa-user-circle me-1"/> My Personal Leave
-                <span class="o_lvs_pill ms-1" t-if="state.personalData and state.personalData.kpis and state.personalData.kpis.total_balance !== undefined">
-                  <t t-esc="state.personalData.kpis.total_balance"/>d
-                </span>
-              </button>
-            </div>
-
-            <!-- Header Quick Tools -->
-            <div class="o_leave_unified_tools">
-              <button t-if="state.access.can_approve and state.access.pending_approvals"
-                      class="btn btn-sm o_lut_btn_badge"
-                      t-on-click="openApprovals"
-                      title="Pending approvals awaiting your decision">
-                <i class="fa fa-clock-o text-warning me-1"/>
-                <b><t t-esc="state.access.pending_approvals"/></b> Approvals
-              </button>
-              <button class="btn btn-sm o_lut_btn" t-on-click="openCalendar" title="View Leave Calendar">
-                <i class="fa fa-calendar me-1"/> Calendar
-              </button>
-              <button t-if="state.access.can_configure" class="btn btn-sm o_lut_btn" t-on-click="openLeaveTypes" title="Leave Configuration">
-                <i class="fa fa-cog me-1"/> Configuration
-              </button>
-            </div>
-          </header>
-
           <!-- ════════════════════════════════════════════════════════════
                MODE 1: ORGANISATION VIEW (Admin / HR Officers / Managers)
                ════════════════════════════════════════════════════════════ -->
@@ -66,13 +18,10 @@
                 <button t-if="state.access.has_personal_scope" t-on-click="requestLeave"><i class="fa fa-plus-circle"/><span><b>Request Leave</b><small>Apply for time off</small></span></button>
                 <button t-if="state.access.has_personal_scope" t-on-click="openMyRequests"><i class="fa fa-file-text-o"/><span><b>My Requests</b><small>Track my requests</small></span></button>
                 <button t-if="state.access.can_approve" t-on-click="openApprovals"><i class="fa fa-check-circle-o"/><span><b>Approve Leave</b><small><t t-esc="state.access.pending_approvals || 0"/> awaiting review</small></span></button>
-                <button t-if="state.access.can_operate" t-on-click="openAllRequests"><i class="fa fa-list-alt"/><span><b>Leave Records</b><small>Manage all requests</small></span></button>
                 <button t-if="state.access.can_configure" t-on-click="openLeaveTypes"><i class="fa fa-file-text"/><span><b>Leave Policies</b><small>Configure policies</small></span></button>
                 <button t-if="state.access.can_operate" t-on-click="openBalances"><i class="fa fa-balance-scale"/><span><b>Leave Balances</b><small>Allocate and amend</small></span></button>
                 <button t-if="state.access.can_configure" t-on-click="openHolidays"><i class="fa fa-calendar-plus-o"/><span><b>Official Holidays</b><small>Manage holiday dates</small></span></button>
-                <button t-if="state.access.can_configure" t-on-click="openBlackouts"><i class="fa fa-ban"/><span><b>Blackout Windows</b><small>Manage restricted dates</small></span></button>
                 <button t-if="state.access.can_configure" t-on-click="openApprovalSettings"><i class="fa fa-shield"/><span><b>Approval Settings</b><small>Routes and escalation</small></span></button>
-                <button t-on-click="openCalendar"><i class="fa fa-calendar"/><span><b>Leave Calendar</b><small>View workforce coverage</small></span></button>
               </div>
             </section>
 
@@ -89,7 +38,6 @@
                 <button t-on-click="requestLeave"><i class="fa fa-plus-circle"/><span><b>Request Leave</b><small>Submit time off</small></span></button>
                 <button t-on-click="openMyRequests"><i class="fa fa-file-text-o"/><span><b>My Requests</b><small>Track my leave</small></span></button>
                 <button t-if="state.access.can_approve and state.access.pending_approvals" t-on-click="openApprovals"><i class="fa fa-check-circle-o"/><span><b>Approvals</b><small><t t-esc="state.access.pending_approvals"/> awaiting review</small></span></button>
-                <button t-on-click="openCalendar"><i class="fa fa-calendar"/><span><b>Leave Calendar</b><small>View schedules</small></span></button>
               </section>
             </EmployeeLeaveDashboard>
           </t>
