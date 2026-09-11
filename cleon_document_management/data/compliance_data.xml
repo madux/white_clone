@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="policy_type_document_requirement" model="doc.compliance.policy.type">
+            <field name="name">Document Requirement</field>
+            <field name="code">document_requirement</field>
+            <field name="description">Mandatory document submission requirement for staff compliance.</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="policy_type_renewable_document" model="doc.compliance.policy.type">
+            <field name="name">Renewable Document</field>
+            <field name="code">renewable_document</field>
+            <field name="description">Document requiring periodic renewal prior to expiration.</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="policy_type_compliance_request" model="doc.compliance.policy.type">
+            <field name="name">Compliance Request</field>
+            <field name="code">compliance_request</field>
+            <field name="description">Specific document or audit request issued to staff members.</field>
+            <field name="active">1</field>
+        </record>
+
+        <record id="policy_type_retention" model="doc.compliance.policy.type">
+            <field name="name">Review Schedule</field>
+            <field name="code">retention</field>
+            <field name="description">Periodic audit schedule and folder verification policy.</field>
+            <field name="active">1</field>
+        </record>
+    </data>
+</odoo>

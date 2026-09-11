@@ -39,6 +39,11 @@ class DocumentType(models.Model):
         default=False,
     )
 
+    expiry_applicable = fields.Boolean(
+        string="Expiry Applicable",
+        default=False,
+    )
+
     default_retention_years = fields.Integer(
         default=7,
     )

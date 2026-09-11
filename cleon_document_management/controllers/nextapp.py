@@ -2,9 +2,12 @@ import json
 import logging
 import mimetypes
 import os
+import re
 from odoo import http, fields
 from odoo.http import request
 from odoo.tools.misc import file_path
+
+from .main import _expiring_documents_domain, _serialize_expiring_document
 
 _logger = logging.getLogger(__name__)
 
@@ -180,14 +183,21 @@ class NextAppController(http.Controller):
         if not user.has_group("cleon_document_management.group_document_manager"):
             return {"success": True, "data": {"count": 0, "notifications": []}}
         approvals = request.env["doc.document.approval"].search(
-            [("state", "in", ["pending", "waiting"]), "|", ("approver_id", "=", user.id), ("document_id.folder_id.require_upload_approval", "=", True)],
-            order="create_date desc",
+            [
+                ("approver_id", "=", user.id),
+                ("state", "=", "pending"),
+                ("document_id.active", "=", True),
+                ("document_id.deleted_at", "=", False),
+            ],
+            order="create_date desc, sequence asc",
         )
         items = []
         for approval in approvals:
             document = approval.document_id
+            if not document.exists():
+                continue
             employee = document.employee_id.name if document.employee_id else "an employee"
-            message = f"Hello {user.name}, your attention is required to approve or reject {employee} file they just uploaded."
+            message = f"{employee} submitted {document.name} for your approval."
             items.append({"id": approval.id, "document_id": document.id, "employee_id": document.employee_id.id or 0, "document": document.name, "employee": employee, "message": message, "created_at": approval.create_date})
         return {"success": True, "data": {"count": len(items), "notifications": items}}
 
@@ -234,6 +244,64 @@ class NextAppController(http.Controller):
                     "state": approval.state,
                     "message": f"{employee} submitted {document.name} for your approval.",
                     "created_at": approval.create_date,
+                }
+            )
+        return {"success": True, "data": {"count": len(items), "items": items}}
+
+    @http.route(
+        "/api/admin/pending-employee-uploads",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def api_pending_employee_uploads(self, **kwargs):
+        user = request.env.user
+        if not user.has_group("cleon_document_management.group_document_manager"):
+            return {"success": True, "data": {"count": 0, "items": []}}
+
+        request.env["doc.folder"].backfill_recycle_origin_links()
+        request.env["doc.folder"].sync_pending_upload_assignments()
+        pending_folders = request.env["doc.folder"].sudo().search(
+            [("is_pending_uploads", "=", True)]
+        )
+        if not pending_folders:
+            pending_folders = request.env["doc.folder"].get_pending_upload_folder()
+        documents = request.env["doc.document"].search(
+            [
+                ("folder_id", "in", pending_folders.ids),
+                ("employee_id", "!=", False),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ],
+            order="create_date desc",
+        )
+        items = []
+        for document in documents:
+            employee = document.employee_id
+            if document.approval_state == "pending":
+                status = "pending_review"
+            elif document.recycle_origin_folder_id:
+                status = "awaiting_folder_restore"
+            elif document.state in ("draft", "processing"):
+                status = "awaiting_folder"
+            else:
+                status = "awaiting_folder"
+            items.append(
+                {
+                    "id": document.id,
+                    "name": document.name,
+                    "document_type": document.document_type_id.name,
+                    "employee_id": employee.id,
+                    "employee_name": employee.name,
+                    "department": employee.department_id.name or "",
+                    "department_id": employee.department_id.id or False,
+                    "approval_state": document.approval_state,
+                    "state": document.state,
+                    "status": status,
+                    "origin_folder_id": document.recycle_origin_folder_id.id or False,
+                    "origin_folder_name": document.recycle_origin_folder_id.folder_name or "",
+                    "created_at": document.create_date,
                 }
             )
         return {"success": True, "data": {"count": len(items), "items": items}}
@@ -314,16 +382,16 @@ class NextAppController(http.Controller):
             ),
             "total_exceptions": env["doc.compliance.exception"].search_count([]),
             "expiring_documents": env["doc.document"].search_count(
-                [
-                    ("has_expiry", "=", True),
-                    (
-                        "expiry_date",
-                        "<=",
-                        fields.Date.add(fields.Date.context_today(env.user), days=30),
-                    ),
-                    ("state", "=", "approved"),
-                ]
+                _expiring_documents_domain(env)
             ),
+            "expiring_items": [
+                _serialize_expiring_document(document)
+                for document in env["doc.document"].search(
+                    _expiring_documents_domain(env),
+                    order="expiry_date asc, id asc",
+                    limit=50,
+                )
+            ],
             "pending_approvals": env["doc.document.approval"].search_count(
                 [
                     ("state", "=", "pending"),
@@ -332,3 +400,171 @@ class NextAppController(http.Controller):
             ),
         }
         return {"success": True, "data": data}
+
+    @http.route(
+        "/api/workspace-activity",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def api_workspace_activity(self, **kwargs):
+        user = request.env.user
+        if not user.has_group("cleon_document_management.group_document_manager"):
+            return {
+                "success": False,
+                "message": "Document manager access is required.",
+            }
+
+        env = request.env
+        Document = env["doc.document"]
+        Ack = env["doc.document.acknowledgement"]
+
+        def _plain_message(body):
+            text = re.sub(r"<[^>]+>", " ", body or "")
+            return " ".join(text.split())
+
+        activity_log = []
+        messages = env["mail.message"].sudo().search(
+            [
+                ("model", "=", "doc.document"),
+                ("message_type", "in", ["comment", "notification"]),
+            ],
+            order="date desc",
+            limit=40,
+        )
+        for message in messages:
+            document = Document.browse(message.res_id).exists()
+            if not document or not document.active or document.deleted_at:
+                continue
+            text = _plain_message(message.body)
+            if not text:
+                continue
+            lowered = text.lower()
+            if "acknowledged" in lowered:
+                kind = "acknowledgement"
+            elif "submitted" in lowered and "review" in lowered:
+                kind = "approval"
+            elif "approved" in lowered or "rejected" in lowered:
+                kind = "approval"
+            else:
+                kind = "update"
+            activity_log.append(
+                {
+                    "id": message.id,
+                    "kind": kind,
+                    "message": text,
+                    "document_id": document.id,
+                    "document_name": document.name,
+                    "folder_id": document.folder_id.id,
+                    "folder_name": document.folder_id.folder_name,
+                    "folder_type": document.folder_id.folder_type,
+                    "employee_id": document.employee_id.id or False,
+                    "actor_name": message.author_id.name or "System",
+                    "occurred_at": message.date,
+                }
+            )
+
+        recent_documents = Document.search(
+            [
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ],
+            order="create_date desc",
+            limit=10,
+        )
+        existing_doc_ids = {item["document_id"] for item in activity_log}
+        for document in recent_documents:
+            if document.id in existing_doc_ids:
+                continue
+            activity_log.append(
+                {
+                    "id": -(document.id),
+                    "kind": "upload",
+                    "message": f"{document.uploaded_by.name or 'Someone'} added {document.name}",
+                    "document_id": document.id,
+                    "document_name": document.name,
+                    "folder_id": document.folder_id.id,
+                    "folder_name": document.folder_id.folder_name,
+                    "folder_type": document.folder_id.folder_type,
+                    "employee_id": document.employee_id.id or False,
+                    "actor_name": document.uploaded_by.name or "System",
+                    "occurred_at": document.create_date,
+                }
+            )
+        activity_log.sort(key=lambda item: item["occurred_at"], reverse=True)
+        activity_log = activity_log[:40]
+
+        recent_acknowledgements = [
+            {
+                "id": acknowledgement.id,
+                "document_id": acknowledgement.document_id.id,
+                "document_name": acknowledgement.document_id.name,
+                "folder_id": acknowledgement.document_id.folder_id.id,
+                "folder_name": acknowledgement.document_id.folder_id.folder_name,
+                "employee_id": acknowledgement.employee_id.id or False,
+                "employee_name": acknowledgement.employee_id.name
+                or acknowledgement.user_id.name,
+                "acknowledged_at": acknowledgement.acknowledged_at,
+            }
+            for acknowledgement in Ack.search([], order="acknowledged_at desc", limit=30)
+        ]
+
+        pending_acknowledgements = []
+        org_documents = Document.search(
+            [
+                ("folder_id.folder_type", "=", "organizational"),
+                ("folder_id.distribution_status", "=", "active"),
+                ("folder_id.active", "=", True),
+                ("folder_id.deleted_at", "=", False),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+                ("state", "=", "approved"),
+            ],
+            order="write_date desc",
+        )
+        for document in org_documents:
+            folder = document.folder_id
+            audience = folder._get_acknowledgement_audience_users()
+            if not audience:
+                continue
+            acknowledged_ids = set(document.acknowledgement_ids.mapped("user_id").ids)
+            pending_users = audience.filtered(
+                lambda item: item.id not in acknowledged_ids
+            )
+            if not pending_users:
+                continue
+            pending_acknowledgements.append(
+                {
+                    "document_id": document.id,
+                    "document_name": document.name,
+                    "document_type": document.document_type_id.name,
+                    "folder_id": folder.id,
+                    "folder_name": folder.folder_name,
+                    "audience_count": len(audience),
+                    "acknowledged_count": len(audience) - len(pending_users),
+                    "pending_employees": [
+                        {
+                            "id": user.employee_id.id,
+                            "name": user.employee_id.name or user.name,
+                            "user_id": user.id,
+                        }
+                        for user in pending_users
+                        if user.employee_id
+                    ],
+                }
+            )
+
+        return {
+            "success": True,
+            "data": {
+                "activity_log": activity_log,
+                "recent_acknowledgements": recent_acknowledgements,
+                "pending_acknowledgements": pending_acknowledgements,
+                "summary": {
+                    "activity_count": len(activity_log),
+                    "pending_acknowledgement_count": len(pending_acknowledgements),
+                    "recent_acknowledgement_count": len(recent_acknowledgements),
+                },
+            },
+        }

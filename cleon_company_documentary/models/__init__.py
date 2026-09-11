@@ -1,3 +1,4 @@
+from . import res_company
 from . import documentary_tag
 from . import documentary_folder
 from . import documentary_media
@@ -7,3 +8,4 @@ from . import documentary_watch
 from . import documentary_watch_event
 from . import documentary_audit
 from . import documentary_comment
+from . import documentary_like

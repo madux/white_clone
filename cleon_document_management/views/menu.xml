@@ -105,7 +105,7 @@
      
     <menuitem
         id="menu_document_root"
-        name="Document Management2"
+        name="Document Management"
         sequence="5"
         parent="hr_administration.hr_administration_dashboard"
     />

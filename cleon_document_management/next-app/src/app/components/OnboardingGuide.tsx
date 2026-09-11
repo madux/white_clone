@@ -46,8 +46,8 @@ const userSteps: GuideStep[] = [
   {
     id: "search",
     title: "Use workspace search",
-    description: "Find documents, employees, folders, and policies from the search bar in the header.",
-    href: "/pages/my-documents?guide=search",
+    description: "Find your documents from the search field on the My Documents page.",
+    href: "/pages/my-documents?guide=search&tab=files",
     action: "Highlight search",
   },
 ];
@@ -63,7 +63,7 @@ const adminSteps: GuideStep[] = [
   {
     id: "approval-workflow",
     title: "Configure approval workflow",
-    description: "Choose the review mode and assign approvers. Sequential workflows follow the order you set.",
+    description: "Choose the review mode and assign approvers for employee folders. Sequential workflows follow the order you set.",
     href: "/pages/settings?guide=approval-workflow",
     action: "Configure approvals",
   },
@@ -92,7 +92,7 @@ const adminSteps: GuideStep[] = [
     id: "approval-inbox",
     title: "Review your Approval Inbox",
     description: "Assigned documents ready for your decision appear under the inbox icon in the header.",
-    href: "/pages/my-documents?guide=approval-inbox",
+    href: "/pages/dashboard?guide=approval-inbox",
     action: "Highlight approval inbox",
   },
 ];
@@ -339,7 +339,10 @@ export default function OnboardingGuide() {
           </div>
         </div>
         <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-2 text-[10px] font-semibold text-slate-400">
-          {completedCount} of {steps.length} complete · You can restart this guide from Settings
+          {completedCount} of {steps.length} complete ·{" "}
+          {query.data?.is_admin
+            ? "You can restart this guide from Settings"
+            : "You can restart this guide from My Documents"}
         </div>
       </section>
     </div>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="param_r2_account_id" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_account_id</field>
+        <field name="value">dc482b1d5c631fea64ad29b921eccbfc</field>
+    </record>
+    <record id="param_r2_endpoint_url" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_endpoint_url</field>
+        <field name="value">https://dc482b1d5c631fea64ad29b921eccbfc.r2.cloudflarestorage.com</field>
+    </record>
+    <record id="param_r2_access_key_id" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_access_key_id</field>
+        <field name="value">c5ec5b974f235b3428d6960b5d69e478</field>
+    </record>
+    <record id="param_r2_secret_access_key" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_secret_access_key</field>
+        <field name="value">639f13bfb24bb2b93ac1d67fe03e6a86581ad8eddeb2fe7bdef3e6ac083fc999</field>
+    </record>
+    <record id="param_r2_bucket" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_bucket</field>
+        <field name="value">clean-social-gallery</field>
+    </record>
+    <record id="param_r2_region" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_region</field>
+        <field name="value">auto</field>
+    </record>
+    <record id="param_r2_cors_origins" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_cors_origins</field>
+        <field name="value">http://localhost:8069</field>
+    </record>
+</odoo>

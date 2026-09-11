@@ -12,15 +12,25 @@ import {
   Trash2,
   Unlock,
   Copy,
-  X,
 } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { api } from "../../../lib/api";
+import ModalDialog from "./ModalDialog";
+import FolderApprovalFields, {
+  type ApprovalFlow,
+  validateFolderApproval,
+} from "./FolderApprovalFields";
+import OrganizationalAccessScopeFields, {
+  scopeIdsForFolder,
+  validateOrganizationalScope,
+} from "./OrganizationalAccessScopeFields";
 import {
+  useComplianceTargets,
   useDeleteFolder,
   useFolderAction,
+  useSettings,
   useUpdateFolder,
 } from "../../../hooks/useDocuments";
 import { useClickOutside } from "../../../hooks/useClickOutside";
@@ -30,17 +40,50 @@ export default function FolderActions({
   folderName,
   description = "",
   locked = false,
+  folderType,
+  requireUploadApproval = false,
+  approvalFlow = "any",
+  approverIds = [],
+  accessScope = "all_staff",
+  departmentIds = [],
+  gradeIds = [],
+  employeeIds = [],
 }: {
   folderId: number;
   folderName: string;
   description?: string;
   locked?: boolean;
+  folderType?: string;
+  requireUploadApproval?: boolean;
+  approvalFlow?: ApprovalFlow | string;
+  approverIds?: number[];
+  accessScope?: string;
+  departmentIds?: number[];
+  gradeIds?: number[];
+  employeeIds?: number[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(folderName);
   const [folderDescription, setFolderDescription] = useState(description);
+  const [uploadApproval, setUploadApproval] = useState(requireUploadApproval);
+  const [flow, setFlow] = useState<ApprovalFlow>(
+    (approvalFlow as ApprovalFlow) || "any",
+  );
+  const [selectedApproverIds, setSelectedApproverIds] = useState<number[]>(
+    approverIds ?? [],
+  );
+  const [scope, setScope] = useState(accessScope);
+  const [scopeIds, setScopeIds] = useState<number[]>(() =>
+    scopeIdsForFolder({
+      access_scope: accessScope,
+      department_ids: departmentIds,
+      grade_ids: gradeIds,
+      employee_ids: employeeIds,
+    }),
+  );
+  const [scopeSearch, setScopeSearch] = useState("");
 
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -50,8 +93,33 @@ export default function FolderActions({
   const update = useUpdateFolder();
   const remove = useDeleteFolder();
   const action = useFolderAction();
+  const settingsQuery = useSettings();
+  const targets = useComplianceTargets();
 
-  // Handle outside clicks using menuRef for the portal and triggerRef for the toggle button
+  const approverOptions =
+    settingsQuery.data?.approvers?.map(
+      (item: { id: number; name: string; email?: string }) => ({
+        id: item.id,
+        name: item.name,
+        email: item.email,
+      }),
+    ) ?? [];
+
+  const showApprovalFields = folderType === "employee";
+  const showAccessScopeFields = folderType === "organizational";
+
+  const approvalError = validateFolderApproval(
+    uploadApproval,
+    flow,
+    selectedApproverIds,
+  );
+
+  const scopeError = useMemo(
+    () =>
+      showAccessScopeFields ? validateOrganizationalScope(scope, scopeIds) : null,
+    [scope, scopeIds, showAccessScopeFields],
+  );
+
   useClickOutside(menuRef, () => setOpen(false), [triggerRef]);
 
   useEffect(() => {
@@ -72,6 +140,30 @@ export default function FolderActions({
       window.removeEventListener("scroll", updatePosition, true);
     };
   }, [open]);
+
+  const resetEditForm = () => {
+    setName(folderName);
+    setFolderDescription(description);
+    setUploadApproval(requireUploadApproval);
+    setFlow((approvalFlow as ApprovalFlow) || "any");
+    setSelectedApproverIds(approverIds ?? []);
+    setScope(accessScope);
+    setScopeIds(
+      scopeIdsForFolder({
+        access_scope: accessScope,
+        department_ids: departmentIds,
+        grade_ids: gradeIds,
+        employee_ids: employeeIds,
+      }),
+    );
+    setScopeSearch("");
+  };
+
+  const openEditModal = () => {
+    resetEditForm();
+    setEditing(true);
+    setOpen(false);
+  };
 
   const run = async (task: () => Promise<unknown>) => {
     setOpen(false);
@@ -96,10 +188,33 @@ export default function FolderActions({
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (showApprovalFields && approvalError) {
+      window.alert(approvalError);
+      return;
+    }
+    if (scopeError) {
+      window.alert(scopeError);
+      return;
+    }
     await update.mutateAsync({
       id: folderId,
       name: name.trim(),
       description: folderDescription.trim(),
+      ...(showApprovalFields
+        ? {
+            require_upload_approval: uploadApproval,
+            approval_flow: flow,
+            approver_ids: selectedApproverIds,
+          }
+        : {}),
+      ...(showAccessScopeFields
+        ? {
+            access_scope: scope,
+            department_ids: scope === "department" ? scopeIds : [],
+            grade_ids: scope === "grade" ? scopeIds : [],
+            employee_ids: scope === "individual" ? scopeIds : [],
+          }
+        : {}),
     });
     setEditing(false);
     setOpen(false);
@@ -129,7 +244,6 @@ export default function FolderActions({
         <Ellipsis className="h-5 w-5" />
       </button>
 
-      {/* DROPDOWN MENU PORTAL */}
       {open &&
         typeof document !== "undefined" &&
         createPortal(
@@ -138,14 +252,7 @@ export default function FolderActions({
             style={{ top: menuPosition.top, left: menuPosition.left }}
             className="fixed z-[100] w-52 rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-xl shadow-slate-200/60"
           >
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(true);
-                setOpen(false);
-              }}
-              className="menu-item"
-            >
+            <button type="button" onClick={openEditModal} className="menu-item">
               <Edit3 />
               Edit folder
             </button>
@@ -238,32 +345,16 @@ export default function FolderActions({
           document.body,
         )}
 
-      {/* EDIT FOLDER MODAL */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-sm">
-          <form
-            onSubmit={save}
-            className="w-full max-w-md space-y-5 rounded-3xl bg-white p-6 text-left shadow-2xl"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex flex-col items-start">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
-                  Folder settings
-                </p>
-                <h2 className="mt-0.5 text-xl font-bold text-slate-900 leading-tight">
-                  Edit folder
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditing(false)}
-                className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <label className="flex flex-col items-start gap-1.5 w-full text-left">
+        <ModalDialog
+          title="Edit folder"
+          eyebrow="Folder settings"
+          onClose={() => setEditing(false)}
+          size={showApprovalFields || showAccessScopeFields ? "lg" : "md"}
+          titleClassName="text-xl"
+        >
+          <form onSubmit={save} className="space-y-5 text-left">
+            <label className="flex w-full flex-col items-start gap-1.5 text-left">
               <span className="label text-sm font-medium text-slate-700">
                 Folder name
               </span>
@@ -275,7 +366,7 @@ export default function FolderActions({
               />
             </label>
 
-            <label className="flex flex-col items-start gap-1.5 w-full text-left">
+            <label className="flex w-full flex-col items-start gap-1.5 text-left">
               <span className="label text-sm font-medium text-slate-700">
                 Description
               </span>
@@ -286,24 +377,53 @@ export default function FolderActions({
               />
             </label>
 
+            {showAccessScopeFields && (
+              <OrganizationalAccessScopeFields
+                accessScope={scope}
+                onAccessScopeChange={setScope}
+                scopeIds={scopeIds}
+                onScopeIdsChange={setScopeIds}
+                scopeSearch={scopeSearch}
+                onScopeSearchChange={setScopeSearch}
+                departments={targets.data?.departments ?? []}
+                grades={targets.data?.grades ?? []}
+                employees={targets.data?.employees ?? []}
+              />
+            )}
+
+            {showApprovalFields && (
+              <FolderApprovalFields
+                requireUploadApproval={uploadApproval}
+                onRequireUploadApprovalChange={setUploadApproval}
+                approvalFlow={flow}
+                onApprovalFlowChange={setFlow}
+                approverIds={selectedApproverIds}
+                onApproverIdsChange={setSelectedApproverIds}
+                approvers={approverOptions}
+                helperText="Changes apply to new uploads in this folder. Pending uploads for this department use the same chain."
+              />
+            )}
+
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-100"
               >
                 Cancel
               </button>
               <button
-                disabled={update.isPending}
+                disabled={
+                  update.isPending || Boolean(approvalError) || Boolean(scopeError)
+                }
                 type="submit"
-                className="rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white hover:opacity-95 transition-opacity"
+                className="rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {update.isPending ? "Saving..." : "Save changes"}
               </button>
             </div>
           </form>
-        </div>
+        </ModalDialog>
       )}
     </div>
   );

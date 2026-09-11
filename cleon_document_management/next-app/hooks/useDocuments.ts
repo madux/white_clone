@@ -13,11 +13,17 @@ export const QUERY_KEYS = {
   lifecycleDocuments: (lifecycle: string) => ["documents", lifecycle],
   document: (id: number) => ["documents", id],
   documentTypes: ["documentTypes"],
+  documentVersions: (id: number) => ["documents", id, "versions"],
   policies: ["policies"],
   complianceTargets: ["complianceTargets"],
   exceptions: ["compliance", "exceptions"],
   evaluations: ["compliance", "evaluations"],
+  evaluationRuns: ["compliance", "evaluation-runs"],
   approvalInbox: ["admin", "approval-inbox"],
+  pendingEmployeeUploads: ["admin", "pending-employee-uploads"],
+  workspaceActivity: ["admin", "workspace-activity"],
+  myPendingUploads: ["documents", "my-pending-uploads"],
+  myCompliance: ["documents", "my-compliance"],
   onboarding: ["user", "onboarding"],
 };
 
@@ -39,10 +45,11 @@ export function useCurrentUser() {
   });
 }
 
-export function useDashboardStats() {
+export function useDashboardStats(enabled = true) {
   return useQuery({
     queryKey: QUERY_KEYS.stats,
     queryFn: api.dashboardStats,
+    enabled,
   });
 }
 
@@ -53,10 +60,15 @@ export function useFolders() {
   });
 }
 
-export function useDocuments(folderId?: number | null, includeInactive = false) {
+export function useDocuments(
+  folderId?: number | null,
+  includeInactive = false,
+  enabled = true,
+) {
   return useQuery({
     queryKey: [...QUERY_KEYS.documents(folderId), includeInactive],
     queryFn: () => api.getDocuments(folderId, includeInactive),
+    enabled,
   });
 }
 
@@ -74,6 +86,21 @@ export function useMyWorkspace() {
   });
 }
 
+export function useMyPendingUploads() {
+  return useQuery({
+    queryKey: QUERY_KEYS.myPendingUploads,
+    queryFn: () => api.getMyPendingUploads().then((result) => result.data),
+    refetchInterval: 30000,
+  });
+}
+
+export function useMyCompliance() {
+  return useQuery({
+    queryKey: QUERY_KEYS.myCompliance,
+    queryFn: () => api.getMyCompliance().then((result) => result.data),
+  });
+}
+
 export function useAdminAttention(enabled = true) {
   return useQuery({ queryKey: ["admin", "attention"], queryFn: () => api.getAdminAttention().then((result) => result.data), enabled, refetchInterval: 30000 });
 }
@@ -84,6 +111,24 @@ export function useApprovalInbox(enabled = true) {
     queryFn: () => api.getApprovalInbox().then((result) => result.data),
     enabled,
     refetchInterval: 30000,
+  });
+}
+
+export function usePendingEmployeeUploads(enabled = true) {
+  return useQuery({
+    queryKey: QUERY_KEYS.pendingEmployeeUploads,
+    queryFn: () => api.getPendingEmployeeUploads().then((result) => result.data),
+    enabled,
+    refetchInterval: 30000,
+  });
+}
+
+export function useWorkspaceActivity(enabled = true) {
+  return useQuery({
+    queryKey: QUERY_KEYS.workspaceActivity,
+    queryFn: () => api.getWorkspaceActivity().then((result) => result.data),
+    enabled,
+    refetchInterval: 60000,
   });
 }
 
@@ -177,10 +222,19 @@ export function useCreateDocumentType() {
   });
 }
 
-export function usePolicies() {
+export function useDocumentVersions(documentId?: number | null) {
+  return useQuery({
+    queryKey: QUERY_KEYS.documentVersions(documentId ?? 0),
+    queryFn: () => api.getDocumentVersions(documentId as number),
+    enabled: Boolean(documentId && documentId > 0),
+  });
+}
+
+export function usePolicies(enabled = true) {
   return useQuery({
     queryKey: QUERY_KEYS.policies,
     queryFn: api.getPolicies,
+    enabled,
   });
 }
 
@@ -191,10 +245,11 @@ export function usePolicyTypes() {
   });
 }
 
-export function useComplianceTargets() {
+export function useComplianceTargets(enabled = true) {
   return useQuery({
     queryKey: QUERY_KEYS.complianceTargets,
     queryFn: api.getComplianceTargets,
+    enabled,
   });
 }
 
@@ -223,33 +278,65 @@ export function useExceptions() {
   return useQuery({ queryKey: QUERY_KEYS.exceptions, queryFn: api.getExceptions });
 }
 
+export function useApproveException() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.approveException,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations });
+    },
+  });
+}
+
+export function useRejectException() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.rejectException,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations });
+    },
+  });
+}
+
 export function useCreateException() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: api.createException, onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }) });
+  return useMutation({ mutationFn: api.createException, onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations }); } });
 }
 
 export function useDeactivateException() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: api.deactivateException, onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }) });
+  return useMutation({ mutationFn: api.deactivateException, onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations }); } });
 }
 
 export function useReactivateException() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: api.reactivateException, onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }) });
+  return useMutation({ mutationFn: api.reactivateException, onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations }); } });
 }
 
 export function useDeleteException() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: api.deleteException, onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }) });
+  return useMutation({ mutationFn: api.deleteException, onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations }); } });
 }
 
-export function useEvaluations() {
-  return useQuery({ queryKey: QUERY_KEYS.evaluations, queryFn: api.getEvaluations });
+export function useEvaluations(employeeId?: number) {
+  return useQuery({
+    queryKey: [...QUERY_KEYS.evaluations, employeeId ?? "all"],
+    queryFn: () => api.getEvaluations(employeeId),
+  });
+}
+
+export function useEvaluationRuns(policyId?: number) {
+  return useQuery({
+    queryKey: [...QUERY_KEYS.evaluationRuns, policyId ?? "all"],
+    queryFn: () => api.getEvaluationRuns(policyId),
+  });
 }
 
 export function useEvaluatePolicy() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: api.evaluatePolicy, onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }); } });
+  return useMutation({ mutationFn: api.evaluatePolicy, onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluationRuns }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.policies }); } });
 }
 
 export function useCreateFolder() {
@@ -259,6 +346,7 @@ export function useCreateFolder() {
     mutationFn: api.createFolder,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
     },
   });
 }
@@ -272,6 +360,17 @@ export function useRemoveEmployeesFromFolder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.removeEmployeesFromFolder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+  });
+}
+
+export function useMoveEmployeesBetweenFolders() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.moveEmployeesBetweenFolders,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
       queryClient.invalidateQueries({ queryKey: ["documents"] });
@@ -294,8 +393,20 @@ export function useUpdateFolder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.updateFolder,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+      invalidateDocumentQueries(queryClient);
+    },
   });
+}
+
+function invalidateDocumentQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["documents"] });
+  queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+  queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
+  queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats });
+  queryClient.invalidateQueries({ queryKey: ["quick-access"] });
+  queryClient.invalidateQueries({ queryKey: ["admin", "attention"] });
 }
 
 export function useFolderAction() {
@@ -303,10 +414,23 @@ export function useFolderAction() {
   return useMutation({
     mutationFn: api.folderAction,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-      queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
-      queryClient.invalidateQueries({ queryKey: ["quick-access"] });
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
+      queryClient.invalidateQueries({ queryKey: ["folders", "recycle_bin"] });
+      queryClient.invalidateQueries({ queryKey: ["documents", "recycle_bin"] });
+    },
+  });
+}
+
+export function useMoveRecycledFolderDocuments() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.moveRecycledFolderDocuments,
+    onSuccess: () => {
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
+      queryClient.invalidateQueries({ queryKey: ["folders", "recycle_bin"] });
+      queryClient.invalidateQueries({ queryKey: ["documents", "recycle_bin"] });
     },
   });
 }
@@ -320,6 +444,7 @@ export function useCreateDocument() {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.documents(variables.folder_id),
       });
+      invalidateDocumentQueries(queryClient);
     },
   });
 }
@@ -330,7 +455,7 @@ export function useUploadDocument() {
     mutationFn: api.uploadDocument,
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documents(variables.folder_id) });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+      invalidateDocumentQueries(queryClient);
     },
   });
 }
@@ -340,8 +465,9 @@ export function useUploadMyDocument() {
   return useMutation({
     mutationFn: api.uploadMyDocument,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "attention"] });
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.myPendingUploads });
     },
   });
 }
@@ -351,9 +477,8 @@ export function useUploadEmployeeDocument() {
   return useMutation({
     mutationFn: api.uploadEmployeeDocument,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-      queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
     },
   });
 }
@@ -363,8 +488,9 @@ export function useRequestDocumentApproval() {
   return useMutation({
     mutationFn: api.requestDocumentApproval,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "attention"] });
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.approvalInbox });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
     },
   });
 }
@@ -374,9 +500,7 @@ export function useDeleteDocument() {
 
   return useMutation({
     mutationFn: api.deleteDocument,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-    },
+    onSuccess: () => invalidateDocumentQueries(queryClient),
   });
 }
 
@@ -384,20 +508,39 @@ export function useDocumentAction() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.documentAction,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats });
-      queryClient.invalidateQueries({ queryKey: ["quick-access"] });
-    },
+    onSuccess: () => invalidateDocumentQueries(queryClient),
+  });
+}
+
+export function useMoveDocuments() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.moveDocuments,
+    onSuccess: () => invalidateDocumentQueries(queryClient),
   });
 }
 
 export function useAcknowledgeDocument() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: api.acknowledgeDocument, onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] }) });
+  return useMutation({
+    mutationFn: api.acknowledgeDocument,
+    onSuccess: () => {
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.myPendingUploads });
+    },
+  });
 }
 
 export function useReviewDocument() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: api.reviewDocument, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] }); queryClient.invalidateQueries({ queryKey: ["documents"] }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats }); } });
+  return useMutation({
+    mutationFn: api.reviewDocument,
+    onSuccess: () => {
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.approvalInbox });
+      queryClient.invalidateQueries({ queryKey: ["admin", "attention"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+    },
+  });
 }

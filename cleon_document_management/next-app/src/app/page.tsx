@@ -1,6 +1,18 @@
-import Dashboard from "@/app/components/Dashboard";
-import AdminOnly from "@/app/components/AdminOnly";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Home() {
-  return <AdminOnly><Dashboard /></AdminOnly>;
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/pages/dashboard");
+  }, [router]);
+
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center text-sm font-semibold text-slate-400">
+      Loading dashboard...
+    </div>
+  );
 }

@@ -53,24 +53,27 @@ class DocumentActions(http.Controller):
         if not document:
             return {"success": False, "message": "Document not found."}
         approval_model = request.env["doc.document.approval"]
+        flow = document._get_effective_approval_flow()
         approval = approval_model.search(
             [
                 ("document_id", "=", document.id),
                 ("approver_id", "=", request.env.user.id),
-                ("state", "in", ["pending", "waiting"]),
+                ("state", "=", "pending"),
             ],
             limit=1,
         )
-        # A document manager may review a pending upload even when the folder
-        # was configured without explicitly naming that manager as an approver.
         manager_override = False
-        if not approval and request.env.user.has_group(
-            "cleon_document_management.group_document_manager"
+        if (
+            not approval
+            and flow != "sequential"
+            and request.env.user.has_group(
+                "cleon_document_management.group_document_manager"
+            )
         ):
             approval = approval_model.search(
                 [
                     ("document_id", "=", document.id),
-                    ("state", "in", ["pending", "waiting"]),
+                    ("state", "=", "pending"),
                 ],
                 order="sequence, id",
                 limit=1,
@@ -79,6 +82,19 @@ class DocumentActions(http.Controller):
                 approval and approval.approver_id != request.env.user
             )
         if not approval:
+            waiting = approval_model.search(
+                [
+                    ("document_id", "=", document.id),
+                    ("approver_id", "=", request.env.user.id),
+                    ("state", "=", "waiting"),
+                ],
+                limit=1,
+            )
+            if waiting:
+                return {
+                    "success": False,
+                    "message": "Previous approval steps must be completed before you can review this document.",
+                }
             return {
                 "success": False,
                 "message": "No review task is assigned to this user.",
@@ -98,6 +114,8 @@ class DocumentActions(http.Controller):
         elif action == "reject":
             approval.comment = reason or False
             approval.action_reject()
+        if action == "approve":
+            request.env["doc.folder"].sync_pending_upload_assignments()
         return {
             "success": True,
             "data": {
@@ -138,6 +156,50 @@ class DocumentActions(http.Controller):
         return {"success": True, "message": "Document updated successfully."}
 
     @http.route(
+        "/api/move-documents", type="json", auth="user", methods=["POST"], csrf=False
+    )
+    def move_documents(self, document_ids=None, destination_folder_id=None, **kwargs):
+        """Move one or more documents to another folder of the same kind."""
+        if not request.env.user.has_group(
+            "cleon_document_management.group_document_manager"
+        ):
+            return {"success": False, "message": "Document manager access is required."}
+
+        ids = [int(value) for value in (document_ids or []) if str(value).isdigit()]
+        destination = request.env["doc.folder"].browse(
+            int(destination_folder_id or 0)
+        ).exists()
+        documents = request.env["doc.document"].browse(ids).exists()
+        if not ids or len(documents) != len(set(ids)):
+            return {"success": False, "message": "Select at least one valid document."}
+        if not destination:
+            return {"success": False, "message": "Destination folder not found."}
+        if not destination.active or destination.deleted_at:
+            return {"success": False, "message": "The destination folder is not active."}
+
+        source_types = set(documents.mapped("folder_id.folder_type"))
+        if len(source_types) != 1 or destination.folder_type not in source_types:
+            return {
+                "success": False,
+                "message": "Documents can only be moved between folders of the same type.",
+            }
+        if destination.folder_type != "organizational":
+            return {
+                "success": False,
+                "message": "Move employees from the employee folder view so their files move with them.",
+            }
+
+        try:
+            documents.write({"folder_id": destination.id})
+        except Exception as error:
+            return {"success": False, "message": str(error)}
+        return {
+            "success": True,
+            "message": f"Moved {len(documents)} document(s) to {destination.folder_name}.",
+            "data": {"document_ids": documents.ids, "folder_id": destination.id},
+        }
+
+    @http.route(
         "/api/delete-document", type="json", auth="user", methods=["POST"], csrf=False
     )
     def delete_document(self, id=None, **kwargs):
@@ -172,10 +234,31 @@ class DocumentActions(http.Controller):
         elif action == "deactivate":
             document.action_deactivate()
         elif action == "restore":
+            if not request.env.user.has_group(
+                "cleon_document_management.group_document_manager"
+            ) and not document._user_owns_document():
+                return {
+                    "success": False,
+                    "message": "You can only restore your own documents.",
+                }
             document.action_restore()
         elif action == "activate":
+            if not request.env.user.has_group(
+                "cleon_document_management.group_document_manager"
+            ) and not document._user_owns_document():
+                return {
+                    "success": False,
+                    "message": "You can only restore your own documents.",
+                }
             document.action_restore()
         elif action == "permanent_delete":
+            if not request.env.user.has_group(
+                "cleon_document_management.group_document_manager"
+            ):
+                return {
+                    "success": False,
+                    "message": "Document manager access is required.",
+                }
             document.unlink()
         else:
             return {"success": False, "message": "Unsupported document action."}
@@ -189,45 +272,29 @@ class DocumentActions(http.Controller):
         csrf=False,
     )
     def document_lifecycle(self, lifecycle="archived", **kwargs):
-        if not request.env.user.has_group(
+        user = request.env.user
+        is_manager = user.has_group(
             "cleon_document_management.group_document_manager"
-        ):
-            return {"success": False, "message": "Document manager access is required."}
+        )
         domain = (
             [("deleted_at", "!=", False)]
             if lifecycle == "recycle_bin"
             else [("distribution_status", "=", "archived"), ("deleted_at", "=", False)]
         )
+        if not is_manager:
+            employee = user.employee_id
+            domain = domain + [
+                "|",
+                ("owner_id", "=", user.id),
+                ("employee_id", "=", employee.id if employee else 0),
+            ]
         documents = request.env["doc.document"].with_context(active_test=False).search(
             domain, order="write_date desc"
         )
         return {
             "success": True,
             "data": [
-                {
-                    "id": doc.id,
-                    "name": doc.name,
-                    "description": doc.description or "",
-                    "folder_id": doc.folder_id.id,
-                    "folder_name": doc.folder_id.folder_name,
-                    "employee_id": doc.employee_id.id or False,
-                    "employee_name": doc.employee_id.name or "N/A",
-                    "document_type_id": doc.document_type_id.id,
-                    "document_type": doc.document_type_id.name,
-                    "state": doc.state,
-                    "approval_state": doc.approval_state,
-                    "ocr_state": doc.ocr_state,
-                    "has_expiry": doc.has_expiry,
-                    "expiry_date": doc.expiry_date,
-                    "mime_type": doc.mime_type,
-                    "file_size": doc.file_size,
-                    "attachment_id": doc.attachment_id.id,
-                    "created_at": doc.create_date,
-                    "write_date": doc.write_date,
-                    "deleted_at": doc.deleted_at,
-                    "recycle_bin_until": doc.recycle_bin_until,
-                    "distribution_status": doc.distribution_status,
-                }
-                for doc in documents
+                document.serialize_for_api(request.env.user)
+                for document in documents
             ],
         }

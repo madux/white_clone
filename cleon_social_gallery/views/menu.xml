@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem
+        id="menu_social_gallery_root"
+        name="Social Gallery"
+        sequence="50"
+    />
+    <record id="menu_social_gallery_root" model="ir.ui.menu">
+        <field name="category_name">CleonHR-Engagement</field>
+    </record>
+
+    <record id="action_social_gallery_workspace" model="ir.actions.act_url">
+        <field name="name">Social Gallery</field>
+        <field name="url">/social-gallery</field>
+        <field name="target">self</field>
+    </record>
+
+    <menuitem
+        id="menu_social_gallery_workspace"
+        name="Gallery Workspace"
+        parent="menu_social_gallery_root"
+        action="action_social_gallery_workspace"
+        sequence="1"
+    />
+
+    <menuitem
+        id="menu_social_gallery_albums"
+        name="Albums"
+        parent="menu_social_gallery_root"
+        action="action_social_gallery_album"
+        sequence="10"
+        groups="cleon_social_gallery.group_social_gallery_manager"
+    />
+
+    <menuitem
+        id="menu_social_gallery_media"
+        name="Media"
+        parent="menu_social_gallery_root"
+        action="action_social_gallery_media"
+        sequence="20"
+        groups="cleon_social_gallery.group_social_gallery_manager"
+    />
+</odoo>

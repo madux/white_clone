@@ -19,6 +19,7 @@ class CompanyDocumentaryWatchEvent(models.Model):
         ("favorite", "Favorited"),
         ("comment", "Commented"),
         ("download", "Downloaded"),
+        ("caption", "Caption Used"),
     ], required=True, index=True)
     position_seconds = fields.Float(default=0)
     delta_seconds = fields.Float(default=0)

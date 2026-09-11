@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="param_r2_account_id" model="ir.config_parameter">
+        <field name="key">company_documentary.r2_account_id</field>
+        <field name="value">dc482b1d5c631fea64ad29b921eccbfc</field>
+    </record>
+    <record id="param_r2_endpoint_url" model="ir.config_parameter">
+        <field name="key">company_documentary.r2_endpoint_url</field>
+        <field name="value">https://dc482b1d5c631fea64ad29b921eccbfc.r2.cloudflarestorage.com</field>
+    </record>
+    <record id="param_r2_access_key_id" model="ir.config_parameter">
+        <field name="key">company_documentary.r2_access_key_id</field>
+        <field name="value">02e590ad029388af7c61d6d8ad6784cf</field>
+    </record>
+    <record id="param_r2_secret_access_key" model="ir.config_parameter">
+        <field name="key">company_documentary.r2_secret_access_key</field>
+        <field name="value">03f464ade4a13ebf543e2cfb1580c965b92ef402b9bc6f367645bb457b39ee73</field>
+    </record>
+    <record id="param_r2_bucket" model="ir.config_parameter">
+        <field name="key">company_documentary.r2_bucket</field>
+        <field name="value">clean-company-documentary</field>
+    </record>
+    <record id="param_r2_region" model="ir.config_parameter">
+        <field name="key">company_documentary.r2_region</field>
+        <field name="value">auto</field>
+    </record>
+    <record id="param_r2_cors_origins" model="ir.config_parameter">
+        <field name="key">company_documentary.r2_cors_origins</field>
+        <field name="value">http://localhost:8069</field>
+    </record>
+</odoo>

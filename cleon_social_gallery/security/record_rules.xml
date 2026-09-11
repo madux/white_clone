@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="social_gallery_album_company_rule" model="ir.rule">
+        <field name="name">Social Gallery Album: company</field>
+        <field name="model_id" ref="model_social_gallery_album"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('cleon_social_gallery.group_social_gallery_user'))]"/>
+    </record>
+
+    <record id="social_gallery_media_company_rule" model="ir.rule">
+        <field name="name">Social Gallery Media: company</field>
+        <field name="model_id" ref="model_social_gallery_media"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('cleon_social_gallery.group_social_gallery_user'))]"/>
+    </record>
+</odoo>

@@ -2,35 +2,41 @@
 
 import {
   Check,
-  LoaderCircle,
   MessageCircle,
   Search,
+  Trash2,
   UploadCloud,
 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import type { UploadBatchMetadata, UploadQueueItem } from "../../../../hooks/useUploadManager";
 import type { DocumentaryFolder, Tag } from "../../../../lib/types";
 import { api } from "../../../../lib/api";
 import { AudiencePicker, type AudienceScope } from "./AudiencePicker";
 import { ModalShell } from "./ModalShell";
 
+function fileKey(file: File) {
+  return `${file.name}-${file.size}-${file.lastModified}`;
+}
+
+function stripExtension(name: string) {
+  return name.replace(/\.[^/.]+$/, "");
+}
+
 export function UploadModal({
   folders,
   selectedFolder,
   onClose,
-  onSuccess,
-  onError,
+  onStartBatch,
 }: {
   folders: DocumentaryFolder[];
   selectedFolder: DocumentaryFolder | null;
   onClose: () => void;
-  onSuccess: () => void;
-  onError: (message: string) => void;
+  onStartBatch: (queue: UploadQueueItem[], metadata: UploadBatchMetadata) => void;
 }) {
-  const [folderId, setFolderId] = useState(
-    String(selectedFolder?.id || folders[0]?.id || ""),
-  );
-  const [files, setFiles] = useState<File[]>([]);
-  const [title, setTitle] = useState("");
+  const editableFolders = folders.filter((folder) => folder.can_edit);
+  const initialFolderId = String(selectedFolder?.id || editableFolders[0]?.id || "");
+  const [defaultFolderId, setDefaultFolderId] = useState(initialFolderId);
+  const [queue, setQueue] = useState<UploadQueueItem[]>([]);
   const [description, setDescription] = useState("");
   const [scope, setScope] = useState("inherited");
   const [accessScope, setAccessScope] = useState<AudienceScope>("company");
@@ -47,10 +53,6 @@ export function UploadModal({
   const [tagSearch, setTagSearch] = useState("");
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [tagIds, setTagIds] = useState<number[]>([]);
-  const [progress, setProgress] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const [currentUploadId, setCurrentUploadId] = useState<number | null>(null);
-  const cancelRequested = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const subtitleInputRef = useRef<HTMLInputElement>(null);
@@ -62,235 +64,92 @@ export function UploadModal({
       .catch(() => undefined);
   }, [tagSearch]);
 
-  async function autoThumbnail(file: File): Promise<Blob | null> {
-    if (thumbnailFile) return thumbnailFile;
-    return new Promise((resolve) => {
-      const video = document.createElement("video");
-      const source = URL.createObjectURL(file);
-      video.preload = "metadata";
-      video.muted = true;
-      video.src = source;
-      video.onloadedmetadata = () => {
-        video.currentTime = Math.min(5, video.duration || 5);
-      };
-      video.onseeked = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 360;
-        canvas
-          .getContext("2d")
-          ?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(
-          (blob) => {
-            URL.revokeObjectURL(source);
-            resolve(blob);
-          },
-          "image/jpeg",
-          0.82,
-        );
-      };
-      video.onerror = () => {
-        URL.revokeObjectURL(source);
-        resolve(null);
-      };
-    });
-  }
-
-  async function uploadAsset(
-    mediaId: number,
-    blob: Blob,
-    filename: string,
-    mimeType: string,
-    assetType: "thumbnail" | "subtitle",
-  ) {
-    const signed =
-      assetType === "thumbnail"
-        ? await api.assetUrl(mediaId, "thumbnail", filename, mimeType)
-        : await api.subtitle(mediaId, {
-            name: filename,
-            language: subtitleLanguage,
-            format: filename.toLowerCase().endsWith(".srt") ? "srt" : "vtt",
-            filename,
-            mime_type: mimeType,
-          });
-    const response = await fetch(signed.url, {
-      method: "PUT",
-      body: blob,
-      headers: { "Content-Type": mimeType },
-    });
-    if (!response.ok)
-      throw new Error(`The ${assetType} could not be uploaded.`);
-  }
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!files.length || !folderId) return;
-    setUploading(true);
-    cancelRequested.current = false;
-    try {
-      let completedFiles = 0;
-      for (const file of files) {
-        const init = await api.initiateUpload({
-          folder_id: Number(folderId),
-          filename: file.name,
-          mime_type: file.type,
-          file_size: file.size,
-          title: title.trim() || file.name.replace(/\.[^/.]+$/, ""),
-          description: description.trim(),
-          mandatory,
-          completion_threshold: Number(threshold) || 85,
-          comments_enabled: commentsEnabled,
-          scope_mode: scope === "inherited" ? "inherited" : "override",
-          access_scope: scope === "inherited" ? "company" : accessScope,
-          department_ids: scope === "inherited" ? [] : departmentIds,
-          grade_ids: scope === "inherited" ? [] : gradeIds,
-          employee_ids: scope === "inherited" ? [] : employeeIds,
-          tag_ids: tagIds,
-          download_policy: allowDownload ? "allow" : "deny",
-        });
-        setCurrentUploadId(init.upload_id);
-        const parts: Array<{ PartNumber: number; ETag: string }> = [];
-        for (
-          let partNumber = 1;
-          partNumber <= init.total_parts;
-          partNumber += 1
-        ) {
-          if (cancelRequested.current) throw new Error("Upload cancelled.");
-          const start = (partNumber - 1) * init.part_size;
-          const chunk = file.slice(
-            start,
-            Math.min(start + init.part_size, file.size),
-          );
-          const signed = await api.partUrl(init.upload_id, partNumber);
-          const response = await fetch(signed.url, {
-            method: "PUT",
-            body: chunk,
-            headers: { "Content-Type": file.type },
-          });
-          if (!response.ok)
-            throw new Error(
-              `Part ${partNumber} of ${file.name} could not be uploaded.`,
-            );
-          const etag = response.headers.get("ETag")?.replaceAll('"', "");
-          if (!etag)
-            throw new Error(
-              "Cloudflare did not expose the upload ETag. Add ETag to the bucket CORS expose headers.",
-            );
-          const part = { PartNumber: partNumber, ETag: etag };
-          parts.push(part);
-          await api.recordUploadPart(init.upload_id, part);
-          setProgress(
-            Math.round(
-              ((completedFiles + partNumber / init.total_parts) /
-                files.length) *
-                100,
-            ),
-          );
-        }
-        const completed = await api.completeUpload(init.upload_id, parts);
-        const generated = await autoThumbnail(file);
-        if (generated)
-          await uploadAsset(
-            completed.id,
-            generated,
-            thumbnailFile?.name || "thumbnail.jpg",
-            "image/jpeg",
-            "thumbnail",
-          );
-        if (subtitleFile)
-          await uploadAsset(
-            completed.id,
-            subtitleFile,
-            subtitleFile.name,
-            subtitleFile.type || "text/vtt",
-            "subtitle",
-          );
-        setCurrentUploadId(null);
-        completedFiles += 1;
-      }
-      onSuccess();
-    } catch (error) {
-      if (cancelRequested.current) {
-        setUploading(false);
-        setCurrentUploadId(null);
-        return;
-      }
-      onError(
-        error instanceof Error ? error.message : "The video upload failed.",
-      );
-      setUploading(false);
-    }
-  }
-
-  async function cancelUpload() {
-    cancelRequested.current = true;
-    if (currentUploadId)
-      await api.abortUpload(currentUploadId).catch(() => undefined);
-    setCurrentUploadId(null);
-    setUploading(false);
-  }
-
-  const chooseVideos = (items: File[]) => {
+  const addFiles = (items: File[]) => {
     const chosen = items.filter((item) => item.type.startsWith("video/"));
-    if (chosen.length) setFiles(chosen);
+    if (!chosen.length) return;
+    setQueue((prev) => {
+      const existing = new Set(prev.map((item) => fileKey(item.file)));
+      const next = chosen
+        .filter((file) => !existing.has(fileKey(file)))
+        .map((file) => ({
+          id: `${fileKey(file)}-${Math.random().toString(36).slice(2, 8)}`,
+          file,
+          folderId: defaultFolderId,
+          title: stripExtension(file.name),
+        }));
+      return [...prev, ...next];
+    });
   };
+
+  const updateItem = (id: string, patch: Partial<UploadQueueItem>) => {
+    setQueue((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  };
+
+  const removeItem = (id: string) => {
+    setQueue((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const applyDefaultFolderToAll = () => {
+    setQueue((prev) => prev.map((item) => ({ ...item, folderId: defaultFolderId })));
+  };
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!queue.length) return;
+    if (queue.some((item) => !item.folderId)) return;
+
+    onStartBatch(queue, {
+      description,
+      mandatory,
+      completionThreshold: Number(threshold) || 85,
+      commentsEnabled,
+      scope: scope === "inherited" ? "inherited" : "override",
+      accessScope,
+      departmentIds,
+      gradeIds,
+      employeeIds,
+      tagIds,
+      allowDownload,
+      thumbnailFile,
+      subtitleFile,
+      subtitleLanguage,
+    });
+    onClose();
+  }
 
   return (
     <ModalShell
       eyebrow="Add to the library"
-      title="Upload a company video"
-      onClose={uploading ? cancelUpload : onClose}
+      title="Upload company videos"
+      onClose={onClose}
     >
       <form className="modal-form" onSubmit={submit}>
-        <label>
-          Destination folder
-          <select
-            value={folderId}
-            onChange={(event) => setFolderId(event.target.value)}
-            required
-          >
-            <option value="">Choose a folder</option>
-            {folders
-              .filter((folder) => folder.can_edit)
-              .map((folder) => (
-                <option value={folder.id} key={folder.id}>
-                  {folder.name}
-                </option>
-              ))}
-          </select>
-        </label>
         <div
           className="file-dropzone"
           onClick={() => inputRef.current?.click()}
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
             event.preventDefault();
-            chooseVideos(Array.from(event.dataTransfer.files));
+            addFiles(Array.from(event.dataTransfer.files));
           }}
         >
-          {files.length ? (
+          {queue.length ? (
             <>
               <div className="file-drop-icon selected">
                 <Check size={21} />
               </div>
               <strong>
-                {files.length} video{files.length === 1 ? "" : "s"} selected
+                {queue.length} video{queue.length === 1 ? "" : "s"} selected
               </strong>
-              <span>
-                {files
-                  .slice(0, 2)
-                  .map((file) => file.name)
-                  .join(", ")}
-                {files.length > 2 ? " …" : ""}
-              </span>
+              <span>Drop more videos or click to add another batch</span>
             </>
           ) : (
             <>
               <div className="file-drop-icon">
                 <UploadCloud size={21} />
               </div>
-              <strong>Drop a video here or browse</strong>
-              <span>MP4, WebM, or MOV up to 10 GB</span>
+              <strong>Drop videos here or browse</strong>
+              <span>MP4, WebM, or MOV · select multiple</span>
             </>
           )}
           <input
@@ -299,20 +158,80 @@ export function UploadModal({
             multiple
             accept="video/mp4,video/webm,video/quicktime"
             hidden
-            onChange={(event) =>
-              chooseVideos(Array.from(event.target.files || []))
-            }
+            onChange={(event) => {
+              addFiles(Array.from(event.target.files || []));
+              event.target.value = "";
+            }}
           />
         </div>
-        <label>
-          Title
-          <input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="Give this video a clear title"
-            required
-          />
-        </label>
+
+        <div className="upload-defaults">
+          <label>
+            Default folder for new files
+            <select
+              value={defaultFolderId}
+              onChange={(event) => setDefaultFolderId(event.target.value)}
+            >
+              <option value="">Choose a folder</option>
+              {editableFolders.map((folder) => (
+                <option value={folder.id} key={folder.id}>
+                  {folder.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {queue.length > 1 && (
+            <button type="button" className="text-button" onClick={applyDefaultFolderToAll}>
+              Apply default to all
+            </button>
+          )}
+        </div>
+
+        {queue.length > 0 && (
+          <div className="upload-queue">
+            {queue.map((item) => (
+              <div key={item.id} className="upload-queue-row">
+                <div className="upload-queue-main">
+                  <strong>{item.file.name}</strong>
+                  <span>{(item.file.size / 1024 / 1024).toFixed(1)} MB</span>
+                </div>
+                <label>
+                  Title
+                  <input
+                    value={item.title}
+                    onChange={(event) => updateItem(item.id, { title: event.target.value })}
+                    placeholder="Video title"
+                    required
+                  />
+                </label>
+                <label>
+                  Folder
+                  <select
+                    value={item.folderId}
+                    onChange={(event) => updateItem(item.id, { folderId: event.target.value })}
+                    required
+                  >
+                    <option value="">Choose a folder</option>
+                    {editableFolders.map((folder) => (
+                      <option value={folder.id} key={folder.id}>
+                        {folder.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="icon-button danger"
+                  aria-label={`Remove ${item.file.name}`}
+                  onClick={() => removeItem(item.id)}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="upload-options-grid">
           <label>
             <span>Access</span>
@@ -486,7 +405,7 @@ export function UploadModal({
           )}
         </div>
         <label>
-          Description <span className="optional">Optional</span>
+          Description <span className="optional">Optional · applies to all</span>
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
@@ -494,32 +413,15 @@ export function UploadModal({
             rows={3}
           />
         </label>
-        {uploading && (
-          <div className="upload-progress">
-            <div className="progress-label">
-              <span>Uploading securely…</span>
-              <strong>{progress}%</strong>
-            </div>
-            <div className="progress-track">
-              <span style={{ width: `${progress}%` }} />
-            </div>
-          </div>
-        )}
         <div className="modal-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={uploading ? cancelUpload : onClose}
-          >
-            {" "}
-            {uploading ? "Cancel upload" : "Cancel"}
+          <button type="button" className="secondary-button" onClick={onClose}>
+            Cancel
           </button>
           <button
             className="primary-button"
-            disabled={uploading || !files.length || !folderId}
+            disabled={!queue.length || queue.some((item) => !item.folderId)}
           >
-            {uploading && <LoaderCircle className="spin" size={16} />} Upload{" "}
-            {files.length || ""} video{files.length === 1 ? "" : "s"}
+            Upload {queue.length || ""} video{queue.length === 1 ? "" : "s"}
           </button>
         </div>
       </form>

@@ -99,10 +99,16 @@
             <field name="category_name">CleonHR-HR Admin</field>
         </record>
 
+    <record id="action_hr_admin_social_gallery" model="ir.actions.act_url">
+        <field name="name">Social Gallery</field>
+        <field name="url">/social-gallery</field>
+        <field name="target">self</field>
+    </record>
+
     <menuitem
         id="hr_admin_social_gallery"
         name="Social Gallery"
-        action="hr_administration.action_view_employee_kanban_custom"
+        action="hr_administration.action_hr_admin_social_gallery"
         sequence="120"
         parent="hr_administration.hr_administration_dashboard"
     />

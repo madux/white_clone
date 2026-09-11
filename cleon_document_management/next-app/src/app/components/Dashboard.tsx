@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Activity,
   AlertCircle,
   ArrowUpRight,
   BarChart3,
@@ -16,10 +17,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { documentViewHref } from "../../../lib/documentLinks";
+import { formatStatusLabel } from "../../../lib/formatLabel";
 import {
   useDashboardStats,
   useDocuments,
   useFolders,
+  useWorkspaceActivity,
 } from "../../../hooks/useDocuments";
 
 function LoadingBlock({ className = "" }: { className?: string }) {
@@ -42,6 +46,16 @@ function formatFileSize(bytes: number) {
   return `${(bytes / 1000000).toFixed(1)} MB`;
 }
 
+function formatActivityWhen(value: string) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(String(value).replace(" ", "T")));
+}
+
 const statusStyles = {
   approved: "bg-pink-50 text-brand-pink",
   processing: "bg-amber-50 text-amber-700",
@@ -55,6 +69,7 @@ export default function Dashboard() {
   const stats = useDashboardStats();
   const folders = useFolders();
   const documents = useDocuments();
+  const workspaceActivity = useWorkspaceActivity();
   const dataError = stats.error || folders.error || documents.error;
   const documentRows = documents.data ?? [];
   const approvedDocuments = documentRows.filter(
@@ -96,6 +111,16 @@ export default function Dashboard() {
     },
   ];
   const chartMax = Math.max(...statusMetrics.map((metric) => metric.value), 1);
+  const yTicks =
+    chartMax <= 5
+      ? Array.from({ length: chartMax + 1 }, (_, index) => index)
+      : (() => {
+          const step = Math.ceil(chartMax / 4);
+          const top = step * 4;
+          return [0, step, step * 2, step * 3, top];
+        })();
+  const chartScaleMax = yTicks[yTicks.length - 1] || 1;
+  const totalDocuments = documentRows.length;
   const statCards: Array<{
     label: string;
     value: number | undefined;
@@ -131,14 +156,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-full mx-auto w-full max-w-[1650px] space-y-8 bg-slate-50 p-6">
       <section className="rounded-2xl shadow-brand-secondary/10">
-        <div className="flex justify-between items-center">
-          <div className="flex flex-col gap-2">
-            <span className="text-3xl font-medium">Dashboard</span>
-            <span className="text-slate-400 font-light">
-              Centralized repository for employee files, compliance policies,
-              and audits.
-            </span>
-          </div>
+        <div className="flex justify-end items-center">
           <div className="flex gap-4">
             <Link
               href="/pages/organization?create=1"
@@ -254,59 +272,71 @@ export default function Dashboard() {
                 Activity
               </p>
               <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Recent documents
+                Workspace log
               </h2>
             </div>
             <Link
-              href="/pages/organization"
+              href="/pages/activity/"
               className="text-xs font-semibold text-brand-pink hover:underline"
             >
               View all
             </Link>
           </div>
-          {documents.isLoading ? (
+          {workspaceActivity.data?.summary.pending_acknowledgement_count ? (
+            <Link
+              href="/pages/activity/?tab=pending"
+              className="mb-4 flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
+            >
+              <Clock3 className="h-3.5 w-3.5 shrink-0" />
+              {workspaceActivity.data.summary.pending_acknowledgement_count}{" "}
+              document
+              {workspaceActivity.data.summary.pending_acknowledgement_count === 1
+                ? ""
+                : "s"}{" "}
+              still need acknowledgement
+            </Link>
+          ) : null}
+          {workspaceActivity.isLoading ? (
             <div className="space-y-3">
               <LoadingBlock className="h-16 w-full" />
               <LoadingBlock className="h-16 w-full" />
               <LoadingBlock className="h-16 w-full" />
             </div>
-          ) : documents.data?.length ? (
+          ) : workspaceActivity.data?.activity_log.length ? (
             <div className="divide-y divide-slate-100">
-              {documents.data.slice(0, 5).map((document) => (
-                <div
-                  key={document.id}
-                  className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
+              {workspaceActivity.data.activity_log.slice(0, 5).map((event) => (
+                <Link
+                  key={`${event.id}-${event.occurred_at}`}
+                  href={documentViewHref(event, true)}
+                  className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0 transition hover:bg-pink-50/40"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="rounded-lg bg-slate-100 p-2 text-slate-500">
-                      <FileText className="h-4 w-4" />
+                    <div className="rounded-lg bg-pink-50 p-2 text-brand-pink">
+                      <Activity className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-800">
-                        {document.name}
+                        {event.message}
                       </p>
-                      <p className="mt-1 text-xs text-slate-400">
-                        {document.folder_name} ·{" "}
-                        {formatFileSize(document.file_size)}
+                      <p className="mt-1 truncate text-xs text-slate-400">
+                        {event.actor_name} · {event.folder_name}
                       </p>
                     </div>
                   </div>
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${statusStyles[document.state]}`}
-                  >
-                    {document.state}
+                  <span className="shrink-0 text-[10px] font-semibold text-slate-400">
+                    {formatActivityWhen(event.occurred_at)}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
             <div className="flex flex-col items-center rounded-xl bg-slate-50 p-8 text-center">
               <CheckCircle2 className="h-7 w-7 text-brand-pink" />
               <p className="mt-3 text-sm font-semibold text-slate-700">
-                No documents yet
+                No activity yet
               </p>
               <p className="mt-1 text-xs text-slate-400">
-                Uploaded files will appear here.
+                Uploads, approvals, and acknowledgements will appear here.
               </p>
             </div>
           )}
@@ -323,26 +353,85 @@ export default function Dashboard() {
               <h2 className="mt-1 text-xl font-bold text-slate-900">
                 Document analytics
               </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                {totalDocuments} document{totalDocuments === 1 ? "" : "s"} by
+                approval status
+              </p>
             </div>
             <BarChart3 className="h-5 w-5 text-brand-pink" />
           </div>
-          <div className="flex h-44 items-end justify-between gap-3 px-2">
-            {statusMetrics.map((metric) => (
-              <div
-                key={metric.label}
-                className="flex h-full flex-1 flex-col items-center justify-end gap-2"
+          <div
+            className="flex gap-3"
+            role="img"
+            aria-label={`Document status chart: ${statusMetrics.map((metric) => `${metric.label} ${metric.value}`).join(", ")}`}
+          >
+            <div className="flex shrink-0 flex-col items-center pt-6 pb-8">
+              <span
+                className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 [writing-mode:vertical-rl] rotate-180"
+                aria-hidden
               >
-                <div
-                  className={`w-full max-w-10 rounded-t-full ${metric.color}`}
-                  style={{
-                    height: `${Math.max(12, (metric.value / chartMax) * 100)}%`,
-                  }}
-                />
-                <span className="text-center text-[10px] font-semibold text-slate-400">
-                  {metric.label}
-                </span>
+                Documents
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex gap-2">
+                <div className="flex h-48 shrink-0 flex-col justify-between py-1 text-right">
+                  {[...yTicks].reverse().map((tick) => (
+                    <span
+                      key={tick}
+                      className="text-[10px] font-medium tabular-nums text-slate-400"
+                    >
+                      {tick}
+                    </span>
+                  ))}
+                </div>
+                <div className="relative min-w-0 flex-1 border-b border-l border-slate-200">
+                  {yTicks.map((tick) => (
+                    <div
+                      key={`grid-${tick}`}
+                      className="pointer-events-none absolute left-0 right-0 border-t border-slate-100"
+                      style={{ bottom: `${(tick / chartScaleMax) * 100}%` }}
+                    />
+                  ))}
+                  <div className="relative flex h-48 items-end justify-between gap-2 px-2">
+                    {statusMetrics.map((metric) => {
+                      const barHeight =
+                        metric.value === 0
+                          ? 0
+                          : Math.max(4, (metric.value / chartScaleMax) * 100);
+                      return (
+                        <div
+                          key={metric.label}
+                          className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+                        >
+                          <span className="mb-1 text-xs font-bold tabular-nums text-slate-700">
+                            {metric.value}
+                          </span>
+                          <div
+                            className={`w-full max-w-10 rounded-t-md ${metric.color} transition-all`}
+                            style={{ height: `${barHeight}%` }}
+                            title={`${metric.label}: ${metric.value}`}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            ))}
+              <div className="ml-10 mt-2 flex justify-between gap-2 px-2">
+                {statusMetrics.map((metric) => (
+                  <span
+                    key={metric.label}
+                    className="min-w-0 flex-1 text-center text-[10px] font-semibold text-slate-500"
+                  >
+                    {metric.label}
+                  </span>
+                ))}
+              </div>
+              <p className="ml-10 mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Status
+              </p>
+            </div>
           </div>
         </div>
 
@@ -370,7 +459,11 @@ export default function Dashboard() {
                 : "No renewal reminders are waiting for you."}
             </p>
             <Link
-              href="/pages/organization"
+              href={
+                stats.data?.expiring_items?.[0]
+                  ? documentViewHref(stats.data.expiring_items[0], true)
+                  : "/pages/organization/"
+              }
               className="mt-7 flex items-center justify-center gap-2 rounded-full bg-brand-pink px-4 py-3 text-sm font-bold text-white transition hover:bg-brand-text"
             >
               {stats.data?.expiring_documents ? "Review now" : "Browse records"}{" "}
@@ -414,8 +507,8 @@ export default function Dashboard() {
                     <p className="truncate text-sm font-semibold text-slate-800">
                       {name}
                     </p>
-                    <p className="truncate text-xs capitalize text-slate-400">
-                      {document.state} document
+                    <p className="truncate text-xs text-slate-400">
+                      {formatStatusLabel(document.state)} document
                     </p>
                   </div>
                   <span className="ml-auto text-[10px] text-slate-400">

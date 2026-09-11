@@ -16,6 +16,8 @@
         "views/menu.xml",
         "views/intelligence_views.xml",
         "data/compliance_cron.xml",
+        "data/compliance_data.xml",
+        "data/recycle_origin_backfill.xml",
         "data/intelligence_data.xml",
         "data/intelligence_cron.xml",
         "data/template_categories.xml",
@@ -30,6 +32,7 @@
     "auto_install": True,
     "application": False,
     "license": "LGPL-3",
+    "post_init_hook": "post_init_hook",
     "external_dependencies": {
         "python": ["sentence_transformers", "torch"],
     },

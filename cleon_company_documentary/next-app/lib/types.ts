@@ -7,6 +7,13 @@ export interface User {
   is_document_manager?: boolean;
 }
 
+export interface WatchProgress {
+  position_seconds: number;
+  completion_percent: number;
+  completed: boolean;
+  last_watched_at?: string;
+}
+
 export interface DocumentaryFolder {
   id: number;
   name: string;
@@ -18,10 +25,17 @@ export interface DocumentaryFolder {
   deleted_at: string | false;
   media_count: number;
   can_edit: boolean;
+  is_pinned?: boolean;
+  favorite?: boolean;
   department_ids?: number[];
   grade_ids?: number[];
   employee_ids?: number[];
   editor_ids?: number[];
+}
+
+export interface DocumentaryChapter {
+  title: string;
+  start_seconds: number;
 }
 
 export interface DocumentaryMedia {
@@ -52,12 +66,29 @@ export interface DocumentaryMedia {
   grade_ids?: number[];
   employee_ids?: number[];
   favorite: boolean;
+  like_count: number;
+  liked_by_me: boolean;
+  comment_count: number;
+  owner_name?: string;
   view_count: number;
   unique_viewer_count: number;
   created_at: string;
   updated_at: string;
   can_edit: boolean;
   subtitles?: DocumentarySubtitle[];
+  approval_status?: "draft" | "pending" | "approved" | "rejected" | "scheduled";
+  publish_at?: string | false;
+  published_at?: string | false;
+  transcript?: string;
+  chapters?: DocumentaryChapter[];
+  share_token?: string | false;
+  is_official?: boolean;
+  replaces_media_id?: number | false;
+  approver_comment?: string;
+  approved_by_name?: string | false;
+  approved_at?: string | false;
+  purge_date?: string | false;
+  watch_progress?: WatchProgress | null;
 }
 
 export interface DocumentarySubtitle {
@@ -70,10 +101,15 @@ export interface DocumentarySubtitle {
 
 export interface DocumentaryComment {
   id: number;
+  media_id?: number;
   body: string;
   user_id: number;
   user_name: string;
   created_at: string;
+  parent_id?: number | false;
+  replies?: DocumentaryComment[];
+  mentioned_user_ids?: number[];
+  mentioned_names?: string[];
 }
 
 export interface AudienceOptions {
@@ -90,6 +126,30 @@ export interface AudienceOptions {
   }[];
 }
 
+export interface DocumentarySettings {
+  require_upload_approval: boolean;
+  default_mandatory: boolean;
+  default_comments_enabled: boolean;
+  default_allow_download: boolean;
+  default_completion_threshold: number;
+  deleted_retention_days: number;
+  auto_transcription: boolean;
+}
+
+export interface RecycleBinData {
+  media: DocumentaryMedia[];
+  folders: DocumentaryFolder[];
+}
+
+export interface MediaFilters {
+  mandatory?: boolean;
+  processing_state?: string;
+  approval_status?: string;
+  date_from?: string;
+  date_to?: string;
+  recycle_bin?: boolean;
+}
+
 export interface DocumentaryAnalytics {
   media_id?: number;
   video_count?: number;
@@ -99,6 +159,61 @@ export interface DocumentaryAnalytics {
   completed_viewers?: number;
   mandatory_video_count?: number;
   completion_rate?: number;
+}
+
+export type ComplianceStatus = "not_started" | "in_progress" | "completed";
+export type ComplianceMandatoryFilter = "all" | "mandatory" | "optional";
+
+export interface ComplianceVideoSummary {
+  media_id: number;
+  title: string;
+  mandatory: boolean;
+  completion_threshold: number;
+  audience_count: number;
+  completed_count: number;
+  in_progress_count: number;
+  not_started_count: number;
+  completion_rate: number;
+}
+
+export interface ComplianceFolderNode {
+  folder_id: number;
+  folder_name: string;
+  videos: ComplianceVideoSummary[];
+}
+
+export interface ComplianceRow {
+  employee_id: number;
+  employee_name: string;
+  department_name: string;
+  media_id: number;
+  media_title: string;
+  folder_id: number;
+  folder_name: string;
+  mandatory: boolean;
+  completion_threshold: number;
+  status: ComplianceStatus;
+  completion_percent: number;
+  view_count: number;
+  last_watched_at: string | false | null;
+  completed_at: string | false | null;
+}
+
+export interface ComplianceReport {
+  library: ComplianceFolderNode[];
+  selected_media_id?: number | false;
+  video_summary?: ComplianceVideoSummary | false;
+  summary: {
+    eligible_assignments: number;
+    completed: number;
+    in_progress: number;
+    not_started: number;
+    mandatory_pending: number;
+  };
+  rows: ComplianceRow[];
+  page: number;
+  page_size: number;
+  total: number;
 }
 
 export interface DocumentaryAnalyticsDashboard {
@@ -136,6 +251,10 @@ export interface DocumentaryAnalyticsDashboard {
   engagement_distribution: { strong: number; developing: number; at_risk: number };
   content_performance: { id: number; title: string; folder_name: string; mandatory: boolean; total_views: number; unique_viewers: number; watch_seconds: number; average_completion: number; completion_rate: number }[];
   trends: { period_change_percent: number; rising: DocumentaryAnalyticsDashboard["content_performance"]; declining: DocumentaryAnalyticsDashboard["content_performance"]; at_risk: DocumentaryAnalyticsDashboard["content_performance"] };
+  caption_usage?: { events: number; unique_viewers: number; usage_rate: number };
+  completion_bands?: { under_25: number; between_25_75: number; over_75: number };
+  recent_viewers?: { user_name: string; employee_name: string; media_title: string; happened_at: string }[];
+  approval_compliance?: { pending_count: number; approved_count: number };
 }
 
 export interface Tag {

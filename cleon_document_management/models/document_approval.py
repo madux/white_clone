@@ -42,7 +42,12 @@ class DocumentApproval(models.Model):
             if approval.approver_id != self.env.user:
                 raise UserError(_("You are not assigned to approve this document."))
 
-            if approval.document_id.folder_id.approval_flow == "sequential":
+            flow = approval.document_id._get_effective_approval_flow()
+            if flow == "sequential":
+                if approval.state != "pending":
+                    raise UserError(
+                        _("You cannot approve this document until it is your turn.")
+                    )
                 previous = self.search(
                     [
                         ("document_id", "=", approval.document_id.id),
@@ -70,6 +75,25 @@ class DocumentApproval(models.Model):
             if approval.approver_id != self.env.user:
                 raise UserError(_("You are not assigned to reject this document."))
 
+            flow = approval.document_id._get_effective_approval_flow()
+            if flow == "sequential":
+                if approval.state != "pending":
+                    raise UserError(
+                        _("You cannot reject this document until it is your turn.")
+                    )
+                previous = self.search(
+                    [
+                        ("document_id", "=", approval.document_id.id),
+                        ("sequence", "<", approval.sequence),
+                        ("state", "!=", "approved"),
+                    ],
+                    limit=1,
+                )
+                if previous:
+                    raise UserError(
+                        _("Previous approval steps must be completed first.")
+                    )
+
             approval.write(
                 {
                     "state": "rejected",
@@ -78,3 +102,4 @@ class DocumentApproval(models.Model):
             )
 
             approval.document_id.write({"state": "rejected"})
+            approval.document_id._update_approval_state()

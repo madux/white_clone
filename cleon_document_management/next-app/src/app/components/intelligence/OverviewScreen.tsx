@@ -8,6 +8,7 @@ import {
   Plus,
 } from "lucide-react";
 import Link from "next/link";
+import { formatFieldLabel, formatStatusLabel } from "../../../../lib/formatLabel";
 import {
   useControlIntelligenceJob,
   useIntelligenceOverview,
@@ -35,17 +36,7 @@ export default function OverviewScreen() {
 
   return (
     <div className="space-y-8">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-            Document Intelligence
-          </p>
-          <h1 className="mt-1 text-3xl font-medium text-slate-900">Overview</h1>
-          <p className="mt-2 max-w-2xl text-sm font-light text-slate-400">
-            Classify documents, extract fields, review results, and ask
-            permission-safe questions.
-          </p>
-        </div>
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
         <Link
           href="/pages/document-intelligence/datasets/new"
           className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-3 text-sm font-medium text-white shadow-lg shadow-pink-200 transition hover:brightness-105 hover:shadow-pink-300"
@@ -174,7 +165,7 @@ export default function OverviewScreen() {
                     <tr key={job.id} className="border-t border-slate-100">
                       <td className="py-3">#{job.id}</td>
                       <td className="py-3">{job.dataset}</td>
-                      <td className="py-3 capitalize">{job.source || "—"}</td>
+                      <td className="py-3">{job.source ? formatFieldLabel(job.source) : "—"}</td>
                       <td className="py-3">
                         {job.processed_count}/{job.document_count}
                       </td>
@@ -191,7 +182,7 @@ export default function OverviewScreen() {
                                 : ""
                           }`}
                         >
-                          {job.state.replace(/_/g, " ")}
+                          {formatStatusLabel(job.state)}
                         </span>
                         {job.error_message ? (
                           <p className="mt-1 max-w-xs text-xs text-amber-700">

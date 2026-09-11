@@ -1,27 +1,48 @@
-from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError, UserError 
-from datetime import datetime, timedelta
+from odoo import fields, models
 
 
 class DocumentVersion(models.Model):
-
     _name = "doc.document.version"
+    _description = "Document Version"
+    _order = "version_number desc, id desc"
 
-    attachment_id = fields.Many2one(
-        'doc.document'
+    document_id = fields.Many2one(
+        "doc.document",
+        string="Document",
+        required=True,
+        ondelete="cascade",
+        index=True,
     )
 
-    version_number = fields.Integer()
+    version_number = fields.Integer(
+        string="Version Number",
+        required=True,
+    )
 
     file_attachment = fields.Many2one(
-        'ir.attachment'
+        "ir.attachment",
+        string="File",
+        required=True,
+        ondelete="restrict",
     )
 
     uploaded_by = fields.Many2one(
-        'res.users'
+        "res.users",
+        string="Uploaded By",
+        default=lambda self: self.env.user,
+        readonly=True,
     )
 
-    upload_date = fields.Datetime()
+    upload_date = fields.Datetime(
+        string="Upload Date",
+        default=fields.Datetime.now,
+        readonly=True,
+    )
 
-    change_note = fields.Char()
-    active = fields.Boolean(default=True)
+    change_note = fields.Char(
+        string="Change Note",
+    )
+
+    active = fields.Boolean(
+        default=True,
+    )

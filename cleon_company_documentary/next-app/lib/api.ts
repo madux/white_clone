@@ -1,10 +1,15 @@
 import axios from "axios";
 import type {
   AudienceOptions,
+  ComplianceReport,
+  ComplianceStatus,
   DocumentaryAnalyticsDashboard,
   DocumentaryComment,
   DocumentaryFolder,
   DocumentaryMedia,
+  DocumentarySettings,
+  MediaFilters,
+  RecycleBinData,
   Tag,
   UploadInit,
   User,
@@ -77,8 +82,8 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryFolder[]; message?: string }>("/api/company-documentary/folders", params));
   },
 
-  async media(params: { folder_id?: number; search?: string; include_archived?: boolean } = {}) {
-    return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia[]; message?: string }>("/api/company-documentary/media", params));
+  async media(params: { folder_id?: number; search?: string; include_archived?: boolean } & MediaFilters = {}) {
+    return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia[]; message?: string }>("/api/company-documentary/media", params as Record<string, unknown>));
   },
 
   async createFolder(payload: { name: string; description?: string; parent_id?: number | false; access_scope?: string; department_ids?: number[]; grade_ids?: number[]; employee_ids?: number[]; editor_ids?: number[]; allow_download?: boolean }) {
@@ -89,20 +94,53 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryFolder; message?: string }>("/api/company-documentary/folders/update", payload));
   },
 
-  async folderAction(payload: { id: number; action: "archive" | "restore" | "delete" }) {
-    return unwrap(await rpc<{ success: boolean; data: DocumentaryFolder; message?: string }>("/api/company-documentary/folders/action", payload));
+  async folderAction(payload: { id: number; action: "archive" | "restore" | "delete" | "purge" }) {
+    return unwrap(await rpc<{ success: boolean; data: DocumentaryFolder | { purged: boolean; id: number }; message?: string }>("/api/company-documentary/folders/action", payload));
   },
 
-  async mediaAction(payload: { id: number; action: "favorite" | "archive" | "restore" | "delete" }) {
-    return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia; message?: string }>("/api/company-documentary/media/action", payload));
+  async mediaAction(payload: { id: number; action: "favorite" | "archive" | "restore" | "delete" | "purge" }) {
+    return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia | { purged: boolean; id: number }; message?: string }>("/api/company-documentary/media/action", payload));
   },
 
-  async updateMedia(payload: { id: number; name?: string; description?: string; mandatory?: boolean; completion_threshold?: number; comments_enabled?: boolean; download_policy?: "inherit" | "allow" | "deny"; scope_mode?: "inherited" | "override"; access_scope?: string; department_ids?: number[]; grade_ids?: number[]; employee_ids?: number[]; tag_ids?: number[] }) {
+  async updateMedia(payload: {
+    id: number;
+    name?: string;
+    description?: string;
+    mandatory?: boolean;
+    completion_threshold?: number;
+    comments_enabled?: boolean;
+    download_policy?: "inherit" | "allow" | "deny";
+    scope_mode?: "inherited" | "override";
+    access_scope?: string;
+    department_ids?: number[];
+    grade_ids?: number[];
+    employee_ids?: number[];
+    tag_ids?: number[];
+    transcript?: string;
+    chapters?: Array<{ title: string; start_seconds: number }>;
+    publish_at?: string | false;
+    is_official?: boolean;
+  }) {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia; message?: string }>("/api/company-documentary/media/update", payload));
   },
 
-  async mediaBatchAction(payload: { ids: number[]; action: "favorite" | "archive" | "restore" | "delete" | "move"; target_folder_id?: number }) {
+  async mediaBatchAction(payload: { ids: number[]; action: "favorite" | "archive" | "restore" | "delete" | "move" | "purge"; target_folder_id?: number }) {
     return unwrap(await rpc<{ success: boolean; data: { updated_ids: number[]; action: string }; message?: string }>("/api/company-documentary/media/batch-action", payload));
+  },
+
+  async mediaBatchUpdate(payload: {
+    ids: number[];
+    mandatory?: boolean;
+    comments_enabled?: boolean;
+    download_policy?: "inherit" | "allow" | "deny";
+    scope_mode?: "inherited" | "override";
+    access_scope?: string;
+    department_ids?: number[];
+    grade_ids?: number[];
+    employee_ids?: number[];
+    tag_ids?: number[];
+  }) {
+    return unwrap(await rpc<{ success: boolean; data: { updated_ids: number[] }; message?: string }>("/api/company-documentary/media/batch-update", payload));
   },
 
   async streamUrl(id: number, quality?: string) {
@@ -125,8 +163,28 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: AudienceOptions; message?: string }>("/api/company-documentary/audience", { search }));
   },
 
-  async comments(media_id: number, action: "list" | "create" | "delete" = "list", body?: string, comment_id?: number) {
-    return unwrap(await rpc<{ success: boolean; data: DocumentaryComment[]; message?: string }>("/api/company-documentary/comments", { media_id, action, body, comment_id }));
+  async comments(
+    media_id: number,
+    action: "list" | "create" | "delete" = "list",
+    body?: string,
+    comment_id?: number,
+    parent_id?: number,
+  ) {
+    return unwrap(
+      await rpc<{ success: boolean; data: DocumentaryComment[] | DocumentaryComment | { deleted: boolean }; message?: string }>(
+        "/api/company-documentary/comments",
+        { media_id, action, body, comment_id, parent_id },
+      ),
+    );
+  },
+
+  async likes(media_id: number, action: "toggle" | "status" = "toggle") {
+    return unwrap(
+      await rpc<{ success: boolean; data: { liked: boolean; like_count: number }; message?: string }>(
+        "/api/company-documentary/likes",
+        { media_id, action },
+      ),
+    );
   },
 
   async subtitle(media_id: number, payload: { name: string; language: string; format: "vtt" | "srt"; filename: string; mime_type: string }) {
@@ -145,12 +203,65 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: unknown; message?: string }>("/api/company-documentary/watch-progress", payload));
   },
 
+  async continueWatching() {
+    return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia[]; message?: string }>("/api/company-documentary/continue-watching"));
+  },
+
+  async recycleBin() {
+    return unwrap(await rpc<{ success: boolean; data: RecycleBinData; message?: string }>("/api/company-documentary/recycle-bin"));
+  },
+
+  async clearRecycleBin() {
+    return unwrap(await rpc<{ success: boolean; data: { purged_count: number }; message?: string }>("/api/company-documentary/recycle-bin/clear"));
+  },
+
+  async settings() {
+    return unwrap(await rpc<{ success: boolean; data: DocumentarySettings; message?: string }>("/api/company-documentary/settings"));
+  },
+
+  async saveSettings(values: Partial<DocumentarySettings>) {
+    return unwrap(await rpc<{ success: boolean; data: DocumentarySettings; message?: string }>("/api/company-documentary/settings", { save: true, ...values }));
+  },
+
+  async pinFolder(payload: { id: number; pinned: boolean }) {
+    return unwrap(await rpc<{ success: boolean; data: DocumentaryFolder; message?: string }>("/api/company-documentary/folders/pin", payload));
+  },
+
+  async favoriteFolder(payload: { id: number; favorite: boolean }) {
+    return unwrap(await rpc<{ success: boolean; data: DocumentaryFolder; message?: string }>("/api/company-documentary/folders/favorite", payload));
+  },
+
+  async mediaApproval(payload: { id: number; action: "approve" | "reject" | "submit" | "cancel_schedule"; comment?: string; publish_at?: string }) {
+    return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia; message?: string }>("/api/company-documentary/media/approval", payload));
+  },
+
+  async mediaShare(id: number) {
+    return unwrap(await rpc<{ success: boolean; data: { url: string; token: string }; message?: string }>("/api/company-documentary/media/share", { id }));
+  },
+
+  async captionEvent(media_id: number) {
+    return unwrap(await rpc<{ success: boolean; data: { recorded: boolean }; message?: string }>("/api/company-documentary/media/caption-event", { media_id }));
+  },
+
   async analytics(filters: { date_from?: string; date_to?: string; department_id?: number; folder_id?: number; media_id?: number } = {}) {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryAnalyticsDashboard; message?: string }>("/api/company-documentary/analytics/summary", filters));
   },
 
-  async storageConfig(values: Record<string, unknown> = {}, check = false) {
-    return unwrap(await rpc<{ success: boolean; data: { configured: boolean; reachable?: boolean; bucket?: string; endpoint_url?: string; credentials_present?: boolean }; message?: string }>("/api/company-documentary/storage/config", { ...values, check }));
+  async complianceReport(filters: {
+    department_id?: number;
+    folder_id?: number;
+    media_id?: number;
+    mandatory?: "all" | "mandatory" | "optional";
+    status?: "all" | ComplianceStatus;
+    search?: string;
+    page?: number;
+    page_size?: number;
+  } = {}) {
+    return unwrap(await rpc<{ success: boolean; data: ComplianceReport; message?: string }>("/api/company-documentary/analytics/compliance", filters));
+  },
+
+  async storageConfig(check = false) {
+    return unwrap(await rpc<{ success: boolean; data: { configured: boolean; reachable?: boolean; bucket?: string; endpoint_url?: string; credentials_present?: boolean; provider?: string; region?: string }; message?: string }>("/api/company-documentary/storage/config", { check }));
   },
 
   async initiateUpload(payload: {
@@ -170,6 +281,9 @@ export const api = {
     employee_ids?: number[];
     tag_ids?: number[];
     download_policy?: "inherit" | "allow" | "deny";
+    publish_at?: string;
+    is_official?: boolean;
+    replaces_media_id?: number;
   }) {
     return unwrap(await rpc<{ success: boolean; data: UploadInit; message?: string }>("/api/company-documentary/uploads/initiate", payload));
   },

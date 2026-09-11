@@ -15,49 +15,46 @@ export function AnalyticsOverview({
   data: DocumentaryAnalyticsDashboard;
 }) {
   const item = data.overview;
-  const metrics: [string, string, string, string][] = [
+  const metrics: [string, string, string][] = [
     [
       "Total views",
       item.total_views.toLocaleString(),
       "starts in selected period",
-      "pink",
     ],
     [
       "Viewer rate",
       `${item.viewer_rate.toFixed(1)}%`,
       `${item.unique_viewers.toLocaleString()} of ${item.eligible_employees.toLocaleString()} eligible employees`,
-      "purple",
     ],
     [
       "Total watch time",
       formatAnalyticsDuration(item.total_watch_seconds),
       `Average ${formatAnalyticsDuration(item.average_watch_seconds)}`,
-      "blue",
     ],
     [
       "Completion rate",
       `${item.completion_rate.toFixed(1)}%`,
       `Average completion ${item.average_completion.toFixed(1)}%`,
-      "green",
     ],
     [
       "Engagement rate",
       `${item.engagement_rate.toFixed(1)}%`,
       "Meaningful viewer interaction",
-      "orange",
     ],
     [
       "Compliance",
       `${item.compliance_rate.toFixed(1)}%`,
       `${item.mandatory_completed} of ${item.mandatory_assignments} assignments`,
-      "rose",
     ],
   ];
   return (
     <div className="analytics-tab-content">
       <div className="analytics-metric-grid">
-        {metrics.map(([label, value, hint, color]) => (
-          <div className={`analytics-metric ${color}`} key={label}>
+        {metrics.map(([label, value, hint], index) => (
+          <div
+            className={`analytics-metric${index === 0 ? " is-primary" : ""}`}
+            key={label}
+          >
             <span>{label}</span>
             <strong>{value}</strong>
             <small>{hint}</small>
@@ -129,6 +126,40 @@ export function AnalyticsOverview({
           </div>
         </div>
       </div>
+      {(data.caption_usage || data.completion_bands || data.approval_compliance) && (
+        <div className="analytics-three-column">
+          {data.caption_usage && (
+            <div className="analytics-panel compact">
+              <h3>Caption usage</h3>
+              <div className="quality-stat">
+                <strong>{data.caption_usage.usage_rate.toFixed(1)}%</strong>
+                <span>{data.caption_usage.unique_viewers} viewers used captions</span>
+              </div>
+            </div>
+          )}
+          {data.completion_bands && (
+            <div className="analytics-panel compact">
+              <h3>Completion bands</h3>
+              <AnalyticsProgress label="< 25%" value={(data.completion_bands.under_25 / Math.max(data.completion_bands.under_25 + data.completion_bands.between_25_75 + data.completion_bands.over_75, 1)) * 100} text={String(data.completion_bands.under_25)} />
+              <AnalyticsProgress label="25–75%" value={(data.completion_bands.between_25_75 / Math.max(data.completion_bands.under_25 + data.completion_bands.between_25_75 + data.completion_bands.over_75, 1)) * 100} text={String(data.completion_bands.between_25_75)} />
+              <AnalyticsProgress label="≥ 75%" value={(data.completion_bands.over_75 / Math.max(data.completion_bands.under_25 + data.completion_bands.between_25_75 + data.completion_bands.over_75, 1)) * 100} text={String(data.completion_bands.over_75)} />
+            </div>
+          )}
+          {data.approval_compliance && (
+            <div className="analytics-panel compact">
+              <h3>Approval compliance</h3>
+              <div className="quality-stat">
+                <strong>{data.approval_compliance.pending_count}</strong>
+                <span>Pending approval</span>
+              </div>
+              <div className="quality-stat">
+                <strong>{data.approval_compliance.approved_count}</strong>
+                <span>Approved videos</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

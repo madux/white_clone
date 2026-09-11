@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copy to social_gallery_r2_config.xml for local/dev installs, or set values via
+  Odoo system parameters. Prefer environment variables for secrets in production:
+
+    SOCIAL_GALLERY_R2_ACCESS_KEY_ID
+    SOCIAL_GALLERY_R2_SECRET_ACCESS_KEY
+
+  Non-secret values can live in ir.config_parameter (seeded on module install).
+-->
+<odoo noupdate="1">
+    <record id="param_r2_account_id" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_account_id</field>
+        <field name="value">&lt;cloudflare-account-id&gt;</field>
+    </record>
+    <record id="param_r2_endpoint_url" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_endpoint_url</field>
+        <field name="value">https://&lt;account-id&gt;.r2.cloudflarestorage.com</field>
+    </record>
+    <record id="param_r2_access_key_id" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_access_key_id</field>
+        <field name="value">&lt;r2-access-key-id&gt;</field>
+    </record>
+    <record id="param_r2_secret_access_key" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_secret_access_key</field>
+        <field name="value">&lt;r2-secret-access-key&gt;</field>
+    </record>
+    <record id="param_r2_bucket" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_bucket</field>
+        <field name="value">clean-social-gallery</field>
+    </record>
+    <record id="param_r2_region" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_region</field>
+        <field name="value">auto</field>
+    </record>
+    <record id="param_r2_cors_origins" model="ir.config_parameter">
+        <field name="key">social_gallery.r2_cors_origins</field>
+        <field name="value">http://localhost:8069,https://your-odoo-domain.com</field>
+    </record>
+</odoo>
