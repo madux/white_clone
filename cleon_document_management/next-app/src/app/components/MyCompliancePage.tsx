@@ -2,7 +2,8 @@
 
 import { AlertCircle, CheckCircle2, Clock3, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { useMyCompliance } from "../../../hooks/useDocuments";
+import { FormEvent, useState } from "react";
+import { useCreateException, useMyCompliance } from "../../../hooks/useDocuments";
 import { formatStatusLabel } from "../../../lib/formatLabel";
 
 const statusStyles: Record<string, string> = {
@@ -16,8 +17,36 @@ const statusStyles: Record<string, string> = {
 
 export default function MyCompliancePage() {
   const compliance = useMyCompliance();
+  const createException = useCreateException();
   const data = compliance.data;
   const summary = data?.summary;
+  const [waiverPolicyId, setWaiverPolicyId] = useState<number | null>(null);
+  const [waiverReason, setWaiverReason] = useState("");
+  const [waiverUntil, setWaiverUntil] = useState("");
+  const [waiverNotice, setWaiverNotice] = useState<string | null>(null);
+
+  async function submitWaiver(event: FormEvent) {
+    event.preventDefault();
+    if (!data?.employee_id || !waiverPolicyId || !waiverReason || !waiverUntil) return;
+    setWaiverNotice(null);
+    try {
+      await createException.mutateAsync({
+        employee_id: data.employee_id,
+        policy_id: waiverPolicyId,
+        reason: waiverReason,
+        valid_until: waiverUntil,
+      });
+      setWaiverPolicyId(null);
+      setWaiverReason("");
+      setWaiverUntil("");
+      setWaiverNotice("Waiver request submitted for review.");
+      compliance.refetch();
+    } catch (error) {
+      setWaiverNotice(
+        error instanceof Error ? error.message : "Waiver request could not be submitted.",
+      );
+    }
+  }
 
   return (
     <div className="mx-auto min-h-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
@@ -89,11 +118,21 @@ export default function MyCompliancePage() {
                       {formatStatusLabel(evaluation.status)}
                     </span>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                     <span>Score: {evaluation.score}%</span>
                     <span>Complete: {evaluation.complete_count}</span>
                     <span>Missing: {evaluation.missing_count}</span>
                     <span>Grace: {evaluation.grace_count}</span>
+                    {evaluation.allow_waiver &&
+                      (evaluation.missing_count > 0 || evaluation.grace_count > 0) && (
+                        <button
+                          type="button"
+                          onClick={() => setWaiverPolicyId(evaluation.policy_id)}
+                          className="rounded-full border border-brand-pink/30 px-2.5 py-1 text-[10px] font-bold text-brand-pink"
+                        >
+                          Request waiver
+                        </button>
+                      )}
                   </div>
                   {evaluation.lines.length > 0 && (
                     <ul className="mt-4 divide-y divide-slate-50 rounded-lg border border-slate-100">
@@ -168,6 +207,60 @@ export default function MyCompliancePage() {
           )}
         </div>
       </section>
+
+      {waiverPolicyId && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900">Request a waiver</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Submit an exemption request for an assigned policy. An administrator will review it.
+          </p>
+          {waiverNotice && (
+            <p className="mt-4 rounded-xl bg-pink-50 px-4 py-3 text-sm text-brand-text">{waiverNotice}</p>
+          )}
+          <form onSubmit={submitWaiver} className="mt-5 grid gap-4 md:grid-cols-2">
+            <label className="md:col-span-2">
+              <span className="label">Reason</span>
+              <textarea
+                required
+                className="field min-h-24"
+                value={waiverReason}
+                onChange={(event) => setWaiverReason(event.target.value)}
+                placeholder="Explain why this requirement should be waived"
+              />
+            </label>
+            <label>
+              <span className="label">Valid until</span>
+              <input
+                required
+                type="date"
+                className="field"
+                value={waiverUntil}
+                onChange={(event) => setWaiverUntil(event.target.value)}
+              />
+            </label>
+            <div className="flex items-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setWaiverPolicyId(null);
+                  setWaiverReason("");
+                  setWaiverUntil("");
+                }}
+                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={createException.isPending}
+                className="rounded-xl bg-brand-pink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {createException.isPending ? "Submitting..." : "Submit request"}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
     </div>
   );
 }

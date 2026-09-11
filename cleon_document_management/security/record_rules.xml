@@ -26,6 +26,13 @@
         ]</field>
     </record>
 
+    <record id="rule_doc_folder_manager_visibility" model="ir.rule">
+        <field name="name">Document folders: managers</field>
+        <field name="model_id" ref="model_doc_folder"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
     <record id="rule_doc_folder_admin_visibility" model="ir.rule">
         <field name="name">Document folders: administrators</field>
         <field name="model_id" ref="model_doc_folder"/>
@@ -60,6 +67,13 @@
         ]</field>
     </record>
 
+    <record id="rule_doc_document_manager_visibility" model="ir.rule">
+        <field name="name">Documents: managers</field>
+        <field name="model_id" ref="model_doc_document"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
     <record id="rule_doc_document_admin_visibility" model="ir.rule">
         <field name="name">Documents: administrators</field>
         <field name="model_id" ref="model_doc_document"/>
@@ -72,6 +86,13 @@
         <field name="model_id" ref="model_doc_document_acknowledgement"/>
         <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
         <field name="domain_force">[('user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_doc_document_acknowledgement_manager_visibility" model="ir.rule">
+        <field name="name">Document acknowledgements: managers</field>
+        <field name="model_id" ref="model_doc_document_acknowledgement"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
     </record>
 
     <record id="rule_doc_document_acknowledgement_admin_visibility" model="ir.rule">
@@ -91,6 +112,13 @@
             '|', ('grade_ids', 'in', [user.employee_id.grade_id.id]),
             ('employee_ids.user_id', '=', user.id)
         ]</field>
+    </record>
+
+    <record id="rule_compliance_policy_manager_visibility" model="ir.rule">
+        <field name="name">Compliance policies: managers</field>
+        <field name="model_id" ref="model_doc_compliance_policy"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
     </record>
 
     <record id="rule_compliance_policy_admin_visibility" model="ir.rule">
@@ -138,6 +166,13 @@
         ]</field>
     </record>
 
+    <record id="rule_compliance_evaluation_run_manager_visibility" model="ir.rule">
+        <field name="name">Compliance runs: managers</field>
+        <field name="model_id" ref="model_doc_compliance_evaluation_run"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
     <record id="rule_compliance_evaluation_run_admin_visibility" model="ir.rule">
         <field name="name">Compliance runs: administrators</field>
         <field name="model_id" ref="model_doc_compliance_evaluation_run"/>
@@ -150,6 +185,13 @@
         <field name="model_id" ref="model_doc_compliance_exception"/>
         <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
         <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_compliance_exception_manager_visibility" model="ir.rule">
+        <field name="name">Compliance exceptions: managers</field>
+        <field name="model_id" ref="model_doc_compliance_exception"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
     </record>
 
     <record id="rule_compliance_exception_admin_visibility" model="ir.rule">

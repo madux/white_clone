@@ -36,4 +36,31 @@
         <field name="interval_type">days</field>
         <field name="active">True</field>
     </record>
+    <record id="ir_cron_compliance_renewal_alerts" model="ir.cron">
+        <field name="name">Compliance Renewal Alerts</field>
+        <field name="model_id" ref="model_doc_compliance_policy"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_renewal_alerts()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+    <record id="ir_cron_compliance_lifecycle_reminders" model="ir.cron">
+        <field name="name">Compliance Lifecycle Reminders</field>
+        <field name="model_id" ref="model_doc_compliance_policy"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_lifecycle_reminders()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+    <record id="ir_cron_compliance_retention_audits" model="ir.cron">
+        <field name="name">Compliance Retention Audits</field>
+        <field name="model_id" ref="model_doc_compliance_policy"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_retention_audits()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
 </odoo>

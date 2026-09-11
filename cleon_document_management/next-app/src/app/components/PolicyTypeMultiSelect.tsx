@@ -3,7 +3,6 @@
 import { Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
-import ThemedSelect from "./ThemedSelect";
 
 type DocumentTypeOption = { id: number; name: string };
 
@@ -14,6 +13,10 @@ type PolicyTypeMultiSelectProps = {
   error?: string;
 };
 
+function typeId(value: number | string) {
+  return Number(value);
+}
+
 export default function PolicyTypeMultiSelect({
   types,
   selected,
@@ -21,40 +24,38 @@ export default function PolicyTypeMultiSelect({
   error,
 }: PolicyTypeMultiSelectProps) {
   const [query, setQuery] = useState("");
-  const [pickerValue, setPickerValue] = useState("");
 
   const selectedTypes = useMemo(
     () =>
       selected
-        .map((id) => types.find((type) => type.id === id))
+        .map((id) => types.find((type) => typeId(type.id) === typeId(id)))
         .filter(Boolean) as DocumentTypeOption[],
     [selected, types],
   );
 
-  const availableOptions = useMemo(() => {
+  const filteredTypes = useMemo(() => {
     const normalized = query.trim().toLowerCase();
+    if (!normalized) return [];
     return types
-      .filter((type) => !selected.includes(type.id))
-      .filter((type) => !normalized || type.name.toLowerCase().includes(normalized))
-      .map((type) => ({ value: String(type.id), label: type.name }));
+      .filter((type) => !selected.some((id) => typeId(id) === typeId(type.id)))
+      .filter((type) => type.name.toLowerCase().includes(normalized));
   }, [query, selected, types]);
 
-  const addType = (value: string) => {
-    const id = Number(value);
-    if (!id || selected.includes(id)) return;
+  const addType = (id: number) => {
+    if (!id || selected.some((item) => typeId(item) === typeId(id))) return;
     onChange([...selected, id]);
-    setPickerValue("");
+    setQuery("");
   };
 
   return (
-    <div className="space-y-3">
+    <div className="policy-type-picker max-w-md space-y-3">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-slate-500">
-          Add document types one at a time from the dropdown.
+          Search, then click a result to add it.
         </p>
         <InlineDocumentTypeCreator
           onCreated={(item) => {
-            if (!selected.includes(item.id)) {
+            if (!selected.some((id) => typeId(id) === typeId(item.id))) {
               onChange([...selected, item.id]);
             }
           }}
@@ -69,13 +70,29 @@ export default function PolicyTypeMultiSelect({
           className="field pl-10"
         />
       </div>
-      <ThemedSelect
-        value={pickerValue}
-        onChange={addType}
-        placeholder="Select a document type to add"
-        options={availableOptions}
-        ariaLabel="Add required document type"
-      />
+      {query.trim() ? (
+        <div className="max-h-44 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+          {filteredTypes.length ? (
+            filteredTypes.map((type) => (
+              <button
+                key={type.id}
+                type="button"
+                onClick={() => addType(typeId(type.id))}
+                className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-pink-50"
+              >
+                <span>{type.name}</span>
+                <span className="text-xs font-semibold text-brand-pink">Add</span>
+              </button>
+            ))
+          ) : (
+            <p className="px-3 py-4 text-sm text-slate-400">No matching document types.</p>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-slate-400">
+          Start typing to find document types.
+        </p>
+      )}
       {selectedTypes.length > 0 ? (
         <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
           {selectedTypes.map((type) => (
@@ -86,7 +103,9 @@ export default function PolicyTypeMultiSelect({
               {type.name}
               <button
                 type="button"
-                onClick={() => onChange(selected.filter((id) => id !== type.id))}
+                onClick={() =>
+                  onChange(selected.filter((id) => typeId(id) !== typeId(type.id)))
+                }
                 className="rounded-full p-0.5 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
                 aria-label={`Remove ${type.name}`}
               >

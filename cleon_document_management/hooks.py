@@ -11,3 +11,5 @@ def _sync_document_user_groups(env):
 
 def post_init_hook(env):
     _sync_document_user_groups(env)
+    if "doc.role.definition" in env:
+        env["doc.role.definition"].sync_registry()

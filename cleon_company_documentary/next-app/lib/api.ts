@@ -9,6 +9,9 @@ import type {
   DocumentaryMedia,
   DocumentarySettings,
   MediaFilters,
+  ModuleRoleAssignment,
+  ModuleRoleDefinition,
+  ModuleRoleMember,
   RecycleBinData,
   Tag,
   UploadInit,
@@ -28,7 +31,8 @@ declare global {
       user_email?: string;
       company_name?: string;
       is_admin?: boolean;
-      is_document_manager?: boolean;
+      is_documentary_manager?: boolean;
+      is_documentary_admin?: boolean;
     };
   }
 }
@@ -67,7 +71,8 @@ export const api = {
       email: user.user_email || "",
       company_name: user.company_name,
       is_admin: user.is_admin,
-      is_document_manager: user.is_document_manager,
+      is_documentary_manager: user.is_documentary_manager,
+      is_documentary_admin: user.is_documentary_admin,
     };
   },
 
@@ -221,6 +226,18 @@ export const api = {
 
   async saveSettings(values: Partial<DocumentarySettings>) {
     return unwrap(await rpc<{ success: boolean; data: DocumentarySettings; message?: string }>("/api/company-documentary/settings", { save: true, ...values }));
+  },
+
+  async roleDefinitions() {
+    return unwrap(await rpc<{ success: boolean; data: ModuleRoleDefinition[]; message?: string }>("/api/company-documentary/roles/definitions"));
+  },
+
+  async roleMembers(search = "") {
+    return unwrap(await rpc<{ success: boolean; data: ModuleRoleMember[]; message?: string }>("/api/company-documentary/roles/members", { search, limit: 50 }));
+  },
+
+  async assignRoles(employeeId: number, assignments: ModuleRoleAssignment[]) {
+    return unwrap(await rpc<{ success: boolean; data: ModuleRoleMember; message?: string }>("/api/company-documentary/roles/assign", { employee_id: employeeId, assignments }));
   },
 
   async pinFolder(payload: { id: number; pinned: boolean }) {

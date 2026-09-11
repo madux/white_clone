@@ -1,6 +1,15 @@
 from odoo import _, fields, http
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
+
+from .access import require_document_admin, user_is_document_admin
+
+CANONICAL_POLICY_TYPE_NAMES = {
+    "document_requirement": "Document Requirement",
+    "renewable_document": "Renewable Document",
+    "compliance_request": "Compliance Request",
+    "retention": "Review Schedule",
+}
 
 
 class ComplianceController(http.Controller):
@@ -203,6 +212,10 @@ class ComplianceController(http.Controller):
                 },
             ]
             records = TypeModel.create(defaults)
+        for record in records:
+            canonical = CANONICAL_POLICY_TYPE_NAMES.get(record.code)
+            if canonical and record.name != canonical:
+                record.sudo().write({"name": canonical})
         return {
             "success": True,
             "data": [
@@ -258,6 +271,10 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def create_policy(self, **kwargs):
+        try:
+            require_document_admin()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
         applies_to = kwargs.get("applies_to", "all")
         dept_ids = (
             request.env["hr.department"]
@@ -278,16 +295,12 @@ class ComplianceController(http.Controller):
             .ids
         )
 
-        if (
-            applies_to == "all"
-            or (applies_to == "department" and not dept_ids)
-            or (applies_to == "grade" and not grade_ids)
-            or (applies_to == "employee" and not emp_ids)
-        ):
-            applies_to = "all"
-            dept_ids = []
-            grade_ids = []
-            emp_ids = []
+        if applies_to == "department" and not dept_ids:
+            return {"success": False, "message": "Select at least one department."}
+        if applies_to == "grade" and not grade_ids:
+            return {"success": False, "message": "Select at least one grade."}
+        if applies_to == "employee" and not emp_ids:
+            return {"success": False, "message": "Select at least one employee."}
 
         values = {
             "name": kwargs.get("name"),
@@ -314,7 +327,7 @@ class ComplianceController(http.Controller):
             # Type-specific parameters
             "allow_waiver": kwargs.get("allow_waiver", True),
             "alert_schedule_days": kwargs.get("alert_schedule_days", "60,30,15,7,0"),
-            "escalate_manager_days": kwargs.get("escalate_manager_days", 15),
+            "escalate_manager_days": kwargs.get("escalate_manager_days", 0),
             "escalate_hr_days": kwargs.get("escalate_hr_days", 7),
             "auto_request_renewal": kwargs.get("auto_request_renewal", True),
             "event_trigger": kwargs.get("event_trigger") or False,
@@ -327,7 +340,10 @@ class ComplianceController(http.Controller):
         }
         if not values["name"] or not values["policy_type_id"]:
             return {"success": False, "message": "Name and policy type are required."}
-        policy = request.env["doc.compliance.policy"].create(values)
+        try:
+            policy = request.env["doc.compliance.policy"].create(values)
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
         return {"success": True, "data": self._policy_data(policy)}
 
     @http.route(
@@ -338,6 +354,10 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def update_policy(self, **kwargs):
+        try:
+            require_document_admin()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
         policy = request.env["doc.compliance.policy"].browse(kwargs.get("id")).exists()
         if not policy:
             return {"success": False, "message": "Policy not found."}
@@ -414,16 +434,12 @@ class ComplianceController(http.Controller):
             else policy.employee_ids.ids
         )
 
-        if (
-            target_applies == "all"
-            or (target_applies == "department" and not dept_ids)
-            or (target_applies == "grade" and not grade_ids)
-            or (target_applies == "employee" and not emp_ids)
-        ):
-            values["applies_to"] = "all"
-            values["department_ids"] = [fields.Command.set([])]
-            values["grade_ids"] = [fields.Command.set([])]
-            values["employee_ids"] = [fields.Command.set([])]
+        if target_applies == "department" and not dept_ids:
+            return {"success": False, "message": "Select at least one department."}
+        if target_applies == "grade" and not grade_ids:
+            return {"success": False, "message": "Select at least one grade."}
+        if target_applies == "employee" and not emp_ids:
+            return {"success": False, "message": "Select at least one employee."}
 
         if "schedule" in values and values["schedule"] == "manual":
             values["schedule"] = False
@@ -433,15 +449,25 @@ class ComplianceController(http.Controller):
             values["minimum_documents"] = int(values["minimum_documents"])
         if "grace_period_days" in values:
             values["grace_period_days"] = int(values["grace_period_days"])
-        policy.write(values)
+        try:
+            policy.write(values)
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
         return {"success": True, "data": self._policy_data(policy)}
 
     @http.route("/api/compliance/policies/delete", type="json", auth="user", methods=["POST"], csrf=False)
     def delete_policy(self, id=None, **kwargs):
+        try:
+            require_document_admin()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
         policy = request.env["doc.compliance.policy"].browse(id).exists()
         if not policy:
             return {"success": False, "message": "Policy not found."}
-        policy.unlink()
+        try:
+            policy.unlink()
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
         return {"success": True, "message": "Policy deleted."}
 
     @http.route(
@@ -452,8 +478,8 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def evaluate_policy(self, policy_id, **kwargs):
-        if not request.env.user.has_group("cleon_document_management.group_document_manager"):
-            return {"success": False, "message": "Document manager access is required."}
+        if not user_is_document_admin(request.env.user):
+            return {"success": False, "message": "Document administrator access is required."}
         policy = request.env["doc.compliance.policy"].browse(policy_id).exists()
         if not policy:
             return {"success": False, "message": "Policy not found."}
@@ -563,6 +589,14 @@ class ComplianceController(http.Controller):
             return {
                 "success": False,
                 "message": "Employee, policy, reason, and valid-until date are required.",
+            }
+        is_admin = request.env.user.has_group(
+            "cleon_document_management.group_document_admin"
+        )
+        if not policy.allow_waiver and not is_admin:
+            return {
+                "success": False,
+                "message": "This policy does not allow waiver or exemption requests.",
             }
         exceptions = request.env["doc.compliance.exception"].create([
             {

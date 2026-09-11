@@ -16,6 +16,9 @@ import type {
   QuickAccess,
   DashboardStats,
   WorkspaceActivity,
+  ModuleRoleAssignment,
+  ModuleRoleDefinition,
+  ModuleRoleMember,
   DocumentType,
   ShareLink,
   UploadDuplicateMatch,
@@ -39,6 +42,7 @@ declare global {
       tz?: string;
       is_admin?: boolean;
       is_document_manager?: boolean;
+      is_document_admin?: boolean;
     };
   }
 }
@@ -87,6 +91,15 @@ export async function rpc<T = any>(
   }
 }
 
+function unwrapCompliance<T extends { success?: boolean; message?: string }>(
+  result: T,
+): T {
+  if (result?.success === false) {
+    throw new Error(result.message || "Compliance request failed.");
+  }
+  return result;
+}
+
 export const api = {
   injectedUser: (): User | null => {
     const rawUser =
@@ -109,6 +122,7 @@ export const api = {
         tz: rawUser.tz || "",
         is_admin: rawUser.is_admin,
         is_document_manager: rawUser.is_document_manager,
+        is_document_admin: rawUser.is_document_admin,
       };
       if (
         typeof window !== "undefined" &&
@@ -507,7 +521,7 @@ export const api = {
     rpc<{ success: boolean; data: any }>(
       "/api/compliance/exceptions/create",
       payload,
-    ),
+    ).then(unwrapCompliance),
 
   deactivateException: (id: number) =>
     rpc<{ success: boolean; active: boolean }>(
@@ -531,13 +545,13 @@ export const api = {
     rpc<{ success: boolean; status?: string; message?: string }>(
       `/api/compliance/exceptions/${id}/approve`,
       {},
-    ),
+    ).then(unwrapCompliance),
 
   rejectException: (id: number) =>
     rpc<{ success: boolean; status?: string; message?: string }>(
       `/api/compliance/exceptions/${id}/reject`,
       {},
-    ),
+    ).then(unwrapCompliance),
 
   getEvaluations: (employeeId?: number) =>
     rpc<{ success: boolean; data: any[] }>(
@@ -555,7 +569,7 @@ export const api = {
     rpc<{ success: boolean; data: any[]; run?: any; message?: string }>(
       `/api/compliance/policies/${policyId}/evaluate`,
       {},
-    ),
+    ).then(unwrapCompliance),
 
   getPolicies: () =>
     rpc<{ success: boolean; count: number; data: CompliancePolicy[] }>(
@@ -567,13 +581,13 @@ export const api = {
     rpc<{ success: boolean; data: CompliancePolicy }>(
       "/api/compliance/policies/create",
       payload,
-    ),
+    ).then(unwrapCompliance),
 
   updatePolicy: (payload: Record<string, any>) =>
     rpc<{ success: boolean; data: CompliancePolicy }>(
       "/api/compliance/policies/update",
       payload,
-    ),
+    ).then(unwrapCompliance),
 
   deletePolicy: (id: number) =>
     rpc<{ success: boolean; message: string }>(
@@ -623,6 +637,29 @@ export const api = {
   downloadEmployee: (employeeId: number) => {
     triggerDownload(`/document-management/employee/${employeeId}/download`);
   },
+
+  getModuleRoleDefinitions: () =>
+    rpc<{ success: boolean; data: ModuleRoleDefinition[] }>(
+      "/api/document-management/roles/definitions",
+    ).then((result) => result.data),
+
+  getModuleRoleMembers: (search = "") =>
+    rpc<{ success: boolean; data: ModuleRoleMember[] }>(
+      "/api/document-management/roles/members",
+      { search, limit: 50 },
+    ).then((result) => result.data),
+
+  assignModuleRoles: (
+    employeeId: number,
+    assignments: ModuleRoleAssignment[],
+  ) =>
+    rpc<{ success: boolean; data: ModuleRoleMember }>(
+      "/api/document-management/roles/assign",
+      {
+        employee_id: employeeId,
+        assignments,
+      },
+    ).then((result) => result.data),
 };
 
 function triggerDownload(url: string) {

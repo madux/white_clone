@@ -49,3 +49,9 @@ document-intelligence-requirements.md
 .opencode/
 DESIGN.md
 PRODUCT.md
+
+# Demo upload files (keep folder structure + README)
+demo_assets/**/*
+!demo_assets/README.md
+!demo_assets/**/
+!demo_assets/**/.gitkeep

@@ -7,6 +7,7 @@ from odoo import http, fields
 from odoo.http import request
 from odoo.tools.misc import file_path
 
+from .access import user_is_document_admin, user_is_document_manager
 from .main import _expiring_documents_domain, _serialize_expiring_document
 
 _logger = logging.getLogger(__name__)
@@ -95,9 +96,8 @@ class NextAppController(http.Controller):
                 "company_name": user.company_id.name,
                 "tz": user.tz or "",
                 "is_admin": user.has_group("base.group_system"),
-                "is_document_manager": user.has_group(
-                    "cleon_document_management.group_document_manager"
-                ),
+                "is_document_manager": user_is_document_manager(user),
+                "is_document_admin": user_is_document_admin(user),
             }
         )
         return f"<script>window.__ODOO_USER__={user_data}</script>"
@@ -166,9 +166,8 @@ class NextAppController(http.Controller):
                     "company_name": user.company_id.name if user.company_id else "",
                     "tz": user.tz or "",
                     "is_admin": user.has_group("base.group_system"),
-                    "is_document_manager": user.has_group(
-                        "cleon_document_management.group_document_manager"
-                    ),
+                    "is_document_manager": user_is_document_manager(user),
+                    "is_document_admin": user_is_document_admin(user),
                     "groups": user.groups_id.mapped("name"),
                 },
             }
@@ -180,7 +179,7 @@ class NextAppController(http.Controller):
     def api_admin_attention(self, **kwargs):
         """In-app attention items for managers; separate from Odoo's chatter UI."""
         user = request.env.user
-        if not user.has_group("cleon_document_management.group_document_manager"):
+        if not user_is_document_manager(user):
             return {"success": True, "data": {"count": 0, "notifications": []}}
         approvals = request.env["doc.document.approval"].search(
             [
@@ -320,9 +319,7 @@ class NextAppController(http.Controller):
                 "dismissed": bool(state.get("dismissed")),
                 "completed": bool(state.get("completed")),
                 "completed_steps": completed_steps,
-                "is_admin": user.has_group(
-                    "cleon_document_management.group_document_manager"
-                ),
+                "is_admin": user_is_document_manager(user),
             },
         }
 
@@ -361,9 +358,7 @@ class NextAppController(http.Controller):
                 "dismissed": bool(state.get("dismissed")),
                 "completed": bool(state.get("completed")),
                 "completed_steps": state.get("completed_steps", []),
-                "is_admin": user.has_group(
-                    "cleon_document_management.group_document_manager"
-                ),
+                "is_admin": user_is_document_manager(user),
             },
         }
 
@@ -410,7 +405,7 @@ class NextAppController(http.Controller):
     )
     def api_workspace_activity(self, **kwargs):
         user = request.env.user
-        if not user.has_group("cleon_document_management.group_document_manager"):
+        if not user_is_document_manager(user):
             return {
                 "success": False,
                 "message": "Document manager access is required.",

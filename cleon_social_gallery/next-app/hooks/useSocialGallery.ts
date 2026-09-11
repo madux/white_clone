@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { LayoutMode } from "@/lib/types";
 
@@ -28,12 +28,34 @@ export function useGalleryUser() {
   return useQuery({ queryKey: galleryKeys.user, queryFn: () => api.me() });
 }
 
-export function useGalleryAlbums(search = "") {
-  return useQuery({ queryKey: galleryKeys.albums(search), queryFn: () => api.albums({ search }) });
+export function useGalleryAlbums(search = "", sort = "newest") {
+  const query = useInfiniteQuery({
+    queryKey: [...galleryKeys.albums(search), sort],
+    queryFn: ({ pageParam = 0 }) => api.albums({ search, sort, offset: pageParam, limit: 48 }),
+    getNextPageParam: (lastPage) => {
+      const next = lastPage.offset + lastPage.items.length;
+      return next < lastPage.total ? next : undefined;
+    },
+    initialPageParam: 0,
+  });
+  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const total = query.data?.pages[0]?.total ?? items.length;
+  return { ...query, items, total };
 }
 
 export function useGalleryMedia(params: Record<string, unknown> = {}) {
-  return useQuery({ queryKey: galleryKeys.media(params), queryFn: () => api.media(params) });
+  const query = useInfiniteQuery({
+    queryKey: galleryKeys.media(params),
+    queryFn: ({ pageParam = 0 }) => api.media({ ...params, offset: pageParam, limit: 48 }),
+    getNextPageParam: (lastPage) => {
+      const next = lastPage.offset + lastPage.items.length;
+      return next < lastPage.total ? next : undefined;
+    },
+    initialPageParam: 0,
+  });
+  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const total = query.data?.pages[0]?.total ?? items.length;
+  return { ...query, items, total };
 }
 
 export function useGalleryDashboard(enabled = true) {
@@ -93,11 +115,19 @@ export function useGalleryUploadHistory(enabled = true) {
 }
 
 export function useGalleryAudit(params: Record<string, unknown> = {}, enabled = true) {
-  return useQuery({
-    queryKey: galleryKeys.audit,
-    queryFn: () => api.audit(params),
+  const query = useInfiniteQuery({
+    queryKey: [...galleryKeys.audit, params],
+    queryFn: ({ pageParam = 0 }) => api.audit({ ...params, offset: pageParam, limit: 100 }),
+    getNextPageParam: (lastPage) => {
+      const next = lastPage.offset + lastPage.items.length;
+      return next < lastPage.total ? next : undefined;
+    },
+    initialPageParam: 0,
     enabled,
   });
+  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const total = query.data?.pages[0]?.total ?? items.length;
+  return { ...query, items, total };
 }
 
 export function useGallerySettings(enabled = true) {
@@ -215,6 +245,11 @@ export function useGalleryMutations() {
     }),
     resolveFlag: useMutation({
       mutationFn: (payload: { report_id: number; action: string }) => api.flagged(payload.action, payload),
+      onSuccess: invalidateAll,
+    }),
+    flaggedBatchAction: useMutation({
+      mutationFn: (payload: { action: "batch_dismiss" | "batch_remove"; report_ids: number[] }) =>
+        api.flagged(payload.action, { report_ids: payload.report_ids }),
       onSuccess: invalidateAll,
     }),
     recycleClear: useMutation({

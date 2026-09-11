@@ -63,11 +63,14 @@ export default function SocialGalleryPage() {
   const [showCreateAlbum, setShowCreateAlbum] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
+  const [sharePrompt, setSharePrompt] = useState<{ token: string } | null>(null);
+  const [sharePassword, setSharePassword] = useState("");
 
   const userQuery = useGalleryUser();
   const user = userQuery.data;
   const isManager = !!(user?.is_gallery_manager || user?.is_gallery_admin || user?.is_admin);
   const isAdmin = !!(user?.is_gallery_admin || user?.is_admin);
+  const isSystemAdmin = !!user?.is_admin;
 
   const dashboardQuery = useGalleryDashboard();
   const albumsQuery = useGalleryAlbums(search);
@@ -104,20 +107,32 @@ export default function SocialGalleryPage() {
     }
   }, [settingsQuery.data]);
 
+  const resolveShareLink = async (token: string, password?: string) => {
+    try {
+      const result = await api.shareResolve(token, password);
+      setSharePrompt(null);
+      setSharePassword("");
+      if (result.type === "media") {
+        openMedia(result.media, [result.media]);
+      } else {
+        setActiveView("albums");
+        setSelectedAlbumId(result.album.id);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Invalid share link";
+      if (/password/i.test(message)) {
+        setSharePrompt({ token });
+        return;
+      }
+      showToast(message, true);
+    }
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("share");
     if (!token) return;
-    api.shareResolve(token)
-      .then((result) => {
-        if (result.type === "media") {
-          openMedia(result.media, [result.media]);
-        } else {
-          setActiveView("albums");
-          setSelectedAlbumId(result.album.id);
-        }
-      })
-      .catch((err) => showToast(err instanceof Error ? err.message : "Invalid share link", true));
+    resolveShareLink(token);
   }, []);
 
   const refreshAll = () => {
@@ -138,10 +153,10 @@ export default function SocialGalleryPage() {
 
   const selectedAlbum = useMemo(() => {
     if (!selectedAlbumId) return null;
-    return albumsQuery.data?.find((a) => a.id === selectedAlbumId)
+    return albumsQuery.items.find((a) => a.id === selectedAlbumId)
       || dashboardQuery.data?.recent_albums?.find((a) => a.id === selectedAlbumId)
       || null;
-  }, [selectedAlbumId, albumsQuery.data, dashboardQuery.data]);
+  }, [selectedAlbumId, albumsQuery.items, dashboardQuery.data]);
 
   const headerTitle = selectedAlbum
     ? `Albums › ${selectedAlbum.name}`
@@ -196,13 +211,19 @@ export default function SocialGalleryPage() {
       return (
         <AlbumDetailView
           album={selectedAlbum}
-          media={mediaQuery.data || []}
+          media={mediaQuery.items}
           loading={mediaQuery.isLoading}
           layout={layout}
           onLayoutChange={setLayout}
-          onOpenMedia={(item) => openMedia(item, mediaQuery.data || [])}
+          onOpenMedia={(item) => openMedia(item, mediaQuery.items)}
           onRefresh={refreshAll}
           onUpload={() => setShowUpload(true)}
+          total={mediaQuery.total}
+          onLoadMore={() => mediaQuery.fetchNextPage()}
+          loadingMore={mediaQuery.isFetchingNextPage}
+          canManage={isManager}
+          albums={albumsQuery.items}
+          onError={(msg) => showToast(msg, true)}
         />
       );
     }
@@ -237,8 +258,11 @@ export default function SocialGalleryPage() {
         }
         return (
           <AlbumsView
-            albums={albumsQuery.data || []}
+            albums={albumsQuery.items}
             loading={albumsQuery.isLoading}
+            total={albumsQuery.total}
+            onLoadMore={() => albumsQuery.fetchNextPage()}
+            loadingMore={albumsQuery.isFetchingNextPage}
             onOpenAlbum={openAlbum}
             onRefresh={refreshAll}
             onCreateAlbum={() => setShowCreateAlbum(true)}
@@ -251,14 +275,19 @@ export default function SocialGalleryPage() {
         }
         return (
           <GalleryFeedView
-            media={mediaQuery.data || []}
+            media={mediaQuery.items}
             loading={mediaQuery.isLoading}
             layout={layout}
             onLayoutChange={setLayout}
-            onOpenMedia={(item) => openMedia(item, mediaQuery.data || [])}
-            albums={albumsQuery.data}
+            onOpenMedia={(item) => openMedia(item, mediaQuery.items)}
+            albums={albumsQuery.items}
             onRefresh={refreshAll}
             onUpload={() => setShowUpload(true)}
+            total={mediaQuery.total}
+            onLoadMore={() => mediaQuery.fetchNextPage()}
+            loadingMore={mediaQuery.isFetchingNextPage}
+            canManage={isManager}
+            onError={(msg) => showToast(msg, true)}
           />
         );
       case "pending":
@@ -267,7 +296,7 @@ export default function SocialGalleryPage() {
             media={pendingQuery.data || []}
             loading={pendingQuery.isLoading}
             error={pendingQuery.isError ? (pendingQuery.error instanceof Error ? pendingQuery.error.message : "Failed to load") : undefined}
-            albums={(albumsQuery.data || []).map((a) => ({ id: a.id, name: a.name }))}
+            albums={albumsQuery.items.map((a) => ({ id: a.id, name: a.name }))}
             onRefresh={() => { refreshAll(); showToast("Review updated"); }}
             onError={(msg) => showToast(msg, true)}
           />
@@ -303,7 +332,15 @@ export default function SocialGalleryPage() {
           />
         );
       case "contributions":
-        return <ContributionsView onOpenMedia={(item) => openMedia(item, [])} />;
+        return (
+          <ContributionsView
+            onOpenMedia={(item) => openMedia(item, [])}
+            isAdmin={isAdmin}
+            albums={albumsQuery.items}
+            onRefresh={() => { refreshAll(); showToast("Contributions updated"); }}
+            onError={(msg) => showToast(msg, true)}
+          />
+        );
       case "upload-history":
         return (
           <UploadHistoryView
@@ -315,15 +352,24 @@ export default function SocialGalleryPage() {
       case "duplicates":
         return <DuplicateScanView groups={duplicatesQuery.data || []} loading={duplicatesQuery.isLoading} onRefresh={refreshAll} onError={(msg) => showToast(msg, true)} />;
       case "audit":
-        return <AuditLogView logs={auditQuery.data || []} loading={auditQuery.isLoading} />;
+        return (
+          <AuditLogView
+            logs={auditQuery.items}
+            loading={auditQuery.isLoading}
+            total={auditQuery.total}
+            onLoadMore={() => auditQuery.fetchNextPage()}
+            loadingMore={auditQuery.isFetchingNextPage}
+          />
+        );
       case "settings":
         return (
           <SettingsView
             settings={settingsQuery.data}
             loading={settingsQuery.isLoading}
-            albums={albumsQuery.data || []}
+            albums={albumsQuery.items}
             onRefresh={() => { settingsQuery.refetch(); showToast("Settings saved"); }}
             onError={(msg) => showToast(msg, true)}
+            isSystemAdmin={isSystemAdmin}
           />
         );
       default:
@@ -378,7 +424,7 @@ export default function SocialGalleryPage() {
       {selectedMedia && (
         <MediaDetailModal
           media={selectedMedia}
-          albums={albumsQuery.data || []}
+          albums={albumsQuery.items}
           userId={user?.id}
           isManager={isManager}
           allowExternalShare={settingsQuery.data?.allow_external_share}
@@ -406,10 +452,37 @@ export default function SocialGalleryPage() {
       {showUpload && (
         <UploadModal
           albumId={selectedAlbumId || undefined}
-          albums={albumsQuery.data}
+          albums={albumsQuery.items}
           onClose={() => setShowUpload(false)}
           onComplete={() => { setShowUpload(false); refreshAll(); showToast("Uploads complete"); }}
         />
+      )}
+      {sharePrompt && (
+        <div className="modal-backdrop">
+          <div className="modal-card">
+            <h3>Password required</h3>
+            <p>This shared link is protected. Enter the password to continue.</p>
+            <input
+              type="password"
+              value={sharePassword}
+              onChange={(event) => setSharePassword(event.target.value)}
+              placeholder="Share password"
+              className="field"
+            />
+            <div className="modal-actions">
+              <button type="button" className="secondary-button" onClick={() => { setSharePrompt(null); setSharePassword(""); }}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => resolveShareLink(sharePrompt.token, sharePassword)}
+              >
+                Open link
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {toast && (
         <div className={`toast ${toast.error ? "error" : ""}`}>

@@ -1582,8 +1582,10 @@ class DocumentUICreation(http.Controller):
             evaluation_data.append(
                 {
                     "id": evaluation.id,
+                    "policy_id": evaluation.policy_id.id,
                     "policy": evaluation.policy_id.name,
                     "policy_active": evaluation.policy_id.active,
+                    "allow_waiver": evaluation.policy_id.allow_waiver,
                     "score": evaluation.score,
                     "status": evaluation.status,
                     "complete_count": evaluation.complete_count,
@@ -1598,7 +1600,7 @@ class DocumentUICreation(http.Controller):
                 evaluations.filtered(lambda item: item.status == "compliant")
             ),
             "partial": len(
-                evaluations.filtered(lambda item: item.status == "partial")
+                evaluations.filtered(lambda item: item.status in ("partial", "grace"))
             ),
             "non_compliant": len(
                 evaluations.filtered(lambda item: item.status == "non_compliant")
@@ -1608,6 +1610,7 @@ class DocumentUICreation(http.Controller):
         return {
             "success": True,
             "data": {
+                "employee_id": employee.id,
                 "evaluations": evaluation_data,
                 "outstanding": outstanding,
                 "summary": summary,

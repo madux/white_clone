@@ -144,7 +144,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
     <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-end">
         <div className="flex flex-wrap gap-2">
-          {kind === "employee" && (
+          {kind === "employee" && currentUser.data?.is_document_admin === true && (
             <Link
               href="/pages/compliance"
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-pink hover:text-brand-pink"
@@ -153,7 +153,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
               Compliance
             </Link>
           )}
-          {currentUser.data?.is_document_manager !== false && (
+          {currentUser.data?.is_document_manager === true && (
             <button
               type="button"
               onClick={() => setShowCreateFolder(true)}
@@ -246,7 +246,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
             targets={complianceTargets.data}
             selected={selected}
             onToggleSelected={toggleSelected}
-            isDocumentManager={currentUser.data?.is_document_manager !== false}
+            isDocumentManager={currentUser.data?.is_document_manager === true}
             guideTarget={guideTarget}
           />
         ) : (

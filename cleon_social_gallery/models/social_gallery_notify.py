@@ -80,6 +80,25 @@ class SocialGalleryNotify(models.AbstractModel):
         ) % (comment.user_id.name, media.display_name, comment.body)
         self._send_mail(owner, subject, body)
 
+    def notify_content_report(self, report):
+        media = report.media_id
+        company = media.company_id
+        if not company.sg_notify_content_reports:
+            return
+        managers = self._gallery_manager_users(company)
+        subject = _("Gallery content reported: %s") % media.display_name
+        body = _(
+            "<p><strong>%s</strong> was reported by %s.</p>"
+            "<p>Reason: %s</p>"
+            "<p>%s</p>"
+        ) % (
+            media.display_name,
+            report.reporter_id.name,
+            report.reason,
+            report.details or "",
+        )
+        self._send_mail(managers, subject, body)
+
     def notify_like(self, media, liker):
         company = media.company_id
         if not company.sg_notify_likes:

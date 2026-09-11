@@ -4,7 +4,35 @@ export interface User {
   email: string;
   company_name?: string;
   is_admin?: boolean;
-  is_document_manager?: boolean;
+  is_documentary_manager?: boolean;
+  is_documentary_admin?: boolean;
+}
+
+export interface ModuleRoleDefinition {
+  id: number;
+  role_key: "user" | "manager" | "admin";
+  label: string;
+  description: string;
+  capabilities: string;
+  assignable: boolean;
+  group_id: number;
+}
+
+export interface ModuleRoleMember {
+  employee_id: number;
+  employee_name: string;
+  department: string;
+  job_title: string;
+  user_id: number | false;
+  user_name: string;
+  user_login: string;
+  has_login: boolean;
+  roles: Partial<Record<"user" | "manager" | "admin", boolean>>;
+}
+
+export interface ModuleRoleAssignment {
+  role_key: "manager" | "admin";
+  enabled: boolean;
 }
 
 export interface WatchProgress {

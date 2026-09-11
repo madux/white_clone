@@ -90,6 +90,12 @@ class CompliancePolicy(models.Model):
         "policy_id",
         string="Requirements",
     )
+    auto_requirement_id = fields.Many2one(
+        "doc.compliance.requirement",
+        string="Primary Requirement",
+        ondelete="set null",
+        copy=False,
+    )
     minimum_documents = fields.Integer(default=1)
     grace_period_days = fields.Integer(string="Grace Period (Days)", default=0)
     effective_date = fields.Date(default=fields.Date.context_today)
@@ -211,10 +217,28 @@ class CompliancePolicy(models.Model):
                 "employee": policy.employee_ids,
             }
             if not scoped.get(policy.applies_to):
-                policy.applies_to = "all"
+                raise ValidationError(
+                    _("Select at least one target for the chosen policy scope.")
+                )
 
-    def _is_document_manager(self):
-        return self.env.user.has_group("cleon_document_management.group_document_manager")
+    def _is_document_admin(self):
+        return (
+            self.env.user.has_group("base.group_system")
+            or self.env.user.has_group("cleon_document_management.group_document_admin")
+        )
+
+    def _sudo_evaluation_env(self):
+        return self.env["doc.compliance.evaluation"].sudo()
+
+    @api.model
+    def _evaluate_documents(self, documents):
+        employees = documents.mapped("employee_id").filtered("id")
+        if not employees:
+            return
+        for policy in self.search([("active", "=", True)]):
+            for employee in employees:
+                if policy._applies_to_employee(employee):
+                    policy.evaluate_employee(employee)
 
     @api.model
     def _schedule_delta(self, schedule, custom_days=0):
@@ -230,8 +254,8 @@ class CompliancePolicy(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if not self._is_document_manager():
-            raise AccessError(_("Only document managers can create compliance policies."))
+        if not self._is_document_admin():
+            raise AccessError(_("Only document administrators can create compliance policies."))
         policies = super().create(vals_list)
         Requirement = self.env["doc.compliance.requirement"]
         for policy in policies:
@@ -245,27 +269,43 @@ class CompliancePolicy(models.Model):
                 }
             )
         policies.action_set_next_run()
+        policies.action_evaluate(run_type="automatic")
         return policies
 
     def write(self, vals):
-        if not self._is_document_manager():
-            raise AccessError(_("Only document managers can edit compliance policies."))
+        if not self._is_document_admin():
+            raise AccessError(_("Only document administrators can edit compliance policies."))
         result = super().write(vals)
         if {"schedule", "custom_schedule_days", "effective_date"}.intersection(vals):
             self.action_set_next_run()
         if {"name", "minimum_documents", "grace_period_days", "active"}.intersection(vals):
-            self.auto_requirement_id.write(
-                {
-                    field_name: vals[field_name]
-                    for field_name in ("name", "minimum_documents", "grace_period_days", "active")
-                    if field_name in vals
-                }
-            )
+            for policy in self:
+                if policy.auto_requirement_id:
+                    policy.auto_requirement_id.write(
+                        {
+                            field_name: vals[field_name]
+                            for field_name in ("name", "minimum_documents", "grace_period_days", "active")
+                            if field_name in vals
+                        }
+                    )
+        reevaluate_fields = {
+            "document_type_ids",
+            "applies_to",
+            "department_ids",
+            "grade_ids",
+            "employee_ids",
+            "minimum_documents",
+            "grace_period_days",
+            "active",
+            "effective_date",
+        }
+        if reevaluate_fields.intersection(vals):
+            self.action_evaluate(run_type="automatic")
         return result
 
     def unlink(self):
-        if not self._is_document_manager():
-            raise AccessError(_("Only document managers can delete compliance policies."))
+        if not self._is_document_admin():
+            raise AccessError(_("Only document administrators can delete compliance policies."))
         return super().unlink()
 
     def action_run_now(self):
@@ -316,13 +356,14 @@ class CompliancePolicy(models.Model):
         ):
             return self.env["doc.compliance.evaluation"]
 
-        Evaluation = self.env["doc.compliance.evaluation"]
+        Evaluation = self._sudo_evaluation_env()
         evaluation = Evaluation.search(
             [("policy_id", "=", self.id), ("employee_id", "=", employee.id)],
             limit=1,
         )
+        previous_status = evaluation.status if evaluation else False
         line_commands = [fields.Command.clear()]
-        exception = self.env["doc.compliance.exception"].search(
+        exception = self.env["doc.compliance.exception"].sudo().search(
             [
                 ("policy_id", "=", self.id),
                 ("employee_id", "=", employee.id),
@@ -338,7 +379,7 @@ class CompliancePolicy(models.Model):
             # prevents one document type from satisfying another type in the
             # same policy.
             for document_type in requirement.document_type_ids:
-                matching_documents = self.env["doc.document"].search(
+                matching_documents = self.env["doc.document"].sudo().search(
                     [
                         ("employee_id", "=", employee.id),
                         ("document_type_id", "=", document_type.id),
@@ -355,8 +396,13 @@ class CompliancePolicy(models.Model):
                     status = "excepted"
                 elif count >= required:
                     status = "complete"
-                elif requirement.grace_period_days and self.effective_date:
-                    grace_end = self.effective_date + relativedelta(
+                elif requirement.grace_period_days:
+                    reference_date = self.effective_date or today
+                    if employee.create_date:
+                        employee_start = fields.Date.to_date(employee.create_date)
+                        if employee_start and employee_start > reference_date:
+                            reference_date = employee_start
+                    grace_end = reference_date + relativedelta(
                         days=requirement.grace_period_days
                     )
                     status = "grace" if today <= grace_end else "missing"
@@ -387,16 +433,20 @@ class CompliancePolicy(models.Model):
         else:
             evaluation = Evaluation.create(values)
         evaluation._compute_results()
+        self.env["doc.compliance.notify"].sudo().notify_after_evaluation(
+            self, employee, evaluation, previous_status
+        )
         return evaluation
 
     def action_evaluate(self, run_type="manual"):
-        runs = self.env["doc.compliance.evaluation.run"]
+        runs = self.env["doc.compliance.evaluation.run"].sudo()
+        Requirement = self.env["doc.compliance.requirement"].sudo()
         for policy in self:
             today = fields.Date.context_today(policy)
             if not policy.active or (policy.effective_date and policy.effective_date > today):
                 continue
             if not policy.requirement_ids:
-                policy.auto_requirement_id = self.env["doc.compliance.requirement"].create(
+                policy.auto_requirement_id = Requirement.create(
                     {
                         "name": policy.name,
                         "policy_id": policy.id,
@@ -406,16 +456,16 @@ class CompliancePolicy(models.Model):
                     }
                 )
             targets = policy._target_employees()
-            Evaluation = self.env["doc.compliance.evaluation"]
+            Evaluation = policy._sudo_evaluation_env()
             stale = Evaluation.search([
                 ("policy_id", "=", policy.id),
                 ("employee_id", "not in", targets.ids or [0]),
             ])
             if stale:
                 stale.unlink()
-            run = self.env["doc.compliance.evaluation.run"].create({
+            run = runs.create({
                 "policy_id": policy.id,
-                "run_type": run_type if run_type in ("manual", "automatic") else "manual",
+                "run_type": run_type if run_type in ("manual", "automatic", "audit") else "manual",
                 "evaluated_at": fields.Datetime.now(),
             })
             for employee in targets:
@@ -551,7 +601,7 @@ class ComplianceEvaluation(models.Model):
                     if lines and complete == len(lines)
                     else "non_compliant"
                     if missing == len(lines)
-                    else "grace" if grace and not missing else "partial"
+                    else "partial"
                 )
             )
 
@@ -563,7 +613,11 @@ class ComplianceEvaluationRun(models.Model):
 
     policy_id = fields.Many2one("doc.compliance.policy", required=True, ondelete="cascade", index=True)
     run_type = fields.Selection(
-        [("manual", "Manual"), ("automatic", "Automatic")],
+        [
+            ("manual", "Manual"),
+            ("automatic", "Automatic"),
+            ("audit", "Audit"),
+        ],
         required=True,
         default="manual",
     )
@@ -654,11 +708,23 @@ class ComplianceException(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if not self.env.user.has_group("cleon_document_management.group_document_manager"):
+        is_manager = self.env.user.has_group(
+            "cleon_document_management.group_document_manager"
+        )
+        is_admin = self.env.user.has_group(
+            "cleon_document_management.group_document_admin"
+        )
+        if not is_manager and not is_admin:
             employee = self.env.user.employee_id
             for vals in vals_list:
                 if not employee or int(vals.get("employee_id", 0)) != employee.id:
                     raise AccessError(_("You can only submit an exception for yourself."))
+        for vals in vals_list:
+            policy = self.env["doc.compliance.policy"].browse(vals.get("policy_id"))
+            if policy and not policy.allow_waiver and not is_admin:
+                raise ValidationError(
+                    _("This policy does not allow waiver or exemption requests.")
+                )
         return super().create(vals_list)
 
     def write(self, vals):
@@ -684,6 +750,11 @@ class ComplianceException(models.Model):
     def action_approve(self):
         if any(not record.active or record.status != "draft" for record in self):
             raise ValidationError(_("Only active draft exceptions can be approved."))
+        for record in self:
+            if not record.policy_id.allow_waiver:
+                raise ValidationError(
+                    _("This policy does not allow waiver or exemption requests.")
+                )
         self.write(
             {
                 "status": "approved",
@@ -691,11 +762,15 @@ class ComplianceException(models.Model):
                 "approved_at": fields.Datetime.now(),
             }
         )
+        for record in self:
+            record.policy_id.evaluate_employee(record.employee_id)
 
     def action_reject(self):
         if any(not record.active or record.status != "draft" for record in self):
             raise ValidationError(_("Only active draft exceptions can be rejected."))
         self.write({"status": "rejected"})
+        for record in self:
+            record.policy_id.evaluate_employee(record.employee_id)
 
     @api.model
     def _cron_expire_exceptions(self):

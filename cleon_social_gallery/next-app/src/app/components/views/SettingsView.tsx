@@ -9,15 +9,17 @@ import { useGalleryMutations, useGalleryTrustedUsers } from "@/hooks/useSocialGa
 import { api } from "@/lib/api";
 import { LoadingState } from "../shared/LoadingState";
 import { UserSearchPicker } from "../shared/UserSearchPicker";
+import RolesView from "./RolesView";
 
 export default function SettingsView({
-  settings, loading, albums = [], onRefresh, onError,
+  settings, loading, albums = [], onRefresh, onError, isSystemAdmin = false,
 }: {
   settings?: GallerySettings;
   loading: boolean;
   albums?: Array<{ id: number; name: string }>;
   onRefresh: () => void;
   onError?: (message: string) => void;
+  isSystemAdmin?: boolean;
 }) {
   const { saveSettings, exportBrand, trustedUsers } = useGalleryMutations();
   const trustedQuery = useGalleryTrustedUsers(!!settings);
@@ -32,6 +34,7 @@ export default function SettingsView({
   const [exporting, setExporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [addingTrusted, setAddingTrusted] = useState(false);
+  const [activeTab, setActiveTab] = useState<"configuration" | "roles">("configuration");
 
   useEffect(() => {
     if (settings) setForm({ ...settings });
@@ -41,7 +44,9 @@ export default function SettingsView({
     api.storageConfig(true).then(setStorage).catch(() => {});
   }, []);
 
-  if (loading || !settings) return <LoadingState message="Loading settings…" />;
+  if ((loading || !settings) && activeTab === "configuration") {
+    return <LoadingState message="Loading settings…" />;
+  }
 
   const update = (key: keyof GallerySettings, value: unknown) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -74,6 +79,28 @@ export default function SettingsView({
   };
 
   return (
+    <div className="settings-page-shell">
+      {isSystemAdmin && (
+        <div className="settings-modal-tabs">
+          <button
+            type="button"
+            className={activeTab === "configuration" ? "active" : ""}
+            onClick={() => setActiveTab("configuration")}
+          >
+            Configuration
+          </button>
+          <button
+            type="button"
+            className={activeTab === "roles" ? "active" : ""}
+            onClick={() => setActiveTab("roles")}
+          >
+            Module roles
+          </button>
+        </div>
+      )}
+      {activeTab === "roles" && isSystemAdmin ? (
+        <RolesView embedded />
+      ) : (
     <div className="analytics-two-column">
       <div className="settings-section">
         <div className="settings-section-header">
@@ -130,7 +157,7 @@ export default function SettingsView({
             {([
               ["auto_create_monthly_album", "Auto-create monthly album", "A new album is created at the start of each month."],
               ["auto_approve_trusted", "Auto-approve trusted users", "Trusted uploaders skip the review queue."],
-              ["ai_moderation_enabled", "AI moderation enabled", "Flag risky uploads before they go live."],
+              ["ai_moderation_enabled", "AI moderation enabled", "Screen uploads with Hugging Face, Ollama, or OpenRouter."],
             ] as const).map(([key, label, helper]) => (
               <label key={key} className="toggle-row">
                 <span>
@@ -166,6 +193,7 @@ export default function SettingsView({
             ["notify_approval_request", "Approval request notifications", "Alert managers when review is needed."],
             ["notify_comments", "Comment notifications", "Notify owners when comments are posted."],
             ["notify_likes", "Like notifications", "Batch like alerts using the size below."],
+            ["notify_content_reports", "Content report notifications", "Alert managers when media is reported."],
             ["weekly_digest", "Weekly digest", "A weekly summary of gallery activity."],
           ] as const).map(([key, label, helper]) => (
             <label key={key} className="toggle-row">
@@ -280,6 +308,8 @@ export default function SettingsView({
           </button>
         </div>
       </div>
+    </div>
+      )}
     </div>
   );
 }

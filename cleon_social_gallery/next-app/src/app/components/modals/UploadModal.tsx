@@ -173,12 +173,12 @@ export default function UploadModal({
       <div className="modal-form">
         {error && <div className="alert-banner">{error}</div>}
         {duplicateItem && (
-          <div className="alert-banner">
-            <div>
+          <div className="alert-banner alert-banner-stacked">
+            <div className="alert-banner-copy">
               <strong>Duplicate detected</strong>
               <p>{duplicateItem.file.name} already exists in the gallery.</p>
             </div>
-            <div className="primary-actions">
+            <div className="primary-actions alert-banner-actions">
               <button
                 type="button"
                 className="secondary-button small"

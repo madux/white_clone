@@ -16,3 +16,5 @@ def post_init_hook(env):
         storage.ensure_bucket_cors()
     except Exception:
         _logger.exception("Social Gallery R2 CORS bootstrap failed")
+    if "gallery.role.definition" in env:
+        env["gallery.role.definition"].sync_registry()

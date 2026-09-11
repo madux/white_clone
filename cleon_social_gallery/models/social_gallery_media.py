@@ -13,6 +13,20 @@ ADMIN_GROUP = "cleon_social_gallery.group_social_gallery_admin"
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 ALLOWED_VIDEO_TYPES = {"video/mp4", "video/webm", "video/quicktime"}
 ALLOWED_MIME_TYPES = ALLOWED_IMAGE_TYPES | ALLOWED_VIDEO_TYPES
+NON_BLOCKING_AI_FLAGS = frozenset({"moderation_unavailable", "large_file"})
+SEVERE_AI_FLAG_TERMS = (
+    "explicit",
+    "nsfw",
+    "nude",
+    "nudity",
+    "porn",
+    "sexual",
+    "violence",
+    "violent",
+    "hateful",
+    "hate",
+    "gore",
+)
 
 
 class SocialGalleryMedia(models.Model):
@@ -61,7 +75,12 @@ class SocialGalleryMedia(models.Model):
     approved_by = fields.Many2one("res.users", readonly=True)
     approved_at = fields.Datetime(readonly=True)
     ai_review_status = fields.Selection(
-        [("pending", "Pending"), ("passed", "Passed"), ("flagged", "Flagged")],
+        [
+            ("pending", "Pending"),
+            ("passed", "Passed"),
+            ("flagged", "Flagged"),
+            ("dismissed", "Dismissed"),
+        ],
         default="pending",
         index=True,
     )
@@ -137,19 +156,109 @@ class SocialGalleryMedia(models.Model):
     def _user_can_moderate(self, user=None):
         return self._is_gallery_manager(user or self.env.user)
 
-    def _run_ai_screening(self):
+    def _blocking_moderation_flags(self, flags=None):
+        self.ensure_one()
+        values = flags if flags is not None else (self.ai_moderation_flags or [])
+        return [flag for flag in values if flag not in NON_BLOCKING_AI_FLAGS]
+
+    def _is_severe_moderation_flag(self, flag):
+        flag_lower = str(flag or "").lower()
+        return any(term in flag_lower for term in SEVERE_AI_FLAG_TERMS)
+
+    def _enforce_ai_screening_outcome(self):
+        self.ensure_one()
+        blocking_flags = self._blocking_moderation_flags()
+        if not blocking_flags:
+            return
+
+        note = self.ai_moderation_note or _("Automated screening flagged: %s") % ", ".join(
+            blocking_flags
+        )
+        severe = any(self._is_severe_moderation_flag(flag) for flag in blocking_flags)
+        if severe:
+            self.write({
+                "approval_status": "rejected",
+                "approver_comment": note,
+                "approved_by": False,
+                "approved_at": False,
+                "ai_review_status": "flagged",
+                "ai_moderation_note": note,
+            })
+            return
+
+        if self.approval_status == "approved":
+            self.write({
+                "approval_status": "pending",
+                "approved_by": False,
+                "approved_at": False,
+                "ai_review_status": "flagged",
+                "ai_moderation_note": note,
+            })
+
+    def _moderate_image(self, image_bytes=None, image_mime=None):
+        self.ensure_one()
+        from .gallery_huggingface import (
+            moderate_media as huggingface_moderate,
+            huggingface_configured,
+        )
+        from .gallery_ollama import moderate_media as ollama_moderate, ollama_configured
+        from .gallery_openrouter import moderate_media as openrouter_moderate, openrouter_configured
+
+        providers = []
+        if huggingface_configured(self.env):
+            providers.append(huggingface_moderate)
+        if ollama_configured(self.env):
+            providers.append(ollama_moderate)
+        if openrouter_configured(self.env):
+            providers.append(openrouter_moderate)
+
+        for moderate in providers:
+            flags, note = moderate(
+                self.env,
+                self,
+                image_bytes=image_bytes,
+                image_mime=image_mime,
+            )
+            if flags != ["moderation_unavailable"]:
+                return flags, note
+
+        return ["moderation_unavailable"], _(
+            "No AI moderation provider is configured. Set HF_TOKEN, start Ollama "
+            "(ollama pull llava), or set OPENROUTER_API_KEY."
+        )
+
+    def _run_ai_screening(self, image_bytes=None, image_mime=None):
         self.ensure_one()
         flags = []
+        note = ""
         if self.file_size > 50 * 1024 * 1024:
             flags.append("large_file")
         name_lower = (self.file_name or "").lower()
-        for term in ("test", "nsfw", "explicit"):
+        for term in ("nsfw", "explicit"):
             if term in name_lower:
                 flags.append("suspicious_filename")
-        self.ai_moderation_flags = flags
-        self.ai_review_status = "flagged" if flags else "passed"
+
+        company = self.company_id
+        if company and company.sg_ai_moderation_enabled:
+            if self.media_type == "image" and image_bytes:
+                ai_flags, ai_note = self._moderate_image(
+                    image_bytes=image_bytes,
+                    image_mime=image_mime or self.mime_type or "image/jpeg",
+                )
+                flags.extend(ai_flags)
+                note = ai_note or note
+            elif self.media_type == "image":
+                flags.append("moderation_unavailable")
+                note = _("Image bytes were not available for automated screening.")
+
+        self.ai_moderation_flags = list(dict.fromkeys(flags))
+        blocking_flags = [flag for flag in flags if flag not in NON_BLOCKING_AI_FLAGS]
+        self.ai_review_status = "flagged" if blocking_flags else "passed"
         if flags:
-            self.ai_moderation_note = _("Automated screening flagged: %s") % ", ".join(flags)
+            self.ai_moderation_note = note or _("Automated screening flagged: %s") % ", ".join(flags)
+        else:
+            self.ai_moderation_note = note or ""
+        self._enforce_ai_screening_outcome()
 
     @api.model
     def _cron_purge_recycle_bin(self):
@@ -169,6 +278,7 @@ class SocialGalleryMedia(models.Model):
                 "approval_status": "approved",
                 "approved_by": self.env.user.id,
                 "approved_at": fields.Datetime.now(),
+                "ai_review_status": "passed",
             }
             if album_id:
                 vals["album_id"] = album_id
@@ -182,6 +292,7 @@ class SocialGalleryMedia(models.Model):
             "approver_comment": comment or "",
             "approved_by": self.env.user.id,
             "approved_at": fields.Datetime.now(),
+            "ai_review_status": "dismissed",
         })
 
     def action_soft_delete(self):

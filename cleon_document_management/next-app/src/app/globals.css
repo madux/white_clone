@@ -658,3 +658,249 @@ select.field option {
     animation: none;
   }
 }
+
+.primary-button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid #e83e8c;
+  color: #fff;
+  background: linear-gradient(135deg, #be1463, #e83e8c);
+  box-shadow: 0 10px 15px -3px rgb(251 207 232 / 0.8);
+}
+
+.primary-button:hover:not(:disabled) {
+  opacity: 0.95;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.roles-admin-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.roles-admin-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #e8e0e6;
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.roles-admin-header h1 {
+  margin: 8px 0;
+  font-size: 1.6rem;
+}
+
+.roles-admin-header p {
+  color: #64748b;
+  margin: 0;
+}
+
+.roles-admin-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #e83e8c;
+}
+
+.roles-admin-notice {
+  background: #fdf2f8;
+  color: #9d174d;
+  border-radius: 16px;
+  padding: 12px 16px;
+}
+
+.roles-admin-grid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.roles-admin-panel {
+  background: #fff;
+  border: 1px solid #e8e0e6;
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.roles-admin-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e8e0e6;
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.roles-admin-search input {
+  border: 0;
+  outline: none;
+  width: 100%;
+  background: transparent;
+}
+
+.roles-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 28rem;
+  overflow: auto;
+}
+
+.roles-admin-member {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  border: 1px solid #e8e0e6;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+}
+
+.roles-admin-member.active {
+  border-color: #e83e8c;
+  background: #fdf2f8;
+}
+
+.roles-admin-member strong {
+  display: block;
+}
+
+.roles-admin-member span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.roles-admin-empty {
+  color: #94a3b8;
+  text-align: center;
+  padding: 48px 16px;
+}
+
+.roles-admin-warning {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.roles-admin-module-title {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.roles-admin-module-title h3 {
+  margin: 0;
+}
+
+.roles-admin-module-title p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.roles-admin-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 12px;
+}
+
+.roles-admin-toggle-row p,
+.roles-admin-toggle-row small {
+  margin: 4px 0 0;
+  color: #64748b;
+  display: block;
+}
+
+.roles-admin-toggle {
+  width: 44px;
+  height: 28px;
+  border-radius: 999px;
+  border: 0;
+  background: #e2e8f0;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.roles-admin-toggle.on {
+  background: #e83e8c;
+}
+
+.roles-admin-toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.roles-admin-toggle.on::after {
+  transform: translateX(16px);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.roles-admin-page.is-embedded .roles-admin-grid {
+  margin-top: 0;
+}
+
+.roles-admin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.roles-admin-toolbar p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+@media (max-width: 960px) {
+  .roles-admin-grid {
+    grid-template-columns: 1fr;
+  }
+}

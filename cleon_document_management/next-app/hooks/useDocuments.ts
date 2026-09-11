@@ -260,13 +260,22 @@ export function useCreatePolicy() {
     mutationFn: api.createPolicy,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.policies });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluationRuns });
     },
   });
 }
 
 export function useUpdatePolicy() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: api.updatePolicy, onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.policies }) });
+  return useMutation({
+    mutationFn: api.updatePolicy,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.policies });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluationRuns });
+    },
+  });
 }
 
 export function useDeletePolicy() {
@@ -302,7 +311,14 @@ export function useRejectException() {
 
 export function useCreateException() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: api.createException, onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations }); } });
+  return useMutation({
+    mutationFn: api.createException,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.myCompliance });
+    },
+  });
 }
 
 export function useDeactivateException() {

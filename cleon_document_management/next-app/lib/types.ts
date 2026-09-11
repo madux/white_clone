@@ -7,6 +7,34 @@ export interface User {
   tz: string;
   is_admin?: boolean;
   is_document_manager?: boolean;
+  is_document_admin?: boolean;
+}
+
+export interface ModuleRoleDefinition {
+  id: number;
+  role_key: "user" | "manager" | "admin";
+  label: string;
+  description: string;
+  capabilities: string;
+  assignable: boolean;
+  group_id: number;
+}
+
+export interface ModuleRoleMember {
+  employee_id: number;
+  employee_name: string;
+  department: string;
+  job_title: string;
+  user_id: number | false;
+  user_name: string;
+  user_login: string;
+  has_login: boolean;
+  roles: Partial<Record<"user" | "manager" | "admin", boolean>>;
+}
+
+export interface ModuleRoleAssignment {
+  role_key: "manager" | "admin";
+  enabled: boolean;
 }
 
 export interface DocFolder {
@@ -167,8 +195,10 @@ export interface MyPendingUploads {
 
 export interface MyComplianceEvaluation {
   id: number;
+  policy_id: number;
   policy: string;
   policy_active: boolean;
+  allow_waiver?: boolean;
   score: number;
   status: string;
   complete_count: number;
@@ -186,6 +216,7 @@ export interface MyComplianceEvaluation {
 }
 
 export interface MyCompliance {
+  employee_id?: number;
   evaluations: MyComplianceEvaluation[];
   outstanding: Array<{
     policy: string;

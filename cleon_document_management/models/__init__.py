@@ -3,6 +3,8 @@ from . import hr_document_folder
 from . import hr_document
 from . import hr_document_policy_retention
 from . import compliance_registration
+from . import compliance_notify
+from . import compliance_policy_execution
 from . import document_approval
 from . import document_acknowledgement
 from . import document_version
@@ -15,3 +17,6 @@ from . import intelligence_record
 from . import intelligence_index
 from . import intelligence_audit
 from . import intelligence_conversation
+from . import doc_role_assignment_audit
+from . import doc_role_definition
+from . import doc_role_service

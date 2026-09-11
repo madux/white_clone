@@ -35,6 +35,13 @@ def _safe_name(filename):
     return value[:180] or "media"
 
 
+def _paginate(records, offset=0, limit=50):
+    offset = max(_int(offset), 0)
+    limit = min(max(_int(limit, 50), 1), 200)
+    total = len(records)
+    return records[offset:offset + limit], total, offset, limit
+
+
 BRAND_PINK = "#e83e8c"
 LEGACY_PURPLE = {"#9333ea", "#6e5be7", "#7c3aed", "#71639e", "#714b67"}
 
@@ -54,10 +61,16 @@ class SocialGalleryController(http.Controller):
         return self._user().company_id
 
     def _is_manager(self):
-        return self._user().has_group(MANAGER_GROUP)
+        user = self._user()
+        return (
+            user.has_group("base.group_system")
+            or user.has_group(ADMIN_GROUP)
+            or user.has_group(MANAGER_GROUP)
+        )
 
     def _is_admin(self):
-        return self._user().has_group(ADMIN_GROUP)
+        user = self._user()
+        return user.has_group("base.group_system") or user.has_group(ADMIN_GROUP)
 
     def _error(self, message):
         return {"success": False, "message": message}
@@ -199,6 +212,7 @@ class SocialGalleryController(http.Controller):
             "notify_approval_request": company.sg_notify_approval_request,
             "notify_comments": company.sg_notify_comments,
             "notify_likes": company.sg_notify_likes,
+            "notify_content_reports": company.sg_notify_content_reports,
             "like_batch_size": company.sg_like_batch_size,
             "weekly_digest": company.sg_weekly_digest,
             "allow_external_share": company.sg_allow_external_share,
@@ -239,8 +253,13 @@ class SocialGalleryController(http.Controller):
             raise UserError(_("Share link not found or expired."))
         if link.expires_at and fields.Datetime.from_string(link.expires_at) < fields.Datetime.now():
             raise UserError(_("This share link has expired."))
-        if link.password and (password or "") != link.password:
-            raise AccessError(_("Incorrect share password."))
+        if link.password:
+            if not link.check_password(password):
+                raise AccessError(_("Incorrect share password."))
+            if not (link.password or "").startswith("pbkdf2_sha256$") and password:
+                link.sudo().write(
+                    {"password": link._prepare_password(password)}
+                )
         if link.recipient_user_ids and self._user() not in link.recipient_user_ids and not self._is_manager():
             raise AccessError(_("You are not authorized to view this shared content."))
         return link
@@ -285,7 +304,7 @@ class SocialGalleryController(http.Controller):
     # ── Albums ──────────────────────────────────────────────────────────────
 
     @http.route("/api/social-gallery/albums", type="json", auth="user", methods=["POST"], csrf=False)
-    def albums_list(self, search="", status="", sort="newest", **kwargs):
+    def albums_list(self, search="", status="", sort="newest", offset=0, limit=48, **kwargs):
         try:
             domain = [("company_id", "=", self._company().id), ("active", "=", True)]
             if search:
@@ -305,7 +324,14 @@ class SocialGalleryController(http.Controller):
                 visible = visible.sorted(key=lambda a: a.create_date)
             else:
                 visible = visible.sorted(key=lambda a: a.create_date, reverse=True)
-            return {"success": True, "data": [self._album_data(a, user) for a in visible]}
+            page, total, offset, limit = _paginate(visible, offset, limit)
+            return {
+                "success": True,
+                "data": [self._album_data(a, user) for a in page],
+                "total": total,
+                "offset": offset,
+                "limit": limit,
+            }
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
@@ -393,7 +419,7 @@ class SocialGalleryController(http.Controller):
     # ── Media ───────────────────────────────────────────────────────────────
 
     @http.route("/api/social-gallery/media", type="json", auth="user", methods=["POST"], csrf=False)
-    def media_list(self, album_id=None, search="", media_type="", approval_status="", include_deleted=False, sort="newest", **kwargs):
+    def media_list(self, album_id=None, search="", media_type="", approval_status="", include_deleted=False, sort="newest", offset=0, limit=48, **kwargs):
         try:
             domain = [("company_id", "=", self._company().id), ("active", "=", True)]
             if album_id:
@@ -418,7 +444,14 @@ class SocialGalleryController(http.Controller):
                 visible = visible.sorted(key=lambda m: m.file_size, reverse=True)
             else:
                 visible = visible.sorted(key=lambda m: m.create_date, reverse=True)
-            return {"success": True, "data": [self._media_data(m, user) for m in visible]}
+            page, total, offset, limit = _paginate(visible, offset, limit)
+            return {
+                "success": True,
+                "data": [self._media_data(m, user) for m in page],
+                "total": total,
+                "offset": offset,
+                "limit": limit,
+            }
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
@@ -484,6 +517,9 @@ class SocialGalleryController(http.Controller):
                 media.action_soft_delete()
             elif action == "restore":
                 media.action_restore()
+            elif action == "move":
+                album = self._album(album_id, edit=True)
+                media.write({"album_id": album.id})
             else:
                 raise UserError(_("Unsupported batch action."))
             return {"success": True, "data": {"count": len(media)}}
@@ -530,6 +566,7 @@ class SocialGalleryController(http.Controller):
                 "details": details,
             })
             self._audit("reported", "media", media=media, details=reason)
+            self._notify().notify_content_report(report)
             return {"success": True, "data": {"id": report.id}}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
@@ -683,8 +720,21 @@ class SocialGalleryController(http.Controller):
             })
             session.media_id = media.id
 
-            if company.sg_ai_moderation_enabled:
-                media._run_ai_screening()
+            if media_type == "image" and session.object_key:
+                image_bytes = storage.get_object_bytes(session.object_key)
+                if image_bytes:
+                    from odoo.addons.cleon_social_gallery.models.gallery_thumbnail import generate_image_thumbnail
+
+                    thumb_bytes, thumb_mime = generate_image_thumbnail(image_bytes)
+                    if thumb_bytes:
+                        thumb_key = "%s-thumb.jpg" % session.object_key.rsplit(".", 1)[0]
+                        if storage.put_object_bytes(thumb_key, thumb_bytes, thumb_mime):
+                            media.thumbnail_key = thumb_key
+                if company.sg_ai_moderation_enabled:
+                    media._run_ai_screening(
+                        image_bytes=image_bytes,
+                        image_mime=session.mime_type,
+                    )
 
             request.env["social.gallery.upload.history"].sudo().create({
                 "company_id": company.id,
@@ -957,6 +1007,26 @@ class SocialGalleryController(http.Controller):
             elif action == "remove":
                 report.media_id.action_soft_delete()
                 report.write({"status": "removed", "resolved_by": self._user().id, "resolved_at": fields.Datetime.now()})
+            elif action == "batch_dismiss":
+                reports = Report.browse([_int(i) for i in (kwargs.get("report_ids") or [])]).exists()
+                reports = reports.filtered(lambda item: item.media_id.company_id == self._company())
+                reports.write({
+                    "status": "dismissed",
+                    "resolved_by": self._user().id,
+                    "resolved_at": fields.Datetime.now(),
+                })
+                return {"success": True, "data": {"count": len(reports)}}
+            elif action == "batch_remove":
+                reports = Report.browse([_int(i) for i in (kwargs.get("report_ids") or [])]).exists()
+                reports = reports.filtered(lambda item: item.media_id.company_id == self._company())
+                for item in reports:
+                    item.media_id.action_soft_delete()
+                    item.write({
+                        "status": "removed",
+                        "resolved_by": self._user().id,
+                        "resolved_at": fields.Datetime.now(),
+                    })
+                return {"success": True, "data": {"count": len(reports)}}
             return {"success": True, "data": {"resolved": True}}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
@@ -970,6 +1040,7 @@ class SocialGalleryController(http.Controller):
                 ("company_id", "=", self._company().id),
                 ("uploaded_by", "=", self._user().id),
                 ("active", "=", True),
+                ("deleted_at", "=", False),
             ]
             if status:
                 domain.append(("approval_status", "=", status))
@@ -1029,7 +1100,7 @@ class SocialGalleryController(http.Controller):
             return self._error(str(error))
 
     @http.route("/api/social-gallery/audit", type="json", auth="user", methods=["POST"], csrf=False)
-    def audit_log(self, event_type="", entity_type="", **kwargs):
+    def audit_log(self, event_type="", entity_type="", offset=0, limit=100, **kwargs):
         try:
             if not self._is_manager():
                 raise AccessError(_("Only managers can view audit logs."))
@@ -1038,17 +1109,60 @@ class SocialGalleryController(http.Controller):
                 domain.append(("event_type", "=", event_type))
             if entity_type:
                 domain.append(("entity_type", "=", entity_type))
-            logs = request.env["social.gallery.audit"].sudo().search(domain, order="create_date desc", limit=500)
-            return {"success": True, "data": [{
-                "id": log.id,
-                "event_type": log.event_type,
-                "entity_type": log.entity_type,
-                "album_id": log.album_id.id if log.album_id else False,
-                "media_id": log.media_id.id if log.media_id else False,
-                "user_name": log.user_id.name,
-                "details": log.details or "",
-                "create_date": fields.Datetime.to_string(log.create_date),
-            } for log in logs]}
+            offset = max(_int(offset), 0)
+            limit = min(max(_int(limit, 100), 1), 200)
+            Audit = request.env["social.gallery.audit"].sudo()
+            total = Audit.search_count(domain)
+            logs = Audit.search(domain, order="create_date desc", offset=offset, limit=limit)
+            return {
+                "success": True,
+                "data": [{
+                    "id": log.id,
+                    "event_type": log.event_type,
+                    "entity_type": log.entity_type,
+                    "album_id": log.album_id.id if log.album_id else False,
+                    "media_id": log.media_id.id if log.media_id else False,
+                    "user_name": log.user_id.name,
+                    "details": log.details or "",
+                    "create_date": fields.Datetime.to_string(log.create_date),
+                } for log in logs],
+                "total": total,
+                "offset": offset,
+                "limit": limit,
+            }
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/social-gallery/scope-targets", type="json", auth="user", methods=["POST"], csrf=False)
+    def scope_targets(self, **kwargs):
+        try:
+            company = self._company()
+            departments = request.env["hr.department"].sudo().search([
+                "|", ("company_id", "=", company.id), ("company_id", "=", False),
+            ])
+            employees = request.env["hr.employee"].sudo().search([
+                ("company_id", "=", company.id),
+                ("active", "=", True),
+            ])
+            branches = []
+            if "multi.branch" in request.env:
+                branches = request.env["multi.branch"].sudo().search([])
+            return {
+                "success": True,
+                "data": {
+                    "departments": [{"id": d.id, "name": d.name} for d in departments],
+                    "branches": [{"id": b.id, "name": b.name} for b in branches],
+                    "employees": [
+                        {
+                            "id": e.id,
+                            "name": e.name,
+                            "department": e.department_id.name if e.department_id else "",
+                        }
+                        for e in employees
+                    ],
+                    "branches_available": bool(branches),
+                },
+            }
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
@@ -1056,6 +1170,8 @@ class SocialGalleryController(http.Controller):
     def settings(self, **kwargs):
         try:
             company = self._company()
+            if not kwargs.get("save") and not self._is_admin():
+                raise AccessError(_("Only administrators can view gallery settings."))
             if kwargs.get("save"):
                 if not self._is_admin():
                     raise AccessError(_("Only administrators can change settings."))
@@ -1072,6 +1188,7 @@ class SocialGalleryController(http.Controller):
                     "notify_approval_request": "sg_notify_approval_request",
                     "notify_comments": "sg_notify_comments",
                     "notify_likes": "sg_notify_likes",
+                    "notify_content_reports": "sg_notify_content_reports",
                     "like_batch_size": "sg_like_batch_size",
                     "weekly_digest": "sg_weekly_digest",
                     "allow_external_share": "sg_allow_external_share",

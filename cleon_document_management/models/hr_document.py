@@ -278,12 +278,18 @@ class Document(models.Model):
 
     def write(self, vals):
         if self.env.su:
-            return super().write(vals)
+            result = super().write(vals)
+            if "state" in vals and vals["state"] in ("approved", "signed"):
+                self.env["doc.compliance.policy"]._evaluate_documents(self)
+            return result
         if not self._is_document_manager():
             allowed = self._employee_self_service_write_fields() | self._mail_thread_internal_write_fields(vals)
             if set(vals) - allowed:
                 raise AccessError(_("You can only update your document favorites and pins."))
-        return super().write(vals)
+        result = super().write(vals)
+        if "state" in vals and vals["state"] in ("approved", "signed"):
+            self.env["doc.compliance.policy"]._evaluate_documents(self)
+        return result
 
     def unlink(self):
         if not self._is_document_manager():

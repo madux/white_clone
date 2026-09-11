@@ -11,3 +11,6 @@ from . import social_gallery_audit
 from . import social_gallery_upload_history
 from . import social_gallery_trusted_user
 from . import social_gallery_notify
+from . import gallery_role_assignment_audit
+from . import gallery_role_definition
+from . import gallery_role_service

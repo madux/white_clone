@@ -130,8 +130,15 @@ export default function CompanyDocumentaryPage() {
       );
     return media;
   }, [libraryView, media, continueQuery.data]);
-  const canManage = Boolean(userQuery.data?.is_admin || userQuery.data?.is_document_manager);
-  const isAdmin = Boolean(userQuery.data?.is_admin);
+  const canManage = Boolean(
+    userQuery.data?.is_documentary_manager ||
+      userQuery.data?.is_documentary_admin ||
+      userQuery.data?.is_admin,
+  );
+  const isAdmin = Boolean(
+    userQuery.data?.is_documentary_admin || userQuery.data?.is_admin,
+  );
+  const isSystemAdmin = Boolean(userQuery.data?.is_admin);
 
   function navigate(view: LibraryView) {
     setLibraryView(view);
@@ -440,7 +447,11 @@ export default function CompanyDocumentaryPage() {
       )}
       {showAnalytics && <AnalyticsDashboard folders={folders} onClose={() => setShowAnalytics(false)} />}
       {showSettings && (
-        <SettingsPanelModal onClose={() => setShowSettings(false)} onNotice={showNotice} />
+        <SettingsPanelModal
+          onClose={() => setShowSettings(false)}
+          onNotice={showNotice}
+          isSystemAdmin={isSystemAdmin}
+        />
       )}
     </main>
   );

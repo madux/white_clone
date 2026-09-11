@@ -36,8 +36,12 @@ import PolicyTypeMultiSelect from "./PolicyTypeMultiSelect";
 import SortableTable from "./SortableTable";
 import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
 import ThemedSelect from "./ThemedSelect";
+import {
+  AUDIT_FREQUENCY_LABELS,
+  EVENT_TRIGGER_LABELS,
+} from "../../../lib/complianceCopy";
 
-type Tab = "policies" | "exceptions" | "history";
+type Tab = "policies" | "exceptions" | "evaluations" | "history";
 const schedules = [
   "manual",
   "one_time",
@@ -54,6 +58,7 @@ export default function CompliancePage() {
   const [tab, setTab] = useState<Tab>("policies");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [policySubmitError, setPolicySubmitError] = useState("");
   const [running, setRunning] = useState(false);
   const policies = usePolicies();
   const exceptions = useExceptions();
@@ -80,7 +85,7 @@ export default function CompliancePage() {
     // Type-specific fields
     allow_waiver: true,
     alert_schedule_days: "60,30,15,7,0",
-    escalate_manager_days: 15,
+    escalate_manager_days: 0,
     escalate_hr_days: 7,
     auto_request_renewal: true,
     event_trigger: "onboarding",
@@ -115,33 +120,45 @@ export default function CompliancePage() {
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
+  const displayedEvaluations = (evaluations.data ?? []).filter((item) =>
+    `${item.employee} ${item.policy} ${item.status}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
   const submitPolicy = async (event: FormEvent) => {
     event.preventDefault();
+    setPolicySubmitError("");
     const effectiveAppliesTo =
       policyForm.applies_to === "all" || policyForm.scope_ids.length === 0
         ? "all"
         : policyForm.applies_to;
 
-    await createPolicy.mutateAsync({
-      ...policyForm,
-      policy_type_id: Number(policyForm.policy_type_id),
-      applies_to: effectiveAppliesTo,
-      document_type_ids: policyForm.document_type_ids,
-      employee_ids:
-        effectiveAppliesTo === "employee" ? policyForm.scope_ids : [],
-      department_ids:
-        effectiveAppliesTo === "department" ? policyForm.scope_ids : [],
-      grade_ids: effectiveAppliesTo === "grade" ? policyForm.scope_ids : [],
-      custom_schedule_days: Number(policyForm.custom_schedule_days),
-      minimum_documents: Number(policyForm.minimum_documents),
-      grace_period_days: Number(policyForm.grace_period_days),
-      assigned_reviewer_id: policyForm.assigned_reviewer_id
-        ? Number(policyForm.assigned_reviewer_id)
-        : false,
-      assigned_auditor_id: policyForm.assigned_auditor_id
-        ? Number(policyForm.assigned_auditor_id)
-        : false,
-    });
+    try {
+      await createPolicy.mutateAsync({
+        ...policyForm,
+        policy_type_id: Number(policyForm.policy_type_id),
+        applies_to: effectiveAppliesTo,
+        document_type_ids: policyForm.document_type_ids,
+        employee_ids:
+          effectiveAppliesTo === "employee" ? policyForm.scope_ids : [],
+        department_ids:
+          effectiveAppliesTo === "department" ? policyForm.scope_ids : [],
+        grade_ids: effectiveAppliesTo === "grade" ? policyForm.scope_ids : [],
+        custom_schedule_days: Number(policyForm.custom_schedule_days),
+        minimum_documents: Number(policyForm.minimum_documents),
+        grace_period_days: Number(policyForm.grace_period_days),
+        assigned_reviewer_id: policyForm.assigned_reviewer_id
+          ? Number(policyForm.assigned_reviewer_id)
+          : false,
+        assigned_auditor_id: policyForm.assigned_auditor_id
+          ? Number(policyForm.assigned_auditor_id)
+          : false,
+        escalate_manager_days: 0,
+      });
+    } catch (error: any) {
+      setPolicySubmitError(error?.message || "Failed to create policy.");
+      return;
+    }
     setShowForm(false);
     setPolicyForm({
       name: "",
@@ -157,7 +174,7 @@ export default function CompliancePage() {
       effective_date: new Date().toISOString().slice(0, 10),
       allow_waiver: true,
       alert_schedule_days: "60,30,15,7,0",
-      escalate_manager_days: 15,
+      escalate_manager_days: 0,
       escalate_hr_days: 7,
       auto_request_renewal: true,
       event_trigger: "onboarding",
@@ -210,8 +227,12 @@ export default function CompliancePage() {
           </button>
           <button
             type="button"
-            onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200"
+            onClick={() => {
+              setPolicySubmitError("");
+              setShowForm(true);
+            }}
+            disabled={tab === "evaluations" || tab === "history"}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
             {tab === "exceptions" ? "New Exception" : "New Policy"}
@@ -251,6 +272,7 @@ export default function CompliancePage() {
               [
                 ["policies", "Policies"],
                 ["exceptions", "Exceptions"],
+                ["evaluations", "Evaluations"],
                 ["history", "Run History"],
               ] as [Tab, string][]
             ).map(([value, label]) => (
@@ -272,7 +294,7 @@ export default function CompliancePage() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder={`Search ${tab === "policies" ? "policies" : tab === "exceptions" ? "exceptions" : "history"}...`}
+              placeholder={`Search ${tab}...`}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-pink/40 focus:bg-white focus:ring-4 focus:ring-brand-pink/10"
             />
           </label>
@@ -287,6 +309,9 @@ export default function CompliancePage() {
         )}
         {tab === "exceptions" && (
           <ExceptionTable exceptions={displayedExceptions} />
+        )}
+        {tab === "evaluations" && (
+          <EvaluationTable evaluations={displayedEvaluations} />
         )}
         {tab === "history" && (
             <HistoryTable runs={runs.data ?? []} />
@@ -311,7 +336,11 @@ export default function CompliancePage() {
             documents={documents.data ?? []}
             targets={targets.data}
             pending={createPolicy.isPending}
-            onClose={() => setShowForm(false)}
+            submitError={policySubmitError}
+            onClose={() => {
+              setPolicySubmitError("");
+              setShowForm(false);
+            }}
             onSubmit={submitPolicy}
           />
         ))}
@@ -387,6 +416,33 @@ function PolicyTable({
     </Table>
   );
 }
+function EvaluationTable({ evaluations }: { evaluations: any[] }) {
+  return (
+    <Table
+      headers={["Employee", "Policy", "Status", "Score", "Missing", "Grace", "Evaluated"]}
+      empty="No evaluations found."
+    >
+      <>
+        {evaluations.map((item) => (
+          <tr key={item.id} className="hover:bg-pink-50/30">
+            <td className="cell"><b>{item.employee}</b></td>
+            <td className="cell">{item.policy}</td>
+            <td className="cell">
+              <span className={`status ${item.status === "compliant" ? "approved" : item.status === "non_compliant" ? "danger" : "pending"}`}>
+                {formatStatusLabel(item.status)}
+              </span>
+            </td>
+            <td className="cell">{item.score}%</td>
+            <td className="cell">{item.missing_count}</td>
+            <td className="cell">{item.grace_count}</td>
+            <td className="cell"><small>{item.evaluated_at ? formatDateTime(item.evaluated_at) : "—"}</small></td>
+          </tr>
+        ))}
+      </>
+    </Table>
+  );
+}
+
 function ExceptionTable({ exceptions }: { exceptions: any[] }) {
   return (
     <Table
@@ -598,13 +654,13 @@ export function AlertCadenceSelector({
   onChange: (newValue: string) => void;
 }) {
   const PRESETS = [
-    { label: "90 Days Prior", days: 90 },
-    { label: "60 Days Prior", days: 60 },
-    { label: "30 Days Prior", days: 30 },
-    { label: "15 Days Prior", days: 15 },
-    { label: "7 Days Prior", days: 7 },
-    { label: "1 Day Prior", days: 1 },
-    { label: "On Expiry Day (0)", days: 0 },
+    { label: "90 days before", days: 90 },
+    { label: "60 days before", days: 60 },
+    { label: "30 days before", days: 30 },
+    { label: "15 days before", days: 15 },
+    { label: "7 days before", days: 7 },
+    { label: "1 day before", days: 1 },
+    { label: "On expiry day", days: 0 },
   ];
 
   const currentDays = (value || "60,30,15,7,0")
@@ -625,10 +681,10 @@ export function AlertCadenceSelector({
   return (
     <div className="space-y-2 sm:col-span-2">
       <span className="label text-slate-700 font-semibold">
-        Expiration Reminders Schedule
+        When to send reminders
       </span>
       <p className="text-xs text-slate-500">
-        Select when automated email reminders will be sent to the employee before document expiration:
+        Choose how far before the expiry date the employee should be reminded:
       </p>
       <div className="flex flex-wrap gap-2 pt-1">
         {PRESETS.map((preset) => {
@@ -672,7 +728,7 @@ function TypeSpecificFields({
           Document Requirement Settings
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Grace Period Window (Days)">
+          <Field label="Extra days to submit">
             <input
               type="number"
               min="0"
@@ -693,7 +749,7 @@ function TypeSpecificFields({
                 }
                 className="h-4 w-4 accent-pink-600 rounded"
               />
-              Allow HR Admins to grant waivers / exemptions
+              Allow exceptions or waivers
             </label>
           </div>
         </div>
@@ -705,7 +761,7 @@ function TypeSpecificFields({
     return (
       <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
         <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-          Expiration Alert & Escalation Rules
+          Expiration Alert Settings
         </p>
 
         <AlertCadenceSelector
@@ -714,41 +770,23 @@ function TypeSpecificFields({
         />
 
         <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
-          <Field label="Notify Line Manager">
-            <ThemedSelect
-              value={String(form.escalate_manager_days)}
-              onChange={(val) =>
-                setForm({ ...form, escalate_manager_days: Number(val) })
-              }
-              options={[
-                { value: "30", label: "30 Days before expiry" },
-                { value: "15", label: "15 Days before expiry" },
-                { value: "7", label: "7 Days before expiry" },
-                { value: "3", label: "3 Days before expiry" },
-                { value: "0", label: "On Expiry Day" },
-              ]}
-            />
-          </Field>
-
-          <Field label="Escalate to HR Admin">
+          <Field label="Also notify HR admin">
             <ThemedSelect
               value={String(form.escalate_hr_days)}
               onChange={(val) =>
                 setForm({ ...form, escalate_hr_days: Number(val) })
               }
               options={[
-                { value: "15", label: "15 Days before expiry" },
-                { value: "7", label: "7 Days before expiry" },
-                { value: "3", label: "3 Days before expiry" },
-                { value: "1", label: "1 Day before expiry" },
-                { value: "0", label: "On Expiry Day" },
+                { value: "15", label: "15 days before expiry" },
+                { value: "7", label: "7 days before expiry" },
+                { value: "3", label: "3 days before expiry" },
+                { value: "1", label: "1 day before expiry" },
+                { value: "0", label: "On expiry day" },
               ]}
             />
           </Field>
-        </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
-          <Field label="Post-Expiry Buffer Window (Days)">
+          <Field label="Extra days after expiry">
             <input
               type="number"
               min="0"
@@ -770,7 +808,7 @@ function TypeSpecificFields({
                 }
                 className="h-4 w-4 accent-pink-600 rounded"
               />
-              Auto-generate replacement upload task for employee
+              Create a task for the employee to upload a new copy
             </label>
           </div>
         </div>
@@ -782,23 +820,20 @@ function TypeSpecificFields({
     return (
       <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
         <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-          Event-Driven Request Settings
+          Compliance Request Settings
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Lifecycle Event Trigger">
+          <Field label="When should this start?">
             <ThemedSelect
               value={form.event_trigger}
               onChange={(val) => setForm({ ...form, event_trigger: val })}
-              options={[
-                { value: "onboarding", label: "Onboarding" },
-                { value: "promotion", label: "Promotion" },
-                { value: "department_transfer", label: "Department Transfer" },
-                { value: "location_change", label: "Location Change" },
-                { value: "marital_status_change", label: "Marital Status Change" },
-              ]}
+              options={Object.entries(EVENT_TRIGGER_LABELS).map(([value, label]) => ({
+                value,
+                label,
+              }))}
             />
           </Field>
-          <Field label="Task Deadline (Days after event)">
+          <Field label="Days to submit documents">
             <input
               type="number"
               min="1"
@@ -809,7 +844,7 @@ function TypeSpecificFields({
               }
             />
           </Field>
-          <Field label="Automated Reminder Frequency (Days)">
+          <Field label="Send reminder every (days)">
             <input
               type="number"
               min="1"
@@ -823,13 +858,13 @@ function TypeSpecificFields({
               }
             />
           </Field>
-          <Field label="Assigned HR Reviewer (Admin)">
+          <Field label="Who follows up?">
             <ThemedSelect
               value={String(form.assigned_reviewer_id || "")}
               onChange={(val) =>
                 setForm({ ...form, assigned_reviewer_id: val })
               }
-              placeholder="Select HR Admin Reviewer"
+              placeholder="Select HR contact"
               options={(targets?.users || []).map((u: any) => ({
                 value: String(u.id),
                 label: u.name,
@@ -845,22 +880,20 @@ function TypeSpecificFields({
     return (
       <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
         <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-          Review Schedule & Audit Parameters
+          Review Schedule Settings
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Audit Frequency">
+          <Field label="How often to check">
             <ThemedSelect
               value={form.audit_frequency}
               onChange={(val) => setForm({ ...form, audit_frequency: val })}
-              options={[
-                { value: "monthly", label: "Monthly" },
-                { value: "quarterly", label: "Quarterly" },
-                { value: "semi_annually", label: "Semi-Annually" },
-                { value: "annually", label: "Annually" },
-              ]}
+              options={Object.entries(AUDIT_FREQUENCY_LABELS).map(([value, label]) => ({
+                value,
+                label,
+              }))}
             />
           </Field>
-          <Field label="Folder Audit Sampling % (1-100%)">
+          <Field label="How many people to check (%)">
             <input
               type="number"
               min="1"
@@ -872,13 +905,13 @@ function TypeSpecificFields({
               }
             />
           </Field>
-          <Field label="Assigned HR Auditor (Admin)" full>
+          <Field label="Who runs the check?" full>
             <ThemedSelect
               value={String(form.assigned_auditor_id || "")}
               onChange={(val) =>
                 setForm({ ...form, assigned_auditor_id: val })
               }
-              placeholder="Select HR Admin Auditor"
+              placeholder="Select HR contact"
               options={(targets?.users || []).map((u: any) => ({
                 value: String(u.id),
                 label: u.name,
@@ -900,6 +933,7 @@ function PolicyForm({
   documents,
   targets,
   pending,
+  submitError,
   onClose,
   onSubmit,
 }: any) {
@@ -999,7 +1033,7 @@ function PolicyForm({
           targets={targets}
         />
 
-        <Field label="Required document types" full>
+        <Field label="Which documents are needed?">
           <PolicyTypeMultiSelect
             types={documents}
             selected={form.document_type_ids}
@@ -1056,7 +1090,7 @@ function PolicyForm({
             }
           />
         </Field>
-        <Field label="Minimum documents">
+        <Field label="How many copies are needed?">
           <input
             required
             min="1"
@@ -1068,7 +1102,7 @@ function PolicyForm({
             }
           />
         </Field>
-        <Field label="Grace period (days)">
+        <Field label="Extra days before marked missing">
           <input
             required
             min="0"
@@ -1080,9 +1114,9 @@ function PolicyForm({
             }
           />
         </Field>
-        {formError && (
+        {(formError || submitError) && (
           <p className="sm:col-span-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-            {formError}
+            {formError || submitError}
           </p>
         )}
         <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 sm:col-span-2">
@@ -1146,6 +1180,11 @@ function PolicyForm({
               <dd className="text-slate-700">{form.grace_period_days} days</dd>
             </div>
           </dl>
+          {submitError && (
+            <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+              {submitError}
+            </p>
+          )}
           <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
             <button
               type="button"

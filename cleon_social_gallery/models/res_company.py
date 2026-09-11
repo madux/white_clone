@@ -33,6 +33,10 @@ class ResCompany(models.Model):
     sg_notify_approval_request = fields.Boolean(default=True)
     sg_notify_comments = fields.Boolean(default=True)
     sg_notify_likes = fields.Boolean(default=True)
+    sg_notify_content_reports = fields.Boolean(
+        string="Notify Managers on Content Reports",
+        default=True,
+    )
     sg_like_batch_size = fields.Integer(default=5)
     sg_weekly_digest = fields.Boolean(default=False)
     sg_allow_external_share = fields.Boolean(default=False)

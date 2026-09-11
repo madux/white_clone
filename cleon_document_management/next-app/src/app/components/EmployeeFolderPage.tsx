@@ -419,7 +419,7 @@ export default function EmployeeFolderPage() {
                                     key={document.id}
                                     href={documentViewHref(
                                       document,
-                                      currentUser.data?.is_document_manager !== false,
+                                      currentUser.data?.is_document_manager === true,
                                     )}
                                     className="folder-accordion-file"
                                   >

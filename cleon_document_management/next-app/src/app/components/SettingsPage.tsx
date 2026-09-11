@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Save,
   Search,
+  Shield,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -26,9 +27,11 @@ import {
   useSettings,
   useToggleSettingsDocumentType,
   useUpdateOnboarding,
+  useCurrentUser,
 } from "../../../hooks/useDocuments";
 import ThemedSelect from "./ThemedSelect";
 import ModalDialog from "./ModalDialog";
+import RolesPage from "./RolesPage";
 
 const categories = [
   ["hr", "Human Resources"],
@@ -116,10 +119,19 @@ const accessOptions = [
   },
 ];
 
-type SectionId = (typeof sections)[number]["id"];
+const rolesSection = {
+  id: "roles" as const,
+  label: "Module roles",
+  shortLabel: "Roles",
+  description: "Assign manager and administrator responsibilities.",
+  icon: Shield,
+};
+
+type SectionId = (typeof sections)[number]["id"] | "roles";
 
 export default function SettingsPage() {
   const query = useSettings();
+  const currentUser = useCurrentUser();
   const params = useSearchParams();
   const { showToast } = useToast();
   const save = useSaveSettings();
@@ -136,7 +148,14 @@ export default function SettingsPage() {
     error?: boolean;
   } | null>(null);
 
+  const visibleSections = useMemo(
+    () =>
+      currentUser.data?.is_admin ? [...sections, rolesSection] : [...sections],
+    [currentUser.data?.is_admin],
+  );
+
   const guideTarget = params.get("guide");
+  const requestedSection = params.get("section");
   const guideSection: SectionId | null =
     guideTarget === "document-types"
       ? "types"
@@ -154,6 +173,12 @@ export default function SettingsPage() {
     if (guideSection) setSection(guideSection);
   }, [guideSection]);
 
+  useEffect(() => {
+    if (requestedSection === "roles" && currentUser.data?.is_admin) {
+      setSection("roles");
+    }
+  }, [requestedSection, currentUser.data?.is_admin]);
+
   const values = settings ?? query.data?.settings ?? fallbackSettings;
   const documentTypes = query.data?.document_types ?? [];
   const allApprovers = query.data?.approvers ?? [];
@@ -161,7 +186,7 @@ export default function SettingsPage() {
     ? values.default_approver_ids.map(Number)
     : [];
   const currentSection =
-    sections.find((item) => item.id === section) ?? sections[0];
+    visibleSections.find((item) => item.id === section) ?? visibleSections[0];
 
   const filteredTypes = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -299,7 +324,7 @@ export default function SettingsPage() {
               className="mt-6 flex gap-1 overflow-x-auto"
               aria-label="Settings sections"
             >
-              {sections.map((item) => {
+              {visibleSections.map((item) => {
                 const Icon = item.icon;
                 const active = item.id === section;
                 return (
@@ -334,6 +359,8 @@ export default function SettingsPage() {
                 toggle={(id: number) => toggleType.mutate(id)}
                 loading={toggleType.isPending}
               />
+            ) : section === "roles" ? (
+              <RolesPage embedded />
             ) : section === "onboarding" ? (
               <OnboardingPanel
                 reset={async () => {

@@ -27,7 +27,8 @@ const SIDEBAR_COLLAPSED_KEY = "cleon-sidebar-collapsed";
 export default function Sidebar() {
   const pathname = usePathname();
   const currentUser = useCurrentUser();
-  const isAdmin = currentUser.data?.is_document_manager === true;
+  const isManager = currentUser.data?.is_document_manager === true;
+  const isDocAdmin = currentUser.data?.is_document_admin === true;
   const [collapsed, setCollapsed] = useState(false);
   const routePath =
     pathname?.replace(/^\/document-management(?=\/|$)/, "") || "/";
@@ -71,11 +72,11 @@ export default function Sidebar() {
   ];
 
   const workspaceLinks: Links[] = [
-    ...(!isAdmin
+    ...(!isManager
       ? [{ name: "Dashboard", link: "/pages/dashboard", icon: LayoutDashboard }]
       : []),
     { name: "My Documents", link: "/pages/my-documents", icon: Archive },
-    ...(!isAdmin
+    ...(!isManager
       ? [{ name: "My Compliance", link: "/pages/my-compliance", icon: ShieldCheck }]
       : []),
     { name: "Quick Access", link: "/pages/quick-access", icon: Pin },
@@ -120,7 +121,7 @@ export default function Sidebar() {
             <div className="brand-lockup">
               <span className="directory-brand">Document Management</span>
               <span className="directory-brand-sub">
-                {isAdmin ? "Intelligence Engine" : "Employee workspace"}
+                {isManager ? "Intelligence Engine" : "Employee workspace"}
               </span>
             </div>
           )}
@@ -139,7 +140,7 @@ export default function Sidebar() {
           </button>
         </div>
 
-        {isAdmin && (
+        {isManager && (
           <div className="flex flex-col gap-2 border-t border-slate-200 pt-2">
             {!collapsed && (
               <span className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
@@ -167,7 +168,7 @@ export default function Sidebar() {
           )}
           <div className="flex flex-col gap-1">
             {renderLinks(
-              intelligenceLinks.filter((l) => l.name !== "Settings" || isAdmin),
+              intelligenceLinks.filter((l) => l.name !== "Settings" || isDocAdmin),
             )}
           </div>
         </div>
