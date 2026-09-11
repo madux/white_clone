@@ -141,7 +141,33 @@ export class StaffDirectoryDashboard extends Component {
             
             // Org chart state
             isOrgChartVisible: true,
-            orgSidebarOpen: false,
+            orgSidebarOpen: false, // Smart Search closed by default
+            smartSearchQuery: '',
+            smartSearchFocused: false,
+            // Local Smart Search picks — do NOT touch org activeFilters.
+            // Next: these drive a dedicated main-view replacement.
+            smartSearchSelected: {},
+            smartSearchPinnedIds: [],
+            smartSearchTab: 'analytics', // overview | teams | calendar | analytics
+            smartSearchView: 'org', // org | bar | heatmap | geo | graph
+            teamsSearchQuery: '',
+            teamsDeptFilter: '',
+            teamsHealthFilter: '',
+            teamsViewMode: 'list', // list | grid
+            teamsDetailId: null,
+            teamsDetailTab: 'overview', // overview | members | projects | calendar
+            teamsDetailCalPage: 1,
+            calYear: new Date().getFullYear(),
+            calMonth: new Date().getMonth(), // 0-indexed
+            calViewMode: 'month', // month | week | list
+            cleonAiOpen: true,
+            cleonAiTab: 'summary',
+            // Phase 1 placeholders — Phase 3 will load Smart Search segments (segment + extras)
+            orgSavedFilters: [
+                { id: 'ph-1', name: 'Engineering – Lagos', resultCount: 128 },
+                { id: 'ph-2', name: 'Senior Leadership', resultCount: 56 },
+                { id: 'ph-3', name: 'Remote Teams', resultCount: 23 },
+            ],
             showOrgViewDropdown: false,
             showOrgFilterDropdown: false,
             activeOrgView: 'org',
@@ -185,6 +211,7 @@ export class StaffDirectoryDashboard extends Component {
             },
             showProfileModal: false,
             showFullProfile: false,
+            showTeamPersonDrawer: false,
             activeProfile: null,
             messageBox: {
                 isVisible: false,
@@ -382,6 +409,1133 @@ export class StaffDirectoryDashboard extends Component {
 
     toggleOrgSidebar() {
         this.state.orgSidebarOpen = !this.state.orgSidebarOpen;
+        if (!this.state.orgSidebarOpen) {
+            this.state.smartSearchQuery = '';
+            this.state.smartSearchFocused = false;
+        }
+    }
+
+    /** Categories surfaced in Smart Search typeahead (Figma set). */
+    get smartSearchCategoryDefs() {
+        return [
+            { id: 'department', label: 'Department' },
+            { id: 'location', label: 'Location' },
+            { id: 'grade', label: 'Grade Level' },
+            { id: 'manager', label: 'Team' },
+            { id: 'lifecycle', label: 'Status' },
+        ];
+    }
+
+    get smartSearchQueryTrimmed() {
+        return (this.state.smartSearchQuery || '').trim().toLowerCase();
+    }
+
+    get smartSearchMatchedCategories() {
+        const q = this.smartSearchQueryTrimmed;
+        if (!q) return [];
+        return this.smartSearchCategoryDefs.filter((c) =>
+            c.label.toLowerCase().includes(q)
+        );
+    }
+
+    get smartSearchValueGroups() {
+        const q = this.smartSearchQueryTrimmed;
+        if (!q) return [];
+        const allowed = new Set(this.smartSearchCategoryDefs.map((c) => c.id));
+        const labelById = Object.fromEntries(
+            this.smartSearchCategoryDefs.map((c) => [c.id, c.label.toUpperCase()])
+        );
+        const groups = [];
+        for (const col of this.filterDefinitions) {
+            for (const def of col) {
+                if (!allowed.has(def.id) || !def.options || def.isDate) continue;
+                const options = def.options.filter((o) =>
+                    String(o).toLowerCase().includes(q)
+                );
+                if (options.length) {
+                    groups.push({
+                        id: def.id,
+                        label: labelById[def.id] || def.label,
+                        options,
+                    });
+                }
+            }
+        }
+        return groups;
+    }
+
+    get showSmartSearchDropdown() {
+        return !!this.smartSearchQueryTrimmed;
+    }
+
+    get smartSearchHasMatches() {
+        return (
+            this.smartSearchMatchedCategories.length > 0 ||
+            this.smartSearchValueGroups.length > 0
+        );
+    }
+
+    get smartSearchNoMatchLabel() {
+        const raw = (this.state.smartSearchQuery || '').trim();
+        return `No matches for "${raw}"`;
+    }
+
+    onSmartSearchInput(ev) {
+        this.state.smartSearchQuery = ev.target.value;
+    }
+
+    onSmartSearchFocus() {
+        this.state.smartSearchFocused = true;
+    }
+
+    onSmartSearchBlur() {
+        // Delay so mousedown on a dropdown row still registers before close.
+        setTimeout(() => {
+            this.state.smartSearchFocused = false;
+        }, 150);
+    }
+
+    onSmartSearchCategoryClick(category) {
+        this._pinSmartSearchCategory(category.id);
+        this.state.smartSearchQuery = '';
+        this.state.smartSearchFocused = false;
+    }
+
+    _pinSmartSearchCategory(categoryId) {
+        if (!this.state.smartSearchPinnedIds.includes(categoryId)) {
+            this.state.smartSearchPinnedIds = [...this.state.smartSearchPinnedIds, categoryId];
+        }
+        if (!this.state.smartSearchSelected[categoryId]) {
+            this.state.smartSearchSelected = {
+                ...this.state.smartSearchSelected,
+                [categoryId]: [],
+            };
+        }
+    }
+
+    unpinSmartSearchCategory(categoryId) {
+        this.state.smartSearchPinnedIds = this.state.smartSearchPinnedIds.filter(
+            (id) => id !== categoryId
+        );
+        const selected = { ...this.state.smartSearchSelected };
+        delete selected[categoryId];
+        this.state.smartSearchSelected = selected;
+    }
+
+    _getSmartSearchOptionsFor(categoryId) {
+        for (const col of this.filterDefinitions) {
+            for (const def of col) {
+                if (def.id === categoryId && def.options) {
+                    return def.options;
+                }
+            }
+        }
+        return [];
+    }
+
+    get smartSearchPinnedPanels() {
+        return this.state.smartSearchPinnedIds.map((id) => {
+            const def = this.smartSearchCategoryDefs.find((c) => c.id === id);
+            const selected = this.state.smartSearchSelected[id] || [];
+            return {
+                id,
+                label: def ? def.label : id,
+                options: this._getSmartSearchOptionsFor(id),
+                selected,
+                count: selected.length,
+            };
+        });
+    }
+
+    get smartSearchTotalSelectedCount() {
+        return Object.values(this.state.smartSearchSelected).reduce(
+            (sum, arr) => sum + (arr ? arr.length : 0),
+            0
+        );
+    }
+
+    get showSmartSearchResults() {
+        return this.smartSearchTotalSelectedCount > 0;
+    }
+
+    get smartSearchFilterChips() {
+        const chips = [];
+        for (const [categoryId, values] of Object.entries(this.state.smartSearchSelected)) {
+            for (const value of values || []) {
+                chips.push({ categoryId, value });
+            }
+        }
+        return chips;
+    }
+
+    _personMatchesSmartSearchValue(person, categoryId, selectedValues) {
+        const normSelected = selectedValues.map((v) =>
+            String(v).replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+        );
+        let pVal = person[categoryId];
+        if (categoryId === 'lifecycle') pVal = person.lifecycle_state;
+        if (categoryId === 'location') pVal = person.work_location;
+        if (categoryId === 'grade') pVal = person.grade || person.band;
+        if (categoryId === 'manager') pVal = person.manager_name;
+        if (pVal === undefined || pVal === null || pVal === '') return false;
+        const normPVal = String(pVal).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        return normSelected.includes(normPVal);
+    }
+
+    get smartSearchPeople() {
+        let result = this.state.people || [];
+        for (const [categoryId, selectedValues] of Object.entries(this.state.smartSearchSelected)) {
+            if (!selectedValues || !selectedValues.length) continue;
+            result = result.filter((p) =>
+                this._personMatchesSmartSearchValue(p, categoryId, selectedValues)
+            );
+        }
+        return result;
+    }
+
+    get smartSearchKpis() {
+        const people = this.smartSearchPeople;
+        const totalAll = (this.state.people || []).length;
+        const total = people.length;
+        const today = new Date();
+        const days30 = 30 * 24 * 60 * 60 * 1000;
+        let onLeave = 0;
+        let active = 0;
+        let newHires = 0;
+        let remote = 0;
+        const depts = new Set();
+        for (const p of people) {
+            const life = (p.lifecycle_state || 'active').toLowerCase().replace(/[^a-z]/g, '');
+            if (life === 'onleave') onLeave++;
+            else if (life === 'active' || life === 'probation') active++;
+            if (p.department) depts.add(p.department);
+            const mode = String(p.work_mode || '').toLowerCase();
+            if (mode.includes('remote')) remote++;
+            if (p.create_date || p.start_date) {
+                const d = new Date(p.create_date || p.start_date);
+                if (!Number.isNaN(d.getTime()) && today - d <= days30) newHires++;
+            }
+        }
+        return {
+            total,
+            totalAll,
+            active,
+            onLeave,
+            newHires,
+            openPos: Math.max(0, Math.round(total * 0.06)),
+            depts: depts.size,
+            remote,
+            activePct: total ? Math.round((active / total) * 100) : 0,
+        };
+    }
+
+    get smartSearchDeptHighlight() {
+        const counts = {};
+        for (const p of this.smartSearchPeople) {
+            const d = p.department || 'Other';
+            counts[d] = (counts[d] || 0) + 1;
+        }
+        let top = null;
+        let topN = 0;
+        for (const [name, n] of Object.entries(counts)) {
+            if (n > topN) {
+                top = name;
+                topN = n;
+            }
+        }
+        return top ? { name: top, count: topN } : null;
+    }
+
+    get smartSearchDeptBars() {
+        const people = this.smartSearchPeople;
+        const total = people.length || 1;
+        const counts = {};
+        for (const p of people) {
+            const d = p.department || 'Other';
+            counts[d] = (counts[d] || 0) + 1;
+        }
+        const colors = ['#6366F1', '#8B5CF6', '#D6006E', '#0EA5E9', '#10B981', '#F59E0B'];
+        return Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6)
+            .map(([name, count], i) => ({
+                name,
+                shortName: name.length > 14 ? name.slice(0, 13) + '…' : name,
+                count,
+                pct: Math.round((count / total) * 100),
+                color: colors[i % colors.length],
+            }));
+    }
+
+    _formatWeeksAgo(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (Number.isNaN(d.getTime())) return '';
+        const weeks = Math.max(0, Math.floor((Date.now() - d.getTime()) / (7 * 24 * 60 * 60 * 1000)));
+        if (weeks < 1) return 'this week';
+        return `${weeks}w ago`;
+    }
+
+    get smartSearchRecentJoins() {
+        const colors = ['#E91E8C', '#10B981', '#3B82F6', '#F59E0B', '#8B5CF6'];
+        return [...this.smartSearchPeople]
+            .filter((p) => p.create_date || p.start_date)
+            .sort((a, b) => {
+                const da = new Date(a.create_date || a.start_date);
+                const db = new Date(b.create_date || b.start_date);
+                return db - da;
+            })
+            .slice(0, 5)
+            .map((p, i) => ({
+                id: p.id,
+                name: p.name || 'Employee',
+                department: p.department || '—',
+                ago: this._formatWeeksAgo(p.create_date || p.start_date),
+                color: colors[i % colors.length],
+            }));
+    }
+
+    get smartSearchOverviewCeo() {
+        const pool = this.state.people || [];
+        const ceo = pool.find(
+            (p) =>
+                (p.job_title || '').toLowerCase().includes('chief executive') ||
+                (p.job_title || '').toLowerCase() === 'ceo'
+        );
+        if (ceo) {
+            return {
+                initials: this.initials(ceo.name),
+                title: ceo.job_title || 'Chief Executive Officer',
+                subtitle: 'CEO',
+            };
+        }
+        // Fallback: top of filtered set by direct reports
+        const people = this.smartSearchPeople;
+        if (!people.length) return null;
+        const sorted = [...people].sort(
+            (a, b) => (b.direct_reports || 0) - (a.direct_reports || 0)
+        );
+        const top = sorted[0];
+        return {
+            initials: this.initials(top.name),
+            title: top.job_title || top.name,
+            subtitle: top.department || 'Lead',
+        };
+    }
+
+    get smartSearchWorkforceArc() {
+        const k = this.smartSearchKpis;
+        if (!k.total || !k.active) return '';
+        const pct = Math.min(1, k.active / k.total);
+        if (pct >= 0.999) {
+            return 'M 65 60 L 65 12 A 48 48 0 1 1 64.99999999999999 12 Z';
+        }
+        const angle = pct * 360;
+        const r = 48;
+        const cx = 65;
+        const cy = 60;
+        const rad = ((angle - 90) * Math.PI) / 180;
+        const x = cx + r * Math.cos(rad);
+        const y = cy + r * Math.sin(rad);
+        const large = angle > 180 ? 1 : 0;
+        return `M ${cx} ${cy} L ${cx} ${cy - r} A ${r} ${r} 0 ${large} 1 ${x} ${y} Z`;
+    }
+
+    get smartSearchCalendarEvents() {
+        // Placeholder org events — swap for live leave/joining/etc. later
+        const y = this.state.calYear;
+        const m = this.state.calMonth; // 0-indexed
+        // Seed relative to viewed month so demo events always appear
+        const iso = (day) => {
+            const d = String(day).padStart(2, '0');
+            const mo = String(m + 1).padStart(2, '0');
+            return `${y}-${mo}-${d}`;
+        };
+        const TYPE = {
+            event: { type: 'Event', color: '#8B5CF6' },
+            training: { type: 'Training', color: '#F97316' },
+            joining: { type: 'Joining', color: '#E91E8C' },
+            birthday: { type: 'Birthday', color: '#F59E0B' },
+            anniversary: { type: 'Anniversary', color: '#3B82F6' },
+            leave: { type: 'Leave', color: '#EF4444' },
+            holiday: { type: 'Holiday', color: '#10B981' },
+        };
+        return [
+            { id: 'e1', title: 'Q3 Planning Meeting', date: iso(5), ...TYPE.event },
+            { id: 'e2', title: 'Product Review', date: iso(8), ...TYPE.training },
+            { id: 'e3', title: 'Team All-Hands', date: iso(12), ...TYPE.event },
+            { id: 'e4', title: 'Leadership Training', date: iso(15), ...TYPE.training },
+            { id: 'e5', title: 'Engineering Offsite', date: iso(20), ...TYPE.event },
+            { id: 'e6', title: 'Compliance Training', date: iso(22), ...TYPE.training },
+        ];
+    }
+
+    get smartSearchUpcomingEvents() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const fmt = (iso) => {
+            const d = new Date(iso + 'T12:00:00');
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+            return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+        };
+        return this.smartSearchCalendarEvents
+            .filter((e) => new Date(e.date + 'T12:00:00') >= today)
+            .slice(0, 6)
+            .map((e) => ({
+                ...e,
+                meta: `${e.type} · ${fmt(e.date).replace(/^\w+ /, '')}`,
+                sideDate: fmt(e.date),
+                tone: e.type === 'Training' ? 'orange' : 'purple',
+            }));
+    }
+
+    get smartSearchCalMonthLabel() {
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December',
+        ];
+        return `${months[this.state.calMonth]} ${this.state.calYear}`;
+    }
+
+    get smartSearchCalLegend() {
+        return [
+            { label: 'Joining', color: '#E91E8C' },
+            { label: 'Birthday', color: '#F59E0B' },
+            { label: 'Anniversary', color: '#3B82F6' },
+            { label: 'Leave', color: '#EF4444' },
+            { label: 'Holiday', color: '#10B981' },
+            { label: 'Event', color: '#8B5CF6' },
+            { label: 'Training', color: '#F97316' },
+        ];
+    }
+
+    get smartSearchCalSummary() {
+        const events = this.smartSearchCalendarEvents;
+        const eventN = events.filter((e) => e.type === 'Event').length;
+        const trainN = events.filter((e) => e.type === 'Training').length;
+        return {
+            rows: [
+                { label: 'Events', color: '#8B5CF6', count: eventN },
+                { label: 'Trainings', color: '#F97316', count: trainN },
+            ],
+            total: events.length,
+        };
+    }
+
+    get smartSearchCalDays() {
+        const y = this.state.calYear;
+        const m = this.state.calMonth;
+        const first = new Date(y, m, 1);
+        const startPad = first.getDay(); // 0 = Sun
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+        const byDate = {};
+        for (const ev of this.smartSearchCalendarEvents) {
+            if (!byDate[ev.date]) byDate[ev.date] = [];
+            byDate[ev.date].push(ev);
+        }
+        const cells = [];
+        const totalCells = Math.ceil((startPad + daysInMonth) / 7) * 7;
+        for (let i = 0; i < totalCells; i++) {
+            const dayNum = i - startPad + 1;
+            const inMonth = dayNum >= 1 && dayNum <= daysInMonth;
+            const dateKey = inMonth
+                ? `${y}-${String(m + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
+                : '';
+            const isToday = inMonth && `${y}-${m}-${dayNum}` === todayKey;
+            cells.push({
+                key: `${y}-${m}-${i}`,
+                day: inMonth ? dayNum : '',
+                inMonth,
+                isToday,
+                isSatCol: i % 7 === 6,
+                isLastRow: i >= totalCells - 7,
+                events: inMonth ? (byDate[dateKey] || []) : [],
+            });
+        }
+        return cells;
+    }
+
+    get smartSearchCalWeekDays() {
+        const today = new Date();
+        const focus =
+            today.getFullYear() === this.state.calYear && today.getMonth() === this.state.calMonth
+                ? today.getDate()
+                : 1;
+        const all = this.smartSearchCalDays;
+        const cellIdx = all.findIndex((c) => c.inMonth && c.day === focus);
+        const weekStart = Math.floor(Math.max(0, cellIdx) / 7) * 7;
+        return all.slice(weekStart, weekStart + 7);
+    }
+
+    get smartSearchCalListEvents() {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        return [...this.smartSearchCalendarEvents]
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .map((e) => {
+                const d = new Date(e.date + 'T12:00:00');
+                return {
+                    ...e,
+                    sideDate: `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`,
+                };
+            });
+    }
+
+    calGoToday() {
+        const n = new Date();
+        this.state.calYear = n.getFullYear();
+        this.state.calMonth = n.getMonth();
+    }
+
+    calPrev() {
+        if (this.state.calMonth === 0) {
+            this.state.calMonth = 11;
+            this.state.calYear -= 1;
+        } else {
+            this.state.calMonth -= 1;
+        }
+    }
+
+    calNext() {
+        if (this.state.calMonth === 11) {
+            this.state.calMonth = 0;
+            this.state.calYear += 1;
+        } else {
+            this.state.calMonth += 1;
+        }
+    }
+
+    setCalViewMode(mode) {
+        this.state.calViewMode = mode;
+    }
+
+    get smartSearchInsightText() {
+        const top = this.smartSearchDeptHighlight;
+        const k = this.smartSearchKpis;
+        if (!top || !k.total) {
+            return 'Apply filters to surface workforce insights.';
+        }
+        const pct = Math.round((top.count / k.total) * 100);
+        return `${top.name} has the highest headcount with ${top.count} employees (${pct}%)`;
+    }
+
+    get smartSearchSummaryText() {
+        const chips = this.smartSearchFilterChips.map((c) => c.value);
+        const k = this.smartSearchKpis;
+        const filterLabel = chips.length
+            ? `Department: ${chips.join(', ')}`
+            : 'current filters';
+        // Prefer department wording when only department is selected
+        const onlyDept = Object.keys(this.state.smartSearchSelected).every(
+            (id) => id === 'department' || !(this.state.smartSearchSelected[id] || []).length
+        );
+        const by = onlyDept
+            ? `Department: ${chips.join(', ')}`
+            : chips.join(', ');
+        return `Showing ${k.total} employees filtered by ${by}. The workforce is ${k.activePct}% active.`;
+    }
+
+    setSmartSearchTab(tab) {
+        this.state.smartSearchTab = tab;
+        if (tab !== 'teams') {
+            this.state.teamsDetailId = null;
+            this.state.teamsDetailTab = 'overview';
+        }
+    }
+
+    get smartSearchTabLabel() {
+        const labels = {
+            overview: 'Overview',
+            teams: 'Teams',
+            calendar: 'Calendar',
+            analytics: 'Analytics',
+        };
+        return labels[this.state.smartSearchTab] || this.state.smartSearchTab;
+    }
+
+    _teamHealthFromScore(score) {
+        if (score >= 80) return { label: 'Healthy', color: '#10B981' };
+        if (score >= 60) return { label: 'Moderate', color: '#F59E0B' };
+        if (score >= 40) return { label: 'At Risk', color: '#F97316' };
+        return { label: 'Critical', color: '#EF4444' };
+    }
+
+    _teamYearsFromPerson(p) {
+        if (p.start_date || p.create_date) {
+            const d = new Date(p.start_date || p.create_date);
+            if (!Number.isNaN(d.getTime())) {
+                return Math.max(0, (Date.now() - d.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+            }
+        }
+        const t = String(p.tenure || '');
+        const m = t.match(/([\d.]+)\s*y/i);
+        if (m) return parseFloat(m[1]);
+        return 0;
+    }
+
+    _teamHealthScore(members) {
+        if (!members.length) return 20;
+        let active = 0;
+        let progSum = 0;
+        let progN = 0;
+        for (const p of members) {
+            const life = (p.lifecycle_state || 'active').toLowerCase().replace(/[^a-z]/g, '');
+            if (life === 'active' || life === 'probation') active++;
+            const s = Number(p.progress_score);
+            if (!Number.isNaN(s) && s > 0) {
+                progSum += s;
+                progN++;
+            }
+        }
+        const activePct = (active / members.length) * 100;
+        const avgProg = progN ? progSum / progN : activePct;
+        return Math.max(0, Math.min(100, Math.round(activePct * 0.55 + avgProg * 0.45)));
+    }
+
+    get smartSearchTeamsAll() {
+        const people = this.smartSearchPeople;
+        const allPeople = this.state.people || [];
+        const byId = {};
+        for (const p of allPeople) byId[p.id] = p;
+
+        const groups = {};
+        for (const p of people) {
+            const mid = p.manager_id;
+            if (!mid) continue;
+            if (!groups[mid]) groups[mid] = [];
+            groups[mid].push(p);
+        }
+
+        // Managers in the filter with no filtered reports still appear (empty / critical)
+        for (const p of people) {
+            if ((p.direct_reports || 0) > 0 && !groups[p.id]) {
+                groups[p.id] = [];
+            }
+        }
+
+        const colors = ['#D6006E', '#6366F1', '#F59E0B', '#10B981', '#8B5CF6', '#0EA5E9', '#E91E8C', '#14B8A6'];
+        const CIRC = 2 * Math.PI * 12;
+        const CARD_CIRC = 2 * Math.PI * 22;
+        const teams = [];
+
+        const classifyMode = (p) => {
+            const m = String(p.work_mode || p.work_mode_raw || '').toLowerCase();
+            if (m.includes('remote')) return 'remote';
+            if (m.includes('hybrid')) return 'hybrid';
+            if (m.includes('office') || m.includes('onsite') || m.includes('on-site') || m.includes('site')) {
+                return 'office';
+            }
+            return 'office';
+        };
+
+        const gradeLabel = (p) => {
+            const g = (p.grade || '').trim();
+            if (g) return g;
+            const title = (p.job_title || '').toLowerCase();
+            if (title.includes('manager') || title.includes('director') || title.includes('head of')) {
+                return 'Manager';
+            }
+            if (title.includes('lead') || title.includes('principal')) return 'Team Lead';
+            return 'Individual Contributor';
+        };
+
+        for (const [leadIdStr, members] of Object.entries(groups)) {
+            const leadId = Number(leadIdStr);
+            const lead = byId[leadId];
+            const leadName = lead?.name || members[0]?.manager_name || 'Unknown Lead';
+
+            const deptCounts = {};
+            for (const m of members) {
+                const d = m.department || '';
+                if (!d) continue;
+                deptCounts[d] = (deptCounts[d] || 0) + 1;
+            }
+            let department = '—';
+            let topN = 0;
+            for (const [d, n] of Object.entries(deptCounts)) {
+                if (n > topN) {
+                    department = d;
+                    topN = n;
+                }
+            }
+            if (department === '—' && lead?.department) department = lead.department;
+
+            let name;
+            const title = (lead?.job_title || '').trim();
+            if (title && !/^(manager|team lead|lead|employee)$/i.test(title)) {
+                name = title.replace(/\s+(Manager|Lead|Head)$/i, '').trim() || title;
+            } else if (department !== '—') {
+                name = `${department} Team`;
+            } else {
+                name = `${leadName.split(/\s+/)[0]}'s Team`;
+            }
+
+            const score = this._teamHealthScore(members);
+            const health = this._teamHealthFromScore(score);
+            let yearsSum = 0;
+            for (const m of members) yearsSum += this._teamYearsFromPerson(m);
+            const avgYears = members.length ? yearsSum / members.length : 0;
+            const color = colors[teams.length % colors.length];
+
+            // Avatar stack: up to 5 initials + overflow chip
+            const avatars = members.slice(0, 5).map((m, i) => ({
+                initials: this.initials(m.name),
+                z: 5 - i,
+                first: i === 0,
+            }));
+            const avatarExtra = Math.max(0, members.length - 5);
+
+            // Work mode bars
+            const modeCounts = { office: 0, hybrid: 0, remote: 0 };
+            for (const m of members) modeCounts[classifyMode(m)]++;
+            const modeTotal = members.length || 1;
+            const workModes = [
+                { key: 'office', label: 'Office', count: modeCounts.office, color: '#3B82F6' },
+                { key: 'hybrid', label: 'Hybrid', count: modeCounts.hybrid, color: '#C2185B' },
+                { key: 'remote', label: 'Remote', count: modeCounts.remote, color: '#10B981' },
+            ].map((row) => ({
+                ...row,
+                pct: members.length ? Math.round((row.count / modeTotal) * 100) : 0,
+            }));
+
+            // Grades (top 4)
+            const gradeMap = {};
+            for (const m of members) {
+                const g = gradeLabel(m);
+                gradeMap[g] = (gradeMap[g] || 0) + 1;
+            }
+            const grades = Object.entries(gradeMap)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 4)
+                .map(([label, count]) => ({ label, count }));
+
+            const memberWord = members.length === 1 ? 'member' : 'members';
+            const avgTenure = `${avgYears.toFixed(1)}y`;
+            const code = `TM-${String(Math.abs(leadId) % 1000).padStart(3, '0')}`;
+            const leadTitle = lead?.job_title || 'Team Lead';
+            const leadInitials = this.initials(leadName);
+
+            let projectHits = 0;
+            for (const m of members) {
+                const cp = m.current_projects;
+                if (Array.isArray(cp)) projectHits += cp.length;
+                else if (cp) projectHits += 1;
+            }
+            const activeProjects = members.length
+                ? Math.max(1, Math.min(3, projectHits || Math.ceil(members.length / 3)))
+                : 0;
+            const projectsTabCount = members.length ? Math.max(activeProjects, 3) : 0;
+
+            const deptLabel = department !== '—' ? department : 'Unassigned';
+            const description =
+                department !== '—'
+                    ? `Builds and maintains capabilities within ${department}. Owns delivery cadence, standards, and collaboration for ${name}.`
+                    : `Cross-functional team led by ${leadName}. Focuses on delivery, standards, and collaboration across product lines.`;
+
+            teams.push({
+                id: leadId,
+                code,
+                name,
+                department,
+                deptLabel,
+                lead: leadName,
+                leadId,
+                leadTitle,
+                leadInitials,
+                members: members.length,
+                score,
+                health: health.label,
+                healthColor: health.color,
+                status: score >= 40 ? 'Active' : 'At Risk',
+                dashOffset: CIRC * (1 - score / 100),
+                circumference: CIRC,
+                cardDashOffset: CARD_CIRC * (1 - score / 100),
+                cardCircumference: CARD_CIRC,
+                avgTenure,
+                subtitle: `${members.length} ${memberWord} · Lead: ${leadName} · avg ${avgTenure} tenure`,
+                metaLine: `${deptLabel} · Lead: ${leadName}`,
+                description,
+                activeProjects,
+                projectsTabCount,
+                color,
+                memberIds: members.map((m) => m.id),
+                avatars,
+                avatarExtra,
+                workModes,
+                grades,
+            });
+        }
+
+        teams.sort((a, b) => b.members - a.members || a.name.localeCompare(b.name));
+        return teams;
+    }
+
+    get smartSearchTeamDepartments() {
+        const set = new Set();
+        for (const t of this.smartSearchTeamsAll) {
+            if (t.department && t.department !== '—') set.add(t.department);
+        }
+        return [...set].sort((a, b) => a.localeCompare(b));
+    }
+
+    get smartSearchTeams() {
+        const q = (this.state.teamsSearchQuery || '').trim().toLowerCase();
+        const dept = this.state.teamsDeptFilter || '';
+        const health = this.state.teamsHealthFilter || '';
+        return this.smartSearchTeamsAll.filter((t) => {
+            if (dept && t.department !== dept) return false;
+            if (health && t.health !== health) return false;
+            if (!q) return true;
+            return (
+                t.name.toLowerCase().includes(q) ||
+                t.lead.toLowerCase().includes(q) ||
+                (t.department || '').toLowerCase().includes(q)
+            );
+        });
+    }
+
+    onTeamsSearchInput(ev) {
+        this.state.teamsSearchQuery = ev.target.value;
+    }
+
+    onTeamsDeptFilter(ev) {
+        this.state.teamsDeptFilter = ev.target.value;
+    }
+
+    onTeamsHealthFilter(ev) {
+        this.state.teamsHealthFilter = ev.target.value;
+    }
+
+    setTeamsViewMode(mode) {
+        this.state.teamsViewMode = mode;
+    }
+
+    onCompareTeams() {
+        // Placeholder — compare UI comes later
+        this.toast.show('warning', 'Select two or more teams to compare (coming soon).');
+    }
+
+    get selectedTeamDetail() {
+        if (!this.state.teamsDetailId) return null;
+        return this.smartSearchTeamsAll.find((t) => t.id === this.state.teamsDetailId) || null;
+    }
+
+    onViewTeam(team) {
+        if (!team) return;
+        this.state.teamsDetailId = team.id;
+        this.state.teamsDetailTab = 'overview';
+        this.state.teamsDetailCalPage = 1;
+    }
+
+    closeTeamDetail() {
+        this.state.teamsDetailId = null;
+        this.state.teamsDetailTab = 'overview';
+        this.state.teamsDetailCalPage = 1;
+        this.closeTeamPersonDrawer();
+    }
+
+    setTeamsDetailTab(tab) {
+        this.state.teamsDetailTab = tab;
+        if (tab === 'calendar') this.state.teamsDetailCalPage = 1;
+    }
+
+    onTeamLeadClick(team) {
+        if (team?.leadId) this.openTeamPersonDrawer(team.leadId);
+    }
+
+    get selectedTeamMembers() {
+        const team = this.selectedTeamDetail;
+        if (!team) return [];
+        const byId = {};
+        for (const p of this.state.people || []) byId[p.id] = p;
+
+        const rows = [];
+        const seen = new Set();
+
+        const pushPerson = (p, isLead) => {
+            if (!p || seen.has(p.id)) return;
+            seen.add(p.id);
+            const life = (p.lifecycle_state || 'active').toLowerCase().replace(/[^a-z]/g, '');
+            const lifeLabel = this.lifecycleLabel(p.lifecycle_state || 'Active');
+            const modeRaw = String(p.work_mode || p.work_mode_raw || 'Hybrid');
+            const mode = modeRaw.charAt(0).toUpperCase() + modeRaw.slice(1).toLowerCase();
+            let grade = (p.grade || '').trim();
+            if (!grade) {
+                const title = (p.job_title || '').toLowerCase();
+                if (title.includes('manager') || title.includes('director')) grade = 'L6';
+                else if (title.includes('lead') || title.includes('senior')) grade = 'L3';
+                else grade = 'L3';
+            }
+            rows.push({
+                id: p.id,
+                name: p.name || 'Employee',
+                initials: this.initials(p.name),
+                title: p.job_title || 'Employee',
+                isLead,
+                grade,
+                status: lifeLabel,
+                statusOk: life === 'active' || life === 'probation' || !life,
+                workMode: mode.includes('remote') ? 'Remote' : mode.includes('office') || mode.includes('site') ? 'Office' : 'Hybrid',
+            });
+        };
+
+        // Lead first (even if not in memberIds)
+        if (team.leadId) pushPerson(byId[team.leadId], true);
+        for (const id of team.memberIds || []) {
+            pushPerson(byId[id], id === team.leadId);
+        }
+        return rows;
+    }
+
+    get selectedTeamProjects() {
+        const team = this.selectedTeamDetail;
+        if (!team) return [];
+        const byId = {};
+        for (const p of this.state.people || []) byId[p.id] = p;
+
+        const map = new Map();
+        const add = (title, leadName, status) => {
+            const key = title.toLowerCase();
+            if (map.has(key)) return;
+            const st = status || 'Active';
+            const norm = String(st).toLowerCase();
+            let group = 'Active';
+            let color = '#059669';
+            let bg = '#D1FAE5';
+            if (norm.includes('review') || norm.includes('archive')) {
+                group = 'Review';
+                color = '#D97706';
+                bg = '#FEF3C7';
+            } else if (norm.includes('plan') || norm.includes('draft')) {
+                group = 'Planning';
+                color = '#E91E8C';
+                bg = '#FCE7F3';
+            }
+            map.set(key, { title, lead: leadName || team.lead, status: group, color, bg });
+        };
+
+        for (const id of [team.leadId, ...(team.memberIds || [])]) {
+            const p = byId[id];
+            if (!p) continue;
+            const list = p.current_projects;
+            if (Array.isArray(list)) {
+                for (const proj of list) {
+                    if (proj?.title) add(proj.title, p.name, proj.status);
+                }
+            }
+        }
+
+        // Placeholder demo projects when none linked (matches Figma)
+        if (!map.size && team.members > 0) {
+            add('Platform v3 Rebuild', team.lead, 'Active');
+            const second = this.selectedTeamMembers.find((m) => !m.isLead);
+            add('ERP Integration', second?.name || team.lead, 'Review');
+            add('DevOps Modernisation', team.lead, 'Planning');
+        }
+
+        return [...map.values()];
+    }
+
+    get selectedTeamProjectGroups() {
+        const order = ['Active', 'Review', 'Planning'];
+        const groups = {};
+        for (const p of this.selectedTeamProjects) {
+            if (!groups[p.status]) groups[p.status] = [];
+            groups[p.status].push(p);
+        }
+        return order
+            .filter((k) => groups[k]?.length)
+            .map((status) => {
+                const items = groups[status];
+                const color = items[0].color;
+                const bg = items[0].bg;
+                const n = items.length;
+                return {
+                    status,
+                    color,
+                    bg,
+                    countLabel: `${n} project${n === 1 ? '' : 's'}`,
+                    items,
+                };
+            });
+    }
+
+    get selectedTeamMeetingPeople() {
+        return this.selectedTeamMembers.slice(0, 3).map((m, i) => ({
+            initials: m.initials,
+            first: i === 0,
+            z: 4 - i,
+        }));
+    }
+
+    get selectedTeamMeetingsUpcoming() {
+        const team = this.selectedTeamDetail;
+        if (!team) return [];
+        const lead = team.lead;
+        const people = this.selectedTeamMeetingPeople;
+        return [
+            {
+                key: 'today',
+                label: 'Today',
+                items: [
+                    { id: 'u1', title: 'Daily Standup', meta: `9:30 AM – 9:45 AM · ${lead}`, people },
+                ],
+            },
+            {
+                key: 'tomorrow',
+                label: 'Tomorrow',
+                items: [
+                    { id: 'u2', title: 'Sprint Planning', meta: `10:00 AM – 12:00 PM · ${lead}`, people },
+                ],
+            },
+            {
+                key: 'mon',
+                label: 'Mon, Sep 14',
+                items: [
+                    { id: 'u3', title: 'Architecture Review', meta: `2:00 PM – 3:00 PM · ${lead}`, people },
+                ],
+            },
+            {
+                key: 'next',
+                label: 'Next Week',
+                items: [
+                    { id: 'u4', title: 'Demo Day', meta: `3:00 PM – 4:00 PM · ${lead}`, people },
+                ],
+            },
+        ];
+    }
+
+    get selectedTeamMeetingsRecentAll() {
+        const team = this.selectedTeamDetail;
+        if (!team) return [];
+        const lead = team.lead;
+        const people = this.selectedTeamMeetingPeople;
+        return [
+            { id: 'r1', title: 'Daily Standup', meta: `9:30 AM – 9:45 AM · ${lead}`, people },
+            { id: 'r2', title: 'Sprint Retrospective', meta: `3:00 PM – 4:00 PM · ${lead}`, people },
+            { id: 'r3', title: 'Daily Standup', meta: `9:30 AM – 9:45 AM · ${lead}`, people },
+            { id: 'r4', title: 'Backlog Grooming', meta: `11:00 AM – 12:00 PM · ${lead}`, people },
+            { id: 'r5', title: 'Design Sync', meta: `1:00 PM – 1:30 PM · ${lead}`, people },
+            { id: 'r6', title: 'Release Checklist', meta: `4:00 PM – 4:30 PM · ${lead}`, people },
+        ];
+    }
+
+    get selectedTeamMeetingsRecentPageCount() {
+        return Math.max(1, Math.ceil(this.selectedTeamMeetingsRecentAll.length / 3));
+    }
+
+    get selectedTeamMeetingsRecent() {
+        const page = Math.min(this.state.teamsDetailCalPage, this.selectedTeamMeetingsRecentPageCount);
+        const start = (page - 1) * 3;
+        return this.selectedTeamMeetingsRecentAll.slice(start, start + 3);
+    }
+
+    get selectedTeamMeetingsScheduledLabel() {
+        const team = this.selectedTeamDetail;
+        if (!team) return '';
+        const n = this.selectedTeamMeetingsUpcoming.reduce((s, g) => s + g.items.length, 0);
+        return `${team.name} · ${n} scheduled`;
+    }
+
+    teamsDetailCalPrev() {
+        if (this.state.teamsDetailCalPage > 1) this.state.teamsDetailCalPage -= 1;
+    }
+
+    teamsDetailCalNext() {
+        if (this.state.teamsDetailCalPage < this.selectedTeamMeetingsRecentPageCount) {
+            this.state.teamsDetailCalPage += 1;
+        }
+    }
+
+    onScheduleTeamMeeting() {
+        this.toast.show('warning', 'Schedule Meeting coming soon');
+    }
+
+    onExportTeamDetail() {
+        if (this.selectedTeamDetail) this.onExportTeam(this.selectedTeamDetail);
+    }
+
+    onExportTeam(team) {
+        const people = (this.state.people || []).filter((p) =>
+            (team.memberIds || []).includes(p.id)
+        );
+        const rows = [
+            ['Name', 'Job Title', 'Department', 'Email', 'Lifecycle'],
+            ...people.map((p) => [
+                p.name || '',
+                p.job_title || '',
+                p.department || '',
+                p.work_email || '',
+                p.lifecycle_state || '',
+            ]),
+        ];
+        const csv = rows
+            .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${(team.name || 'team').replace(/[^\w\-]+/g, '_')}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    setSmartSearchView(view) {
+        this.state.smartSearchView = view;
+    }
+
+    onSmartSearchViewSelect(ev) {
+        this.state.smartSearchView = ev.target.value;
+    }
+
+    setCleonAiTab(tab) {
+        this.state.cleonAiTab = tab;
+    }
+
+    toggleCleonAi() {
+        this.state.cleonAiOpen = !this.state.cleonAiOpen;
+    }
+
+    resetSmartSearchFilters() {
+        const cleared = {};
+        for (const id of this.state.smartSearchPinnedIds) {
+            cleared[id] = [];
+        }
+        this.state.smartSearchSelected = cleared;
+    }
+
+    isSmartSearchOptionChecked(categoryId, optionValue) {
+        const arr = this.state.smartSearchSelected[categoryId] || [];
+        return arr.includes(optionValue);
+    }
+
+    toggleSmartSearchOption(categoryId, optionValue) {
+        // Local only — does not filter the org chart. Next step replaces main view.
+        this._pinSmartSearchCategory(categoryId);
+        const selected = { ...this.state.smartSearchSelected };
+        const current = [...(selected[categoryId] || [])];
+        const idx = current.indexOf(optionValue);
+        if (idx >= 0) {
+            current.splice(idx, 1);
+        } else {
+            current.push(optionValue);
+        }
+        selected[categoryId] = current;
+        this.state.smartSearchSelected = selected;
+    }
+
+    onSaveSmartSearchFilters() {
+        // Phase 3: persist as Smart Search segment (reuse segments + extras)
+        this.toast.show('warning', 'Save Filters coming soon');
+    }
+
+    onSelectOrgSavedFilter(saved) {
+        // Phase 3: apply Smart Search segment → dedicated view (not org activeFilters)
+        this.toast.show('warning', `"${saved.name}" apply coming soon`);
     }
 
     toggleOrgViewDropdown() {
@@ -1029,6 +2183,7 @@ export class StaffDirectoryDashboard extends Component {
             this.state.activeProfile = person;
             this.state.profileActiveTab = 'overview';
             this.state.showProfileModal = true;
+            this.state.showTeamPersonDrawer = false;
             this.closeMessageBox();
             
             // Track recently viewed
@@ -1041,10 +2196,133 @@ export class StaffDirectoryDashboard extends Component {
         }
     }
 
+    openTeamPersonDrawer(personId) {
+        const person = this.state.people.find(p => p.id === personId);
+        if (!person) return;
+        this.state.activeProfile = person;
+        this.state.showTeamPersonDrawer = true;
+        this.state.showProfileModal = false;
+        this.state.showFullProfile = false;
+
+        this.state.recentlyViewedProfiles = this.state.recentlyViewedProfiles.filter(p => p.id !== personId);
+        this.state.recentlyViewedProfiles.unshift(person);
+        if (this.state.recentlyViewedProfiles.length > 5) {
+            this.state.recentlyViewedProfiles = this.state.recentlyViewedProfiles.slice(0, 5);
+        }
+        localStorage.setItem('sdir_recent_profiles', JSON.stringify(this.state.recentlyViewedProfiles));
+    }
+
+    closeTeamPersonDrawer() {
+        this.state.showTeamPersonDrawer = false;
+        if (!this.state.showProfileModal && !this.state.showFullProfile) {
+            // Keep activeProfile briefly only if another modal needs it;
+            // otherwise clear so stale data doesn't linger.
+            this.state.activeProfile = null;
+        }
+    }
+
+    openTeamPersonFullProfile() {
+        if (!this.state.activeProfile) return;
+        const person = this.state.activeProfile;
+        this.state.showTeamPersonDrawer = false;
+        this.openProfile(person.id);
+    }
+
+    get teamPersonDrawerSkills() {
+        const raw = this.state.activeProfile?.skills;
+        if (!raw) return [];
+        if (Array.isArray(raw)) {
+            return raw.map((s) => String(s).trim()).filter(Boolean).slice(0, 8);
+        }
+        return String(raw).split(',').map((s) => s.trim()).filter(Boolean).slice(0, 8);
+    }
+
+    get teamPersonDrawerGrade() {
+        const p = this.state.activeProfile;
+        if (!p) return '—';
+        let grade = (p.grade || p.sdir_grade || '').trim();
+        if (!grade) {
+            const title = (p.job_title || '').toLowerCase();
+            if (title.includes('director') || title.includes('vp') || title.includes('chief')) grade = 'L6';
+            else if (title.includes('manager') || title.includes('lead') || title.includes('senior')) grade = 'L4';
+            else grade = 'L3';
+        }
+        const band = /L6|L7|executive|director|chief/i.test(grade + ' ' + (p.job_title || ''))
+            ? 'Executive'
+            : /L4|L5|manager|lead/i.test(grade + ' ' + (p.job_title || ''))
+                ? 'Manager'
+                : 'Individual';
+        return `${grade} · ${band}`;
+    }
+
+    get teamPersonDrawerGradeShort() {
+        const full = this.teamPersonDrawerGrade;
+        return full.split('·')[0].trim() || '—';
+    }
+
+    get teamPersonDrawerJoinDate() {
+        const raw = this.state.activeProfile?.start_date || this.state.activeProfile?.create_date || '';
+        if (!raw) return '—';
+        const d = new Date(raw);
+        if (Number.isNaN(d.getTime())) return raw;
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    get teamPersonDrawerContractType() {
+        const et = String(this.state.activeProfile?.employment_type || '');
+        if (/permanent/i.test(et)) return 'Permanent';
+        if (/contract|fixed/i.test(et)) return 'Contract';
+        if (/intern/i.test(et)) return 'Internship';
+        if (/temp|casual/i.test(et)) return 'Temporary';
+        return et.split(/[\s-]/)[0] || '—';
+    }
+
+    get teamPersonDrawerManagerLabel() {
+        const mgr = this.activeProfileManager;
+        if (mgr?.job_title) return mgr.job_title;
+        return this.state.activeProfile?.manager_name || '—';
+    }
+
+    get teamPersonDrawerStatusOk() {
+        const life = (this.state.activeProfile?.lifecycle_state || 'active').toLowerCase().replace(/[^a-z]/g, '');
+        return life === 'active' || life === 'probation' || !life;
+    }
+
+    onTeamPersonMessage() {
+        const p = this.state.activeProfile;
+        if (!p) return;
+        if (this.env.services["hr_staff_directory.message"]) {
+            this.env.services["hr_staff_directory.message"].show(p);
+        }
+    }
+
+    onTeamPersonCall() {
+        const phone = this.state.activeProfile?.work_phone || this.state.activeProfile?.phone || '';
+        if (phone) window.location.href = `tel:${phone}`;
+        else this.toast.show('warning', 'No phone number on file');
+    }
+
+    onTeamPersonVideo() {
+        const p = this.state.activeProfile;
+        if (!p) return;
+        if (this.env.services["hr_staff_directory.message"]) {
+            this.env.services["hr_staff_directory.message"].show(p, { startVideoCall: true });
+        }
+    }
+
+    onTeamPersonEmail() {
+        const p = this.state.activeProfile;
+        if (!p) return;
+        if (this.env.services["hr_staff_directory.mail_modal"]) {
+            this.env.services["hr_staff_directory.mail_modal"].show(p);
+        }
+    }
+
     openFullProfile(profile) {
         this.state.activeProfile = profile;
         this.state.showFullProfile = true;
         this.state.showProfileModal = false;
+        this.state.showTeamPersonDrawer = false;
     }
 
     openFullProfileById(personId) {
@@ -1063,7 +2341,7 @@ export class StaffDirectoryDashboard extends Component {
         this.state.showProfileModal = false;
         this.closeMessageBox();
         setTimeout(() => {
-            if (!this.state.showProfileModal) {
+            if (!this.state.showProfileModal && !this.state.showTeamPersonDrawer && !this.state.showFullProfile) {
                 this.state.activeProfile = null;
             }
         }, 300); // clear after animation if any
@@ -1183,6 +2461,10 @@ export class StaffDirectoryDashboard extends Component {
     }
 
     onKeyDown(ev) {
+        if (ev.key === "Escape" && this.state.showTeamPersonDrawer) {
+            this.closeTeamPersonDrawer();
+            return;
+        }
         if (ev.key === "Escape" && this.state.showProfileModal) {
             this.closeProfile();
         }

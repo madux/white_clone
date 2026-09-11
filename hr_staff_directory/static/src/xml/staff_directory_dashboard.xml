@@ -112,33 +112,1133 @@
                     <StaffDirectoryOrgAnalysis people="this.filteredPeople()" closeAnalysis="this.toggleOrgAnalysis.bind(this)"/>
                 </t>
                 <t t-else="">
-                    <!-- Org Sidebar -->
-                    <div t-att-class="'sdir-org-sidebar ' + (state.orgSidebarOpen ? '' : 'sdir-org-sidebar-closed')">
-                    <t t-if="state.orgSidebarOpen">
-                        <div class="sdir-org-sidebar-header">
-                            <div class="sdir-org-sidebar-search">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                                <input type="text" placeholder="Search structure..."/>
+                    <!-- Smart Search (Org sidebar) — Phase 1 shell + typeahead -->
+                    <div t-att-class="'sdir-smart-search ' + (state.orgSidebarOpen ? 'sdir-smart-search-open' : 'sdir-smart-search-closed') + (this.showSmartSearchDropdown ? ' sdir-ss-dropdown-open' : '')">
+                        <t t-if="state.orgSidebarOpen">
+                            <div class="sdir-smart-search-inner">
+                                <!-- Header: search + collapse -->
+                                <div class="sdir-ss-header">
+                                    <div class="sdir-ss-search-wrap">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-ss-search-icon">
+                                            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                                        </svg>
+                                        <input type="text"
+                                               t-att-class="'sdir-ss-search-input' + ((state.smartSearchFocused || state.smartSearchQuery) ? ' sdir-ss-search-input-active' : '')"
+                                               placeholder="Search filters or people…"
+                                               t-att-value="state.smartSearchQuery"
+                                               t-on-input="onSmartSearchInput"
+                                               t-on-focus="onSmartSearchFocus"
+                                               t-on-blur="onSmartSearchBlur"/>
+                                        <button type="button" class="sdir-ss-collapse-btn" t-on-click="toggleOrgSidebar" title="Collapse Smart Search">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="m15 18-6-6 6-6"/>
+                                            </svg>
+                                        </button>
+
+                                        <!-- Real-time typeahead dropdown -->
+                                        <div t-if="this.showSmartSearchDropdown" class="sdir-ss-dropdown" t-on-mousedown="(ev) => ev.preventDefault()">
+                                            <t t-if="this.smartSearchHasMatches">
+                                                <t t-if="this.smartSearchMatchedCategories.length">
+                                                    <div class="sdir-ss-dd-section-label">FILTER CATEGORY</div>
+                                                    <t t-foreach="this.smartSearchMatchedCategories" t-as="cat" t-key="cat.id">
+                                                        <div class="sdir-ss-dd-category" t-on-click="() => this.onSmartSearchCategoryClick(cat)">
+                                                            <div class="sdir-ss-dd-cat-icon">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                    <line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/>
+                                                                    <line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/>
+                                                                    <line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/>
+                                                                    <line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/>
+                                                                    <line x1="16" x2="16" y1="18" y2="22"/>
+                                                                </svg>
+                                                            </div>
+                                                            <span class="sdir-ss-dd-cat-label" t-esc="cat.label"/>
+                                                            <span class="sdir-ss-dd-cat-badge">category</span>
+                                                        </div>
+                                                    </t>
+                                                </t>
+                                                <t t-foreach="this.smartSearchValueGroups" t-as="group" t-key="group.id">
+                                                    <div class="sdir-ss-dd-section-label" t-esc="group.label"/>
+                                                    <t t-foreach="group.options" t-as="opt" t-key="opt">
+                                                        <label class="sdir-ss-dd-option">
+                                                            <input type="checkbox"
+                                                                   t-att-checked="this.isSmartSearchOptionChecked(group.id, opt)"
+                                                                   t-on-change="() => this.toggleSmartSearchOption(group.id, opt)"/>
+                                                            <span t-esc="opt"/>
+                                                        </label>
+                                                    </t>
+                                                </t>
+                                            </t>
+                                            <t t-else="">
+                                                <div class="sdir-ss-dd-empty" t-esc="this.smartSearchNoMatchLabel"/>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Body: pinned categories or empty state -->
+                                <div class="sdir-ss-body">
+                                    <t t-if="state.smartSearchPinnedIds.length">
+                                        <div class="sdir-ss-panels">
+                                            <t t-foreach="this.smartSearchPinnedPanels" t-as="panel" t-key="panel.id">
+                                                <div class="sdir-ss-panel">
+                                                    <div class="sdir-ss-panel-header">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/>
+                                                            <line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/>
+                                                            <line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/>
+                                                            <line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/>
+                                                            <line x1="16" x2="16" y1="18" y2="22"/>
+                                                        </svg>
+                                                        <span class="sdir-ss-panel-title" t-esc="panel.label"/>
+                                                        <span t-if="panel.count" class="sdir-ss-panel-count" t-esc="panel.count"/>
+                                                        <button type="button"
+                                                                class="sdir-ss-panel-unpin"
+                                                                title="Unpin category"
+                                                                t-on-click="() => this.unpinSmartSearchCategory(panel.id)">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                    <div t-if="panel.count" class="sdir-ss-chips">
+                                                        <t t-foreach="panel.selected" t-as="chip" t-key="chip">
+                                                            <button type="button"
+                                                                    class="sdir-ss-chip"
+                                                                    t-on-click="() => this.toggleSmartSearchOption(panel.id, chip)">
+                                                                <t t-esc="chip"/>
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                    <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                                                                </svg>
+                                                            </button>
+                                                        </t>
+                                                    </div>
+                                                    <div class="sdir-ss-option-list">
+                                                        <t t-foreach="panel.options" t-as="opt" t-key="opt">
+                                                            <button type="button"
+                                                                    t-att-class="'sdir-ss-option-row' + (this.isSmartSearchOptionChecked(panel.id, opt) ? ' sdir-ss-option-row-checked' : '')"
+                                                                    t-on-click="() => this.toggleSmartSearchOption(panel.id, opt)">
+                                                                <div t-att-class="'sdir-ss-check' + (this.isSmartSearchOptionChecked(panel.id, opt) ? ' sdir-ss-check-on' : '')">
+                                                                    <t t-if="this.isSmartSearchOptionChecked(panel.id, opt)">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                                                            <path d="M20 6 9 17l-5-5"/>
+                                                                        </svg>
+                                                                    </t>
+                                                                </div>
+                                                                <span t-esc="opt"/>
+                                                            </button>
+                                                        </t>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </t>
+                                    <t t-else="">
+                                        <div class="sdir-ss-empty">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E5E7EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/>
+                                                <line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/>
+                                                <line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/>
+                                                <line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/>
+                                                <line x1="16" x2="16" y1="18" y2="22"/>
+                                            </svg>
+                                            <span>Search to surface a filter category</span>
+                                        </div>
+                                    </t>
+                                </div>
+
+                                <!-- Footer: save + saved filters -->
+                                <div class="sdir-ss-footer">
+                                    <button type="button" class="sdir-ss-save-btn" t-on-click="onSaveSmartSearchFilters">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+                                        </svg>
+                                        <span>Save Filters</span>
+                                        <span t-if="this.smartSearchTotalSelectedCount" class="sdir-ss-save-count" t-esc="this.smartSearchTotalSelectedCount"/>
+                                    </button>
+                                    <div class="sdir-ss-saved-list">
+                                        <t t-foreach="state.orgSavedFilters" t-as="saved" t-key="saved.id">
+                                            <div class="sdir-ss-saved-row" t-on-click="() => this.onSelectOrgSavedFilter(saved)">
+                                                <div class="sdir-ss-saved-text">
+                                                    <div class="sdir-ss-saved-title" t-esc="saved.name"/>
+                                                    <div class="sdir-ss-saved-meta" t-esc="saved.resultCount + ' results'"/>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="m9 18 6-6-6-6"/>
+                                                </svg>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
                             </div>
-                            <button class="sdir-org-sidebar-toggle" t-on-click="toggleOrgSidebar">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                        </t>
+                        <t t-else="">
+                            <button type="button" class="sdir-ss-reopen-btn" t-on-click="toggleOrgSidebar" title="Open Smart Search">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m9 18 6-6-6-6"/>
+                                </svg>
                             </button>
-                        </div>
-                        <div class="sdir-org-sidebar-content">
-                            <div class="sdir-org-sidebar-empty">
-                                <p>Search for a category to add it here.</p>
-                                <span>e.g. "Department", "Location"</span>
+                        </t>
+                    </div>
+
+                <div class="sdir-org-main">
+                    <t t-if="this.showSmartSearchResults">
+                        <!-- Smart Search results main view -->
+                        <div class="sdir-ss-results">
+                            <div class="sdir-ss-results-tabs">
+                                <button type="button"
+                                        t-att-class="'sdir-ss-results-tab' + (state.smartSearchTab === 'overview' ? ' active' : '')"
+                                        t-on-click="() => this.setSmartSearchTab('overview')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                    Overview
+                                </button>
+                                <button type="button"
+                                        t-att-class="'sdir-ss-results-tab' + (state.smartSearchTab === 'teams' ? ' active' : '')"
+                                        t-on-click="() => this.setSmartSearchTab('teams')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></svg>
+                                    Teams
+                                </button>
+                                <button type="button"
+                                        t-att-class="'sdir-ss-results-tab' + (state.smartSearchTab === 'calendar' ? ' active' : '')"
+                                        t-on-click="() => this.setSmartSearchTab('calendar')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                                    Calendar
+                                </button>
+                                <button type="button"
+                                        t-att-class="'sdir-ss-results-tab' + (state.smartSearchTab === 'analytics' ? ' active' : '')"
+                                        t-on-click="() => this.setSmartSearchTab('analytics')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+                                    Analytics
+                                </button>
+                                <div class="sdir-ss-results-chips">
+                                    <t t-foreach="this.smartSearchFilterChips" t-as="chip" t-key="chip.categoryId + '-' + chip.value">
+                                        <button type="button" class="sdir-ss-chip" t-on-click="() => this.toggleSmartSearchOption(chip.categoryId, chip.value)">
+                                            <t t-esc="chip.value"/>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                        </button>
+                                    </t>
+                                    <button type="button" class="sdir-ss-results-reset" t-on-click="resetSmartSearchFilters">Reset</button>
+                                </div>
+                            </div>
+
+                            <div class="sdir-ss-results-body">
+                                <t t-if="state.smartSearchTab === 'analytics'">
+                                    <div class="sdir-ss-results-main">
+                                        <div class="sdir-ss-kpi-row">
+                                            <div class="sdir-ss-kpi"><div class="sdir-ss-kpi-label">Total</div><div class="sdir-ss-kpi-value" style="color:#7C3AED;" t-esc="this.smartSearchKpis.total"/></div>
+                                            <div class="sdir-ss-kpi"><div class="sdir-ss-kpi-label">Active</div><div class="sdir-ss-kpi-value" style="color:#059669;" t-esc="this.smartSearchKpis.active"/></div>
+                                            <div class="sdir-ss-kpi"><div class="sdir-ss-kpi-label">On Leave</div><div class="sdir-ss-kpi-value" style="color:#2563EB;" t-esc="this.smartSearchKpis.onLeave"/></div>
+                                            <div class="sdir-ss-kpi"><div class="sdir-ss-kpi-label">New Hires</div><div class="sdir-ss-kpi-value" style="color:#E91E8C;" t-esc="this.smartSearchKpis.newHires"/></div>
+                                            <div class="sdir-ss-kpi"><div class="sdir-ss-kpi-label">Open Pos.</div><div class="sdir-ss-kpi-value" style="color:#D97706;" t-esc="this.smartSearchKpis.openPos"/></div>
+                                            <div class="sdir-ss-kpi"><div class="sdir-ss-kpi-label">Depts</div><div class="sdir-ss-kpi-value" style="color:#0EA5E9;" t-esc="this.smartSearchKpis.depts"/></div>
+                                        </div>
+
+                                        <div class="sdir-ss-view-bar">
+                                            <select class="sdir-ss-view-select" t-att-value="state.smartSearchView" t-on-change="onSmartSearchViewSelect">
+                                                <option value="org">Org Chart</option>
+                                                <option value="bar">Bar View</option>
+                                                <option value="heatmap">Heatmap</option>
+                                                <option value="geo">Geographic Map</option>
+                                                <option value="graph">Relationship Graph</option>
+                                            </select>
+                                            <span class="sdir-ss-view-count">
+                                                <t t-esc="this.smartSearchKpis.total"/> of <t t-esc="this.smartSearchKpis.totalAll"/> employees
+                                            </span>
+                                        </div>
+
+                                        <div class="sdir-ss-chart-card">
+                                            <div class="sdir-ss-chart-card-header">
+                                                <span>Organizational Chart</span>
+                                                <div class="sdir-ss-chart-card-meta">
+                                                    <span><t t-esc="this.smartSearchKpis.total"/> highlighted · <t t-esc="this.smartSearchKpis.totalAll"/> total</span>
+                                                    <button type="button" class="sdir-ss-fullview-btn" t-on-click="() => this.setSmartSearchView('org')">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg>
+                                                        Full View
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="sdir-ss-chart-card-body">
+                                                <t t-if="state.smartSearchView === 'org'">
+                                                    <StaffDirectoryOrgChart people="this.smartSearchPeople" openProfile="this.openProfile.bind(this)"/>
+                                                </t>
+                                                <t t-if="state.smartSearchView === 'heatmap'">
+                                                    <StaffDirectoryHeatmap people="this.smartSearchPeople" openProfile="this.openProfile.bind(this)"/>
+                                                </t>
+                                                <t t-if="state.smartSearchView === 'bar'">
+                                                    <StaffDirectoryBarChart people="this.smartSearchPeople"/>
+                                                </t>
+                                                <t t-if="state.smartSearchView === 'geo'">
+                                                    <StaffDirectoryGeographicMap
+                                                        people="this.smartSearchPeople"
+                                                        openFilterModal="this.toggleFilterModal.bind(this)"
+                                                        avatarColor="this.avatarColor.bind(this)"
+                                                        initials="this.initials.bind(this)"
+                                                        openProfile="this.openProfile.bind(this)"
+                                                        setOrgView="this.setSmartSearchView.bind(this)"/>
+                                                </t>
+                                                <t t-if="state.smartSearchView === 'graph'">
+                                                    <StaffDirectoryRelationshipGraph
+                                                        people="this.smartSearchPeople"
+                                                        openProfile="this.openProfile.bind(this)"
+                                                        deptKey="this.deptKey.bind(this)"/>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div t-att-class="'sdir-ss-cleon' + (state.cleonAiOpen ? '' : ' sdir-ss-cleon-closed')">
+                                        <t t-if="state.cleonAiOpen">
+                                            <div class="sdir-ss-cleon-header">
+                                                <div class="sdir-ss-cleon-avatar" title="Collapse CleonAI" t-on-click="toggleCleonAi">
+                                                    <img src="/hr_staff_directory/static/src/components/full_profile/chat_bot_avatar.png" alt="CleonAI"/>
+                                                </div>
+                                                <span class="sdir-ss-cleon-title">CleonAI</span>
+                                                <button type="button" class="sdir-ss-cleon-fs" title="Open full-screen CleonAI">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                                                    Full Screen
+                                                </button>
+                                                <button type="button" class="sdir-ss-cleon-collapse" title="Collapse panel" t-on-click="toggleCleonAi">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                                </button>
+                                            </div>
+                                            <div class="sdir-ss-cleon-tabs">
+                                                <button type="button" t-att-class="state.cleonAiTab === 'summary' ? 'active' : ''" t-on-click="() => this.setCleonAiTab('summary')">summary</button>
+                                                <button type="button" t-att-class="state.cleonAiTab === 'insights' ? 'active' : ''" t-on-click="() => this.setCleonAiTab('insights')">insights</button>
+                                                <button type="button" t-att-class="state.cleonAiTab === 'risks' ? 'active' : ''" t-on-click="() => this.setCleonAiTab('risks')">risks</button>
+                                                <button type="button" t-att-class="state.cleonAiTab === 'recommendations' ? 'active' : ''" t-on-click="() => this.setCleonAiTab('recommendations')">recommendations</button>
+                                            </div>
+                                            <div class="sdir-ss-cleon-content">
+                                                <t t-if="state.cleonAiTab === 'summary'">
+                                                    <div class="sdir-ss-cleon-summary-head">
+                                                        <span>AI Summary</span>
+                                                        <span class="sdir-ss-cleon-muted">Just now</span>
+                                                    </div>
+                                                    <p class="sdir-ss-cleon-p" t-esc="this.smartSearchSummaryText"/>
+                                                    <ul class="sdir-ss-cleon-list">
+                                                        <li>Total employees: <strong t-esc="this.smartSearchKpis.total"/></li>
+                                                        <li>Active: <strong><t t-esc="this.smartSearchKpis.active"/> (<t t-esc="this.smartSearchKpis.activePct"/>%)</strong></li>
+                                                        <li>On leave: <strong t-esc="this.smartSearchKpis.onLeave"/></li>
+                                                        <li>Remote workers: <strong t-esc="this.smartSearchKpis.remote"/></li>
+                                                        <li>New hires (30d): <strong t-esc="this.smartSearchKpis.newHires"/></li>
+                                                        <li>Open positions: ~<strong t-esc="this.smartSearchKpis.openPos"/></li>
+                                                    </ul>
+                                                    <div class="sdir-ss-cleon-section-title">Key Highlights</div>
+                                                    <ol class="sdir-ss-cleon-list">
+                                                        <t t-if="this.smartSearchDeptHighlight">
+                                                            <li><t t-esc="this.smartSearchDeptHighlight.name"/> is the largest department (<t t-esc="this.smartSearchDeptHighlight.count"/> employees)</li>
+                                                        </t>
+                                                        <li><t t-esc="this.smartSearchKpis.activePct"/>% active rate reflects a healthy workforce</li>
+                                                    </ol>
+                                                    <div class="sdir-ss-cleon-section-title">Quick Actions</div>
+                                                    <div class="sdir-ss-cleon-actions">
+                                                        <button type="button"><span class="sdir-ss-cleon-action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span>Export Report</button>
+                                                        <button type="button"><span class="sdir-ss-cleon-action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg></span>Share View</button>
+                                                        <button type="button" t-on-click="() => this.setSmartSearchView('org')"><span class="sdir-ss-cleon-action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg></span>Org Chart</button>
+                                                        <button type="button" t-on-click="toggleOrgSidebar"><span class="sdir-ss-cleon-action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/></svg></span>Filter Data</button>
+                                                    </div>
+                                                </t>
+                                                <t t-else="">
+                                                    <div class="sdir-ss-cleon-placeholder">Coming soon</div>
+                                                </t>
+                                            </div>
+                                            <div class="sdir-ss-cleon-footer">
+                                                <div class="sdir-ss-cleon-ask">
+                                                    <input type="text" placeholder="Ask CleonAI anything..."/>
+                                                    <button type="button" class="sdir-ss-cleon-send">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>
+                                                    </button>
+                                                </div>
+                                                <div class="sdir-ss-cleon-ask-meta">
+                                                    <p>Opens in full-screen workspace</p>
+                                                    <button type="button">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                                                        Full Screen
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <button type="button" class="sdir-ss-cleon-reopen" t-on-click="toggleCleonAi" title="Open CleonAI">
+                                                <img src="/hr_staff_directory/static/src/components/full_profile/chat_bot_avatar.png" alt="CleonAI"/>
+                                            </button>
+                                        </t>
+                                    </div>
+                                </t>
+                                <t t-elif="state.smartSearchTab === 'teams'">
+                                    <div class="sdir-ss-teams">
+                                        <t t-if="this.selectedTeamDetail">
+                                            <div class="sdir-ss-td">
+                                                <div class="sdir-ss-td-crumb">
+                                                    <button type="button" class="sdir-ss-td-back" t-on-click="closeTeamDetail">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                                                        Back to Teams
+                                                    </button>
+                                                    <span class="sdir-ss-td-sep">/</span>
+                                                    <span class="sdir-ss-td-crumb-name" t-esc="this.selectedTeamDetail.name"/>
+                                                </div>
+                                                <div class="sdir-ss-td-accent" t-att-style="'background:' + this.selectedTeamDetail.color + ';'"/>
+                                                <div class="sdir-ss-td-header">
+                                                    <div class="sdir-ss-td-header-left">
+                                                        <div class="sdir-ss-td-title" t-esc="this.selectedTeamDetail.name"/>
+                                                        <div class="sdir-ss-td-code" t-esc="this.selectedTeamDetail.code"/>
+                                                        <div class="sdir-ss-td-meta" t-esc="this.selectedTeamDetail.metaLine"/>
+                                                    </div>
+                                                    <div class="sdir-ss-td-header-right">
+                                                        <span class="sdir-ss-td-pill"
+                                                              t-att-style="'background:' + this.selectedTeamDetail.color + '18;color:' + this.selectedTeamDetail.color + ';'"
+                                                              t-esc="this.selectedTeamDetail.deptLabel"/>
+                                                        <span t-att-class="'sdir-ss-td-status' + (this.selectedTeamDetail.status === 'Active' ? '' : ' risk')"
+                                                              t-esc="this.selectedTeamDetail.status"/>
+                                                        <div class="sdir-ss-td-gauge">
+                                                            <svg width="56" height="56" viewBox="0 0 56 56">
+                                                                <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="5"/>
+                                                                <circle cx="28" cy="28" r="22" fill="none"
+                                                                        t-att-stroke="this.selectedTeamDetail.healthColor"
+                                                                        stroke-width="5"
+                                                                        stroke-linecap="round"
+                                                                        t-att-stroke-dasharray="this.selectedTeamDetail.cardCircumference"
+                                                                        t-att-stroke-dashoffset="this.selectedTeamDetail.cardDashOffset"/>
+                                                            </svg>
+                                                            <div class="sdir-ss-td-gauge-val"
+                                                                 t-att-style="'color:' + this.selectedTeamDetail.healthColor + ';'"
+                                                                 t-esc="this.selectedTeamDetail.score"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="sdir-ss-td-tabs">
+                                                    <button type="button"
+                                                            t-att-class="state.teamsDetailTab === 'overview' ? 'active' : ''"
+                                                            t-on-click="() => this.setTeamsDetailTab('overview')">Overview</button>
+                                                    <button type="button"
+                                                            t-att-class="state.teamsDetailTab === 'members' ? 'active' : ''"
+                                                            t-on-click="() => this.setTeamsDetailTab('members')">
+                                                        Members (<t t-esc="this.selectedTeamMembers.length"/>)
+                                                    </button>
+                                                    <button type="button"
+                                                            t-att-class="state.teamsDetailTab === 'projects' ? 'active' : ''"
+                                                            t-on-click="() => this.setTeamsDetailTab('projects')">
+                                                        Projects (<t t-esc="this.selectedTeamProjects.length"/>)
+                                                    </button>
+                                                    <button type="button"
+                                                            t-att-class="state.teamsDetailTab === 'calendar' ? 'active' : ''"
+                                                            t-on-click="() => this.setTeamsDetailTab('calendar')">Calendar</button>
+                                                </div>
+                                                <div t-att-class="'sdir-ss-td-body' + (state.teamsDetailTab === 'overview' ? '' : ' flush')">
+                                                    <t t-if="state.teamsDetailTab === 'overview'">
+                                                        <p class="sdir-ss-td-desc" t-esc="this.selectedTeamDetail.description"/>
+                                                        <div class="sdir-ss-td-kpis">
+                                                            <div class="sdir-ss-td-kpi">
+                                                                <div class="sdir-ss-td-kpi-label">Team Size</div>
+                                                                <div class="sdir-ss-td-kpi-val" t-esc="this.selectedTeamDetail.members"/>
+                                                            </div>
+                                                            <div class="sdir-ss-td-kpi">
+                                                                <div class="sdir-ss-td-kpi-label">Avg Tenure</div>
+                                                                <div class="sdir-ss-td-kpi-val" t-esc="this.selectedTeamDetail.avgTenure"/>
+                                                            </div>
+                                                            <div class="sdir-ss-td-kpi">
+                                                                <div class="sdir-ss-td-kpi-label">Health Score</div>
+                                                                <div class="sdir-ss-td-kpi-val"
+                                                                     t-att-style="'color:' + this.selectedTeamDetail.healthColor + ';'">
+                                                                    <t t-esc="this.selectedTeamDetail.score"/> · <t t-esc="this.selectedTeamDetail.health"/>
+                                                                </div>
+                                                            </div>
+                                                            <div class="sdir-ss-td-kpi">
+                                                                <div class="sdir-ss-td-kpi-label">Active Projects</div>
+                                                                <div class="sdir-ss-td-kpi-val" t-esc="this.selectedTeamDetail.activeProjects"/>
+                                                            </div>
+                                                        </div>
+                                                        <div class="sdir-ss-td-row2">
+                                                            <div class="sdir-ss-td-card">
+                                                                <div class="sdir-ss-td-card-label">Team Lead</div>
+                                                                <div class="sdir-ss-td-lead" t-on-click="() => this.onTeamLeadClick(this.selectedTeamDetail)">
+                                                                    <div class="sdir-ss-td-lead-av"
+                                                                         t-att-style="'background:' + this.selectedTeamDetail.color + ';'"
+                                                                         t-esc="this.selectedTeamDetail.leadInitials"/>
+                                                                    <div>
+                                                                        <div class="sdir-ss-td-lead-name" t-esc="this.selectedTeamDetail.lead"/>
+                                                                        <div class="sdir-ss-td-lead-title" t-esc="this.selectedTeamDetail.leadTitle"/>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="sdir-ss-td-card">
+                                                                <div class="sdir-ss-td-card-label">Parent Department</div>
+                                                                <div class="sdir-ss-td-dept">
+                                                                    <div class="sdir-ss-td-dept-icon" t-att-style="'background:' + this.selectedTeamDetail.color + '20;'">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" t-att-stroke="this.selectedTeamDetail.color" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+                                                                    </div>
+                                                                    <div>
+                                                                        <div class="sdir-ss-td-dept-name" t-esc="this.selectedTeamDetail.deptLabel"/>
+                                                                        <div class="sdir-ss-td-dept-sub"><t t-esc="this.selectedTeamDetail.members"/> members from this dept</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="sdir-ss-td-row2">
+                                                            <div class="sdir-ss-td-card">
+                                                                <div class="sdir-ss-td-card-label">Work Mode</div>
+                                                                <t t-foreach="this.selectedTeamDetail.workModes" t-as="wm" t-key="wm.key">
+                                                                    <div class="sdir-ss-td-wm-row">
+                                                                        <span class="sdir-ss-td-wm-label" t-esc="wm.label"/>
+                                                                        <div class="sdir-ss-td-wm-track">
+                                                                            <div class="sdir-ss-td-wm-fill" t-att-style="'width:' + wm.pct + '%;background:' + wm.color + ';'"/>
+                                                                        </div>
+                                                                        <span class="sdir-ss-td-wm-n" t-esc="wm.count"/>
+                                                                    </div>
+                                                                </t>
+                                                            </div>
+                                                            <div class="sdir-ss-td-card">
+                                                                <div class="sdir-ss-td-card-label">Grade Distribution</div>
+                                                                <div class="sdir-ss-td-grades">
+                                                                    <t t-foreach="this.selectedTeamDetail.grades" t-as="gr" t-key="gr.label">
+                                                                        <span class="sdir-ss-td-grade"
+                                                                              t-att-style="'background:' + this.selectedTeamDetail.color + '18;color:' + this.selectedTeamDetail.color + ';border-color:' + this.selectedTeamDetail.color + '30;'">
+                                                                            <t t-esc="gr.label"/>
+                                                                            <span t-att-style="'background:' + this.selectedTeamDetail.color + ';'" t-esc="gr.count"/>
+                                                                        </span>
+                                                                    </t>
+                                                                    <t t-if="!this.selectedTeamDetail.grades.length">
+                                                                        <span class="sdir-ss-td-empty">No grade data</span>
+                                                                    </t>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                    <t t-elif="state.teamsDetailTab === 'members'">
+                                                        <div class="sdir-ss-td-members">
+                                                            <div class="sdir-ss-td-members-bar">
+                                                                <div class="sdir-ss-td-members-count"><t t-esc="this.selectedTeamMembers.length"/> members</div>
+                                                                <button type="button" class="sdir-ss-td-members-export" t-on-click="onExportTeamDetail">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                                                    Export
+                                                                </button>
+                                                            </div>
+                                                            <div class="sdir-ss-td-members-list">
+                                                                <t t-foreach="this.selectedTeamMembers" t-as="m" t-key="m.id">
+                                                                    <div class="sdir-ss-td-member-row" t-on-click="() => this.openTeamPersonDrawer(m.id)">
+                                                                        <div class="sdir-ss-td-member-av"
+                                                                             t-att-style="'background:' + this.selectedTeamDetail.color + ';'"
+                                                                             t-esc="m.initials"/>
+                                                                        <div class="sdir-ss-td-member-info">
+                                                                            <div class="sdir-ss-td-member-name">
+                                                                                <span t-esc="m.name"/>
+                                                                                <t t-if="m.isLead"><span class="sdir-ss-td-member-lead">Lead</span></t>
+                                                                            </div>
+                                                                            <div class="sdir-ss-td-member-role" t-esc="m.title"/>
+                                                                        </div>
+                                                                        <div class="sdir-ss-td-member-meta">
+                                                                            <span class="sdir-ss-td-member-grade" t-esc="m.grade"/>
+                                                                            <span t-att-class="'sdir-ss-td-member-status' + (m.statusOk ? '' : ' warn')" t-esc="m.status"/>
+                                                                            <span class="sdir-ss-td-member-mode" t-esc="m.workMode"/>
+                                                                        </div>
+                                                                    </div>
+                                                                </t>
+                                                                <t t-if="!this.selectedTeamMembers.length">
+                                                                    <div class="sdir-ss-td-empty-block">No members in this team</div>
+                                                                </t>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                    <t t-elif="state.teamsDetailTab === 'projects'">
+                                                        <div class="sdir-ss-td-projects">
+                                                            <t t-foreach="this.selectedTeamProjectGroups" t-as="grp" t-key="grp.status">
+                                                                <div class="sdir-ss-td-proj-group">
+                                                                    <div class="sdir-ss-td-proj-group-head">
+                                                                        <span class="sdir-ss-td-proj-chip"
+                                                                              t-att-style="'background:' + grp.bg + ';color:' + grp.color + ';'"
+                                                                              t-esc="grp.status"/>
+                                                                        <span class="sdir-ss-td-proj-count" t-esc="grp.countLabel"/>
+                                                                    </div>
+                                                                    <div class="sdir-ss-td-proj-cards">
+                                                                        <t t-foreach="grp.items" t-as="proj" t-key="proj.title">
+                                                                            <div class="sdir-ss-td-proj-card">
+                                                                                <div class="sdir-ss-td-proj-card-main">
+                                                                                    <div class="sdir-ss-td-proj-title-row">
+                                                                                        <div class="sdir-ss-td-proj-dot" t-att-style="'background:' + proj.color + ';'"/>
+                                                                                        <span t-esc="proj.title"/>
+                                                                                    </div>
+                                                                                    <div class="sdir-ss-td-proj-lead">Lead: <t t-esc="proj.lead"/></div>
+                                                                                </div>
+                                                                                <span class="sdir-ss-td-proj-status"
+                                                                                      t-att-style="'background:' + proj.bg + ';color:' + proj.color + ';'"
+                                                                                      t-esc="proj.status"/>
+                                                                            </div>
+                                                                        </t>
+                                                                    </div>
+                                                                </div>
+                                                            </t>
+                                                            <t t-if="!this.selectedTeamProjectGroups.length">
+                                                                <div class="sdir-ss-td-empty-block">No projects for this team</div>
+                                                            </t>
+                                                        </div>
+                                                    </t>
+                                                    <t t-elif="state.teamsDetailTab === 'calendar'">
+                                                        <div class="sdir-ss-td-cal">
+                                                            <div class="sdir-ss-td-cal-bar">
+                                                                <div>
+                                                                    <div class="sdir-ss-td-cal-title">Upcoming Meetings</div>
+                                                                    <div class="sdir-ss-td-cal-sub" t-esc="this.selectedTeamMeetingsScheduledLabel"/>
+                                                                </div>
+                                                                <button type="button" class="sdir-ss-td-cal-schedule" t-on-click="onScheduleTeamMeeting">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                                                                    Schedule Meeting
+                                                                </button>
+                                                            </div>
+                                                            <div class="sdir-ss-td-cal-scroll">
+                                                                <t t-foreach="this.selectedTeamMeetingsUpcoming" t-as="sec" t-key="sec.key">
+                                                                    <div>
+                                                                        <div class="sdir-ss-td-cal-sec" t-esc="sec.label"/>
+                                                                        <t t-foreach="sec.items" t-as="mtg" t-key="mtg.id">
+                                                                            <div class="sdir-ss-td-cal-row">
+                                                                                <div class="sdir-ss-td-cal-bar-accent"/>
+                                                                                <div class="sdir-ss-td-cal-row-body">
+                                                                                    <div class="sdir-ss-td-cal-mtg-title" t-esc="mtg.title"/>
+                                                                                    <div class="sdir-ss-td-cal-mtg-meta" t-esc="mtg.meta"/>
+                                                                                </div>
+                                                                                <div class="sdir-ss-td-cal-avs">
+                                                                                    <t t-foreach="mtg.people" t-as="av" t-key="av.initials + av_index">
+                                                                                        <div t-att-class="'sdir-ss-td-cal-av' + (av.first ? ' first' : '')"
+                                                                                             t-att-style="'z-index:' + av.z + ';'"
+                                                                                             t-esc="av.initials"/>
+                                                                                    </t>
+                                                                                </div>
+                                                                                <div class="sdir-ss-td-cal-chev">
+                                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                                                                                </div>
+                                                                            </div>
+                                                                        </t>
+                                                                    </div>
+                                                                </t>
+                                                                <div class="sdir-ss-td-cal-recent-wrap">
+                                                                    <div class="sdir-ss-td-cal-sec recent">Recent</div>
+                                                                    <t t-foreach="this.selectedTeamMeetingsRecent" t-as="mtg" t-key="mtg.id">
+                                                                        <div class="sdir-ss-td-cal-row recent">
+                                                                            <div class="sdir-ss-td-cal-bar-accent muted"/>
+                                                                            <div class="sdir-ss-td-cal-row-body">
+                                                                                <div class="sdir-ss-td-cal-mtg-title" t-esc="mtg.title"/>
+                                                                                <div class="sdir-ss-td-cal-mtg-meta" t-esc="mtg.meta"/>
+                                                                            </div>
+                                                                            <div class="sdir-ss-td-cal-avs">
+                                                                                <t t-foreach="mtg.people" t-as="av" t-key="av.initials + av_index">
+                                                                                    <div t-att-class="'sdir-ss-td-cal-av muted' + (av.first ? ' first' : '')"
+                                                                                         t-att-style="'z-index:' + av.z + ';'"
+                                                                                         t-esc="av.initials"/>
+                                                                                </t>
+                                                                            </div>
+                                                                            <div class="sdir-ss-td-cal-chev">
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                                                                            </div>
+                                                                        </div>
+                                                                    </t>
+                                                                    <div class="sdir-ss-td-cal-pager">
+                                                                        <button type="button"
+                                                                                t-att-disabled="state.teamsDetailCalPage &lt;= 1"
+                                                                                t-on-click="teamsDetailCalPrev">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                                                                            Prev
+                                                                        </button>
+                                                                        <span><t t-esc="state.teamsDetailCalPage"/> / <t t-esc="this.selectedTeamMeetingsRecentPageCount"/></span>
+                                                                        <button type="button"
+                                                                                t-att-disabled="state.teamsDetailCalPage &gt;= this.selectedTeamMeetingsRecentPageCount"
+                                                                                t-on-click="teamsDetailCalNext">
+                                                                            Next
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                        <div class="sdir-ss-teams-toolbar">
+                                            <div class="sdir-ss-teams-search">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                                <input type="text" placeholder="Search teams, leads…"
+                                                       t-att-value="state.teamsSearchQuery"
+                                                       t-on-input="onTeamsSearchInput"/>
+                                            </div>
+                                            <select class="sdir-ss-teams-select" t-on-change="onTeamsDeptFilter" t-att-value="state.teamsDeptFilter">
+                                                <option value="">All Departments</option>
+                                                <t t-foreach="this.smartSearchTeamDepartments" t-as="dept" t-key="dept">
+                                                    <option t-att-value="dept" t-esc="dept"/>
+                                                </t>
+                                            </select>
+                                            <select class="sdir-ss-teams-select" t-on-change="onTeamsHealthFilter" t-att-value="state.teamsHealthFilter">
+                                                <option value="">All Health</option>
+                                                <option value="Healthy">Healthy</option>
+                                                <option value="Moderate">Moderate</option>
+                                                <option value="At Risk">At Risk</option>
+                                                <option value="Critical">Critical</option>
+                                            </select>
+                                            <div class="sdir-ss-teams-spacer"/>
+                                            <div class="sdir-ss-teams-view-toggle">
+                                                <button type="button"
+                                                        t-att-class="state.teamsViewMode === 'grid' ? 'active' : ''"
+                                                        t-on-click="() => this.setTeamsViewMode('grid')"
+                                                        title="Grid view">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                                                </button>
+                                                <button type="button"
+                                                        t-att-class="state.teamsViewMode === 'list' ? 'active' : ''"
+                                                        t-on-click="() => this.setTeamsViewMode('list')"
+                                                        title="List view">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg>
+                                                </button>
+                                            </div>
+                                            <button type="button" class="sdir-ss-teams-compare" t-on-click="onCompareTeams">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+                                                Compare Teams
+                                            </button>
+                                        </div>
+
+                                        <div class="sdir-ss-teams-body">
+                                            <t t-if="state.teamsViewMode === 'list'">
+                                                <div class="sdir-ss-teams-table">
+                                                    <div class="sdir-ss-teams-thead">
+                                                        <div>Team Name</div>
+                                                        <div>Department</div>
+                                                        <div>Lead</div>
+                                                        <div>Members</div>
+                                                        <div>Health</div>
+                                                        <div>Avg Tenure</div>
+                                                        <div>Actions</div>
+                                                    </div>
+                                                    <t t-foreach="this.smartSearchTeams" t-as="team" t-key="team.id">
+                                                        <div class="sdir-ss-teams-row" t-on-click="() => this.onViewTeam(team)">
+                                                            <div class="sdir-ss-teams-name">
+                                                                <div class="sdir-ss-teams-dot" t-att-style="'background:' + team.color + ';'"/>
+                                                                <div t-esc="team.name"/>
+                                                            </div>
+                                                            <div class="sdir-ss-teams-cell muted" t-esc="team.department"/>
+                                                            <div class="sdir-ss-teams-cell" t-esc="team.lead"/>
+                                                            <div class="sdir-ss-teams-members">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                                                <span t-esc="team.members"/>
+                                                            </div>
+                                                            <div class="sdir-ss-teams-health">
+                                                                <div class="sdir-ss-teams-gauge">
+                                                                    <svg width="32" height="32" viewBox="0 0 32 32">
+                                                                        <circle cx="16" cy="16" r="12" fill="none" stroke="rgba(0,0,0,0.07)" stroke-width="3.5"/>
+                                                                        <circle cx="16" cy="16" r="12" fill="none"
+                                                                                t-att-stroke="team.healthColor"
+                                                                                stroke-width="3.5"
+                                                                                stroke-linecap="round"
+                                                                                t-att-stroke-dasharray="team.circumference"
+                                                                                t-att-stroke-dashoffset="team.dashOffset"/>
+                                                                    </svg>
+                                                                    <div class="sdir-ss-teams-gauge-val" t-att-style="'color:' + team.healthColor + ';'" t-esc="team.score"/>
+                                                                </div>
+                                                                <span t-att-style="'color:' + team.healthColor + ';'" t-esc="team.health"/>
+                                                            </div>
+                                                            <div class="sdir-ss-teams-tenure" t-esc="team.avgTenure"/>
+                                                            <div class="sdir-ss-teams-actions">
+                                                                <button type="button" class="sdir-ss-teams-view" t-on-click.stop="() => this.onViewTeam(team)">View</button>
+                                                                <button type="button" class="sdir-ss-teams-dl" t-on-click.stop="() => this.onExportTeam(team)" title="Export">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                    <t t-if="!this.smartSearchTeams.length">
+                                                        <div class="sdir-ss-teams-empty">No teams match these filters</div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                            <t t-else="">
+                                                <div class="sdir-ss-teams-grid">
+                                                    <t t-foreach="this.smartSearchTeams" t-as="team" t-key="team.id">
+                                                        <div class="sdir-ss-teams-card" t-on-click="() => this.onViewTeam(team)">
+                                                            <div class="sdir-ss-teams-card-accent" t-att-style="'background:' + team.color + ';'"/>
+                                                            <div class="sdir-ss-teams-card-head">
+                                                                <div class="sdir-ss-teams-avatars">
+                                                                    <t t-foreach="team.avatars" t-as="av" t-key="av_index">
+                                                                        <div t-att-class="'sdir-ss-teams-av' + (av.first ? ' first' : '')"
+                                                                             t-att-style="'background:' + team.color + ';z-index:' + av.z + ';'"
+                                                                             t-esc="av.initials"/>
+                                                                    </t>
+                                                                    <t t-if="team.avatarExtra">
+                                                                        <div class="sdir-ss-teams-av sdir-ss-teams-av-more" t-esc="'+' + team.avatarExtra"/>
+                                                                    </t>
+                                                                </div>
+                                                                <div class="sdir-ss-teams-card-titles">
+                                                                    <div class="sdir-ss-teams-card-name" t-esc="team.name"/>
+                                                                    <div class="sdir-ss-teams-card-sub" t-esc="team.subtitle"/>
+                                                                </div>
+                                                                <div class="sdir-ss-teams-card-badge-wrap">
+                                                                    <span class="sdir-ss-teams-card-badge"
+                                                                          t-att-style="'background:' + team.healthColor + '18;color:' + team.healthColor + ';border-color:' + team.healthColor + '30;'"
+                                                                          t-esc="team.health"/>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                                                                </div>
+                                                            </div>
+                                                            <div class="sdir-ss-teams-card-stats">
+                                                                <div class="sdir-ss-teams-card-health">
+                                                                    <div class="sdir-ss-teams-card-gauge">
+                                                                        <svg width="56" height="56" viewBox="0 0 56 56">
+                                                                            <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="5"/>
+                                                                            <circle cx="28" cy="28" r="22" fill="none"
+                                                                                    t-att-stroke="team.healthColor"
+                                                                                    stroke-width="5"
+                                                                                    stroke-linecap="round"
+                                                                                    t-att-stroke-dasharray="team.cardCircumference"
+                                                                                    t-att-stroke-dashoffset="team.cardDashOffset"/>
+                                                                        </svg>
+                                                                        <div class="sdir-ss-teams-card-gauge-val" t-att-style="'color:' + team.healthColor + ';'" t-esc="team.score"/>
+                                                                    </div>
+                                                                    <div class="sdir-ss-teams-card-stat-label">Health</div>
+                                                                </div>
+                                                                <div>
+                                                                    <div class="sdir-ss-teams-card-stat-label spaced">Work Mode</div>
+                                                                    <t t-foreach="team.workModes" t-as="wm" t-key="wm.key">
+                                                                        <div class="sdir-ss-teams-wm-row">
+                                                                            <span class="sdir-ss-teams-wm-label" t-esc="wm.label"/>
+                                                                            <div class="sdir-ss-teams-wm-track">
+                                                                                <div class="sdir-ss-teams-wm-fill" t-att-style="'width:' + wm.pct + '%;background:' + wm.color + ';'"/>
+                                                                            </div>
+                                                                            <span class="sdir-ss-teams-wm-n" t-esc="wm.count"/>
+                                                                        </div>
+                                                                    </t>
+                                                                </div>
+                                                                <div>
+                                                                    <div class="sdir-ss-teams-card-stat-label spaced">Grades</div>
+                                                                    <t t-foreach="team.grades" t-as="gr" t-key="gr.label">
+                                                                        <div class="sdir-ss-teams-grade-row">
+                                                                            <span t-esc="gr.label"/>
+                                                                            <span class="sdir-ss-teams-grade-n" t-att-style="'background:' + team.color + ';'" t-esc="gr.count"/>
+                                                                        </div>
+                                                                    </t>
+                                                                </div>
+                                                            </div>
+                                                            <div class="sdir-ss-teams-card-export">
+                                                                <button type="button" class="sdir-ss-teams-export-btn"
+                                                                        t-on-click.stop="() => this.onExportTeam(team)">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                                                    Export
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                    <t t-if="!this.smartSearchTeams.length">
+                                                        <div class="sdir-ss-teams-empty">No teams match these filters</div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+                                        </t>
+                                    </div>
+                                </t>
+                                <t t-elif="state.smartSearchTab === 'overview'">
+                                    <div class="sdir-ss-overview">
+                                        <div class="sdir-ss-ov-kpis">
+                                            <div class="sdir-ss-ov-kpi">
+                                                <div class="sdir-ss-ov-kpi-top">
+                                                    <span>Total Employees</span>
+                                                    <div class="sdir-ss-ov-kpi-icon" style="background:rgba(124,58,237,0.094);">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                                    </div>
+                                                </div>
+                                                <div class="sdir-ss-ov-kpi-val" t-esc="this.smartSearchKpis.total"/>
+                                            </div>
+                                            <div class="sdir-ss-ov-kpi">
+                                                <div class="sdir-ss-ov-kpi-top">
+                                                    <span>Active Employees</span>
+                                                    <div class="sdir-ss-ov-kpi-icon" style="background:rgba(5,150,105,0.094);">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+                                                    </div>
+                                                </div>
+                                                <div class="sdir-ss-ov-kpi-val" t-esc="this.smartSearchKpis.active"/>
+                                            </div>
+                                            <div class="sdir-ss-ov-kpi">
+                                                <div class="sdir-ss-ov-kpi-top">
+                                                    <span>On Leave Today</span>
+                                                    <div class="sdir-ss-ov-kpi-icon" style="background:rgba(37,99,235,0.094);">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                                    </div>
+                                                </div>
+                                                <div class="sdir-ss-ov-kpi-val" t-esc="this.smartSearchKpis.onLeave"/>
+                                            </div>
+                                            <div class="sdir-ss-ov-kpi">
+                                                <div class="sdir-ss-ov-kpi-top">
+                                                    <span>New Hires (30d)</span>
+                                                    <div class="sdir-ss-ov-kpi-icon" style="background:rgba(233,30,140,0.094);">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                                                    </div>
+                                                </div>
+                                                <div class="sdir-ss-ov-kpi-val" t-esc="this.smartSearchKpis.newHires"/>
+                                            </div>
+                                            <div class="sdir-ss-ov-kpi">
+                                                <div class="sdir-ss-ov-kpi-top">
+                                                    <span>Open Positions</span>
+                                                    <div class="sdir-ss-ov-kpi-icon" style="background:rgba(217,119,6,0.094);">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg>
+                                                    </div>
+                                                </div>
+                                                <div class="sdir-ss-ov-kpi-val" t-esc="this.smartSearchKpis.openPos"/>
+                                            </div>
+                                            <div class="sdir-ss-ov-kpi">
+                                                <div class="sdir-ss-ov-kpi-top">
+                                                    <span>Departments</span>
+                                                    <div class="sdir-ss-ov-kpi-icon" style="background:rgba(14,165,233,0.094);">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0EA5E9" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+                                                    </div>
+                                                </div>
+                                                <div class="sdir-ss-ov-kpi-val" t-esc="this.smartSearchKpis.depts"/>
+                                            </div>
+                                        </div>
+
+                                        <div class="sdir-ss-ov-mid">
+                                            <div class="sdir-ss-ov-card">
+                                                <div class="sdir-ss-ov-card-head">
+                                                    <span>Org Structure</span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg>
+                                                </div>
+                                                <div class="sdir-ss-ov-orgmini">
+                                                    <t t-if="this.smartSearchOverviewCeo">
+                                                        <div class="sdir-ss-ov-ceo">
+                                                            <div class="sdir-ss-ov-ceo-av"><span t-esc="this.smartSearchOverviewCeo.initials"/></div>
+                                                            <div>
+                                                                <div class="sdir-ss-ov-ceo-title" t-esc="this.smartSearchOverviewCeo.title"/>
+                                                                <div class="sdir-ss-ov-ceo-sub" t-esc="this.smartSearchOverviewCeo.subtitle"/>
+                                                            </div>
+                                                        </div>
+                                                        <div class="sdir-ss-ov-orgline"/>
+                                                    </t>
+                                                    <div class="sdir-ss-ov-deptchips">
+                                                        <t t-foreach="this.smartSearchDeptBars" t-as="bar" t-key="bar.name">
+                                                            <div class="sdir-ss-ov-deptchip" t-att-style="'background:' + bar.color + '14;border-color:' + bar.color + '40;'">
+                                                                <div t-att-style="'color:' + bar.color + ';'" class="sdir-ss-ov-deptchip-name" t-esc="bar.shortName"/>
+                                                                <div t-att-style="'color:' + bar.color + ';'" class="sdir-ss-ov-deptchip-n" t-esc="bar.count"/>
+                                                            </div>
+                                                        </t>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="sdir-ss-ov-cta" t-on-click="() => this.setSmartSearchTab('analytics')">View Full Structure</button>
+                                            </div>
+
+                                            <div class="sdir-ss-ov-card">
+                                                <div class="sdir-ss-ov-card-head">
+                                                    <span>Workforce Status</span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                                </div>
+                                                <div class="sdir-ss-ov-workforce">
+                                                    <svg width="130" height="120" viewBox="0 0 130 120">
+                                                        <circle cx="65" cy="60" r="48" fill="#F3F4F6"/>
+                                                        <path t-if="this.smartSearchWorkforceArc" t-att-d="this.smartSearchWorkforceArc" fill="#10B981"/>
+                                                        <circle cx="65" cy="60" r="26" fill="#fff"/>
+                                                        <text x="65" y="57" text-anchor="middle" font-size="15" font-weight="800" fill="#111827"><t t-esc="this.smartSearchKpis.total"/></text>
+                                                        <text x="65" y="71" text-anchor="middle" font-size="8" fill="#9CA3AF">Total</text>
+                                                    </svg>
+                                                    <div class="sdir-ss-ov-legend">
+                                                        <div class="sdir-ss-ov-legend-row">
+                                                            <div class="sdir-ss-ov-dot" style="background:#10B981;"/>
+                                                            <span>Active</span>
+                                                            <strong t-esc="this.smartSearchKpis.active"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="sdir-ss-ov-card">
+                                                <div class="sdir-ss-ov-card-head">
+                                                    <span>Recent Changes</span>
+                                                    <button type="button" class="sdir-ss-ov-link">View all</button>
+                                                </div>
+                                                <div class="sdir-ss-ov-changes">
+                                                    <t t-foreach="this.smartSearchRecentJoins" t-as="join" t-key="join.id">
+                                                        <div class="sdir-ss-ov-change">
+                                                            <div class="sdir-ss-ov-dot" t-att-style="'background:' + join.color + ';'"/>
+                                                            <div class="sdir-ss-ov-change-text">
+                                                                <div t-esc="join.name + ' joined'"/>
+                                                                <div class="sdir-ss-ov-change-meta"><t t-esc="join.department"/> · <t t-esc="join.ago"/></div>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                    <t t-if="!this.smartSearchRecentJoins.length">
+                                                        <div class="sdir-ss-ov-empty">No recent joins in this filter</div>
+                                                    </t>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="sdir-ss-ov-bot">
+                                            <div class="sdir-ss-ov-card">
+                                                <div class="sdir-ss-ov-card-head">
+                                                    <span>By Department</span>
+                                                    <button type="button" class="sdir-ss-ov-link">View all</button>
+                                                </div>
+                                                <div class="sdir-ss-ov-bars">
+                                                    <t t-foreach="this.smartSearchDeptBars" t-as="bar" t-key="bar.name">
+                                                        <div class="sdir-ss-ov-bar">
+                                                            <div class="sdir-ss-ov-bar-top">
+                                                                <span t-esc="bar.shortName"/>
+                                                                <span><t t-esc="bar.count"/> <span class="sdir-ss-ov-bar-pct">(<t t-esc="bar.pct"/>%)</span></span>
+                                                            </div>
+                                                            <div class="sdir-ss-ov-bar-track">
+                                                                <div class="sdir-ss-ov-bar-fill" t-att-style="'width:' + bar.pct + '%;background:' + bar.color + ';'"/>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </div>
+
+                                            <div class="sdir-ss-ov-card">
+                                                <div class="sdir-ss-ov-card-head">
+                                                    <span>Upcoming Events</span>
+                                                    <button type="button" class="sdir-ss-ov-link" t-on-click="() => this.setSmartSearchTab('calendar')">View calendar</button>
+                                                </div>
+                                                <div class="sdir-ss-ov-events">
+                                                    <t t-foreach="this.smartSearchUpcomingEvents" t-as="ev" t-key="ev.title">
+                                                        <div class="sdir-ss-ov-event">
+                                                            <div t-att-class="'sdir-ss-ov-event-icon ' + ev.tone">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                                                            </div>
+                                                            <div class="sdir-ss-ov-event-text">
+                                                                <div t-esc="ev.title"/>
+                                                                <div class="sdir-ss-ov-change-meta" t-esc="ev.meta"/>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </div>
+
+                                            <div class="sdir-ss-ov-card">
+                                                <div class="sdir-ss-ov-card-head">
+                                                    <span>Quick Insights</span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>
+                                                </div>
+                                                <div class="sdir-ss-ov-insight">
+                                                    <div class="sdir-ss-ov-insight-icon">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                                                    </div>
+                                                    <p t-esc="this.smartSearchInsightText"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                                <t t-elif="state.smartSearchTab === 'calendar'">
+                                    <div class="sdir-ss-cal">
+                                        <div class="sdir-ss-cal-main">
+                                            <div class="sdir-ss-cal-toolbar">
+                                                <div class="sdir-ss-cal-nav">
+                                                    <button type="button" class="sdir-ss-cal-today" t-on-click="calGoToday">Today</button>
+                                                    <button type="button" class="sdir-ss-cal-chev" t-on-click="calPrev" title="Previous">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                                                    </button>
+                                                    <button type="button" class="sdir-ss-cal-chev" t-on-click="calNext" title="Next">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                                                    </button>
+                                                    <div class="sdir-ss-cal-month-label">
+                                                        <span t-esc="this.smartSearchCalMonthLabel"/>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                                                    </div>
+                                                </div>
+                                                <div class="sdir-ss-cal-modes">
+                                                    <button type="button" t-att-class="state.calViewMode === 'month' ? 'active' : ''" t-on-click="() => this.setCalViewMode('month')">Month</button>
+                                                    <button type="button" t-att-class="state.calViewMode === 'week' ? 'active' : ''" t-on-click="() => this.setCalViewMode('week')">Week</button>
+                                                    <button type="button" t-att-class="state.calViewMode === 'list' ? 'active' : ''" t-on-click="() => this.setCalViewMode('list')">List</button>
+                                                </div>
+                                            </div>
+
+                                            <t t-if="state.calViewMode === 'list'">
+                                                <div class="sdir-ss-cal-list">
+                                                    <t t-foreach="this.smartSearchCalListEvents" t-as="ev" t-key="ev.id">
+                                                        <div class="sdir-ss-cal-list-row">
+                                                            <div class="sdir-ss-cal-list-bar" t-att-style="'background:' + ev.color + ';'"/>
+                                                            <div class="sdir-ss-cal-list-body">
+                                                                <div class="sdir-ss-cal-list-title" t-esc="ev.title"/>
+                                                                <div class="sdir-ss-cal-list-meta"><t t-esc="ev.type"/> · <t t-esc="ev.sideDate"/></div>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                    <t t-if="!this.smartSearchCalListEvents.length">
+                                                        <div class="sdir-ss-cal-empty">No events this month</div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                            <t t-else="">
+                                                <div class="sdir-ss-cal-grid-wrap">
+                                                    <div class="sdir-ss-cal-dow">
+                                                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                                                    </div>
+                                                    <div class="sdir-ss-cal-grid">
+                                                        <t t-foreach="state.calViewMode === 'week' ? this.smartSearchCalWeekDays : this.smartSearchCalDays" t-as="cell" t-key="cell.key">
+                                                            <div t-att-class="'sdir-ss-cal-cell' + (cell.isToday ? ' is-today' : '') + (cell.isSatCol ? ' no-right' : '') + (cell.isLastRow ? ' no-bottom' : '')">
+                                                                <div class="sdir-ss-cal-daynum">
+                                                                    <span t-att-class="cell.isToday ? 'today' : (cell.inMonth ? '' : 'muted')" t-esc="cell.day"/>
+                                                                </div>
+                                                                <t t-foreach="cell.events" t-as="ev" t-key="ev.id">
+                                                                    <div class="sdir-ss-cal-pill" t-att-style="'background:' + ev.color + ';'" t-esc="ev.title"/>
+                                                                </t>
+                                                            </div>
+                                                        </t>
+                                                    </div>
+                                                </div>
+                                                <div class="sdir-ss-cal-legend">
+                                                    <t t-foreach="this.smartSearchCalLegend" t-as="leg" t-key="leg.label">
+                                                        <div class="sdir-ss-cal-legend-item">
+                                                            <div class="sdir-ss-cal-legend-dot" t-att-style="'background:' + leg.color + ';'"/>
+                                                            <span t-esc="leg.label"/>
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+
+                                        <div class="sdir-ss-cal-side">
+                                            <div class="sdir-ss-cal-upcoming">
+                                                <div class="sdir-ss-cal-side-head">
+                                                    <span>Upcoming Events</span>
+                                                    <button type="button" class="sdir-ss-cal-viewall" t-on-click="() => this.setCalViewMode('list')">View all</button>
+                                                </div>
+                                                <div class="sdir-ss-cal-upcoming-list">
+                                                    <t t-foreach="this.smartSearchUpcomingEvents" t-as="ev" t-key="ev.id">
+                                                        <div class="sdir-ss-cal-upcoming-item">
+                                                            <div class="sdir-ss-cal-upcoming-bar" t-att-style="'background:' + ev.color + ';'"/>
+                                                            <div>
+                                                                <div class="sdir-ss-cal-upcoming-title" t-esc="ev.title"/>
+                                                                <div class="sdir-ss-cal-upcoming-meta" t-esc="ev.type"/>
+                                                                <div class="sdir-ss-cal-upcoming-meta" t-esc="ev.sideDate"/>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                    <t t-if="!this.smartSearchUpcomingEvents.length">
+                                                        <div class="sdir-ss-cal-empty">No upcoming events</div>
+                                                    </t>
+                                                </div>
+                                            </div>
+                                            <div class="sdir-ss-cal-summary">
+                                                <div class="sdir-ss-cal-summary-title">Calendar Summary</div>
+                                                <div class="sdir-ss-cal-summary-rows">
+                                                    <t t-foreach="this.smartSearchCalSummary.rows" t-as="row" t-key="row.label">
+                                                        <div class="sdir-ss-cal-summary-row">
+                                                            <div class="sdir-ss-cal-summary-label">
+                                                                <div class="sdir-ss-cal-legend-dot" t-att-style="'background:' + row.color + ';'"/>
+                                                                <span t-esc="row.label"/>
+                                                            </div>
+                                                            <span class="sdir-ss-cal-summary-n" t-esc="row.count"/>
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                                <div class="sdir-ss-cal-summary-total">
+                                                    <span>Total Events</span>
+                                                    <strong t-esc="this.smartSearchCalSummary.total"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="sdir-ss-tab-placeholder">
+                                        <h3 t-esc="this.smartSearchTabLabel"/>
+                                        <p>Coming soon</p>
+                                    </div>
+                                </t>
                             </div>
                         </div>
                     </t>
                     <t t-else="">
-                        <button class="sdir-org-sidebar-toggle-closed" t-on-click="toggleOrgSidebar">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-                        </button>
-                    </t>
-                </div>
-
-                <div class="sdir-org-main">
                     <!-- Secondary Toolbar -->
                     <div class="sdir-org-toolbar">
                         <div class="sdir-org-toolbar-left"></div>
@@ -247,6 +1347,7 @@
                                 deptKey="this.deptKey.bind(this)"/>
                         </t>
                     </div>
+                    </t>
                 </div> <!-- Close sdir-org-main -->
                 </t>
             </div> <!-- Close sdir-org-content -->
@@ -279,7 +1380,174 @@
             </button>
             -->
 
-                        <!-- ═══ FULL PROFILE MODAL ════════════════════════════════════ -->
+                        <!-- ═══ TEAM PERSON SLIDE-OUT DRAWER ═══════════════════════ -->
+            <t t-if="state.showTeamPersonDrawer and state.activeProfile">
+                <div class="sdir-ss-ep-backdrop" t-on-click="closeTeamPersonDrawer"/>
+                <div class="sdir-ss-ep-drawer" role="dialog" aria-label="Employee Profile" t-on-click.stop="">
+                    <div class="sdir-ss-ep-header">
+                        <div class="sdir-ss-ep-top">
+                            <div class="sdir-ss-ep-crumb">
+                                <span class="sdir-ss-ep-crumb-muted">Staff Directory</span>
+                                <span class="sdir-ss-ep-crumb-sep">›</span>
+                                <span class="sdir-ss-ep-crumb-cur">Employee Profile</span>
+                            </div>
+                            <div class="sdir-ss-ep-top-actions">
+                                <button type="button" class="sdir-ss-ep-full-btn" t-on-click="openTeamPersonFullProfile">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                                    Full Profile
+                                </button>
+                                <button type="button" class="sdir-ss-ep-close" t-on-click="closeTeamPersonDrawer" title="Close">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="sdir-ss-ep-identity">
+                            <div class="sdir-ss-ep-av-wrap">
+                                <div t-att-class="'sdir-ss-ep-av-ring' + (this.teamPersonDrawerStatusOk ? ' ok' : '')">
+                                    <div class="sdir-ss-ep-av"
+                                         t-att-style="state.activeProfile.has_image ? '' : ('background-color:' + this.avatarColor(state.activeProfile.name))">
+                                        <img t-if="state.activeProfile.has_image"
+                                             t-attf-src="/web/image?model=hr.employee&amp;id={{state.activeProfile.id}}&amp;field=avatar_128&amp;unique={{state.activeProfile.avatar_cache_key}}"
+                                             t-att-alt="state.activeProfile.name"/>
+                                        <span t-else="" t-esc="this.initials(state.activeProfile.name)"/>
+                                    </div>
+                                </div>
+                                <div t-att-class="'sdir-ss-ep-av-dot' + (this.teamPersonDrawerStatusOk ? ' ok' : '')"/>
+                            </div>
+                            <div class="sdir-ss-ep-id-text">
+                                <p class="sdir-ss-ep-name" t-esc="state.activeProfile.name"/>
+                                <p class="sdir-ss-ep-title" t-esc="state.activeProfile.job_title || 'Employee'"/>
+                                <div class="sdir-ss-ep-pills">
+                                    <span t-att-class="'sdir-ss-ep-pill status' + (this.teamPersonDrawerStatusOk ? ' ok' : ' warn')">
+                                        <span class="sdir-ss-ep-pill-dot"/>
+                                        <t t-esc="this.lifecycleLabel(state.activeProfile.lifecycle_state || 'active')"/>
+                                    </span>
+                                    <span class="sdir-ss-ep-pill dept" t-esc="state.activeProfile.department || '—'"/>
+                                    <span class="sdir-ss-ep-pill grade" t-esc="this.teamPersonDrawerGradeShort"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sdir-ss-ep-actions">
+                            <button type="button" class="sdir-ss-ep-action" t-on-click="onTeamPersonMessage">
+                                <span class="sdir-ss-ep-action-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                </span>
+                                <span>Message</span>
+                            </button>
+                            <button type="button" class="sdir-ss-ep-action" t-on-click="onTeamPersonCall">
+                                <span class="sdir-ss-ep-action-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                </span>
+                                <span>Call</span>
+                            </button>
+                            <button type="button" class="sdir-ss-ep-action" t-on-click="onTeamPersonVideo">
+                                <span class="sdir-ss-ep-action-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+                                </span>
+                                <span>Video</span>
+                            </button>
+                            <button type="button" class="sdir-ss-ep-action" t-on-click="onTeamPersonEmail">
+                                <span class="sdir-ss-ep-action-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                </span>
+                                <span>Email</span>
+                            </button>
+                        </div>
+                        <div class="sdir-ss-ep-divider"/>
+                    </div>
+
+                    <div class="sdir-ss-ep-body">
+                        <div class="sdir-ss-ep-section">
+                            <p class="sdir-ss-ep-sec-title">Contact</p>
+                            <div class="sdir-ss-ep-contact">
+                                <div class="sdir-ss-ep-contact-row">
+                                    <div class="sdir-ss-ep-contact-label">
+                                        <span class="sdir-ss-ep-contact-ico">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                        </span>
+                                        <span>Email</span>
+                                    </div>
+                                    <a t-if="state.activeProfile.work_email"
+                                       class="sdir-ss-ep-contact-val link"
+                                       t-att-href="'mailto:' + state.activeProfile.work_email"
+                                       t-esc="state.activeProfile.work_email"/>
+                                    <span t-else="" class="sdir-ss-ep-contact-val">—</span>
+                                </div>
+                                <div class="sdir-ss-ep-contact-row">
+                                    <div class="sdir-ss-ep-contact-label">
+                                        <span class="sdir-ss-ep-contact-ico">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                        </span>
+                                        <span>Phone</span>
+                                    </div>
+                                    <span class="sdir-ss-ep-contact-val" t-esc="state.activeProfile.work_phone || state.activeProfile.phone || '—'"/>
+                                </div>
+                                <div class="sdir-ss-ep-contact-row">
+                                    <div class="sdir-ss-ep-contact-label">
+                                        <span class="sdir-ss-ep-contact-ico">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+                                        </span>
+                                        <span>Location</span>
+                                    </div>
+                                    <span class="sdir-ss-ep-contact-val" t-esc="state.activeProfile.work_location || '—'"/>
+                                </div>
+                                <div class="sdir-ss-ep-contact-row">
+                                    <div class="sdir-ss-ep-contact-label">
+                                        <span class="sdir-ss-ep-contact-ico">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                        </span>
+                                        <span>Manager</span>
+                                    </div>
+                                    <span class="sdir-ss-ep-contact-val" t-esc="this.teamPersonDrawerManagerLabel"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sdir-ss-ep-section">
+                            <p class="sdir-ss-ep-sec-title">Employment</p>
+                            <div class="sdir-ss-ep-emp-grid">
+                                <div>
+                                    <p class="sdir-ss-ep-emp-label">Employee ID</p>
+                                    <p class="sdir-ss-ep-emp-val" t-esc="state.activeProfile.emp_ref || state.activeProfile.employee_id || '—'"/>
+                                </div>
+                                <div>
+                                    <p class="sdir-ss-ep-emp-label">Grade</p>
+                                    <p class="sdir-ss-ep-emp-val" t-esc="this.teamPersonDrawerGrade"/>
+                                </div>
+                                <div>
+                                    <p class="sdir-ss-ep-emp-label">Employment Type</p>
+                                    <p class="sdir-ss-ep-emp-val" t-esc="state.activeProfile.employment_type || '—'"/>
+                                </div>
+                                <div>
+                                    <p class="sdir-ss-ep-emp-label">Join Date</p>
+                                    <p class="sdir-ss-ep-emp-val" t-esc="this.teamPersonDrawerJoinDate"/>
+                                </div>
+                                <div>
+                                    <p class="sdir-ss-ep-emp-label">Tenure</p>
+                                    <p class="sdir-ss-ep-emp-val" t-esc="state.activeProfile.tenure || '—'"/>
+                                </div>
+                                <div>
+                                    <p class="sdir-ss-ep-emp-label">Contract Type</p>
+                                    <p class="sdir-ss-ep-emp-val" t-esc="this.teamPersonDrawerContractType"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sdir-ss-ep-section" t-if="this.teamPersonDrawerSkills.length">
+                            <p class="sdir-ss-ep-sec-title skills">Top Skills</p>
+                            <div class="sdir-ss-ep-skills">
+                                <t t-foreach="this.teamPersonDrawerSkills" t-as="skill" t-key="skill_index">
+                                    <span class="sdir-ss-ep-skill" t-esc="skill"/>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
+            <!-- ═══ FULL PROFILE MODAL ════════════════════════════════════ -->
             <t t-if="state.showFullProfile and state.activeProfile">
                 <StaffDirectoryFullProfile 
                     activeProfile="state.activeProfile" 
