@@ -24,6 +24,7 @@
 
 .cleon-wf-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     border-bottom: 2px solid #E5E7EB;
     margin-bottom: 24px;
@@ -205,3 +206,20 @@
     padding-top: 16px;
     border-top: 1px solid #E5E7EB;
 }
+
+.cleon-template-filters { display: flex; gap: 10px; margin: 0 0 18px; }
+.cleon-template-filters input, .cleon-template-filters select { min-height: 36px; border: 1px solid #D1D5DB; border-radius: 7px; padding: 6px 10px; font-size: 13px; background: #fff; }
+.cleon-template-filters input { width: min(280px, 100%); }
+.cleon-template-filters select { width: 170px; }
+.cleon-admin-tabs { display: flex; gap: 8px; padding-bottom: 16px; margin-bottom: 18px; border-bottom: 1px solid #E5E7EB; }
+.cleon-admin-tabs button { border: 0; border-radius: 6px; background: #F3F4F6; color: #4B5563; padding: 6px 10px; font-size: 12px; font-weight: 600; }
+.cleon-admin-tabs button.active { background: #FCE7F3; color: #DB2777; }
+.cleon-template-table td { white-space: nowrap; }
+.cleon-template-table td:first-child { white-space: normal; min-width: 230px; }
+.cleon-template-table small { max-width: 280px; color: #6B7280; }
+.cleon-approver-chip { display: inline-block; margin: 2px 3px 2px 0; padding: 2px 6px; border-radius: 10px; background: #F3F4F6; color: #4B5563; font-size: 11px; }
+.cleon-template-menu { position: absolute; z-index: 10; right: 15px; top: 36px; min-width: 155px; padding: 5px; background: #fff; border: 1px solid #E5E7EB; border-radius: 8px; box-shadow: 0 8px 18px rgba(0,0,0,.12); }
+.cleon-template-menu button { display: block; width: 100%; padding: 7px 9px; background: transparent; border: 0; text-align: left; font-size: 12px; }
+.cleon-template-menu button:hover { background: #F9FAFB; }
+.cleon-template-pager { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; color: #6B7280; font-size: 12px; }
+.cleon-template-pager button { margin: 0 4px; border: 1px solid #E5E7EB; background: #fff; border-radius: 5px; padding: 2px 9px; }

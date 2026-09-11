@@ -1,12 +1,14 @@
 {
     'name': 'CLEONHR Leave',
     'version': '17.0.1.3.1',
+    'post_init_hook': 'post_init_hook',
     'category': 'CleonHR-HR ADMIN',
     'depends': ['hr_holidays', 'web', 'hr_company_calendar', 'hr_administration', 'hr_employee', 'cleon_ai', 'cleon_approval'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
         'data/cleon_approval_data.xml',
+        'data/approval_templates_data.xml',
         'data/sequence_data.xml',
         'data/official_holidays_data.xml',
         'data/blackout_windows_data.xml',

@@ -4,14 +4,14 @@
         <div class="cleon-wf-app-container">
             <div class="cleon-wf-heading">
                 <div>
-                    <h1><i class="fa fa-sitemap" style="color: #EC4899; margin-right: 8px;"/> Workflows &amp; Approvals</h1>
-                    <p>Configure approval chains, workflow types, rules, and escalations</p>
+                    <h1><i class="fa fa-shield" style="color: #EC4899; margin-right: 8px;"/> Approval Settings</h1>
+                    <p>Configure reusable approval templates and the approval routes used by leave policies.</p>
                 </div>
             </div>
 
-            <div class="cleon-wf-tabs">
+            <div class="cleon-wf-tabs" aria-label="Approval configuration">
+                <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'chains' ? 'active' : '')" t-on-click="() => this.setTab('chains')">Approval Workflows</button>
                 <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'types' ? 'active' : '')" t-on-click="() => this.setTab('types')">Workflow Types</button>
-                <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'chains' ? 'active' : '')" t-on-click="() => this.setTab('chains')">Approval Routes</button>
                 <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'rules' ? 'active' : '')" t-on-click="() => this.setTab('rules')">Rules &amp; Conditions</button>
                 <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'escalations' ? 'active' : '')" t-on-click="() => this.setTab('escalations')">Escalations</button>
                 <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'delegations' ? 'active' : '')" t-on-click="() => this.setTab('delegations')">Delegation</button>
@@ -21,24 +21,35 @@
 
             <div class="cleon-wf-content">
                 <t t-if="state.activeTab === 'templates'">
-                    <div class="cleon-wf-head"><div><h2>Approval Templates</h2><p>Reusable approval blueprints assigned to one or more Leave Policies</p></div><button class="cleon-btn pink" t-on-click="() => this.addApprovalTemplate()"><i class="fa fa-plus"/> Create Approval Template</button></div>
-                    <div t-if="!state.approvalTemplates.length" class="text-center p-5 text-muted"><h4>No Approval Templates</h4><p>Create a reusable blueprint without confusing it with a runtime approval workflow or approval queue.</p></div>
-                    <div t-else="" class="table-responsive"><table class="table cleon-wf-table"><thead><tr><th>TEMPLATE NAME</th><th>TYPE</th><th>LEVELS</th><th>ASSIGNED TO</th><th>APPROVAL FLOW</th><th>STATUS</th><th>ACTIONS</th></tr></thead><tbody><tr t-foreach="state.approvalTemplates" t-as="template" t-key="template.id"><td><strong t-esc="template.name"/><small class="d-block" t-if="template.description" t-esc="template.description"/></td><td t-esc="template.type === 'global' ? 'Global' : 'Assigned'"/><td t-esc="template.levels"/><td t-esc="template.type === 'global' ? 'All Policies' : template.assigned + ' Policies'"/><td t-esc="template.flow"/><td><span t-att-class="'cleon-cfg-badge ' + (template.active ? 'active' : 'inactive')" t-esc="template.active ? 'Active' : 'Inactive'"/></td><td><button class="btn btn-link btn-sm" t-on-click="() => this.editApprovalTemplate(template.id)"><i class="fa fa-pencil"/></button><button class="btn btn-link btn-sm" t-on-click="() => this.duplicateApprovalTemplate(template.id)"><i class="fa fa-copy"/></button></td></tr></tbody></table></div>
+                    <div class="cleon-wf-head"><div><h2>Approval Templates</h2><p>Reusable blueprints used by Leave Policies. A request's active workflow is created from this configuration.</p></div><button class="cleon-btn pink" t-on-click="() => this.addApprovalTemplate()"><i class="fa fa-plus"/> Add Approval Template</button></div>
+                    <div class="cleon-template-filters"><input type="search" placeholder="Search templates…" t-att-value="state.templateSearch" t-on-input="(ev) => this.onTemplateSearch(ev)"/><select t-on-change="(ev) => this.onTemplateFilter('templateStatus', ev)"><option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select><select t-on-change="(ev) => this.onTemplateFilter('templateAppliesTo', ev)"><option value="all">All scopes</option><option value="departments">Department based</option><option value="teams">Project teams</option><option value="employees">Selected employees</option></select></div>
+                    <div t-if="!state.templateRows.length" class="text-center p-5 text-muted"><h4>No Approval Templates</h4><p>Create a reusable blueprint without confusing it with a runtime approval workflow or approval queue.</p></div>
+                    <div t-else="" class="table-responsive"><table class="table cleon-wf-table cleon-template-table"><thead><tr><th>TEMPLATE</th><th>LEVELS</th><th>APPROVERS</th><th>BACKUP</th><th>ESCALATION</th><th>AUTO APPROVE</th><th>APPLIES TO</th><th>STATUS</th><th>CREATED BY</th><th>LAST UPDATED</th><th>ACTIONS</th></tr></thead><tbody><tr t-foreach="state.templateRows" t-as="template" t-key="template.id"><td><strong t-esc="template.name"/><small class="d-block" t-if="template.description" t-esc="template.description"/></td><td t-esc="template.levels"/><td><span t-foreach="template.approvers" t-as="approver" t-key="approver_index" class="cleon-approver-chip" t-esc="approver"/><span t-if="template.additional_approvers" class="cleon-approver-chip" t-esc="'+' + template.additional_approvers"/></td><td t-esc="template.backups ? '+' + template.backups : '—'"/><td t-esc="template.escalation_days ? template.escalation_days + 'd' : '—'"/><td t-esc="template.auto_approve_days ? template.auto_approve_days + 'd' : '—'"/><td><button class="btn btn-link btn-sm p-0" title="View covered employees" t-esc="template.applies_to_label + ' (' + template.coverage_count + ')'"/></td><td><span t-att-class="'cleon-cfg-badge ' + (template.active ? 'active' : 'inactive')" t-esc="template.active ? 'Active' : 'Inactive'"/></td><td t-esc="template.created_by"/><td t-esc="template.updated"/><td>
+    <Dropdown togglerClass="'btn btn-link btn-sm text-secondary'" title="'Template actions'">
+        <t t-set-slot="toggler"><i class="fa fa-ellipsis-v"/></t>
+        <DropdownItem onSelected="() => this.viewApprovalTemplate(template.id)">View Details</DropdownItem>
+        <DropdownItem onSelected="() => this.editApprovalTemplate(template.id)">Edit Template</DropdownItem>
+        <DropdownItem onSelected="() => this.duplicateApprovalTemplate(template.id)">Duplicate Template</DropdownItem>
+        <DropdownItem onSelected="() => this.toggleApprovalTemplate(template)"><t t-esc="template.active ? 'Deactivate' : 'Activate'"/></DropdownItem>
+        <DropdownItem class="'text-danger'" onSelected="() => this.deleteApprovalTemplate(template)">Delete Template</DropdownItem>
+    </Dropdown>
+</td></tr></tbody></table></div>
+                    <div class="cleon-template-pager"><span t-esc="'Showing ' + ((state.templatePage - 1) * 10 + 1) + '–' + Math.min(state.templatePage * 10, state.templateTotal) + ' of ' + state.templateTotal + ' approval templates'"/><div><button t-on-click="() => this.setTemplatePage(state.templatePage - 1)" t-att-disabled="state.templatePage === 1">‹</button><span t-esc="state.templatePage + ' / ' + state.templatePages"/><button t-on-click="() => this.setTemplatePage(state.templatePage + 1)" t-att-disabled="state.templatePage === state.templatePages">›</button></div></div>
                 </t>
                 <!-- TAB 1: APPROVAL CHAINS -->
                 <t t-if="state.activeTab === 'chains'">
                     <div class="cleon-wf-head">
                         <div>
-                            <h2>Approval Routes</h2>
-                            <p>Define approvers, sequential levels, completion rules, and response SLAs once for reuse.</p>
+                            <h2>Approval Workflows</h2>
+                            <p>Define approvers, levels, backups, escalation and auto-approval timers. Attach a reusable template to a Leave Policy.</p>
                         </div>
-                        <button class="cleon-btn pink" t-on-click="() => this.addApprovalChain()"><i class="fa fa-plus"/> Add Approval Route</button>
+                        <button class="cleon-btn pink" t-on-click="() => this.addApprovalChain()"><i class="fa fa-plus"/> Add Approval Workflow</button>
                     </div>
 
                     <div t-if="!state.approvalChains.length" class="text-center p-5 text-muted">
                         <i class="fa fa-sitemap fa-3x mb-3" style="color: #D1D5DB;"/>
-                        <h4>No Approval Routes Configured</h4>
-                        <p>Create a single-level, multi-level, or custom approval route.</p>
+                        <h4>No Approval Workflows Configured</h4>
+                        <p>Create a single-level, multi-level, or custom approval workflow.</p>
                     </div>
 
                     <div t-else="" class="cleon-wf-list">
@@ -49,11 +60,12 @@
                                         <strong t-esc="chain.name"/> <code class="cleon-code" t-esc="chain.code"/>
                                         <span t-att-class="'cleon-cfg-badge ' + (chain.active ? 'active' : 'inactive')" t-esc="chain.active ? 'active' : 'inactive'"/>
                                     </div>
-                                    <small><t t-esc="chain.module"/> • <t t-esc="chain.routeType"/> route • <t t-esc="chain.levels"/> approval level(s) • Applies to: <t t-esc="chain.appliesTo"/> (<t t-esc="chain.coverage"/>) • Backups: <t t-esc="chain.backups"/></small>
+                                    <small><t t-esc="chain.module"/> • <t t-esc="chain.routeType"/> route • <t t-esc="chain.levels"/> approval level(s) • Approvers: <t t-esc="chain.approvers"/> • Applies to: <t t-esc="chain.appliesTo"/> (<t t-esc="chain.coverage"/>) • Backups: <t t-esc="chain.backups"/> • Escalation: <t t-esc="chain.escalationDays || '—'"/> days • Auto-approve: <t t-esc="chain.autoApproveDays || '—'"/> days</small>
                                     <small t-if="chain.description" t-esc="chain.description"/>
                                 </div>
                                 <div class="cleon-wf-actions">
-                                    <i t-att-class="'fa ' + (state.expandedChainIds.includes(chain.id) ? 'fa-chevron-up' : 'fa-chevron-down')" style="color: #9CA3AF; margin-right: 14px; cursor: pointer;" t-on-click="() => this.toggleExpandChain(chain.id)"/>
+                                    <button class="btn btn-link btn-sm p-0 me-3 text-secondary" t-on-click="() => this.viewApprovalChain(chain.id)" title="View workflow details"><i class="fa fa-eye me-1"/> View details</button>
+                                    <i t-att-class="'fa ' + (state.expandedChainIds.includes(chain.id) ? 'fa-chevron-up' : 'fa-chevron-down')" style="color: #9CA3AF; margin-right: 14px; cursor: pointer;" t-on-click="() => this.toggleExpandChain(chain.id)" title="Expand approval levels"/>
                                     <button class="btn btn-link btn-sm p-0 me-3 text-secondary" t-on-click="() => this.editApprovalChain(chain.id)" title="Edit Chain"><i class="fa fa-pencil"/></button>
                                     <button class="btn btn-link btn-sm p-0 me-3 text-secondary" t-on-click="() => this.duplicateApprovalChain(chain.id)" title="Duplicate Workflow"><i class="fa fa-copy"/></button>
                                     <button class="btn btn-link btn-sm p-0 me-3" t-on-click="() => this.toggleApprovalChain(chain.id)" t-esc="chain.active ? 'Deactivate' : 'Activate'"/>

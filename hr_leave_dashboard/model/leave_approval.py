@@ -528,6 +528,46 @@ class HrLeaveApprovalTemplate(models.Model):
         self.ensure_one()
         return self.copy({"name": _("%s (Copy)") % self.name, "active": False}).id
 
+    @api.model
+    def get_approval_templates_page(self, search="", status="all", applies_to="all", page=1, page_size=10):
+        """Small, server-side list API for Leave Configuration's approval table."""
+        page, page_size = max(int(page or 1), 1), min(max(int(page_size or 10), 1), 100)
+        domain = [("company_id", "in", self.env.companies.ids)]
+        if search:
+            domain += ["|", ("name", "ilike", search), ("description", "ilike", search)]
+        if status in ("active", "inactive"):
+            domain.append(("active", "=", status == "active"))
+        if applies_to in ("all", "departments", "teams", "employees") and applies_to != "all":
+            domain.append(("chain_id.applies_to", "=", applies_to))
+        total = self.search_count(domain)
+        templates = self.search(domain, order="name, id", limit=page_size, offset=(page - 1) * page_size)
+        approver_labels = {
+            "line_manager": _("Manager"), "managers_manager": _("Manager's Manager"),
+            "department_head": _("Department Head"), "job": _("Position"),
+            "group": _("Role"), "specific_user": _("Named approver"),
+            "specific_users": _("Named approvers"), "target_resolver": _("Dynamic resolver"),
+        }
+        scope_labels = {"all": _("All Employees"), "departments": _("Department Based"),
+                        "teams": _("Project Teams"), "employees": _("Selected Employees")}
+        rows = []
+        for template in templates:
+            chain = template.chain_id
+            steps = chain.step_ids.sorted("sequence")
+            labels = [approver_labels.get(step.approver_type, step.approver_type) for step in steps]
+            compact = labels[:2]
+            rows.append({
+                "id": template.id, "name": template.name, "description": template.description or "",
+                "levels": len(steps), "approvers": compact, "additional_approvers": max(len(labels) - len(compact), 0),
+                "backups": len(chain.backup_approver_ids), "escalation_days": chain.escalation_days or False,
+                "auto_approve_days": chain.auto_approve_days or False, "applies_to": chain.applies_to,
+                "applies_to_label": scope_labels.get(chain.applies_to, chain.applies_to),
+                "coverage_count": len(chain._covered_employees()), "active": template.active,
+                "updated": fields.Datetime.to_string(template.write_date), "created_by": template.create_uid.name,
+                "chain_code": chain.code or "", "chain_id": chain.id,
+            })
+        return {"rows": rows, "page": page, "page_size": page_size, "total": total,
+                "pages": max((total + page_size - 1) // page_size, 1)}
+
     def unlink(self):
         if any(template.policy_ids or self.env["hr.leave.policy"].sudo().search_count([
             ("approval_template_id", "=", template.id),

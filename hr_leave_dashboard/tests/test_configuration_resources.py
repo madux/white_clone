@@ -366,6 +366,24 @@ class TestConfigurationResources(TransactionCase):
         self.policy.write({"approval_workflow": "custom", "approval_template_id": template.id})
         self.assertEqual(self.policy.approval_template_id.chain_id, chain)
 
+    def test_seeded_approval_templates_have_complete_active_routes(self):
+        """The confirmed baseline stays reusable and does not seed fake policy scope."""
+        external_ids = [
+            "approval_template_standard_leave", "approval_template_department_head",
+            "approval_template_executive", "approval_template_hr_review",
+            "approval_template_short_leave", "approval_template_project_team",
+            "approval_template_individual_employee",
+        ]
+        templates = self.env["hr.leave.approval.template"].browse([
+            self.env.ref("hr_leave_dashboard.%s" % external_id).id
+            for external_id in external_ids
+        ])
+        self.assertEqual(len(templates), 7)
+        self.assertTrue(all(template.template_type == "global" for template in templates))
+        self.assertTrue(all(template.active and template.chain_id.active and template.chain_id.step_ids for template in templates))
+        self.assertEqual(self.env.ref("hr_leave_dashboard.approval_template_hr_review").chain_id.escalation_days, 1)
+        self.assertEqual(self.env.ref("hr_leave_dashboard.approval_template_hr_review").chain_id.auto_approve_days, 3)
+
     def test_blackout_exception_is_explicit(self):
         chain = self.chain
         day = fields.Date.today() + timedelta(days=30)

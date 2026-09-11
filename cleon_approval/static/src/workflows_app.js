@@ -4,9 +4,12 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { Dropdown } from "@web/core/dropdown/dropdown";
+import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 
 export class WorkflowsApp extends Component {
     static template = "cleon_approval.WorkflowsApp";
+    static components = { Dropdown, DropdownItem };
     static props = ["*"];
 
     setup() {
@@ -16,7 +19,9 @@ export class WorkflowsApp extends Component {
         this.dialog = useService("dialog");
 
         this.state = useState({
-            activeTab: "types",
+            // Approval Settings is opened from Leave Configuration.  Start on
+            // the reusable routes rather than exposing technical type records.
+            activeTab: "templates",
             loading: false,
             approvalChains: [],
             approvalTemplates: [],
@@ -26,11 +31,39 @@ export class WorkflowsApp extends Component {
             escalations: [],
             delegations: [],
             history: [],
+            templateRows: [], templatePage: 1, templatePages: 1, templateTotal: 0,
+            templateSearch: "", templateStatus: "all", templateAppliesTo: "all",
         });
 
         onWillStart(async () => {
             await this.loadData();
+            await this.loadTemplatePage();
         });
+    }
+
+    async loadTemplatePage(page = this.state.templatePage) {
+        const result = await this.orm.call("hr.leave.approval.template", "get_approval_templates_page", [], {
+            search: this.state.templateSearch, status: this.state.templateStatus,
+            applies_to: this.state.templateAppliesTo, page, page_size: 10,
+        });
+        this.state.templateRows = result.rows;
+        this.state.templatePage = result.page;
+        this.state.templatePages = result.pages;
+        this.state.templateTotal = result.total;
+    }
+
+    async onTemplateSearch(ev) {
+        this.state.templateSearch = ev.target.value;
+        await this.loadTemplatePage(1);
+    }
+
+    async onTemplateFilter(kind, ev) {
+        this.state[kind] = ev.target.value;
+        await this.loadTemplatePage(1);
+    }
+
+    async setTemplatePage(page) {
+        if (page >= 1 && page <= this.state.templatePages) await this.loadTemplatePage(page);
     }
 
     async loadData() {
@@ -115,6 +148,7 @@ export class WorkflowsApp extends Component {
                     routeType: c.route_type,
                     lifecycleState: c.lifecycle_state,
                     steps: chainSteps,
+                    approvers: chainSteps.map(step => step.approverTypeLabel).join(" → "),
                     backups: c.backup_approver_ids?.length || 0,
                     escalationDays: c.escalation_days || 0,
                     autoApproveDays: c.auto_approve_days || 0,
@@ -156,6 +190,7 @@ export class WorkflowsApp extends Component {
         this.state.activeTab = tab;
     }
 
+
     toggleExpandChain(chainId) {
         if (this.state.expandedChainIds.includes(chainId)) {
             this.state.expandedChainIds = this.state.expandedChainIds.filter(id => id !== chainId);
@@ -177,18 +212,35 @@ export class WorkflowsApp extends Component {
     }
 
     addApprovalTemplate() {
-        this.action.doAction({type: "ir.actions.act_window", name: "Create Approval Template", res_model: "hr.leave.approval.template", views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()});
+        this.action.doAction({type: "ir.actions.act_window", name: "Create Approval Template", res_model: "hr.leave.approval.template", views: [[false, "form"]], target: "new"}, {onClose: () => this.loadTemplatePage()});
+    }
+
+    viewApprovalTemplate(templateId) {
+        this.action.doAction({type: "ir.actions.act_window", name: "Approval Template Details", res_model: "hr.leave.approval.template", res_id: templateId, views: [[false, "form"]], target: "new", context: {form_view_initial_mode: "view"}}, {onClose: () => this.loadTemplatePage()});
     }
 
     editApprovalTemplate(templateId) {
-        this.action.doAction({type: "ir.actions.act_window", name: "Edit Approval Template", res_model: "hr.leave.approval.template", res_id: templateId, views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()});
+        this.action.doAction({type: "ir.actions.act_window", name: "Edit Approval Template", res_model: "hr.leave.approval.template", res_id: templateId, views: [[false, "form"]], target: "new"}, {onClose: () => this.loadTemplatePage()});
     }
 
     async duplicateApprovalTemplate(templateId) {
         const duplicateId = await this.orm.call("hr.leave.approval.template", "action_duplicate_template", [[templateId]]);
         this.notification.add("Approval template duplicated as inactive.", {type: "success"});
-        await this.loadData();
+        await this.loadData(); await this.loadTemplatePage();
         if (duplicateId) this.editApprovalTemplate(duplicateId);
+    }
+
+    async toggleApprovalTemplate(template) {
+        await this.orm.write("hr.leave.approval.template", [template.id], {active: !template.active});
+        await this.loadTemplatePage();
+    }
+
+    deleteApprovalTemplate(template) {
+        this.dialog.add(ConfirmationDialog, {body: `Delete approval template '${template.name}'?`, confirm: async () => {
+            try { await this.orm.unlink("hr.leave.approval.template", [template.id]); this.notification.add("Approval template deleted.", {type: "success"}); }
+            catch (error) { this.notification.add(error?.data?.message || "This template cannot be deleted; deactivate it instead.", {type: "danger"}); }
+            await this.loadTemplatePage();
+        }});
     }
 
     editApprovalChain(chainId) {
@@ -201,6 +253,18 @@ export class WorkflowsApp extends Component {
             target: "new",
         }, {
             onClose: () => this.loadData(),
+        });
+    }
+
+    viewApprovalChain(chainId) {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Approval Workflow Details",
+            res_model: "cleon.approval.chain",
+            res_id: chainId,
+            views: [[false, "form"]],
+            target: "new",
+            context: { form_view_initial_mode: "view" },
         });
     }
 

@@ -34,12 +34,12 @@
       <form string="Approval Template">
         <sheet>
           <widget name="web_ribbon" title="Inactive" bg_color="text-bg-danger" invisible="active"/>
-          <div class="oe_title"><label for="name"/><h1><field name="name" placeholder="e.g. Standard Annual Leave Approval"/></h1></div>
+          <div class="oe_title"><label for="name"/><h1><field name="name" placeholder="e.g. Standard Annual Leave Approval"/></h1><div class="text-muted">A reusable blueprint, distinct from an individual request's active approval workflow.</div></div>
           <group>
             <group string="Template Details"><field name="company_id" invisible="1"/><field name="template_type"/><field name="active"/><field name="description" placeholder="Describe when this blueprint should be used..."/></group>
             <group string="Approval Flow"><field name="chain_id" domain="[('company_id', '=', company_id), ('active', '=', True)]"/><field name="level_count"/><field name="policy_ids" widget="many2many_tags" invisible="template_type != 'assigned'"/></group>
           </group>
-          <notebook><page string="Approval Levels"><field name="chain_id" readonly="1"/><div class="text-muted">Approval levels, approvers, backups and timers are edited on the linked Approval Flow.</div></page></notebook>
+          <notebook><page string="Approval Levels"><field name="chain_id" readonly="1"/><div class="text-muted">Approval levels, approvers, backups and timers are edited on the linked Approval Workflow.</div></page></notebook>
         </sheet>
       </form>
     </field>
