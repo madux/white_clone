@@ -968,6 +968,7 @@ class HrLeaveType(models.Model):
             blackout_domain = [
                 ("company_id", "=", emp.company_id.id),
                 ("active", "=", True),
+                ("state", "=", "active"),
                 ("date_from", "<=", end_dt),
                 ("date_to", ">=", start_dt),
                 "|", ("leave_type_ids", "=", False), ("leave_type_ids", "in", lt.id),

@@ -239,6 +239,8 @@ class HrLeavePolicy(models.Model):
             "units": rows(employees.mapped("unit_id").sorted("name")), "grades": rows(employees.mapped("grade_id").sorted("name")),
             "locations": rows(employees.mapped("work_location_id").sorted("name")), "employee_types": rows(employees.mapped("employee_type_id").sorted("name")),
             "jobs": rows(employees.mapped("job_id").sorted("name")),
+            # Draft and scheduled windows are valid configuration records too;
+            # ``active`` is archive visibility, not the business lifecycle state.
             "blackout_periods": rows(self.env["hr.leave.blackout.period"].sudo().search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")),
             "approval_chains": rows(self.env["cleon.approval.chain"].sudo().search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")),
             "approval_workflow_types": rows(self.env["cleon.approval.workflow.type"].sudo().search([

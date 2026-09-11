@@ -599,7 +599,7 @@ class HrLeaveReportService(models.AbstractModel):
                 "longest_request": round(longest, 1), "consecutive_limit": consecutive_limit,
                 "consecutive_usage": round(longest * 100 / consecutive_limit, 1) if consecutive_limit else 0,
                 "blackout_periods": self.env["hr.leave.blackout.period"].sudo().search_count([
-                    ("company_id", "=", self.env.company.id), ("active", "=", True),
+                    ("company_id", "=", self.env.company.id), ("active", "=", True), ("state", "=", "active"),
                     "|", ("leave_type_ids", "=", False), ("leave_type_ids", "in", lines.leave_type_id.ids),
                 ]),
             })

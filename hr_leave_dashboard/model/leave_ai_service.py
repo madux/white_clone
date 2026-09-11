@@ -947,7 +947,7 @@ class LeaveAiService(models.AbstractModel):
             # Collect blackout date ranges from policy line
             if hasattr(policy_line, "blackout_period_ids"):
                 for bp in policy_line.blackout_period_ids:
-                    if bp.date_from and bp.date_to:
+                    if bp.state == "active" and bp.date_from and bp.date_to:
                         d_cur = bp.date_from
                         while d_cur <= bp.date_to:
                             blackout_dates.add(fields.Date.to_string(d_cur))
@@ -957,6 +957,7 @@ class LeaveAiService(models.AbstractModel):
         company_blackouts = self.env["hr.leave.blackout.period"].sudo().search([
             ("company_id", "in", [False, self.env.company.id]),
             ("active", "=", True),
+            ("state", "=", "active"),
             ("date_from", "<=", fields.Date.to_string(end_scan)),
             ("date_to", ">=", fields.Date.to_string(today)),
         ])

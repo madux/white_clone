@@ -315,14 +315,9 @@ class HrLeaveBlackoutPeriod(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        for vals in vals_list:
-            if "state" in vals:
-                vals["active"] = vals["state"] == "active"
         return super().create(vals_list)
 
     def write(self, vals):
-        if "state" in vals:
-            vals["active"] = vals["state"] == "active"
         return super().write(vals)
 
     def _check_configure(self):
@@ -333,7 +328,7 @@ class HrLeaveBlackoutPeriod(models.Model):
     def _cron_activate_scheduled(self):
         """Promote approved windows when their effective date is reached."""
         today = fields.Date.context_today(self)
-        windows = self.sudo().search([("state", "=", "scheduled"), ("date_from", "<=", today)])
+        windows = self.sudo().with_context(active_test=False).search([("state", "=", "scheduled"), ("date_from", "<=", today)])
         if windows:
             windows.write({"state": "active"})
             for window in windows:
@@ -379,8 +374,88 @@ class HrLeaveBlackoutPeriod(models.Model):
         return {"id": record.id}
 
     @api.model
+    def import_blackouts(self, rows):
+        """Create blackout windows from normalized CSV rows.
+
+        The client parses CSV syntax; this endpoint owns validation and
+        relation resolution so imports cannot bypass the same audience/date
+        constraints as the drawer form. Invalid rows are reported separately
+        while valid rows are committed.
+        """
+        self._check_configure()
+        if not isinstance(rows, list) or not rows:
+            raise ValidationError(_("The import contains no blackout rows."))
+        company = self.env.company
+        errors, imported_ids = [], []
+
+        def relation_ids(model_name, value, label):
+            tokens = [token.strip() for token in str(value or "").split(";") if token.strip()]
+            if not tokens:
+                return []
+            model = self.env[model_name].sudo()
+            found = model.browse()
+            for token in tokens:
+                record = model.browse(int(token)).exists() if token.isdigit() else model.search([
+                    ("name", "=ilike", token), ("company_id", "in", [False, company.id]),
+                ], limit=1)
+                if not record:
+                    raise ValidationError(_("Unknown %s '%s'.") % (label, token))
+                found |= record
+            return found.ids
+
+        for row_number, raw in enumerate(rows, start=2):
+            row = {str(key).strip().lower(): value for key, value in (raw or {}).items()}
+            try:
+                name = (row.get("name") or row.get("window_name") or "").strip()
+                date_from = (row.get("date_from") or row.get("start_date") or "").strip()
+                date_to = (row.get("date_to") or row.get("end_date") or date_from).strip()
+                if not name or not date_from:
+                    raise ValidationError(_("name and date_from are required."))
+                # Fail early with a clear row-level error rather than relying
+                # on a database cast exception for malformed dates.
+                fields.Date.to_date(date_from)
+                fields.Date.to_date(date_to)
+                applies_to = (row.get("applies_to") or row.get("scope") or "all").strip().lower().replace(" ", "_")
+                applies_to = {"company_wide": "all", "all_employees": "all", "department_based": "departments", "policy_based": "policies", "group_based": "groups"}.get(applies_to, applies_to)
+                if applies_to not in ("all", "departments", "policies", "groups"):
+                    raise ValidationError(_("applies_to must be all, departments, policies, or groups."))
+                state = (row.get("state") or "draft").strip().lower()
+                if state not in ("draft", "scheduled", "active"):
+                    raise ValidationError(_("state must be draft, scheduled, or active."))
+                exception_mode = (row.get("exception_mode") or "hard_block").strip().lower()
+                if exception_mode not in ("hard_block", "approval"):
+                    raise ValidationError(_("exception_mode must be hard_block or approval."))
+                values = {
+                    "name": name, "date_from": date_from, "date_to": date_to,
+                    "applies_to": applies_to, "state": state,
+                    "department_ids": [(6, 0, relation_ids("hr.department", row.get("department_ids") or row.get("departments"), "department"))],
+                    "policy_ids": [(6, 0, relation_ids("hr.leave.policy", row.get("policy_ids") or row.get("policies"), "leave policy"))],
+                    "group_ids": [(6, 0, relation_ids("hr.leave.allocation.group", row.get("group_ids") or row.get("groups"), "custom group"))],
+                    "exception_mode": exception_mode,
+                    "exception_chain_id": int(row.get("exception_chain_id") or 0) or False,
+                    "reason": (row.get("reason") or "")[:255],
+                    "company_id": company.id,
+                }
+                if row.get("exception_chain") and not values["exception_chain_id"]:
+                    chain = self.env["cleon.approval.chain"].sudo().search([
+                        ("name", "=ilike", row["exception_chain"]), ("company_id", "in", [False, company.id]),
+                    ], limit=1)
+                    if not chain:
+                        raise ValidationError(_("Unknown approval flow '%s'.") % row["exception_chain"])
+                    values["exception_chain_id"] = chain.id
+                # Keep a malformed row from aborting the whole import
+                # transaction; valid rows can still be committed and the
+                # caller receives the rejected row numbers.
+                with self.env.cr.savepoint():
+                    record = self.create(values)
+                imported_ids.append(record.id)
+            except Exception as error:
+                errors.append({"row": row_number, "reason": str(error)})
+        return {"imported": len(imported_ids), "ids": imported_ids, "errors": errors}
+
+    @api.model
     def duplicate_blackout(self, record_id):
-        self._check_configure(); record = self.browse(int(record_id)).exists(); duplicate = record.copy({"name": _("%s (Copy)") % record.name, "state": "draft", "active": False}); return {"id": duplicate.id}
+        self._check_configure(); record = self.with_context(active_test=False).browse(int(record_id)).exists(); duplicate = record.copy({"name": _("%s (Copy)") % record.name, "state": "draft", "active": True}); return {"id": duplicate.id}
 
     @api.model
     def set_blackout_state(self, record_id, state):

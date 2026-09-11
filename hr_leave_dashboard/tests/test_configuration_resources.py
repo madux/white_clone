@@ -271,9 +271,83 @@ class TestConfigurationResources(TransactionCase):
             "name": "Scheduled Window", "date_from": fields.Date.today(), "date_to": fields.Date.today(),
             "state": "scheduled",
         })
-        self.assertFalse(record.active)
+        # ``active`` controls archive visibility; it is independent from the
+        # business lifecycle state (draft/scheduled/active).
+        self.assertTrue(record.active)
         record.write({"state": "active"})
         self.assertTrue(record.active)
+        archived = self.env["hr.leave.blackout.period"].create({
+            "name": "Archived Window", "date_from": fields.Date.today(), "date_to": fields.Date.today(),
+            "state": "scheduled", "active": False,
+        })
+        archived.write({"state": "active"})
+        self.assertFalse(archived.active)
+
+    def test_blackout_duplicate_starts_as_visible_draft(self):
+        record = self.env["hr.leave.blackout.period"].create({
+            "name": "Visible Source", "date_from": fields.Date.today(), "date_to": fields.Date.today(),
+            "state": "active",
+        })
+        duplicate = self.env["hr.leave.blackout.period"].duplicate_blackout(record.id)
+        copy = self.env["hr.leave.blackout.period"].browse(duplicate["id"])
+        self.assertEqual(copy.state, "draft")
+        self.assertTrue(copy.active)
+
+    def test_scheduled_blackout_is_activated_when_due(self):
+        blackout = self.env["hr.leave.blackout.period"].create({
+            "name": "Due Scheduled Window", "date_from": fields.Date.today() - timedelta(days=1),
+            "date_to": fields.Date.today() + timedelta(days=1), "state": "scheduled",
+        })
+        future = self.env["hr.leave.blackout.period"].create({
+            "name": "Future Scheduled Window", "date_from": fields.Date.today() + timedelta(days=2),
+            "date_to": fields.Date.today() + timedelta(days=3), "state": "scheduled",
+        })
+        draft = self.env["hr.leave.blackout.period"].create({
+            "name": "Draft Window", "date_from": fields.Date.today() - timedelta(days=3),
+            "date_to": fields.Date.today() + timedelta(days=3), "state": "draft",
+        })
+        self.env["hr.leave.blackout.period"]._cron_activate_scheduled()
+        self.assertEqual(blackout.state, "active")
+        self.assertEqual(future.state, "scheduled")
+        self.assertEqual(draft.state, "draft")
+        # A second run is idempotent: the already-promoted window is not
+        # selected again and future/draft windows remain untouched.
+        self.assertEqual(self.env["hr.leave.blackout.period"]._cron_activate_scheduled(), 0)
+
+    def test_blackout_lifecycle_states_control_enforcement(self):
+        base = fields.Date.today() + timedelta(days=40)
+        for state, expected_block in (("draft", False), ("scheduled", False), ("active", True)):
+            day = base + timedelta(days=(0 if state == "draft" else 1 if state == "scheduled" else 2))
+            self.env["hr.leave.blackout.period"].create({
+                "name": "%s enforcement window" % state, "date_from": day, "date_to": day, "state": state,
+            })
+            result = self.leave_type.evaluate_leave_request_policy(self.employee.id, self.leave_type.id, day, day, 1)
+            self.assertEqual(bool(result["blackout_window_id"]), expected_block, state)
+
+    def test_archived_blackout_is_hidden_from_policy_selector(self):
+        archived = self.env["hr.leave.blackout.period"].create({
+            "name": "Hidden Archived Window", "date_from": fields.Date.today(), "date_to": fields.Date.today(),
+            "state": "draft", "active": False,
+        })
+        visible = self.env["hr.leave.blackout.period"].create({
+            "name": "Visible Draft Window", "date_from": fields.Date.today(), "date_to": fields.Date.today(),
+            "state": "draft",
+        })
+        options = self.policy._options()["blackout_periods"]
+        option_ids = {item["id"] for item in options}
+        self.assertNotIn(archived.id, option_ids)
+        self.assertIn(visible.id, option_ids)
+
+    def test_blackout_csv_import_reports_invalid_rows(self):
+        result = self.env["hr.leave.blackout.period"].import_blackouts([
+            {"name": "Imported Maintenance", "date_from": "2026-11-01", "date_to": "2026-11-03", "state": "scheduled", "reason": "Imported"},
+            {"name": "", "date_from": "not-a-date", "date_to": "2026-11-04"},
+        ])
+        self.assertEqual(result["imported"], 1)
+        self.assertEqual(len(result["errors"]), 1)
+        record = self.env["hr.leave.blackout.period"].browse(result["ids"])
+        self.assertEqual(record.state, "scheduled")
+        self.assertEqual(record.reason, "Imported")
 
     def test_approval_auto_approve_must_follow_escalation(self):
         workflow_type = self.env.ref("hr_leave_dashboard.wft_leave_request")
