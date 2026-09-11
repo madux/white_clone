@@ -147,6 +147,7 @@ export class LeaveRequestDetailModal extends Component {
                 { type: "success" }
             );
             this.props.onChanged?.();
+            this.props.close();
         } catch (err) {
             this.notification.add(err.message || "Approval failed.", { type: "danger" });
         } finally {
@@ -187,6 +188,7 @@ export class LeaveRequestDetailModal extends Component {
             this.state.showRejectModal = false;
             this.notification.add("Leave request rejected.", { type: "info" });
             this.props.onChanged?.();
+            this.props.close();
         } catch (err) {
             this.notification.add(err.message || "Rejection failed.", { type: "danger" });
         } finally {
@@ -216,6 +218,7 @@ export class LeaveRequestDetailModal extends Component {
             this.state.insights = null;
             this.notification.add("Request returned to the employee for changes.", { type: "info" });
             this.props.onChanged?.();
+            this.props.close();
         } catch (err) {
             this.notification.add(err.message || "Could not request changes.", { type: "danger" });
         } finally {
@@ -257,6 +260,7 @@ export class LeaveRequestDetailModal extends Component {
             this.state.showCancelModal = false;
             this.notification.add("Approved leave cancelled and balance restored.", { type: "warning" });
             this.props.onChanged?.();
+            this.props.close();
         } catch (err) {
             this.notification.add(err.message || "Cancellation failed.", { type: "danger" });
         } finally {

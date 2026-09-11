@@ -1,3 +1,8 @@
+/* Ensure toast notifications appear above all modals and backdrops */
+.o_notification_manager {
+    z-index: 10000 !important;
+}
+
 .cleon-welcome-backdrop.leave-detail-backdrop {
     z-index: 2040 !important;
 }

@@ -2524,6 +2524,8 @@ class HrLeave(models.Model):
             raise ValidationError(_("This leave request is not awaiting approval."))
 
         inst = leave._get_pending_approval_instance()
+        if not inst:
+            raise UserError(_("Configuration Integrity Error: No active approval instance found for this pending leave request."))
 
         # Verify approver authority before checking business advisory thresholds
         current_step = inst.sudo().step_ids.filtered(lambda s: s.state == "pending")
@@ -2573,6 +2575,8 @@ class HrLeave(models.Model):
         leave.sudo().write({"rejection_reason": reason, "rejection_category": category})
 
         inst = leave._get_pending_approval_instance()
+        if not inst:
+            raise UserError(_("Configuration Integrity Error: No active approval instance found for this pending leave request."))
 
         inst.with_user(self.env.user).action_decide("reject", comment=reason)
 
@@ -2591,6 +2595,8 @@ class HrLeave(models.Model):
             raise ValidationError(_("Only a pending leave request can be returned for changes."))
 
         inst = leave._get_pending_approval_instance()
+        if not inst:
+            raise UserError(_("Configuration Integrity Error: No active approval instance found for this pending leave request."))
 
         inst.with_user(self.env.user).action_decide("request_changes", comment=comment)
 
