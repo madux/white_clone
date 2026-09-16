@@ -51,6 +51,7 @@ import {
   typeRequiresExpiry,
 } from "./uploadExpiryHelpers";
 import { formatStatusLabel } from "../../../lib/formatLabel";
+import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 import SectionTabs from "./SectionTabs";
 import PersonalDocumentTree from "./PersonalDocumentTree";
 
@@ -182,9 +183,7 @@ function DocumentTable({
                 <td className="px-5 py-4 text-sm text-slate-500">
                   {shared
                     ? document.shared_by || "Document administrator"
-                    : typeof document.write_date === "string" && document.write_date
-                      ? document.write_date.slice(0, 10)
-                      : "Required"}
+                    : formatDocumentDateShort(document.write_date, "Required")}
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center justify-end gap-2">

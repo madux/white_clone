@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useDocumentVersions } from "../../../hooks/useDocuments";
 import { documentViewHref } from "../../../lib/documentLinks";
 import type { EmployeeDocumentGroup } from "../../../lib/groupEmployeeDocuments";
+import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 import type { DocDocument } from "../../../lib/types";
 
 const baseUrl = (process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "");
@@ -108,7 +109,8 @@ function VersionHistoryRows({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-slate-600">Earlier copy</p>
             <p className="text-xs text-slate-400">
-              Uploaded {document.write_date.slice(0, 10)} · {document.document_type}
+              Uploaded {formatDocumentDateShort(document.write_date)} ·{" "}
+              {document.document_type}
             </p>
           </div>
           <span className="employee-tree-badge archived">Superseded</span>
@@ -189,23 +191,27 @@ export default function FolderDocumentTreeGroup({
         style={{ paddingLeft: `${pad - 20}px` }}
       >
         {prefix}
-        <button
-          type="button"
-          className={`employee-tree-toggle ${hasHistory ? "has-history" : ""}`}
-          onClick={onToggleExpand}
-          aria-expanded={expanded}
-          aria-label={
-            expanded
-              ? `Collapse versions of ${document.name}`
-              : `Expand versions of ${document.name}`
-          }
-        >
-          {expanded ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
-        </button>
+        {hasHistory ? (
+          <button
+            type="button"
+            className="employee-tree-toggle has-history"
+            onClick={onToggleExpand}
+            aria-expanded={expanded}
+            aria-label={
+              expanded
+                ? `Collapse versions of ${document.name}`
+                : `Expand versions of ${document.name}`
+            }
+          >
+            {expanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+        ) : (
+          <span className="employee-tree-spacer" aria-hidden />
+        )}
         <FileText className="h-4 w-4 shrink-0 text-brand-pink" />
         {onDocumentOpen ? (
           <button
@@ -231,7 +237,7 @@ export default function FolderDocumentTreeGroup({
         <small className="truncate text-slate-400">{document.document_type}</small>
         {suffix}
       </div>
-      {expanded ? (
+      {hasHistory && expanded ? (
         <VersionHistoryRows
           documentId={document.id}
           relatedDocuments={group.relatedDocuments}

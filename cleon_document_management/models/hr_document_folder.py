@@ -39,6 +39,18 @@ class DocumentFolder(models.Model):
         default="organizational",
     )
 
+    is_employee_file_v3 = fields.Boolean(
+        string="Employee File v3 storage",
+        default=False,
+        help="Hidden storage folder for a single Employee File record.",
+    )
+
+    legacy_employee_folder = fields.Boolean(
+        string="Legacy employee folder",
+        default=False,
+        help="Pre-v3 manual employee folder; hidden after Employee Files setup.",
+    )
+
     owner_id = fields.Many2one(
         "res.users",
         string="Owner",

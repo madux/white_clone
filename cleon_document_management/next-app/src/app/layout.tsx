@@ -7,7 +7,7 @@ import Sidebar from "@/app/components/Sidebar";
 import Providers from "@/app/providers";
 import "@/app/globals.css";
 import { SortableTableManager } from "@/app/components/SortableTable";
-import OnboardingGuide from "@/app/components/OnboardingGuide";
+import RoutedOnboardingGuides from "@/app/components/RoutedOnboardingGuides";
 export const metadata: Metadata = {
   title: "CLEONHR — Document Management",
   description: "Enterprise Document Management System",
@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               </main>
             </div>
           </div>
-          <OnboardingGuide />
+          <RoutedOnboardingGuides />
         </Providers>
       </body>
     </html>

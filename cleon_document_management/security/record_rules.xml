@@ -298,4 +298,30 @@
         <field name="groups" eval="[Command.link(ref('base.group_user'))]"/>
         <field name="domain_force">[('conversation_id.user_id', '=', user.id)]</field>
     </record>
+
+    <record id="rule_doc_employee_file_company" model="ir.rule">
+        <field name="name">Employee files: company</field>
+        <field name="model_id" ref="model_doc_employee_file"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_doc_employee_group_company" model="ir.rule">
+        <field name="name">Employee groups: company</field>
+        <field name="model_id" ref="model_doc_employee_group"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_doc_employee_issue_company" model="ir.rule">
+        <field name="name">Employee issues: company</field>
+        <field name="model_id" ref="model_doc_employee_issue"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_doc_employee_exclusion_company" model="ir.rule">
+        <field name="name">Employee exclusions: company</field>
+        <field name="model_id" ref="model_doc_employee_exclusion"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_doc_employee_files_config_company" model="ir.rule">
+        <field name="name">Employee files config: company</field>
+        <field name="model_id" ref="model_doc_employee_files_config"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
 </odoo>

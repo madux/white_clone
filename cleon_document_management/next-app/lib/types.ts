@@ -233,11 +233,16 @@ export interface MyCompliance {
   };
 }
 
-export interface OnboardingState {
+export interface OnboardingModuleState {
   show: boolean;
   dismissed: boolean;
   completed: boolean;
   completed_steps: string[];
+  pending_show: boolean;
+}
+
+export interface OnboardingState {
+  modules: Record<string, OnboardingModuleState>;
   is_admin: boolean;
 }
 
@@ -554,4 +559,164 @@ export interface OdooRpcResult<T = any> {
   message?: string;
   count?: number;
   data: T;
+}
+
+export interface EmployeeFilesConfig {
+  setup_complete: boolean;
+  primary_organizing_dimension: string;
+  organizing_dimensions: string[];
+  sub_organizing_dimension: string;
+  include_all_existing: boolean;
+  include_inactive: boolean;
+  exclude_test_employees: boolean;
+  collect_existing_documents: boolean;
+  group_name_display: string;
+  show_inactive_groups: boolean;
+  show_group_counts_on_cards: boolean;
+  duplicate_detection_mode: string;
+  max_file_size_mb: number;
+  allowed_file_types: string;
+  header_field_keys: string[];
+  max_issue_retry_attempts: number;
+  enable_custom_groups: boolean;
+  enable_esign: boolean;
+  esign_provider: string;
+  notification_routing_json?: string;
+  integration_mapping_json?: string;
+  category_action_matrix_json?: string;
+}
+
+export interface EmployeeFilesHomeStats {
+  setup_complete: boolean;
+  ems_employees: number;
+  configured_exclusions: number;
+  expected_employee_files: number;
+  employee_files_initialized: number;
+  successfully_synced: number;
+  processing: number;
+  needs_attention: number;
+  excluded: number;
+}
+
+export interface EmployeeFileGroup {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  group_kind: "system_managed" | "custom";
+  organizing_dimension: string;
+  dimension_value_key: string;
+  parent_group_id: number | false;
+  employee_count: number;
+  document_count: number;
+  attention_count: number;
+  read_only_membership: boolean;
+  show_on_home?: boolean;
+  member_employee_ids?: number[];
+  members?: EmployeeFileSummary[];
+}
+
+export interface EmployeeFileSummaryPage {
+  items: EmployeeFileSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface EmployeeFileSummary {
+  id: number;
+  employee_id: number;
+  employee_name: string;
+  department_id: number | false;
+  department_name: string;
+  job_title: string;
+  document_count: number;
+  attention_count: number;
+  state: string;
+  favorite: boolean;
+  storage_folder_id: number | false;
+  related_groups?: EmployeeFileGroup[];
+}
+
+export interface EmployeeFileSummaryWithGroups extends EmployeeFileSummary {
+  related_groups?: EmployeeFileGroup[];
+}
+
+export interface EmployeeFileExclusion {
+  id: number;
+  employee_id: number;
+  employee_name: string;
+  department_name: string;
+  reason: string;
+  justification: string;
+  configured_by: string;
+  recoverable: boolean;
+  date_identified: string;
+  status: string;
+}
+
+export interface EmsEmployeeOption {
+  id: number;
+  name: string;
+  department_name: string;
+  active: boolean;
+}
+
+export interface EmployeeFilesSetupPreview {
+  organizing_dimensions: string[];
+  groups_to_create: number;
+  employees_included: number;
+  documents_expected: number;
+  need_attention_expected: number;
+  excluded_total: number;
+  excluded_breakdown: Record<string, number>;
+  group_breakdown: Array<{
+    name: string;
+    employees: number;
+    documents: number;
+    excluded: number;
+  }>;
+}
+
+export interface EmployeeFilesSetupRun {
+  id: number;
+  state: string;
+  employees_found: number;
+  files_initialized: number;
+  files_fully_loaded: number;
+  documents_collected: number;
+  need_attention: number;
+  stages: Array<{
+    stage_key: string;
+    label: string;
+    total_count: number;
+    done_count: number;
+    status: string;
+  }>;
+}
+
+export interface EmployeeFileIssue {
+  id: number;
+  source?: "issue" | "exclusion";
+  name: string;
+  category: string;
+  classification?: string;
+  classification_label?: string;
+  issue_type: string;
+  details: string;
+  state: string;
+  recoverable: boolean;
+  recommended_action: string;
+  retry_count: number;
+  employee_id: number | false;
+  employee_name: string;
+  employee_file_id: number | false;
+  document_id: number | false;
+  date_identified?: string;
+}
+
+export interface EmployeeFileDimensionOption {
+  key: string;
+  label: string;
+  populated: boolean;
 }

@@ -6,3 +6,4 @@ from . import folder_actions
 from . import document_actions
 from . import intelligence
 from . import roles
+from . import employee_files

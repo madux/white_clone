@@ -5,6 +5,7 @@ import {
   useDeleteDocumentVersion,
   useDocumentAction,
 } from "../../../hooks/useDocuments";
+import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 import type { EmployeeDocumentGroup } from "../../../lib/groupEmployeeDocuments";
 import { approvalDisplayLabel, canReviewDocument } from "../../../lib/approvalHelpers";
 import type { DocDocument } from "../../../lib/types";
@@ -128,7 +129,7 @@ function ProfileDocumentRow({
         {document.expiry_date ?? "No expiry"}
       </small>
       <small className="hidden shrink-0 text-slate-400 md:inline">
-        {document.write_date.slice(0, 10)}
+        {formatDocumentDateShort(document.write_date)}
       </small>
       <DocumentRowActions
         document={document}
@@ -222,7 +223,7 @@ export default function EmployeeProfileDocumentTree({
                   {document.expiry_date ?? "No expiry"}
                 </small>
                 <small className="hidden shrink-0 text-slate-400 md:inline">
-                  {document.write_date.slice(0, 10)}
+                  {formatDocumentDateShort(document.write_date)}
                 </small>
                 <DocumentRowActions
                   document={document}

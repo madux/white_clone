@@ -12,6 +12,7 @@ import {
 import { useDocumentVersions } from "../../../hooks/useDocuments";
 import type { DocDocument } from "../../../lib/types";
 import { approvalDisplayLabel, canReviewDocument } from "../../../lib/approvalHelpers";
+import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 import DocumentActions from "./DocumentActions";
 
 const baseUrl = (process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "");
@@ -119,7 +120,7 @@ function DocumentHistoryRows({
           <td className="w-12 px-5 py-3" />
           <TreeChildCell
             title="Earlier copy"
-            subtitle={`Uploaded ${document.write_date.slice(0, 10)}`}
+            subtitle={`Uploaded ${formatDocumentDateShort(document.write_date)}`}
           />
           <td className="px-5 py-3 text-sm text-slate-400">
             {document.document_type}
@@ -133,7 +134,7 @@ function DocumentHistoryRows({
             {document.expiry_date ?? "—"}
           </td>
           <td className="px-5 py-3 text-sm text-slate-500">
-            {document.write_date.slice(0, 10)}
+            {formatDocumentDateShort(document.write_date)}
           </td>
           <td className="px-5 py-3 text-right">
             <button
@@ -281,7 +282,7 @@ export default function EmployeeDocumentTreeRow({
           {document.expiry_date ?? "No expiry"}
         </td>
         <td className="px-5 py-4 text-sm text-slate-500">
-          {document.write_date.slice(0, 10)}
+          {formatDocumentDateShort(document.write_date)}
         </td>
         <td className="px-5 py-4 text-right">
           <div className="flex items-center justify-end gap-2">

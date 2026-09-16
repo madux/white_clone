@@ -29,11 +29,17 @@ import {
   useToggleSettingsDocumentType,
   useUpdateOnboarding,
   useCurrentUser,
+  useOnboarding,
 } from "../../../hooks/useDocuments";
 import ThemedSelect from "./ThemedSelect";
 import ModalDialog from "./ModalDialog";
 import RolesPage from "./RolesPage";
-
+import EmployeeFilesSettingsPanel from "./EmployeeFilesSettingsPanel";
+import {
+  ONBOARDING_MODULE_META,
+  ONBOARDING_MODULE_ORDER,
+  type OnboardingModuleId,
+} from "../../../lib/onboardingModules";
 const categories = [
   ["hr", "Human Resources"],
   ["finance", "Finance"],
@@ -80,6 +86,13 @@ const sections = [
     shortLabel: "Help",
     description: "Restart the guided introduction for your workspace.",
     icon: CircleHelp,
+  },
+  {
+    id: "employee_files",
+    label: "Employee Files",
+    shortLabel: "EF v3",
+    description: "EMS grouping, upload rules, and error handling.",
+    icon: FolderCog,
   },
 ] as const;
 
@@ -178,6 +191,9 @@ export default function SettingsPage() {
     if (requestedSection === "roles" && currentUser.data?.is_admin) {
       setSection("roles");
     }
+    if (requestedSection === "employee_files") {
+      setSection("employee_files");
+    }
   }, [requestedSection, currentUser.data?.is_admin]);
 
   const values = settings ?? query.data?.settings ?? fallbackSettings;
@@ -271,6 +287,8 @@ export default function SettingsPage() {
     }
   };
 
+  const isDocAdmin = currentUser.data?.is_document_admin === true;
+
   return (
     <div className="min-h-full bg-[#f7f8fc] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1320px]">
@@ -350,17 +368,28 @@ export default function SettingsPage() {
                 toggle={(id: number) => toggleType.mutate(id)}
                 loading={toggleType.isPending}
               />
+            ) : section === "employee_files" ? (
+              <EmployeeFilesSettingsPanel />
             ) : section === "roles" ? (
               <RolesPage embedded />
             ) : section === "onboarding" ? (
               <OnboardingPanel
-                reset={async () => {
+                resetModule={async (moduleId: OnboardingModuleId) => {
                   try {
-                    await updateOnboarding.mutateAsync({ action: "reset" });
-                    setNotice({ message: "Getting started guide restarted." });
+                    await updateOnboarding.mutateAsync({
+                      action: "reset",
+                      module: moduleId,
+                    });
+                    await updateOnboarding.mutateAsync({
+                      action: "arm",
+                      module: moduleId,
+                    });
+                    setNotice({
+                      message: `${ONBOARDING_MODULE_META[moduleId].label} guide restarted.`,
+                    });
                   } catch {
                     setNotice({
-                      message: "The getting started guide could not be restarted.",
+                      message: "The guide could not be restarted.",
                       error: true,
                     });
                   }
@@ -961,38 +990,69 @@ function LifecyclePanel({ values, update }: any) {
   );
 }
 
-function OnboardingPanel({ reset, resetting }: { reset: () => void; resetting: boolean }) {
+function OnboardingPanel({
+  resetModule,
+  resetting,
+}: {
+  resetModule: (moduleId: OnboardingModuleId) => void;
+  resetting: boolean;
+}) {
+  const onboarding = useOnboarding();
+  const isAdmin = onboarding.data?.is_admin;
+
+  const modules = ONBOARDING_MODULE_ORDER.filter((moduleId) => {
+    if (moduleId === "workspace") return true;
+    if (moduleId === "employee_files") return isAdmin;
+    return isAdmin;
+  });
+
   return (
-    <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-      <div className="rounded-2xl border border-pink-100 bg-gradient-to-br from-pink-50/80 to-white p-6">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-brand-pink shadow-sm">
-          <CircleHelp className="h-5 w-5" />
-        </div>
-        <h4 className="mt-5 text-lg font-bold tracking-tight text-slate-900">
-          Getting started guide
-        </h4>
-        <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500">
-          Reopen the guided introduction to review the everyday user workflow and the administrator setup steps. Restarting it does not change any documents, folders, or workspace settings.
+    <section className="space-y-5">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+        <h4 className="text-sm font-bold text-slate-900">Module guides</h4>
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          Each area of Document Management has its own guide. They appear when you enter that
+          module—or after Employee Files setup completes—and can be restarted here.
         </p>
-        <button
-          type="button"
-          onClick={reset}
-          disabled={resetting}
-          className="mt-6 inline-flex items-center gap-2 !rounded-xl bg-gradient-to-r from-brand-text to-brand-pink px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_18px_rgba(232,62,140,0.18)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <RotateCcw className="h-4 w-4" />
-          {resetting ? "Restarting…" : "Restart guide"}
-        </button>
       </div>
-      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-6">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-          How it works
-        </p>
-        <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
-          <p><strong className="text-slate-800">Shown once:</strong> New users see it after their first login.</p>
-          <p><strong className="text-slate-800">Role-aware:</strong> Administrators see both user and admin setup steps.</p>
-          <p><strong className="text-slate-800">Per user:</strong> Dismissing it on one device keeps it dismissed everywhere.</p>
-        </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {modules.map((moduleId) => {
+          const meta = ONBOARDING_MODULE_META[moduleId];
+          const mod = onboarding.data?.modules?.[moduleId];
+          const done = mod?.completed;
+          const dismissed = mod?.dismissed;
+          const status = done
+            ? "Completed"
+            : dismissed
+              ? "Dismissed"
+              : mod?.show
+                ? "In progress"
+                : "Not started";
+          return (
+            <div
+              key={moduleId}
+              className="rounded-2xl border border-slate-200 bg-white p-5"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-brand-pink">
+                <CircleHelp className="h-5 w-5" />
+              </div>
+              <h4 className="mt-4 text-sm font-bold text-slate-900">{meta.label}</h4>
+              <p className="mt-1 text-xs leading-5 text-slate-500">{meta.subtitle}</p>
+              <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                {status}
+              </p>
+              <button
+                type="button"
+                onClick={() => resetModule(moduleId)}
+                disabled={resetting}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:border-pink-200 hover:bg-pink-50/40 disabled:opacity-50"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Restart guide
+              </button>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

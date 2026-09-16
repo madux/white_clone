@@ -111,16 +111,27 @@ class HrEmployee(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         employees = super().create(vals_list)
+        service = self.env["doc.employee.files.service"]
+        config = self.env["doc.employee.files.config"].get_for_company()
         for employee in employees:
-            self.env["doc.folder"].link_employee_to_department_folder(employee)
+            if config.setup_complete:
+                service._ensure_employee_file(employee)
+            else:
+                self.env["doc.folder"].link_employee_to_department_folder(employee)
         self.env["doc.compliance.policy"]._trigger_lifecycle_event(employees, "onboarding")
         return employees
 
     def write(self, vals):
         result = super().write(vals)
-        if "department_id" in vals:
+        service = self.env["doc.employee.files.service"]
+        config = self.env["doc.employee.files.config"].get_for_company()
+        if config.setup_complete:
+            for employee in self:
+                service.on_employee_changed(employee, vals)
+        elif "department_id" in vals:
             for employee in self:
                 self.env["doc.folder"].link_employee_to_department_folder(employee)
+        if "department_id" in vals:
             self.env["doc.compliance.policy"]._trigger_lifecycle_event(self, "department_transfer")
         if "job_id" in vals:
             self.env["doc.compliance.policy"]._trigger_lifecycle_event(self, "promotion")

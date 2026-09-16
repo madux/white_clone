@@ -44,6 +44,8 @@ import {
 } from "./uploadExpiryHelpers";
 import { canReviewDocument } from "../../../lib/approvalHelpers";
 import { groupEmployeeDocuments } from "../../../lib/groupEmployeeDocuments";
+import SectionTabs from "./SectionTabs";
+import { useEmployeeFileSummary } from "../../../hooks/useEmployeeFiles";
 
 export default function EmployeeProfilePage() {
   const params = useSearchParams();
@@ -60,6 +62,9 @@ export default function EmployeeProfilePage() {
   const [viewing, setViewing] = useState<any>(null);
   const [rejecting, setRejecting] = useState<any>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [profileTab, setProfileTab] = useState<
+    "overview" | "documents" | "compliance" | "activity" | "groups"
+  >("documents");
   const [reviewError, setReviewError] = useState("");
   const [duplicateWarning, setDuplicateWarning] = useState<{
     matches: UploadDuplicateMatch[];
@@ -83,6 +88,8 @@ export default function EmployeeProfilePage() {
   const employeeRecord = targets.data?.employees.find(
     (item) => item.id === employeeId,
   );
+  const employeeFileSummary = useEmployeeFileSummary(employeeId);
+  const relatedGroups = employeeFileSummary.data?.related_groups ?? [];
   const approved = employeeDocuments.filter(
     (document) => document.approval_state === "approved",
   ).length;
@@ -325,16 +332,24 @@ export default function EmployeeProfilePage() {
             </button>
           </div>
         </div>
-        <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
-          <span className="rounded-xl bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
-            Overview
-          </span>
-          <span className="text-sm font-semibold text-slate-400">
-            {complianceScore === null ? "Compliance not evaluated" : `${complianceScore}% compliant`}
-          </span>
+        <div className="mt-6 border-t border-slate-100 pt-5">
+          <SectionTabs
+            items={[
+              { id: "overview", label: "Overview" },
+              { id: "documents", label: "Documents" },
+              { id: "compliance", label: "Compliance" },
+              { id: "activity", label: "Activity" },
+              { id: "groups", label: "Related groups" },
+            ]}
+            value={profileTab}
+            onChange={setProfileTab}
+            ariaLabel="Employee file sections"
+          />
         </div>
       </section>
-      <div className="grid gap-4 sm:grid-cols-3">
+      {profileTab === "overview" ? (
+        <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl bg-gradient-to-br from-brand-text to-brand-pink p-5 text-white shadow-lg shadow-pink-200">
           <p className="text-sm text-white/80">Total documents</p>
           <p className="mt-3 text-3xl font-bold">{employeeDocuments.length}</p>
@@ -356,7 +371,17 @@ export default function EmployeeProfilePage() {
             Classified categories
           </p>
         </div>
-      </div>
+        </div>
+        <p className="text-sm text-slate-500">
+          Policy evaluations (informational):{" "}
+          {complianceScore === null
+            ? "Not evaluated"
+            : `${complianceScore}% · ${complianceState}`}
+        </p>
+        </div>
+      ) : null}
+      {profileTab === "documents" ? (
+        <>
       <DocumentFilterBar
         filters={filters}
         onChange={setFilters}
@@ -400,12 +425,67 @@ export default function EmployeeProfilePage() {
             showReviewActions={Boolean(currentUser.data?.is_document_manager)}
             isDocumentManager={Boolean(currentUser.data?.is_document_manager)}
           />
+        ) : filteredEmployeeDocuments.length < employeeDocuments.length ? (
+          <p className="p-10 text-center text-sm text-slate-500">
+            No documents match the current filters.
+            <button
+              type="button"
+              onClick={() => setFilters(INITIAL_FILTER_STATE)}
+              className="mt-2 block w-full text-sm font-semibold text-brand-pink hover:underline"
+            >
+              Clear filters
+            </button>
+          </p>
         ) : (
           <p className="p-10 text-center text-sm text-slate-500">
-            No documents found for this filter.
+            No documents uploaded for this employee yet.
           </p>
         )}
       </section>
+        </>
+      ) : null}
+      {profileTab === "compliance" ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6">
+          <p className="text-sm text-slate-600">
+            Compliance status:{" "}
+            {complianceScore === null
+              ? "Not evaluated"
+              : `${complianceScore}% · ${complianceState}`}
+          </p>
+          <ul className="mt-4 space-y-2 text-sm text-slate-700">
+            {currentEvaluations.map((evaluation) => (
+              <li key={evaluation.id} className="flex justify-between gap-4 border-b border-slate-100 pb-2">
+                <span>{evaluation.policy_name}</span>
+                <span className="font-medium">{evaluation.status}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {profileTab === "activity" ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
+          Activity for this employee file is recorded in the workspace audit trail and document history.
+          Open documents to view version history and approval events.
+        </section>
+      ) : null}
+      {profileTab === "groups" ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6">
+          {relatedGroups.length ? (
+            <ul className="space-y-2 text-sm">
+              {relatedGroups.map((group) => (
+                <li key={group.id} className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <span className="font-medium text-slate-900">{group.name}</span>
+                  <span className="text-xs text-slate-500">
+                    {group.group_kind === "system_managed" ? "System-managed" : "Custom"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-slate-500">No related groups yet.</p>
+          )}
+        </section>
+      ) : null}
       {showUpload && (
         <ModalDialog
           title="Upload documents"

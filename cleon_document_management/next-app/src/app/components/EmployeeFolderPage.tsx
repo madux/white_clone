@@ -13,7 +13,10 @@ import {
   useRemoveEmployeesFromFolder,
 } from "../../../hooks/useDocuments";
 import { api } from "../../../lib/api";
-import { INITIAL_EMPLOYEE_FILE_FILTERS } from "../../../lib/employeeFileFilters";
+import {
+  INITIAL_EMPLOYEE_FILE_FILTERS,
+  countActiveEmployeeFilters,
+} from "../../../lib/employeeFileFilters";
 import { groupEmployeesInFolder } from "../../../lib/groupEmployeesInFolder";
 import type { ComplianceTargets, DocFolder } from "../../../lib/types";
 import MoveEmployeesDialog from "./MoveEmployeesDialog";
@@ -22,6 +25,8 @@ import BackButton from "./BackButton";
 import EmployeeFilterPanel from "./EmployeeFilterPanel";
 import FolderEmployeeFileTree from "./FolderEmployeeFileTree";
 import ListPagination from "./ListPagination";
+import { useEmployeeFilesConfig } from "../../../hooks/useEmployeeFiles";
+import { useRouter } from "next/navigation";
 
 const EMPLOYEE_PAGE_SIZE = 10;
 
@@ -34,7 +39,15 @@ type EmployeeConflict = {
 
 export default function EmployeeFolderPage() {
   const params = useSearchParams();
+  const router = useRouter();
+  const employeeFilesConfig = useEmployeeFilesConfig();
   const folderId = Number(params.get("folder"));
+
+  useEffect(() => {
+    if (employeeFilesConfig.data?.setup_complete) {
+      router.replace("/pages/employee");
+    }
+  }, [employeeFilesConfig.data?.setup_complete, router]);
   const folders = useFolders();
   const documents = useDocuments(folderId || undefined);
   const targets = useComplianceTargets();
@@ -68,6 +81,19 @@ export default function EmployeeFolderPage() {
     const start = (employeePage - 1) * EMPLOYEE_PAGE_SIZE;
     return employees.slice(start, start + EMPLOYEE_PAGE_SIZE);
   }, [employeePage, employees]);
+
+  const employeeTreeEmptyMessage = useMemo(() => {
+    const hasFilters =
+      employeeFilters.search.trim().length > 0 ||
+      countActiveEmployeeFilters(employeeFilters) > 0;
+    if (hasFilters) {
+      return "No employees match the current filters.";
+    }
+    if ((folder?.employee_ids?.length ?? 0) === 0) {
+      return "No employees in this folder yet. Use Add employee to assign people to this folder.";
+    }
+    return "No employees to display.";
+  }, [employeeFilters, folder?.employee_ids?.length]);
 
   const treeRows = useMemo(
     () =>
@@ -178,7 +204,7 @@ export default function EmployeeFolderPage() {
             isDocumentManager={currentUser.data?.is_document_manager === true}
             singleFolderExpanded
             showFolderOpenLink={false}
-            emptyMessage="No employees match the current filters."
+            emptyMessage={employeeTreeEmptyMessage}
           />
         ) : null}
         {folder && employees.length > EMPLOYEE_PAGE_SIZE ? (

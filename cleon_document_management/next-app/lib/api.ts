@@ -488,7 +488,8 @@ export const api = {
     rpc<{ success: boolean; data: OnboardingState }>("/api/onboarding", {}),
 
   updateOnboarding: (payload: {
-    action: "complete_step" | "complete" | "dismiss" | "reset";
+    action: "complete_step" | "complete" | "dismiss" | "reset" | "arm";
+    module?: string;
     step_id?: string;
   }) =>
     rpc<{ success: boolean; data: OnboardingState; message?: string }>(
@@ -760,6 +761,185 @@ export const api = {
         assignments,
       },
     ).then((result) => result.data),
+
+  getEmployeeFilesConfig: () =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesConfig }>(
+      "/api/employee-files/config",
+    ).then((r) => r.data),
+
+  saveEmployeeFilesConfig: (payload: Record<string, unknown>) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesConfig }>(
+      "/api/employee-files/config/save",
+      payload,
+    ).then((r) => r.data),
+
+  getEmployeeFilesDimensions: () =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFileDimensionOption[];
+    }>("/api/employee-files/dimensions").then((r) => r.data),
+
+  listEmployeeFileExclusions: (reason?: string) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileExclusion[] }>(
+      "/api/employee-files/exclusions",
+      reason ? { reason } : {},
+    ).then((r) => r.data),
+
+  addEmployeeFileExclusions: (employeeIds: number[], justification?: string) =>
+    rpc<{ success: boolean; ids: number[] }>("/api/employee-files/exclusions/add", {
+      employee_ids: employeeIds,
+      justification,
+    }),
+
+  removeEmployeeFileExclusion: (id: number) =>
+    rpc<{ success: boolean }>("/api/employee-files/exclusions/remove", { id }),
+
+  listEmsEmployees: (search?: string, limit = 200) =>
+    rpc<{ success: boolean; data: import("./types").EmsEmployeeOption[] }>(
+      "/api/employee-files/ems-employees",
+      { search, limit },
+    ).then((r) => r.data),
+
+  previewEmployeeFilesSetup: (payload: Record<string, unknown>) =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFilesSetupPreview;
+    }>("/api/employee-files/setup/preview", payload).then((r) => r.data),
+
+  confirmEmployeeFilesSetup: (payload: Record<string, unknown>) =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFilesSetupRun;
+    }>("/api/employee-files/setup/confirm", payload).then((r) => r.data),
+
+  getEmployeeFilesSetupStatus: (runId?: number) =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFilesSetupRun | null;
+    }>("/api/employee-files/setup/status", runId ? { run_id: runId } : {}).then(
+      (r) => r.data,
+    ),
+
+  getEmployeeFilesHomeStats: () =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesHomeStats }>(
+      "/api/employee-files/home/stats",
+    ).then((r) => r.data),
+
+  listEmployeeFileGroups: (params: {
+    group_kind?: string;
+    dimension?: string;
+    search?: string;
+    for_home?: boolean;
+    include_all_custom?: boolean;
+  }) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup[] }>(
+      "/api/employee-files/groups",
+      params,
+    ).then((r) => r.data),
+
+  updateEmployeeFileGroup: (payload: {
+    id: number;
+    name?: string;
+    description?: string;
+    show_on_home?: boolean;
+  }) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup }>(
+      "/api/employee-files/group/update",
+      payload,
+    ).then((r) => r.data),
+
+  getEmployeeFileGroup: (id: number) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup }>(
+      "/api/employee-files/group",
+      { id },
+    ).then((r) => r.data),
+
+  listEmployeeFileSummaries: (params?: {
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileSummaryPage }>(
+      "/api/employee-files/employee-files",
+      params ?? {},
+    ).then((r) => r.data),
+
+  listEmployeeGroupMembers: (
+    groupId: number,
+    params?: { search?: string; limit?: number; offset?: number },
+  ) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileSummaryPage }>(
+      "/api/employee-files/group/members",
+      { id: groupId, ...(params ?? {}) },
+    ).then((r) => r.data),
+
+  getEmployeeFileSummary: (employeeId: number) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileSummary }>(
+      "/api/employee-files/employee-file",
+      { employee_id: employeeId },
+    ).then((r) => r.data),
+
+  listEmployeeFileIssues: (
+    category = "all",
+    params?: { limit?: number; offset?: number },
+  ) =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFileIssue[];
+      total: number;
+      limit: number;
+      offset: number;
+      summary: { total: number; categories: Array<{ category: string; label: string; count: number }> };
+    }>("/api/employee-files/issues", { category, ...(params ?? {}) }).then((r) => r),
+
+  employeeFileIssueAction: (id: number, action?: string) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileIssue }>(
+      "/api/employee-files/issues/action",
+      { id, action },
+    ).then((r) => r.data),
+
+  downloadEmployeeFileIssuesReport: () =>
+    triggerDownload("/api/employee-files/issues/export"),
+
+  createCustomEmployeeGroup: (payload: {
+    name: string;
+    description?: string;
+    icon?: string;
+  }) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup }>(
+      "/api/employee-files/group/create",
+      payload,
+    ).then((r) => r.data),
+
+  addEmployeeFilesToGroup: (groupId: number, employeeFileIds: number[]) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup }>(
+      "/api/employee-files/group/add-members",
+      { id: groupId, employee_file_ids: employeeFileIds },
+    ).then((r) => r.data),
+
+  employeeFilesGlobalSearch: (query: string, scope = "all") =>
+    rpc<{
+      success: boolean;
+      data: { employees: import("./types").EmployeeFileSummary[]; documents: any[] };
+    }>("/api/employee-files/search", { query, scope }).then((r) => r.data),
+
+  toggleEmployeeFileFavorite: (id: number) =>
+    rpc<{ success: boolean; favorite: boolean }>(
+      "/api/employee-files/favorite",
+      { id },
+    ).then((r) => r.favorite),
+
+  reclassifyEmployeeDocument: (documentId: number, documentTypeId: number) =>
+    rpc<{ success: boolean }>("/api/employee-files/document/reclassify", {
+      document_id: documentId,
+      document_type_id: documentTypeId,
+    }),
+
+  requestDocumentSignature: (documentId: number, signerEmployeeId: number) =>
+    rpc<{ success: boolean; data: { id: number; state: string } }>(
+      "/api/employee-files/signature/request",
+      { document_id: documentId, signer_employee_id: signerEmployeeId },
+    ).then((r) => r.data),
 };
 
 function triggerDownload(url: string) {

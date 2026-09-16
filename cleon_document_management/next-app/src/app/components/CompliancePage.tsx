@@ -9,6 +9,7 @@ import {
   Search,
   ShieldCheck,
   RotateCcw,
+  ToggleLeft,
   Trash2,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
@@ -434,8 +435,9 @@ export default function CompliancePage() {
                   }
                   setSelectedExceptionIds([]);
                 }}
-                className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-slate-700"
               >
+                <ToggleLeft className="h-3.5 w-3.5" />
                 Deactivate
               </button>
               <button
@@ -676,7 +678,7 @@ function ExceptionActions({ exception }: { exception: any }) {
   };
   return <div className="flex flex-wrap items-center justify-end gap-1">
     {exception.status === "draft" && <><button type="button" onClick={() => approve.mutateAsync(exception.id)} disabled={approve.isPending} className="row-action text-emerald-600" title="Approve exception" aria-label="Approve exception"><ShieldCheck /></button><button type="button" onClick={() => reject.mutateAsync(exception.id)} disabled={reject.isPending} className="row-action danger" title="Reject exception" aria-label="Reject exception"><Ban /></button></>}
-    <button type="button" onClick={toggle} disabled={deactivate.isPending || reactivate.isPending} className="row-action" title={active ? "Deactivate exception" : "Reactivate exception"}>{active ? <Ban /> : <RotateCcw />}</button>
+    <button type="button" onClick={toggle} disabled={deactivate.isPending || reactivate.isPending} className="row-action" title={active ? "Deactivate exception" : "Reactivate exception"} aria-label={active ? "Deactivate exception" : "Reactivate exception"}>{active ? <ToggleLeft /> : <RotateCcw />}</button>
     <button type="button" onClick={deleteException} disabled={remove.isPending} className="row-action danger" title="Delete exception"><Trash2 /></button>
   </div>;
 }

@@ -48,7 +48,6 @@ export default function Sidebar() {
 
   const coreLinks: Links[] = [
     { name: "Dashboard", link: "/pages/dashboard", icon: LayoutDashboard },
-    { name: "Activity", link: "/pages/activity", icon: Activity },
     { name: "Employee Files", link: "/pages/employee", icon: Users },
     {
       name: "Organizational Files",
@@ -60,6 +59,8 @@ export default function Sidebar() {
       link: "/pages/pending-uploads",
       icon: Clock3,
     },
+    { name: "Activity", link: "/pages/activity", icon: Activity },
+
   ];
 
   const intelligenceLinks: Links[] = [

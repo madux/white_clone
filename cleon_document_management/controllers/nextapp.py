@@ -9,6 +9,7 @@ from odoo.tools.misc import file_path
 
 from .access import user_is_document_admin, user_is_document_manager
 from .main import _expiring_documents_domain, _serialize_expiring_document
+from .onboarding_state import ONBOARDING_STEPS, serialize_for_api, update_state
 
 _logger = logging.getLogger(__name__)
 
@@ -26,21 +27,6 @@ NEXTAPP_ASSET_EXT = {
     ".woff2",
     ".ttf",
 }
-ONBOARDING_STEPS = {
-    "workspace",
-    "upload",
-    "approval",
-    "shared",
-    "search",
-    "document-types",
-    "approval-workflow",
-    "folders",
-    "sharing",
-    "organizational-upload",
-    "approval-inbox",
-}
-
-
 class NextAppController(http.Controller):
     """
     Serves Next.js frontend mounted at /document-management.
@@ -308,19 +294,13 @@ class NextAppController(http.Controller):
     @http.route("/api/onboarding", type="json", auth="user", methods=["POST"], csrf=False)
     def api_onboarding(self, **kwargs):
         user = request.env.user.sudo()
-        state = user.document_onboarding_state or {}
-        completed_steps = [
-            step for step in state.get("completed_steps", []) if step in ONBOARDING_STEPS
-        ]
         return {
             "success": True,
-            "data": {
-                "show": not state.get("dismissed") and not state.get("completed"),
-                "dismissed": bool(state.get("dismissed")),
-                "completed": bool(state.get("completed")),
-                "completed_steps": completed_steps,
-                "is_admin": user_is_document_manager(user),
-            },
+            "data": serialize_for_api(
+                user.document_onboarding_state,
+                user_is_document_manager(user),
+                env=request.env,
+            ),
         }
 
     @http.route(
@@ -330,36 +310,27 @@ class NextAppController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def api_update_onboarding(self, action=None, step_id=None, **kwargs):
+    def api_update_onboarding(self, action=None, step_id=None, module=None, **kwargs):
         user = request.env.user.sudo()
-        state = dict(user.document_onboarding_state or {})
-        completed_steps = [
-            step for step in state.get("completed_steps", []) if step in ONBOARDING_STEPS
-        ]
-
-        if action == "complete_step" and step_id in ONBOARDING_STEPS:
-            if step_id not in completed_steps:
-                completed_steps.append(step_id)
-            state.update({"completed_steps": completed_steps, "dismissed": False})
-        elif action == "complete":
-            state.update({"completed_steps": completed_steps, "completed": True})
-        elif action == "dismiss":
-            state.update({"completed_steps": completed_steps, "dismissed": True})
-        elif action == "reset":
-            state = {"completed_steps": [], "dismissed": False, "completed": False}
-        else:
+        module_id = module or kwargs.get("module_id")
+        if action not in ("complete_step", "complete", "dismiss", "reset", "arm"):
             return {"success": False, "message": "Unsupported onboarding action."}
+        if action == "complete_step" and step_id not in ONBOARDING_STEPS:
+            return {"success": False, "message": "Unknown onboarding step."}
 
+        state = update_state(
+            user.document_onboarding_state,
+            action,
+            module_id=module_id,
+            step_id=step_id,
+            env=request.env,
+        )
         user.document_onboarding_state = state
         return {
             "success": True,
-            "data": {
-                "show": not state.get("dismissed") and not state.get("completed"),
-                "dismissed": bool(state.get("dismissed")),
-                "completed": bool(state.get("completed")),
-                "completed_steps": state.get("completed_steps", []),
-                "is_admin": user_is_document_manager(user),
-            },
+            "data": serialize_for_api(
+                state, user_is_document_manager(user), env=request.env
+            ),
         }
 
     @http.route(

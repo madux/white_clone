@@ -20,6 +20,15 @@ cd cleon_document_management/next-app
 npm install
 ```
 
+## QA (Employee Files v3 spec)
+
+Routine testing uses **baseline B only** (current folder-based DMS). See:
+
+- [`docs/EMPLOYEE_FILES_QA_BASELINE.md`](../docs/EMPLOYEE_FILES_QA_BASELINE.md) — scope and gap prioritization
+- [`docs/EMPLOYEE_FILES_QA_TEST_MATRIX.md`](../docs/EMPLOYEE_FILES_QA_TEST_MATRIX.md) — traceability matrix and **release smoke** (steps 1–9)
+
+**Out of scope:** Document Intelligence; **Compliance** (policies/runs/My Compliance) until a separate Compliance QA document is added.
+
 ## Build and deploy into Odoo
 
 Run this from `next-app`:

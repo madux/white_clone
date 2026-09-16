@@ -25,6 +25,7 @@ import {
   useFolders,
   useWorkspaceActivity,
 } from "../../../hooks/useDocuments";
+import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 
 function LoadingBlock({ className = "" }: { className?: string }) {
   return (
@@ -56,6 +57,29 @@ function formatActivityWhen(value: string) {
   }).format(new Date(String(value).replace(" ", "T")));
 }
 
+type ApprovalRingSegment = {
+  label: string;
+  count: number;
+  color: string;
+  dotClass: string;
+};
+
+function buildApprovalRingGradient(
+  segments: ApprovalRingSegment[],
+  total: number,
+): string {
+  if (!total) return "#f1f5f9";
+  let cursor = 0;
+  const stops: string[] = [];
+  for (const segment of segments) {
+    if (!segment.count) continue;
+    const start = cursor;
+    cursor += (segment.count / total) * 100;
+    stops.push(`${segment.color} ${start}% ${cursor}%`);
+  }
+  return stops.length ? `conic-gradient(${stops.join(", ")})` : "#f1f5f9";
+}
+
 const statusStyles = {
   approved: "bg-pink-50 text-brand-pink",
   processing: "bg-amber-50 text-amber-700",
@@ -72,12 +96,55 @@ export default function Dashboard() {
   const workspaceActivity = useWorkspaceActivity();
   const dataError = stats.error || folders.error || documents.error;
   const documentRows = documents.data ?? [];
-  const approvedDocuments = documentRows.filter(
+  const totalDocuments = documentRows.length;
+  const approvedCount = documentRows.filter(
     (document) => document.state === "approved",
   ).length;
-  const approvalProgress = documentRows.length
-    ? Math.round((approvedDocuments / documentRows.length) * 100)
+  const inReviewCount = documentRows.filter(
+    (document) => document.state === "processing",
+  ).length;
+  const draftCount = documentRows.filter(
+    (document) => document.state === "draft",
+  ).length;
+  const issueCount = documentRows.filter(
+    (document) =>
+      document.state === "rejected" ||
+      document.state === "expired" ||
+      document.state === "missing",
+  ).length;
+  const approvalProgress = totalDocuments
+    ? Math.round((approvedCount / totalDocuments) * 100)
     : 0;
+  const approvalRingSegments: ApprovalRingSegment[] = [
+    {
+      label: "Approved",
+      count: approvedCount,
+      color: "#e83e8c",
+      dotClass: "bg-brand-pink",
+    },
+    {
+      label: "In review",
+      count: inReviewCount,
+      color: "#f3a6c5",
+      dotClass: "bg-pink-400",
+    },
+    {
+      label: "Draft",
+      count: draftCount,
+      color: "#f7d9e5",
+      dotClass: "bg-pink-100",
+    },
+    {
+      label: "Rejected / expired",
+      count: issueCount,
+      color: "#f5d0e2",
+      dotClass: "bg-pink-200",
+    },
+  ].filter((segment) => segment.count > 0);
+  const approvalRingGradient = buildApprovalRingGradient(
+    approvalRingSegments,
+    totalDocuments,
+  );
   const statusMetrics = [
     {
       label: "Approved",
@@ -120,7 +187,6 @@ export default function Dashboard() {
           return [0, step, step * 2, step * 3, top];
         })();
   const chartScaleMax = yTicks[yTicks.length - 1] || 1;
-  const totalDocuments = documentRows.length;
   const statCards: Array<{
     label: string;
     value: number | undefined;
@@ -512,7 +578,7 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <span className="ml-auto text-[10px] text-slate-400">
-                    {document.created_at.slice(0, 10)}
+                    {formatDocumentDateShort(document.created_at)}
                   </span>
                 </div>
               );
@@ -526,10 +592,10 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-                Compliance
+                Documents
               </p>
               <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Approval progress
+                Approval status
               </h2>
             </div>
             <ShieldCheck className="h-5 w-5 text-brand-pink" />
@@ -537,9 +603,7 @@ export default function Dashboard() {
           <div className="mt-6 flex items-center justify-center">
             <div
               className="relative flex h-44 w-44 items-center justify-center rounded-full"
-              style={{
-                background: `conic-gradient(#e83e8c 0 ${approvalProgress}%, #f3a6c5 ${approvalProgress}% 82%, #f7d9e5 82% 100%)`,
-              }}
+              style={{ background: approvalRingGradient }}
             >
               <div className="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-white">
                 <span className="text-4xl font-semibold tracking-[-0.06em] text-slate-950">
@@ -549,19 +613,22 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="mt-5 flex justify-center gap-4 text-[10px] font-semibold text-slate-500">
-            <span className="flex items-center gap-1.5">
-              <i className="h-2 w-2 rounded-full bg-brand-pink" />
-              Approved
-            </span>
-            <span className="flex items-center gap-1.5">
-              <i className="h-2 w-2 rounded-full bg-pink-300" />
-              Review
-            </span>
-            <span className="flex items-center gap-1.5">
-              <i className="h-2 w-2 rounded-full bg-pink-100" />
-              Pending
-            </span>
+          <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] font-semibold text-slate-500">
+            {approvalRingSegments.length ? (
+              approvalRingSegments.map((segment) => (
+                <span
+                  key={segment.label}
+                  className="flex items-center gap-1.5"
+                >
+                  <i
+                    className={`h-2 w-2 rounded-full ${segment.dotClass}`}
+                  />
+                  {segment.label} ({segment.count})
+                </span>
+              ))
+            ) : (
+              <span className="text-slate-400">No documents yet</span>
+            )}
           </div>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -33,6 +33,7 @@ import {
   findFolderUploadDuplicates,
 } from "../../../lib/uploadDuplicates";
 import type { UploadDuplicateMatch } from "../../../lib/types";
+import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 
 import DocumentFilterBar, {
   FilterState,
@@ -315,7 +316,7 @@ export default function OrganizationFolderPage() {
                                 {document.created_at?.slice(0, 10) || "Unknown"}
                               </td>
                               <td className="px-5 py-4 text-sm text-slate-500">
-                                {document.write_date.slice(0, 10)}
+                                {formatDocumentDateShort(document.write_date)}
                               </td>
                               <td className="px-5 py-4 text-right">
                                 <DocumentActions

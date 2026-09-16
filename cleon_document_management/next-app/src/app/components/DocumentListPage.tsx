@@ -152,6 +152,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
     );
 
   return (
+    <>
     <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-end">
         <div className="flex flex-wrap gap-2">
@@ -388,12 +389,54 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
         {!isLoading && !filteredRows.length && (
           <div className="p-12 text-center">
             <Check className="mx-auto h-8 w-8 rounded-full bg-pink-50 p-1.5 text-brand-pink" />
-            <p className="mt-3 font-semibold text-slate-700">
-              No folders found
-            </p>
-            <p className="mt-1 text-sm text-slate-400">
-              Try a different search.
-            </p>
+            {visibleFolders.length === 0 ? (
+              <>
+                <p className="mt-3 font-semibold text-slate-700">
+                  {isEmployeePage
+                    ? "No employee folders yet"
+                    : "No organizational folders yet"}
+                </p>
+                <p className="mt-1 text-sm text-slate-400">
+                  {isEmployeePage
+                    ? "Create a folder to group employee files and documents."
+                    : "Create a folder to publish policies and shared documents."}
+                </p>
+                {currentUser.data?.is_document_manager === true && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateFolder(true)}
+                    className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200"
+                  >
+                    <FilePlus2 className="h-4 w-4" />
+                    Create folder
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="mt-3 font-semibold text-slate-700">
+                  No folders match your filters
+                </p>
+                <p className="mt-1 text-sm text-slate-400">
+                  {search.trim()
+                    ? "Try a different search term."
+                    : "Clear filters to see all folders."}
+                </p>
+                {(search.trim() || complianceFilter !== "all") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch("");
+                      setComplianceFilter("all");
+                      setAckPercentFilters([]);
+                    }}
+                    className="mt-5 text-sm font-semibold text-brand-pink hover:underline"
+                  >
+                    Clear search and filters
+                  </button>
+                )}
+              </>
+            )}
           </div>
         )}
       </section>
@@ -407,6 +450,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
         />
       )}
     </div>
+    </>
   );
 }
 

@@ -56,6 +56,21 @@ class Document(models.Model):
         index=True,
     )
 
+    employee_file_id = fields.Many2one(
+        "doc.employee.file",
+        string="Employee File",
+        ondelete="set null",
+        index=True,
+    )
+
+    classification_state = fields.Selection(
+        [
+            ("classified", "Classified"),
+            ("pending", "Pending Classification"),
+        ],
+        default="classified",
+    )
+
     document_type_id = fields.Many2one(
         "doc.document.type",
         required=True,

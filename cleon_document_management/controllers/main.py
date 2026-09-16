@@ -468,6 +468,13 @@ class DocumentUICreation(http.Controller):
             folder_type = kwargs.get("folder_type") or "organizational"
             if folder_type not in ("employee", "organizational"):
                 return {"success": False, "message": "Invalid folder type."}
+            if folder_type == "employee":
+                config = request.env["doc.employee.files.config"].get_for_company()
+                if config.setup_complete:
+                    return {
+                        "success": False,
+                        "message": "Employee folders are managed automatically after Employee Files setup.",
+                    }
             settings = self._settings_values()
             access_scope = kwargs.get("access_scope") or (
                 "individual" if folder_type == "employee" else settings["default_access_scope"]
@@ -857,6 +864,12 @@ class DocumentUICreation(http.Controller):
             return {
                 "success": False,
                 "message": "Only employee folders can contain employees.",
+            }
+        config = request.env["doc.employee.files.config"].get_for_company()
+        if config.setup_complete:
+            return {
+                "success": False,
+                "message": "Employee membership is managed by EMS after Employee Files setup.",
             }
         force_move = bool(kwargs.get("force_move", force_move))
         move_from_folder_ids = move_from_folder_ids or kwargs.get("move_from_folder_ids") or {}

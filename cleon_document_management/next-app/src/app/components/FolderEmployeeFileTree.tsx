@@ -6,7 +6,9 @@ import {
   FileText,
   FolderInput,
   FolderOpen,
+  Search,
 } from "lucide-react";
+import ListPagination from "./ListPagination";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -116,6 +118,12 @@ export default function FolderEmployeeFileTree({
   guideTarget,
   onDocumentOpen,
   emptyMessage = "No employees found. Try adjusting your filters.",
+  employeeGroupLinkMode = false,
+  customGroupIds,
+  expandedFolders: controlledExpandedFolders,
+  onFolderExpandedChange,
+  employeeMemberLists,
+  employeeCountDisplay,
 }: {
   kind: "employee" | "organizational";
   rows: FolderTreeRow[];
@@ -130,10 +138,32 @@ export default function FolderEmployeeFileTree({
   guideTarget?: string | null;
   onDocumentOpen?: (document: DocDocument) => void;
   emptyMessage?: string;
+  employeeGroupLinkMode?: boolean;
+  customGroupIds?: Set<number>;
+  expandedFolders?: Record<number, boolean>;
+  onFolderExpandedChange?: (folderId: number, expanded: boolean) => void;
+  employeeMemberLists?: Record<
+    number,
+    {
+      search: string;
+      onSearchChange: (value: string) => void;
+      page: number;
+      pageSize: number;
+      total: number;
+      onPageChange: (page: number) => void;
+      loading?: boolean;
+    }
+  >;
+  employeeCountDisplay?: Record<number, number>;
 }) {
-  const [expandedFolders, setExpandedFolders] = useState<Record<number, boolean>>(
-    {},
-  );
+  const [expandedFoldersInternal, setExpandedFoldersInternal] = useState<
+    Record<number, boolean>
+  >({});
+  const expandedFolders = controlledExpandedFolders ?? expandedFoldersInternal;
+  const setExpandedFolders = onFolderExpandedChange
+    ? (folderId: number, open: boolean) => onFolderExpandedChange(folderId, open)
+    : (folderId: number, open: boolean) =>
+        setExpandedFoldersInternal((current) => ({ ...current, [folderId]: open }));
   const [expandedEmployees, setExpandedEmployees] = useState<
     Record<string, boolean>
   >({});
@@ -190,16 +220,16 @@ export default function FolderEmployeeFileTree({
         });
       });
     });
-    setExpandedFolders((current) => ({ ...nextFolders, ...current }));
+    if (!controlledExpandedFolders) {
+      setExpandedFoldersInternal((current) => ({ ...nextFolders, ...current }));
+    }
     setExpandedEmployees((current) => ({ ...nextEmployees, ...current }));
     setExpandedDocuments((current) => ({ ...nextDocuments, ...current }));
-  }, [kind, rows, singleFolderExpanded]);
+  }, [controlledExpandedFolders, kind, rows, singleFolderExpanded]);
 
   const toggleFolder = (folderId: number) => {
-    setExpandedFolders((current) => ({
-      ...current,
-      [folderId]: !(current[folderId] ?? false),
-    }));
+    const next = !(expandedFolders[folderId] ?? false);
+    setExpandedFolders(folderId, next);
   };
 
   const toggleEmployee = (folderId: number, employeeId: number) => {
@@ -235,7 +265,10 @@ export default function FolderEmployeeFileTree({
       {rows.map(({ folder, documents: folderDocuments, employees }) => {
         const folderExpanded = expandedFolders[folder.id] ?? singleFolderExpanded;
         const employeeCount =
-          kind === "employee" ? employees.length : folder.employee_ids?.length ?? 0;
+          kind === "employee"
+            ? (employeeCountDisplay?.[folder.id] ?? employees.length)
+            : folder.employee_ids?.length ?? 0;
+        const memberList = employeeMemberLists?.[folder.id];
 
         return (
           <div className="employee-tree-folder" key={folder.id}>
@@ -264,36 +297,49 @@ export default function FolderEmployeeFileTree({
               </button>
               <FolderOpen className="h-4 w-4 shrink-0 text-brand-pink" />
               <div className="min-w-0 flex-1">
-                <div className="font-bold text-slate-800">{folder.folder_name}</div>
+                <div className="flex flex-wrap items-center gap-2 font-bold text-slate-800">
+                  <span>{folder.folder_name}</span>
+                  {customGroupIds?.has(folder.id) ? (
+                    <span className="employee-tree-badge probation text-[10px] uppercase tracking-wide">
+                      Custom
+                    </span>
+                  ) : null}
+                </div>
                 <div className="text-xs text-slate-500">
                   {kind === "employee"
                     ? `${employeeCount} employees · ${folderDocuments.length} files`
                     : `${folderDocuments.length} files`}
                 </div>
               </div>
-              <FolderActions
-                folderId={folder.id}
-                folderName={folder.folder_name}
-                description={folder.description}
-                locked={folder.locked}
-                folderType={folder.folder_type}
-                {...(kind === "employee"
-                  ? {
-                      requireUploadApproval: folder.require_upload_approval,
-                      approvalFlow: folder.approval_flow,
-                      approverIds: folder.approver_ids,
-                    }
-                  : {
-                      accessScope: folder.access_scope,
-                      departmentIds: folder.department_ids,
-                      gradeIds: folder.grade_ids,
-                      employeeIds: folder.employee_ids,
-                    })}
-              />
+              {!employeeGroupLinkMode ? (
+                <FolderActions
+                  folderId={folder.id}
+                  folderName={folder.folder_name}
+                  description={folder.description}
+                  locked={folder.locked}
+                  folderType={folder.folder_type}
+                  {...(kind === "employee"
+                    ? {
+                        requireUploadApproval: folder.require_upload_approval,
+                        approvalFlow: folder.approval_flow,
+                        approverIds: folder.approver_ids,
+                      }
+                    : {
+                        accessScope: folder.access_scope,
+                        departmentIds: folder.department_ids,
+                        gradeIds: folder.grade_ids,
+                        employeeIds: folder.employee_ids,
+                      })}
+                />
+              ) : null}
               {showFolderOpenLink ? (
                 kind === "employee" ? (
                   <Link
-                    href={`/pages/employee/folder?folder=${folder.id}`}
+                    href={
+                      employeeGroupLinkMode
+                        ? `/pages/employee/group?id=${folder.id}`
+                        : `/pages/employee/folder?folder=${folder.id}`
+                    }
                     className="employee-tree-open-link"
                     aria-label={`Open ${folder.folder_name}`}
                   >
@@ -313,6 +359,32 @@ export default function FolderEmployeeFileTree({
 
             {folderExpanded ? (
               <div className="employee-tree-children">
+                {kind === "employee" && memberList ? (
+                  <div
+                    className="space-y-3 border-b border-slate-100 bg-slate-50/60 px-4 py-3"
+                    style={{ marginLeft: "20px" }}
+                  >
+                    <label className="relative block">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="search"
+                        value={memberList.search}
+                        onChange={(event) => memberList.onSearchChange(event.target.value)}
+                        placeholder="Search employees in this group…"
+                        className="field w-full pl-10 text-sm"
+                      />
+                    </label>
+                    {memberList.loading ? (
+                      <p className="text-xs text-slate-500">Loading employees…</p>
+                    ) : null}
+                    <ListPagination
+                      page={memberList.page}
+                      pageSize={memberList.pageSize}
+                      total={memberList.total}
+                      onPageChange={memberList.onPageChange}
+                    />
+                  </div>
+                ) : null}
                 {kind === "employee" ? (
                   employees.length ? (
                     employees.map((employee) => {
@@ -403,29 +475,42 @@ export default function FolderEmployeeFileTree({
                                 groupEmployeeDocuments(employee.documents).map(
                                   (group) => {
                                     const docKey = `${folder.id}-${employee.id}-${group.primary.id}`;
+                                    if (group.historyCount > 0) {
+                                      return (
+                                        <FolderDocumentTreeGroup
+                                          key={group.primary.id}
+                                          group={group}
+                                          expanded={expandedDocuments[docKey] ?? false}
+                                          onToggleExpand={() =>
+                                            toggleDocument(
+                                              folder.id,
+                                              employee.id,
+                                              group.primary.id,
+                                            )
+                                          }
+                                          isDocumentManager={isDocumentManager}
+                                          onDocumentOpen={onDocumentOpen}
+                                          onDeleteVersion={
+                                            isDocumentManager
+                                              ? handleDeleteVersion
+                                              : undefined
+                                          }
+                                          onDeleteRelatedDocument={
+                                            isDocumentManager
+                                              ? handleDeleteRelatedDocument
+                                              : undefined
+                                          }
+                                          depth={3}
+                                        />
+                                      );
+                                    }
                                     return (
-                                      <FolderDocumentTreeGroup
+                                      <FileTreeRow
                                         key={group.primary.id}
-                                        group={group}
-                                        expanded={expandedDocuments[docKey] ?? false}
-                                        onToggleExpand={() =>
-                                          toggleDocument(
-                                            folder.id,
-                                            employee.id,
-                                            group.primary.id,
-                                          )
-                                        }
+                                        document={group.primary}
                                         isDocumentManager={isDocumentManager}
-                                        onDocumentOpen={onDocumentOpen}
-                                        onDeleteVersion={
-                                          isDocumentManager ? handleDeleteVersion : undefined
-                                        }
-                                        onDeleteRelatedDocument={
-                                          isDocumentManager
-                                            ? handleDeleteRelatedDocument
-                                            : undefined
-                                        }
                                         depth={3}
+                                        onDocumentOpen={onDocumentOpen}
                                       />
                                     );
                                   },
