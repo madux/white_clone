@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cleon_payroll_rule_form" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.form</field>
+        <field name="model">cleon.payroll.rule</field>
+        <field name="arch" type="xml">
+            <form string="Payroll Rule" class="o_qms_form">
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M9 7h6m-6 4h6m-6 4h4M4 4h16v16H4z"/></svg>
+                        </div>
+                        
+                        <span class="qms-card-title">Rule Details</span>
+                        <button name="generate_AI_rule"
+                                type="object"
+                                string="Populate for with AI"
+                                class="ai-btn mr-2"/>
+                    </div>
+                    <div class="pink-card-body">
+                        <group>
+                            <group col="4"> 
+                                <field name="name" class="pink-text" placeholder="Housing Allowance"/>
+                                <field name="code" placeholder="HOUSING"/>
+                            </group>
+                            <group>
+                                <field name="category_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="rule_type"/>
+                                <field name="sequence"/>
+                                <field name="active" widget="boolean_toggle"/>
+                                <field name="appears_on_payslip" widget="boolean_toggle"/>
+                            </group>
+                        </group>
+                    </div>
+
+                    <div class="ash-card-body text-sm">
+                        <span class="qms-card-title">Condition</span>
+                        <group>
+                            <group col="4">
+                                <field name="condition_select"/>
+                                <field name="condition_range_min" invisible="condition_select != 'range'"/>
+                                <field name="condition_range_max" invisible="condition_select != 'range'"/>
+                            </group>
+                            <group invisible="condition_select != 'python'">
+                                <field name="condition_python" nolabel="1" widget="code" options="{'mode': 'python'}"/>
+                                
+                            </group>
+                        </group>
+                    </div>
+
+                    <div class="ash-card-body">
+                        <span class="qms-card-title">Amount / Formula</span>
+                        <group>
+                            <group col="4">
+                                <field name="amount_select"/>
+                                <field name="amount_fixed" invisible="amount_select != 'fixed'"/>
+                                <field name="amount_percentage" invisible="amount_select != 'percentage'"/>
+                            </group>
+                            <group>
+                                 <field name="amount_percentage_base" invisible="amount_select != 'percentage'"
+                                       placeholder="e.g. rules.BASIC or contract.wage"/>
+                            </group>
+                            <!-- <group invisible="amount_select != 'formula'">
+                                <field name="amount_python_compute" nolabel="1" widget="code" options="{'mode': 'python'}"/>
+                            </group> -->
+                            <group col="4" invisible="amount_select != 'formula'">
+                            </group>
+                            <group>
+                                <!-- <field name="formula_help" nolabel="1" readonly="1" class="text-muted"/> -->
+                                
+                            </group>
+                        </group>
+                    </div>
+
+                    <div class="ash-card-body text-sm" invisible="amount_select != 'formula'">
+                        <span class="qms-card-title">Amount / Formula</span>
+                        
+                        <div class="ash-card-body text-sm">
+                            <span class="qms-card-title">Python Formula</span>
+
+                            <field name="amount_python_compute" string="Python code" nolabel="0" placeholder="Python code setup about this rule..."/>
+
+                        </div> 
+                        <div class="ash-card-body text-sm">
+                            <span class="qms-card-title">Formula helper</span>
+
+                            <field name="formula_help" readonly="1" string="Helper" nolabel="0"/>
+
+                        </div> 
+                        
+                                
+                        <div class="ash-card-body text-sm">
+                            <span class="qms-card-title">AI Prompt</span>
+
+                            <field name="raw_ai_text" nolabel="1" widget="text"/><p/>
+                        
+                            <button name="generate_AI_rule"
+                                type="object"
+                                string="AI Generate"
+                                class="ai-btn"/>
+                        </div> 
+                        <div class="ash-card-body text-sm">
+                            <span class="qms-card-title">AI Response / suggestion</span>
+
+                            <field name="ai_response" readonly="1" string="AI suggestions" nolabel="0" placeholder="AI suggestions. Please kindly read through before applying to your rule..."/>
+                        </div> 
+
+                    </div>
+
+                    <div class="ash-card-body text-sm">
+                        <span class="qms-card-title">Accounting</span>
+                        <group>
+                            <group>
+                                <field name="account_debit_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="account_credit_id" options="{'no_open': true, 'no_create': true}"/>
+                            </group>
+                            <group>
+                                <field name="tax_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="company_id" options="{'no_open': true, 'no_create': true}"/>
+                            </group>
+                        </group>
+                    </div>
+
+                    <div class="ash-card-body text-sm">
+                        <span class="qms-card-title">Used in Structures</span>
+                        <field name="struct_ids" widget="many2many_tags"/>
+                    </div>
+
+                    <div class="ash-card-body text-sm">
+                        <field name="note" nolabel="1" placeholder="Internal notes about this rule..."/>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_payroll_rule_list" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.list</field>
+        <field name="model">cleon.payroll.rule</field>
+        <field name="arch" type="xml">
+            <tree string="Payroll Rules">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="rule_type"/>
+                <field name="amount_select"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_cleon_payroll_rule_search" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.search</field>
+        <field name="model">cleon.payroll.rule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="category_id"/>
+                <filter string="Gross / Allowance" name="filter_gross" domain="[('rule_type','=','gross')]"/>
+                <filter string="Deductions" name="filter_deduction" domain="[('rule_type','=','deduction')]"/>
+                <filter string="Employer Contributions" name="filter_employer" domain="[('rule_type','=','employer_contribution')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Category" name="group_category" context="{'group_by': 'category_id'}"/>
+                    <filter string="Rule Type" name="group_type" context="{'group_by': 'rule_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cleon_payroll_rule_kanban" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.kanban</field>
+        <field name="model">cleon.payroll.rule</field>
+
+        <field name="arch" type="xml">
+
+            <kanban class="o_payroll_kanban"
+                    create="1"
+                    records_draggable="0" js_class="payroll_kanban_sidebar">
+
+                <field name="name" string="Name"/>
+                    <field name="name" string="Name" optional="show"/>
+                    <field name="code"/>
+                    <field name="category_id"/>
+                    <field name="rule_type"/>
+                    <field name="appears_on_payslip"/>
+                    <field name="condition_select"/>
+                    <field name="amount_select"/>
+                    <field name="condition_range_min"/>
+                    <field name="condition_range_max"/>
+                    <field name="amount_fixed"/>
+                    <field name="amount_percentage"/>
+                    <field name="amount_percentage_base"/>
+                    <!-- <field name="active"/> -->
+                <!-- STATIC HEADER (unchanged) -->
+                <header>
+                    <div class="marketplace-header">
+                        <div class="topbar">
+                            <div>
+                                <h1>Rules</h1>
+                                <p>Click to setup or view</p>
+                            </div>
+                            <div class="top-actions">
+                                <button type="object" name="open_record" class="btn-hmo btn-primary-hmo">＋ Onboard Your HMO plans</button>
+                            </div>
+                        </div>
+                        <div class="toolbar">
+                            <div class="search-box">🔍</div>
+                            <div class="toolbar-actions">
+                                <button name="open_record" type="object" class="icon-btn active">▦</button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <templates> 
+                    <t t-name="kanban-box">
+                        <div class="payroll-card">
+                            <!-- Header -->
+                            <div class="payroll-card-header">
+                                <div class="payroll-avatar">
+                                    <t t-esc="record.name.value ? record.name.value.substring(0,2).toUpperCase() : ''"/>
+                                </div>
+
+                                <div class="payroll-title">
+                                    <h4>
+                                        <field name="name" readonly="1"/>
+                                    </h4>
+                                    <span class="payroll-status">
+                                        <field name="category_id" widget="badge" readonly="1"/>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Metrics -->
+                            <div class="payroll-metrics">
+
+                                <div class="metric-box">
+                                    <span class="metric-label">Frequency</span>
+                                    <span class="metric-value">
+                                        <t t-esc="record.amount_select.value"/>
+                                    </span>
+                                </div>
+
+                                <div class="metric-box">
+                                    <span class="metric-label">Type</span>
+                                    <span class="metric-value">
+                                        <field name="amount_select" readonly="1"/>
+                                    </span>
+                                </div>
+                            </div>
+                            <!-- Dates -->
+                            <div class="payroll-dates">
+                                <div>
+                                    <i class="fa fa-calendar pl-2"/>
+                                    <strong> Mode: </strong>
+                                    <field name="amount_percentage" readonly="1"/>
+                                </div>
+                                <div>
+                                    <i class="fa fa-calendar-check-o pl-2"/>
+                                    <strong> Type: </strong>
+                                    <field name="amount_select" readonly="1"/>
+                                </div> 
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="payroll-footer">
+                                <button name="open_record"
+                                        type="object"
+                                        class="payroll-btn">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+
+        </field>
+    </record> 
+
+    <record id="action_cleon_payroll_rule" model="ir.actions.act_window">
+        <field name="name">Payroll Rules</field>
+        <field name="res_model">cleon.payroll.rule</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="search_view_id" ref="view_cleon_payroll_rule_search"/>
+    </record>
+
+</odoo>

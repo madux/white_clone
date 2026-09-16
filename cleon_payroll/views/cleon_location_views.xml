@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cleon_location_form" model="ir.ui.view">
+        <field name="name">cleon.location.form</field>
+        <field name="model">cleon.location</field>
+        <field name="arch" type="xml">
+            <form string="Location" class="o_qms_form">
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </div>
+                        <span class="qms-card-title">Location Details</span>
+                    </div>
+                    <div class="pink-card-body">
+                        <group>
+                            <group col="4">
+                                <field name="name" class="pink-text" placeholder="Port Harcourt Head Office"/>
+                                <field name="code" placeholder="PHC-HQ"/>
+                            </group>
+                            <group>
+                                <field name="company_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="active" widget="boolean_toggle"/>
+                            </group>
+                        </group>
+                    </div>
+                    <div class="ash-card-body text-sm">
+                        <span class="qms-card-title">Address</span>
+                        <group>
+                            <group>
+                                <field name="address"/>
+                                <field name="city"/>
+                            </group>
+                            <group>
+                                <field name="state_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="country_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="manager_id" options="{'no_open': true, 'no_create': true}"/>
+                            </group>
+                        </group>
+                    </div>
+                    <div class="ash-card-body">
+                        <span class="qms-card-title">Employees</span>
+                        <field name="employee_count" readonly="1"/>
+                        <field name="employee_ids" readonly="1">
+                            <tree>
+                                <field name="name"/>
+                                <field name="job_title"/>
+                                <field name="work_email"/>
+                            </tree>
+                        </field>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_location_list" model="ir.ui.view">
+        <field name="name">cleon.location.list</field>
+        <field name="model">cleon.location</field>
+        <field name="arch" type="xml">
+            <tree string="Locations">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="city"/>
+                <field name="company_id"/>
+                <field name="employee_count"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_cleon_location" model="ir.actions.act_window">
+        <field name="name">Locations</field>
+        <field name="res_model">cleon.location</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

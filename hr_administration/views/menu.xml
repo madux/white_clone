@@ -3,7 +3,7 @@
    
     <menuitem
         id="hr_admin_exployee_experience"
-        name="Employee Experience"
+        name="Admin Dashboard"
         parent="hr_administration.hr_administration_dashboard"
         action="hr_administration.action_view_employee_kanban_custom"
         sequence="10" />
