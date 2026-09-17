@@ -64,15 +64,6 @@ export interface DocFolder {
   approver_ids?: number[];
 }
 
-export interface UploadDuplicateMatch {
-  filename: string;
-  document_type_id: number;
-  id: number;
-  name: string;
-  version_count?: number;
-  latest_version_number?: number;
-}
-
 export interface DocDocument {
   id: number;
   name: string;
@@ -83,6 +74,7 @@ export interface DocDocument {
   employee_name: string;
   document_type_id: number;
   document_type: string;
+  document_type_enable_versioning?: boolean;
   state: "draft" | "processing" | "approved" | "rejected" | "expired" | "missing";
   approval_state: "not_required" | "pending" | "approved" | "rejected";
   approval_flow?: "sequential" | "random" | "any";
@@ -94,6 +86,11 @@ export interface DocDocument {
   ocr_state: "pending" | "processing" | "completed" | "failed";
   has_expiry: boolean;
   expiry_date: string | null;
+  issue_date?: string | null;
+  has_pending_revision?: boolean;
+  rejection_reason?: string;
+  review_decision_unread?: boolean;
+  last_review_decision?: "approved" | "rejected" | null;
   mime_type: string;
   file_size: number;
   attachment_id: number;
@@ -110,6 +107,8 @@ export interface DocDocument {
   distribution_status?: "active" | "archived" | "deactivated";
   version_count?: number;
   current_version_number?: number;
+  document_category?: string;
+  document_category_label?: string;
 }
 
 export interface ExpiringDocument {
@@ -155,6 +154,17 @@ export interface ApprovalInboxItem {
 export interface ApprovalInbox {
   count: number;
   items: ApprovalInboxItem[];
+}
+
+export interface ReviewAlertItem {
+  id: number;
+  document_id: number;
+  document: string;
+  employee_id: number;
+  message: string;
+  rejection_reason: string;
+  last_review_decision?: "approved" | "rejected" | null;
+  created_at: string;
 }
 
 export interface PendingEmployeeUpload {
@@ -248,6 +258,17 @@ export interface OnboardingState {
 
 export interface QuickAccess { folders: DocFolder[]; documents: DocDocument[]; }
 
+export interface UploadConflict {
+  document_type_id: number;
+  document_type_name: string;
+  existing_document_id: number;
+  existing_name: string;
+  policy: "warn" | "prevent" | "allow_confirm";
+  enable_versioning: boolean;
+  version_count?: number;
+  latest_version_number?: number;
+}
+
 export interface DocumentType {
   id: number;
   name: string;
@@ -256,6 +277,18 @@ export interface DocumentType {
   is_mandatory_default: boolean;
   default_retention_years: number;
   expiry_applicable?: boolean;
+  require_upload_approval?: boolean;
+  require_issue_date?: boolean;
+  require_description?: boolean;
+  enable_versioning?: boolean;
+  duplicate_detection_mode?:
+    | "inherit"
+    | "warn"
+    | "prevent"
+    | "allow_confirm";
+  approval_flow?: "any" | "sequential" | "random";
+  approver_ids?: number[];
+  approvers?: { id: number; name: string }[];
   active: boolean;
 }
 
@@ -577,6 +610,7 @@ export interface EmployeeFilesConfig {
   max_file_size_mb: number;
   allowed_file_types: string;
   header_field_keys: string[];
+  available_header_fields?: EmployeeFilesHeaderFieldOption[];
   max_issue_retry_attempts: number;
   enable_custom_groups: boolean;
   enable_esign: boolean;
@@ -607,6 +641,7 @@ export interface EmployeeFileGroup {
   organizing_dimension: string;
   dimension_value_key: string;
   parent_group_id: number | false;
+  parent_group_name?: string;
   employee_count: number;
   document_count: number;
   attention_count: number;
@@ -623,6 +658,19 @@ export interface EmployeeFileSummaryPage {
   offset: number;
 }
 
+export interface EmployeeFilesHeaderFieldOption {
+  key: string;
+  label: string;
+  ems_managed: boolean;
+}
+
+export interface EmployeeFileHeaderField {
+  key: string;
+  label: string;
+  value: string;
+  ems_managed: boolean;
+}
+
 export interface EmployeeFileSummary {
   id: number;
   employee_id: number;
@@ -636,6 +684,8 @@ export interface EmployeeFileSummary {
   favorite: boolean;
   storage_folder_id: number | false;
   related_groups?: EmployeeFileGroup[];
+  header_fields?: EmployeeFileHeaderField[];
+  ems_read_only_note?: string;
 }
 
 export interface EmployeeFileSummaryWithGroups extends EmployeeFileSummary {
@@ -664,12 +714,26 @@ export interface EmsEmployeeOption {
 
 export interface EmployeeFilesSetupPreview {
   organizing_dimensions: string[];
+  sub_organizing_dimension?: string;
+  primary_organizing_dimension?: string;
+  nested_primary_view?: boolean;
   groups_to_create: number;
   employees_included: number;
+  ems_employees_in_company?: number;
   documents_expected: number;
   need_attention_expected: number;
   excluded_total: number;
   excluded_breakdown: Record<string, number>;
+  dimension_summaries?: Array<{
+    dimension: string;
+    groups_to_create: number;
+    group_breakdown: Array<{
+      name: string;
+      employees: number;
+      documents: number;
+      excluded: number;
+    }>;
+  }>;
   group_breakdown: Array<{
     name: string;
     employees: number;
@@ -703,6 +767,7 @@ export interface EmployeeFileIssue {
   classification?: string;
   classification_label?: string;
   issue_type: string;
+  issue_type_label?: string;
   details: string;
   state: string;
   recoverable: boolean;

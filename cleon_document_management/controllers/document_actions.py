@@ -81,6 +81,11 @@ class DocumentActions(http.Controller):
             manager_override = bool(
                 approval and approval.approver_id != request.env.user
             )
+        if action == "reject" and not (reason or "").strip():
+            return {
+                "success": False,
+                "message": "A rejection reason is required.",
+            }
         if not approval:
             waiting = approval_model.search(
                 [
@@ -122,7 +127,105 @@ class DocumentActions(http.Controller):
                 "id": document.id,
                 "state": document.state,
                 "approval_state": document.approval_state,
+                "rejection_reason": document.rejection_reason or "",
+                "review_decision_unread": bool(document.review_decision_unread),
+                "last_review_decision": document.last_review_decision or None,
             },
+        }
+
+    def _user_owns_document_upload(self, document, user):
+        if document.uploaded_by.id == user.id or document.owner_id.id == user.id:
+            return True
+        employee = user.employee_id
+        return bool(employee and document.employee_id.id == employee.id)
+
+    @http.route(
+        "/api/my-review-alerts",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def my_review_alerts(self, **kwargs):
+        user = request.env.user
+        Document = request.env["doc.document"]
+        documents = Document.search(
+            [
+                ("review_decision_unread", "=", True),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+                "|",
+                ("uploaded_by", "=", user.id),
+                ("owner_id", "=", user.id),
+            ],
+            order="write_date desc",
+            limit=30,
+        )
+        if user.employee_id:
+            documents |= Document.search(
+                [
+                    ("review_decision_unread", "=", True),
+                    ("active", "=", True),
+                    ("deleted_at", "=", False),
+                    ("employee_id", "=", user.employee_id.id),
+                ],
+                order="write_date desc",
+                limit=30,
+            )
+        items = []
+        seen = set()
+        for document in documents:
+            if document.id in seen:
+                continue
+            seen.add(document.id)
+            if not self._user_owns_document_upload(document, user):
+                continue
+            if document.last_review_decision == "rejected":
+                message = (
+                    f'"{document.name}" was rejected.'
+                    + (
+                        f" {document.rejection_reason}"
+                        if document.rejection_reason
+                        else ""
+                    )
+                )
+            else:
+                message = f'"{document.name}" was approved.'
+            items.append(
+                {
+                    "id": document.id,
+                    "document_id": document.id,
+                    "document": document.name,
+                    "employee_id": document.employee_id.id or 0,
+                    "message": message,
+                    "rejection_reason": document.rejection_reason or "",
+                    "last_review_decision": document.last_review_decision,
+                    "created_at": document.write_date,
+                }
+            )
+        return {"success": True, "data": {"count": len(items), "items": items}}
+
+    @http.route(
+        "/api/document/acknowledge-review-decision",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def acknowledge_review_decision(self, id=None, **kwargs):
+        document = request.env["doc.document"].browse(int(id or 0)).exists()
+        if not document:
+            return {"success": False, "message": "Document not found."}
+        document.check_access_rule("read")
+        if not self._user_owns_document_upload(document, request.env.user):
+            return {
+                "success": False,
+                "message": "You can only dismiss alerts for your own documents.",
+            }
+        document.sudo().write({"review_decision_unread": False})
+        return {
+            "success": True,
+            "data": {"id": document.id, "review_decision_unread": False},
         }
 
     @http.route(

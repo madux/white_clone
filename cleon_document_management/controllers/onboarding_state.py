@@ -32,7 +32,6 @@ ORGANIZATIONAL_STEP_IDS = {
 
 ADMINISTRATION_STEP_IDS = {
     "document-types",
-    "approval-workflow",
     "sharing",
     "approval-inbox",
 }

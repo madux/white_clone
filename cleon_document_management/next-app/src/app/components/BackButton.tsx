@@ -3,6 +3,9 @@
 import { ArrowLeft } from "lucide-react";
 import { useNavigationHistory } from "../../../hooks/useNavigationHistory";
 
+export const backButtonChromeClassName =
+  "inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-pink-200 hover:bg-pink-50 hover:text-brand-text";
+
 export default function BackButton({
   variant = "page",
   className = "",
@@ -29,7 +32,7 @@ export default function BackButton({
       className={
         variant === "header"
           ? `inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-pink-200 hover:bg-pink-50 hover:text-brand-text ${className}`
-          : `inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-brand-pink ${className}`
+          : `${backButtonChromeClassName} ${className}`
       }
     >
       <ArrowLeft className={variant === "header" ? "h-4 w-4" : "h-4 w-4"} />

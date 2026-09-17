@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  CalendarDays,
+  Activity,
+  AlertCircle,
   Check,
+  CheckCircle2,
   FilePlus2,
-  Mail,
-  MapPin,
-  Phone,
+  FileText,
   Upload,
   XCircle,
   UserRound,
@@ -14,11 +14,11 @@ import {
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useComplianceTargets,
   useCurrentUser,
   useDocumentTypes,
-  useDocuments,
   useEvaluations,
   useReviewDocument,
   useUploadEmployeeDocument,
@@ -29,28 +29,52 @@ import ModalDialog from "./ModalDialog";
 import ThemedSelect from "./ThemedSelect";
 import DocumentFilterBar, { FilterState, INITIAL_FILTER_STATE, applyDocumentFilters } from "./DocumentFilterBar";
 import DocumentViewerDialog from "./DocumentViewerDialog";
-import UploadDuplicateDialog from "./UploadDuplicateDialog";
 import BackButton from "./BackButton";
 import EmployeeProfileDocumentTree from "./EmployeeProfileDocumentTree";
+import UpdateDocumentModal from "./UpdateDocumentModal";
+import type { DocDocument } from "../../../lib/types";
+import { typeRequiresExpiry } from "./uploadExpiryHelpers";
 import {
-  buildReplaceDocumentIds,
-  buildVersionChangeNotes,
-  findUploadDuplicates,
-} from "../../../lib/uploadDuplicates";
-import type { UploadDuplicateMatch } from "../../../lib/types";
+  firstUploadMetadataError,
+  missingUploadMetadata,
+  typeRequiresDescription,
+  typeRequiresIssueDate,
+} from "../../../lib/uploadMetadataHelpers";
+import EmployeeUploadWizard from "./EmployeeUploadWizard";
+import UploadConflictDialog from "./UploadConflictDialog";
 import {
-  missingExpiryDates,
-  typeRequiresExpiry,
-} from "./uploadExpiryHelpers";
+  buildAllowSeparateDuplicates,
+  buildReplaceDocumentIdsFromConflicts,
+  buildVersionChangeNotesFromConflicts,
+  findUploadConflictsByFileIndex,
+  hasResolvableConflicts,
+  preventConflictMessage,
+} from "../../../lib/uploadConflictHelpers";
+import type { UploadConflict } from "../../../lib/types";
 import { canReviewDocument } from "../../../lib/approvalHelpers";
 import { groupEmployeeDocuments } from "../../../lib/groupEmployeeDocuments";
 import SectionTabs from "./SectionTabs";
-import { useEmployeeFileSummary } from "../../../hooks/useEmployeeFiles";
+import {
+  useEmployeeFileActivity,
+  useEmployeeFileDocuments,
+  useEmployeeFileSummary,
+  useEmployeeFilesConfig,
+  useRemoveEmployeeFilesFromGroup,
+} from "../../../hooks/useEmployeeFiles";
+import {
+  buildProfileHeaderFields,
+  EMS_HEADER_READ_ONLY_NOTE,
+  normalizeHeaderFieldKeys,
+} from "../../../lib/employeeFileHeaderFields";
+import { documentViewHref } from "../../../lib/documentLinks";
+import type { WorkspaceActivityEvent } from "../../../lib/types";
 
 export default function EmployeeProfilePage() {
   const params = useSearchParams();
   const employeeId = Number(params.get("employee"));
-  const documents = useDocuments();
+  const queryClient = useQueryClient();
+  const fileDocuments = useEmployeeFileDocuments(employeeId);
+  const fileActivity = useEmployeeFileActivity(employeeId);
   const complianceEvaluations = useEvaluations(employeeId || undefined);
   const targets = useComplianceTargets();
   const currentUser = useCurrentUser();
@@ -60,36 +84,71 @@ export default function EmployeeProfilePage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [selected, setSelected] = useState<number[]>([]);
   const [viewing, setViewing] = useState<any>(null);
+  const [updatingDocument, setUpdatingDocument] = useState<DocDocument | null>(null);
   const [rejecting, setRejecting] = useState<any>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [profileTab, setProfileTab] = useState<
     "overview" | "documents" | "compliance" | "activity" | "groups"
   >("documents");
   const [reviewError, setReviewError] = useState("");
-  const [duplicateWarning, setDuplicateWarning] = useState<{
-    matches: UploadDuplicateMatch[];
-    proceedAsVersion: () => Promise<void>;
-    proceedAsNew: () => Promise<void>;
-  } | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [uploadConflictWarning, setUploadConflictWarning] = useState<{
+    conflicts: UploadConflict[];
+    perFile: Array<UploadConflict | null>;
+    proceedUpdate: () => Promise<void>;
+    proceedSeparate: () => Promise<void>;
+  } | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadTypes, setUploadTypes] = useState<string[]>([]);
   const [uploadExpiryDates, setUploadExpiryDates] = useState<string[]>([]);
+  const [uploadIssueDates, setUploadIssueDates] = useState<string[]>([]);
+  const [uploadDescriptions, setUploadDescriptions] = useState<string[]>([]);
+  const [uploadMode, setUploadMode] = useState<"wizard" | "bulk">("wizard");
   const [bulkUploadType, setBulkUploadType] = useState("");
   const [uploadError, setUploadError] = useState("");
+  const [removingGroupId, setRemovingGroupId] = useState<number | null>(null);
   const employeeDocuments = useMemo(
-    () =>
-      (documents.data ?? []).filter((document) =>
-        employeeId ? document.employee_id === employeeId : document.employee_id,
-      ),
-    [documents.data, employeeId],
+    () => fileDocuments.data ?? [],
+    [fileDocuments.data],
   );
-  const employee = employeeDocuments[0];
   const employeeRecord = targets.data?.employees.find(
     (item) => item.id === employeeId,
   );
   const employeeFileSummary = useEmployeeFileSummary(employeeId);
-  const relatedGroups = employeeFileSummary.data?.related_groups ?? [];
+  const employeeFilesConfig = useEmployeeFilesConfig();
+  const headerFields = useMemo(() => {
+    const fromSummary = employeeFileSummary.data?.header_fields;
+    if (fromSummary?.length) return fromSummary;
+    const keys = normalizeHeaderFieldKeys(
+      employeeFilesConfig.data?.header_field_keys,
+    );
+    if (!keys.length) return [];
+    return buildProfileHeaderFields(
+      keys,
+      employeeId,
+      employeeRecord,
+      employeeFileSummary.data,
+      employeeFilesConfig.data?.available_header_fields,
+    );
+  }, [
+    employeeFileSummary.data,
+    employeeFilesConfig.data,
+    employeeId,
+    employeeRecord,
+  ]);
+  const emsReadOnlyNote =
+    employeeFileSummary.data?.ems_read_only_note ?? EMS_HEADER_READ_ONLY_NOTE;
+  const removeFromGroup = useRemoveEmployeeFilesFromGroup();
+  const relatedGroups = useMemo(() => {
+    const seen = new Set<number>();
+    return (employeeFileSummary.data?.related_groups ?? []).filter((group) => {
+      if (!group?.id || seen.has(group.id)) return false;
+      seen.add(group.id);
+      return true;
+    });
+  }, [employeeFileSummary.data?.related_groups]);
+  const employeeFileId = employeeFileSummary.data?.id;
+  const isDocumentManager = currentUser.data?.is_document_manager === true;
   const approved = employeeDocuments.filter(
     (document) => document.approval_state === "approved",
   ).length;
@@ -148,7 +207,15 @@ export default function EmployeeProfilePage() {
         : [...current, id],
     );
   const name =
-    employeeRecord?.name ?? employee?.employee_name ?? "Employee profile";
+    employeeFileSummary.data?.employee_name ??
+    employeeRecord?.name ??
+    "Employee profile";
+  const employmentState = employeeFileSummary.data?.state ?? "active";
+  const statusLabel = employmentState === "inactive" ? "Inactive" : "Active";
+  const statusClass =
+    employmentState === "inactive"
+      ? "bg-slate-100 text-slate-700"
+      : "bg-emerald-50 text-emerald-700";
   const initials = name
     .split(" ")
     .map((part) => part[0])
@@ -185,37 +252,97 @@ export default function EmployeeProfilePage() {
       setViewing(null);
       setRejecting(null);
       setRejectReason("");
+      void queryClient.invalidateQueries({
+        queryKey: ["employee-files", "file-documents", employeeId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["employee-files", "file-activity", employeeId],
+      });
     } catch (error: any) {
       setReviewError(error?.message || "The document review could not be completed.");
     }
   };
 
-  const performUpload = async (asVersion = false) => {
+  const runUploadConflictPreflight = async (
+    typeIds: string[],
+    upload: (extras?: {
+      replace_document_ids?: Array<number | null>;
+      change_notes?: string[];
+      allow_separate_duplicates?: boolean[];
+    }) => Promise<void>,
+  ) => {
+    if (!employeeId) {
+      await upload();
+      return;
+    }
+    try {
+      const perFile = await findUploadConflictsByFileIndex(employeeId, typeIds);
+      const preventMessage = preventConflictMessage(perFile);
+      if (preventMessage) {
+        setUploadError(preventMessage);
+        return;
+      }
+      if (!hasResolvableConflicts(perFile)) {
+        await upload();
+        return;
+      }
+      const conflicts = perFile.filter(Boolean) as UploadConflict[];
+      setUploadConflictWarning({
+        conflicts,
+        perFile,
+        proceedUpdate: async () => {
+          setUploadConflictWarning(null);
+          await upload({
+            replace_document_ids: buildReplaceDocumentIdsFromConflicts(perFile),
+            change_notes: buildVersionChangeNotesFromConflicts(perFile),
+          });
+        },
+        proceedSeparate: async () => {
+          setUploadConflictWarning(null);
+          await upload({
+            allow_separate_duplicates: buildAllowSeparateDuplicates(perFile),
+          });
+        },
+      });
+    } catch (error: any) {
+      setUploadError(error?.message || "Could not check for upload conflicts.");
+    }
+  };
+
+  const performUpload = async (extras?: {
+    replace_document_ids?: Array<number | null>;
+    change_notes?: string[];
+    allow_separate_duplicates?: boolean[];
+  }) => {
+    const types = availableDocumentTypes.data ?? [];
+    const metadataError = firstUploadMetadataError(
+      uploadTypes,
+      uploadExpiryDates,
+      uploadIssueDates,
+      uploadDescriptions,
+      types,
+    );
     if (
       !uploadFiles.length ||
       uploadTypes.some((id) => !id) ||
       !employeeId ||
-      missingExpiryDates(
-        uploadTypes,
-        uploadExpiryDates,
-        availableDocumentTypes.data ?? [],
-      )
-    )
+      metadataError
+    ) {
+      if (metadataError) setUploadError(metadataError);
       return;
+    }
     setUploadError("");
-    const matches = duplicateWarning?.matches ?? [];
     try {
       const response = await uploadEmployeeDocument.mutateAsync({
         files: uploadFiles,
         employee_id: employeeId,
         document_type_ids: uploadTypes.map(Number),
         expiry_dates: uploadExpiryDates,
-        replace_document_ids: asVersion
-          ? buildReplaceDocumentIds(uploadFiles, uploadTypes, matches)
-          : undefined,
-        change_notes: asVersion
-          ? buildVersionChangeNotes(uploadFiles, uploadTypes, matches)
-          : undefined,
+        issue_dates: uploadIssueDates,
+        descriptions: uploadDescriptions,
+        replace_document_ids: extras?.replace_document_ids,
+        change_notes: extras?.change_notes,
+        allow_separate_duplicates: extras?.allow_separate_duplicates,
       });
       if (!response.success || !response.data?.id) {
         throw new Error(response.message || "The document could not be uploaded.");
@@ -223,12 +350,60 @@ export default function EmployeeProfilePage() {
       setUploadFiles([]);
       setUploadTypes([]);
       setUploadExpiryDates([]);
+      setUploadIssueDates([]);
+      setUploadDescriptions([]);
       setBulkUploadType("");
       setShowUpload(false);
-      setDuplicateWarning(null);
     } catch (error: any) {
       setUploadError(error?.message || "The document could not be uploaded.");
     }
+  };
+
+  const handleWizardUpload = async (payload: {
+    files: File[];
+    documentTypeId: number;
+    metadata: Record<string, string>;
+  }) => {
+    if (!employeeId) return;
+    setUploadError("");
+    const file = payload.files[0];
+    const typeId = String(payload.documentTypeId);
+    const expiry = payload.metadata.expiry_date ?? "";
+    const issue = payload.metadata.issue_date ?? "";
+    const description = payload.metadata.description ?? "";
+    const types = availableDocumentTypes.data ?? [];
+    const metadataError = firstUploadMetadataError(
+      [typeId],
+      [expiry],
+      [issue],
+      [description],
+      types,
+    );
+    if (metadataError) {
+      throw new Error(metadataError);
+    }
+    const uploadWizard = async (extras?: {
+      replace_document_ids?: Array<number | null>;
+      change_notes?: string[];
+      allow_separate_duplicates?: boolean[];
+    }) => {
+      const response = await uploadEmployeeDocument.mutateAsync({
+        files: [file],
+        employee_id: employeeId,
+        document_type_ids: [payload.documentTypeId],
+        expiry_dates: [expiry],
+        issue_dates: [issue],
+        descriptions: [description],
+        replace_document_ids: extras?.replace_document_ids,
+        change_notes: extras?.change_notes,
+        allow_separate_duplicates: extras?.allow_separate_duplicates,
+      });
+      if (!response.success) {
+        throw new Error(response.message || "The document could not be uploaded.");
+      }
+      setShowUpload(false);
+    };
+    await runUploadConflictPreflight([typeId], uploadWizard);
   };
 
   const handleUploadSubmit = async (event: React.FormEvent) => {
@@ -237,32 +412,16 @@ export default function EmployeeProfilePage() {
       !uploadFiles.length ||
       uploadTypes.some((id) => !id) ||
       !employeeId ||
-      missingExpiryDates(
+      missingUploadMetadata(
         uploadTypes,
         uploadExpiryDates,
+        uploadIssueDates,
+        uploadDescriptions,
         availableDocumentTypes.data ?? [],
       )
     )
       return;
-    try {
-      const matches = await findUploadDuplicates(
-        employeeId,
-        uploadFiles,
-        uploadTypes,
-      );
-      if (matches.length) {
-        setDuplicateWarning({
-          matches,
-          proceedAsVersion: () => performUpload(true),
-          proceedAsNew: () => performUpload(false),
-        });
-        return;
-      }
-    } catch (error: any) {
-      setUploadError(error?.message || "Could not check for duplicate uploads.");
-      return;
-    }
-    await performUpload();
+    await runUploadConflictPreflight(uploadTypes, performUpload);
   };
 
   return (
@@ -280,44 +439,45 @@ export default function EmployeeProfilePage() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-4">
             <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-pink-50 text-2xl font-bold text-brand-pink ring-4 ring-pink-50">
-              {employee ? initials : <UserRound className="h-8 w-8" />}
+              {name !== "Employee profile" ? initials : <UserRound className="h-8 w-8" />}
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">
                 {name}
               </h1>
-              <p className="mt-1 text-sm text-slate-500">
-                EMP-{employeeRecord?.id ?? employee?.employee_id ?? "---"}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
-                <span className="inline-flex items-center gap-1.5">
-                  <UserRound className="h-4 w-4 text-brand-pink" />
-                  {employeeRecord?.job_title || "Employee record"}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-brand-pink" />
-                  {employeeRecord?.location || "Location not set"}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarDays className="h-4 w-4 text-brand-pink" />
-                  {employeeRecord?.grade || "Grade not set"}
-                </span>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
-                <span className="inline-flex items-center gap-1.5">
-                  <Mail className="h-4 w-4 text-brand-pink" />
-                  {employeeRecord?.work_email || "Email not set"}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Phone className="h-4 w-4 text-brand-pink" />
-                  {employeeRecord?.work_phone || "Phone not set"}
-                </span>
-              </div>
+              {headerFields.length ? (
+                <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {headerFields.map((field) => (
+                    <div key={field.key}>
+                      <dt className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                        {field.label}
+                      </dt>
+                      <dd className="mt-0.5 text-sm font-medium text-slate-800">
+                        {field.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : employeeFilesConfig.isLoading || employeeFileSummary.isLoading ? (
+                <p className="mt-2 text-sm text-slate-500">Loading header fields…</p>
+              ) : (
+                <p className="mt-2 text-sm text-slate-500">
+                  No header fields selected. Add fields under Settings → Employee Files →
+                  Employee information.
+                </p>
+              )}
+              {emsReadOnlyNote && headerFields.some((field) => field.ems_managed) ? (
+                <p className="mt-4 max-w-2xl text-xs leading-relaxed text-slate-500">
+                  {emsReadOnlyNote}
+                </p>
+              ) : null}
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-700">
-              Active
+            <span
+              className={`rounded-full px-3 py-1.5 text-sm font-bold ${statusClass}`}
+            >
+              {statusLabel}
             </span>
             <button
               type="button"
@@ -372,12 +532,6 @@ export default function EmployeeProfilePage() {
           </p>
         </div>
         </div>
-        <p className="text-sm text-slate-500">
-          Policy evaluations (informational):{" "}
-          {complianceScore === null
-            ? "Not evaluated"
-            : `${complianceScore}% · ${complianceState}`}
-        </p>
         </div>
       ) : null}
       {profileTab === "documents" ? (
@@ -399,7 +553,7 @@ export default function EmployeeProfilePage() {
             groups={groupedEmployeeDocuments}
           />
         </div>
-        {documents.isLoading ? (
+        {fileDocuments.isLoading ? (
           <div className="space-y-3 p-5">
             <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
             <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
@@ -424,6 +578,8 @@ export default function EmployeeProfilePage() {
             reviewPending={review.isPending}
             showReviewActions={Boolean(currentUser.data?.is_document_manager)}
             isDocumentManager={Boolean(currentUser.data?.is_document_manager)}
+            showUpdateAction={isDocumentManager}
+            onUpdate={setUpdatingDocument}
           />
         ) : filteredEmployeeDocuments.length < employeeDocuments.length ? (
           <p className="p-10 text-center text-sm text-slate-500">
@@ -463,38 +619,125 @@ export default function EmployeeProfilePage() {
         </section>
       ) : null}
       {profileTab === "activity" ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
-          Activity for this employee file is recorded in the workspace audit trail and document history.
-          Open documents to view version history and approval events.
-        </section>
+        <EmployeeFileActivityPanel
+          loading={fileActivity.isLoading}
+          events={fileActivity.data ?? []}
+          employeeId={employeeId}
+        />
       ) : null}
       {profileTab === "groups" ? (
         <section className="rounded-2xl border border-slate-200 bg-white p-6">
           {relatedGroups.length ? (
             <ul className="space-y-2 text-sm">
               {relatedGroups.map((group) => (
-                <li key={group.id} className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <span className="font-medium text-slate-900">{group.name}</span>
-                  <span className="text-xs text-slate-500">
-                    {group.group_kind === "system_managed" ? "System-managed" : "Custom"}
-                  </span>
+                <li
+                  key={group.id}
+                  className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 pt-1"
+                >
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/pages/employee/group?id=${group.id}`}
+                      className="font-medium text-brand-pink no-underline hover:no-underline hover:text-brand-text"
+                    >
+                      {group.name}
+                    </Link>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {group.group_kind === "system_managed"
+                        ? group.parent_group_name
+                          ? `${group.parent_group_name} · System-managed`
+                          : "System-managed"
+                        : "Custom group"}
+                    </p>
+                  </div>
+                  {group.group_kind === "custom" && isDocumentManager ? (
+                    <button
+                      type="button"
+                      disabled={!employeeFileId || removingGroupId === group.id}
+                      className="shrink-0 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={async () => {
+                        if (!employeeFileId) return;
+                        if (
+                          !window.confirm(
+                            `Remove ${name} from "${group.name}"? This only removes the group membership; their employee file and documents are unchanged.`,
+                          )
+                        ) {
+                          return;
+                        }
+                        setRemovingGroupId(group.id);
+                        try {
+                          await removeFromGroup.mutateAsync({
+                            groupId: group.id,
+                            employeeFileIds: [employeeFileId],
+                          });
+                        } finally {
+                          setRemovingGroupId(null);
+                        }
+                      }}
+                    >
+                      {removingGroupId === group.id ? "Removing…" : "Remove"}
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-500">
+                      {group.group_kind === "system_managed"
+                        ? "Managed by EMS"
+                        : null}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
           ) : (
             <p className="text-sm text-slate-500">No related groups yet.</p>
           )}
+          {isDocumentManager ? (
+            <p className="mt-4 text-xs text-slate-500">
+              To add this employee to a custom group, open the group from Employee Files
+              home and use Add employee files.
+            </p>
+          ) : null}
         </section>
       ) : null}
       {showUpload && (
         <ModalDialog
           title="Upload documents"
           eyebrow="Employee files"
-          description="Upload one or more files directly to this employee’s records."
+          description="Upload with the guided wizard or add several files at once. Required metadata depends on the document type."
           onClose={() => setShowUpload(false)}
           size="lg"
           titleClassName="text-xl"
         >
+          <div className="mb-4 flex gap-2">
+            <button
+              type="button"
+              className={`rounded-full px-4 py-2 text-xs font-bold ${
+                uploadMode === "wizard"
+                  ? "bg-brand-pink text-white"
+                  : "bg-slate-100 text-slate-600"
+              }`}
+              onClick={() => setUploadMode("wizard")}
+            >
+              Guided upload
+            </button>
+            <button
+              type="button"
+              className={`rounded-full px-4 py-2 text-xs font-bold ${
+                uploadMode === "bulk"
+                  ? "bg-brand-pink text-white"
+                  : "bg-slate-100 text-slate-600"
+              }`}
+              onClick={() => setUploadMode("bulk")}
+            >
+              Bulk upload
+            </button>
+          </div>
+          {uploadMode === "wizard" ? (
+            <EmployeeUploadWizard
+              documentTypes={availableDocumentTypes.data ?? []}
+              onClose={() => setShowUpload(false)}
+              onSubmit={handleWizardUpload}
+            />
+          ) : null}
+          {uploadMode === "bulk" ? (
           <form onSubmit={(event) => void handleUploadSubmit(event)}>
             <label className="block">
               <span className="label">Files</span>
@@ -511,6 +754,12 @@ export default function EmployeeProfilePage() {
                     setUploadExpiryDates(
                       next.map((_, index) => uploadExpiryDates[index] ?? ""),
                     );
+                    setUploadIssueDates(
+                      next.map((_, index) => uploadIssueDates[index] ?? ""),
+                    );
+                    setUploadDescriptions(
+                      next.map((_, index) => uploadDescriptions[index] ?? ""),
+                    );
                   }}
                   className="hidden"
                 />
@@ -518,15 +767,17 @@ export default function EmployeeProfilePage() {
             </label>
             {uploadFiles.length > 0 && (
               <div className="mt-4 space-y-2">
-                <div className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)_minmax(140px,160px)] gap-3 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                <div className="grid grid-cols-[minmax(0,1fr)_minmax(160px,200px)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(0,1fr)] gap-3 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
                   <span>File name</span>
                   <span>Document type</span>
+                  <span>Issue date</span>
                   <span>Expiry date</span>
+                  <span>Description</span>
                 </div>
                 {uploadFiles.map((file, index) => (
                   <div
                     key={`${file.name}-${index}`}
-                    className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)_minmax(140px,160px)] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2"
+                    className="grid grid-cols-[minmax(0,1fr)_minmax(160px,200px)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2"
                   >
                     <span
                       title={file.name}
@@ -547,6 +798,37 @@ export default function EmployeeProfilePage() {
                         label: type.name,
                       }))}
                     />
+                    {typeRequiresIssueDate(
+                      uploadTypes[index] ?? "",
+                      availableDocumentTypes.data ?? [],
+                    ) ? (
+                      <input
+                        required
+                        type="date"
+                        className="field"
+                        value={uploadIssueDates[index] ?? ""}
+                        onChange={(event) =>
+                          setUploadIssueDates((current) =>
+                            current.map((item, i) =>
+                              i === index ? event.target.value : item,
+                            ),
+                          )
+                        }
+                      />
+                    ) : (
+                      <input
+                        type="date"
+                        className="field"
+                        value={uploadIssueDates[index] ?? ""}
+                        onChange={(event) =>
+                          setUploadIssueDates((current) =>
+                            current.map((item, i) =>
+                              i === index ? event.target.value : item,
+                            ),
+                          )
+                        }
+                      />
+                    )}
                     {typeRequiresExpiry(
                       uploadTypes[index] ?? "",
                       availableDocumentTypes.data ?? [],
@@ -565,8 +847,32 @@ export default function EmployeeProfilePage() {
                         }
                       />
                     ) : (
-                      <span className="text-xs text-slate-400">Not required</span>
+                      <span className="text-xs text-slate-400">—</span>
                     )}
+                    <input
+                      type="text"
+                      className="field min-w-0"
+                      required={typeRequiresDescription(
+                        uploadTypes[index] ?? "",
+                        availableDocumentTypes.data ?? [],
+                      )}
+                      placeholder={
+                        typeRequiresDescription(
+                          uploadTypes[index] ?? "",
+                          availableDocumentTypes.data ?? [],
+                        )
+                          ? "Required"
+                          : "Optional"
+                      }
+                      value={uploadDescriptions[index] ?? ""}
+                      onChange={(event) =>
+                        setUploadDescriptions((current) =>
+                          current.map((item, i) =>
+                            i === index ? event.target.value : item,
+                          ),
+                        )
+                      }
+                    />
                   </div>
                 ))}
                 <button
@@ -600,9 +906,11 @@ export default function EmployeeProfilePage() {
                   uploadEmployeeDocument.isPending ||
                   !uploadFiles.length ||
                   uploadTypes.some((id) => !id) ||
-                  missingExpiryDates(
+                  missingUploadMetadata(
                     uploadTypes,
                     uploadExpiryDates,
+                    uploadIssueDates,
+                    uploadDescriptions,
                     availableDocumentTypes.data ?? [],
                   )
                 }
@@ -612,6 +920,7 @@ export default function EmployeeProfilePage() {
               </button>
             </div>
           </form>
+          ) : null}
         </ModalDialog>
       )}
       {viewing && (
@@ -662,18 +971,33 @@ export default function EmployeeProfilePage() {
           }
         />
       )}
-      {duplicateWarning && (
-        <UploadDuplicateDialog
-          matches={duplicateWarning.matches}
-          typeLabels={Object.fromEntries(
-            (availableDocumentTypes.data ?? []).map((type) => [type.id, type.name]),
-          )}
-          onCancel={() => setDuplicateWarning(null)}
-          onUploadAsVersion={() => void duplicateWarning.proceedAsVersion()}
-          onUploadAsNew={() => void duplicateWarning.proceedAsNew()}
+      {uploadConflictWarning ? (
+        <UploadConflictDialog
+          conflicts={uploadConflictWarning.conflicts}
+          onCancel={() => setUploadConflictWarning(null)}
+          onUpdateExisting={() => void uploadConflictWarning.proceedUpdate()}
+          onUploadSeparate={() => void uploadConflictWarning.proceedSeparate()}
           pending={uploadEmployeeDocument.isPending}
+          canUpdateExisting={uploadConflictWarning.conflicts.some(
+            (conflict) => conflict.enable_versioning,
+          )}
+          requireConfirmForSeparate={uploadConflictWarning.conflicts.some(
+            (conflict) => conflict.policy === "allow_confirm",
+          )}
         />
-      )}
+      ) : null}
+      {updatingDocument ? (
+        <UpdateDocumentModal
+          document={updatingDocument}
+          employeeId={employeeId}
+          mode="employee_file"
+          onClose={() => setUpdatingDocument(null)}
+          onSuccess={() => {
+            void fileDocuments.refetch();
+            void fileActivity.refetch();
+          }}
+        />
+      ) : null}
       {rejecting && (
         <ModalDialog
           title="Explain what needs to change"
@@ -735,5 +1059,92 @@ export default function EmployeeProfilePage() {
         </ModalDialog>
       )}
     </div>
+  );
+}
+
+function formatActivityWhen(value: string) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(String(value).replace(" ", "T")));
+}
+
+function activityEventIcon(kind: WorkspaceActivityEvent["kind"]) {
+  if (kind === "acknowledgement") return CheckCircle2;
+  if (kind === "approval") return AlertCircle;
+  if (kind === "upload") return FileText;
+  return Activity;
+}
+
+function EmployeeFileActivityPanel({
+  loading,
+  events,
+  employeeId,
+}: {
+  loading: boolean;
+  events: WorkspaceActivityEvent[];
+  employeeId: number;
+}) {
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      {loading ? (
+        <div className="space-y-3 py-8">
+          <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
+          <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
+        </div>
+      ) : !events.length ? (
+        <p className="py-12 text-center text-sm text-slate-500">
+          No activity recorded for this employee file yet.
+        </p>
+      ) : (
+        <div className="divide-y divide-slate-100">
+          {events.map((event) => {
+            const Icon = activityEventIcon(event.kind);
+            return (
+              <div
+                key={`${event.id}-${event.occurred_at}`}
+                className="flex items-start justify-between gap-4 py-4"
+              >
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-pink-50 text-brand-pink">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800">{event.message}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {event.actor_name}
+                      {event.folder_name ? ` · ${event.folder_name}` : ""}
+                    </p>
+                    {event.document_id ? (
+                      <Link
+                        href={documentViewHref(
+                          {
+                            id: event.document_id,
+                            folder_id: event.folder_id,
+                            employee_id: employeeId,
+                            folder_type: event.folder_type,
+                          },
+                          true,
+                        )}
+                        className="mt-2 inline-flex text-xs font-bold text-brand-pink hover:underline"
+                      >
+                        View document
+                      </Link>
+                    ) : null}
+                  </div>
+                </div>
+                <time className="shrink-0 text-xs text-slate-400">
+                  {formatActivityWhen(event.occurred_at)}
+                </time>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }

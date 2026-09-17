@@ -10,10 +10,13 @@ import {
 import { api } from "../../../lib/api";
 import { EMPLOYEE_FILE_LIST_PAGE_SIZE } from "../../../lib/employeeFileListPageSize";
 import {
+  buildChildrenByParentId,
   buildEmployeeGroupTreeRows,
+  buildFlatEmployeeGroupTree,
   customGroupIdSet,
   employeeGroupToFolder,
 } from "../../../lib/employeeGroupTreeRows";
+import type { FolderTreeRow } from "./FolderEmployeeFileTree";
 import { groupEmployeesInFolder } from "../../../lib/groupEmployeesInFolder";
 import type { EmployeeFileGroup } from "../../../lib/types";
 import { EMPLOYEE_FILES_KEYS } from "../../../hooks/useEmployeeFiles";
@@ -52,16 +55,62 @@ export default function EmployeeFilesGroupExplorer({
   const filteredGroups = useMemo(() => {
     const needle = search.trim().toLowerCase();
     if (!needle) return groups;
-    return groups.filter((group) => group.name.toLowerCase().includes(needle));
+    const matching = groups.filter((group) => group.name.toLowerCase().includes(needle));
+    const keepIds = new Set(matching.map((group) => group.id));
+    matching.forEach((group) => {
+      let parentId = group.parent_group_id;
+      while (parentId) {
+        keepIds.add(parentId);
+        const parent = groups.find((item) => item.id === parentId);
+        parentId = parent?.parent_group_id ?? false;
+      }
+    });
+    return groups.filter((group) => keepIds.has(group.id));
   }, [groups, search]);
+
+  const orderedGroups = useMemo(
+    () => buildFlatEmployeeGroupTree(filteredGroups),
+    [filteredGroups],
+  );
+
+  const childrenByParent = useMemo(
+    () => buildChildrenByParentId(filteredGroups),
+    [filteredGroups],
+  );
+
+  const leafGroupIds = useMemo(() => {
+    const ids = new Set<number>();
+    filteredGroups.forEach((group) => {
+      if (!childrenByParent.has(group.id)) {
+        ids.add(group.id);
+      }
+    });
+    return ids;
+  }, [childrenByParent, filteredGroups]);
 
   const expandedFolderIds = useMemo(
     () =>
       Object.entries(expandedFolders)
         .filter(([, open]) => open)
-        .map(([id]) => Number(id)),
-    [expandedFolders],
+        .map(([id]) => Number(id))
+        .filter((id) => leafGroupIds.has(id)),
+    [expandedFolders, leafGroupIds],
   );
+
+  const groupsForMemberQueries = useMemo(() => {
+    const seen = new Set<number>();
+    const list: EmployeeFileGroup[] = [];
+    const walk = (group: EmployeeFileGroup) => {
+      if (seen.has(group.id)) return;
+      seen.add(group.id);
+      list.push(group);
+      (childrenByParent.get(group.id) ?? []).forEach(walk);
+    };
+    orderedGroups
+      .filter((item) => item.depth === 0)
+      .forEach((item) => walk(item.group));
+    return list;
+  }, [childrenByParent, orderedGroups]);
 
   useEffect(() => {
     if (memberSearch === undefined) return;
@@ -132,13 +181,14 @@ export default function EmployeeFilesGroupExplorer({
   const treeRows = useMemo(() => {
     if (!paginateMembers) {
       return buildEmployeeGroupTreeRows(
-        filteredGroups,
+        groupsForMemberQueries,
         documents.data ?? [],
         targets.data,
       );
     }
 
-    return filteredGroups.map((group) => {
+    const buildGroupRow = (group: EmployeeFileGroup, depth: number): FolderTreeRow => {
+      const children = childrenByParent.get(group.id) ?? [];
       const memberState = membersByFolderId.get(group.id);
       const employeeIds =
         expandedFolders[group.id] && memberState ? memberState.items : [];
@@ -150,16 +200,27 @@ export default function EmployeeFilesGroupExplorer({
         (document) =>
           document.employee_id && employeeIds.includes(document.employee_id),
       );
-      const employees = expandedFolders[group.id]
-        ? groupEmployeesInFolder(folder, folderDocuments, targets.data)
-        : [];
-      return { folder, documents: folderDocuments, employees };
-    });
+      const employees =
+        expandedFolders[group.id] && leafGroupIds.has(group.id)
+          ? groupEmployeesInFolder(folder, folderDocuments, targets.data)
+          : [];
+      const nestedRows = children.length
+        ? children.map((child) => buildGroupRow(child, depth + 1))
+        : undefined;
+      return { folder, documents: folderDocuments, employees, depth, nestedRows };
+    };
+
+    return orderedGroups
+      .filter((item) => item.depth === 0)
+      .map((item) => buildGroupRow(item.group, 0));
   }, [
+    childrenByParent,
     documents.data,
     expandedFolders,
-    filteredGroups,
+    groupsForMemberQueries,
+    leafGroupIds,
     membersByFolderId,
+    orderedGroups,
     paginateMembers,
     targets.data,
   ]);
@@ -167,8 +228,8 @@ export default function EmployeeFilesGroupExplorer({
   const employeeMemberLists = useMemo(() => {
     if (!paginateMembers) return undefined;
     const lists: Record<number, MemberListState> = {};
-    filteredGroups.forEach((group) => {
-      if (!expandedFolders[group.id]) return;
+    groupsForMemberQueries.forEach((group) => {
+      if (!expandedFolders[group.id] || !leafGroupIds.has(group.id)) return;
       const memberState = membersByFolderId.get(group.id);
       lists[group.id] = {
         search: localMemberSearch[group.id] ?? "",
@@ -187,20 +248,21 @@ export default function EmployeeFilesGroupExplorer({
     return lists;
   }, [
     expandedFolders,
-    filteredGroups,
+    groupsForMemberQueries,
     localMemberSearch,
     memberPage,
+    leafGroupIds,
     membersByFolderId,
     paginateMembers,
   ]);
 
   const employeeCountDisplay = useMemo(() => {
     const counts: Record<number, number> = {};
-    filteredGroups.forEach((group) => {
+    groupsForMemberQueries.forEach((group) => {
       counts[group.id] = group.employee_count;
     });
     return counts;
-  }, [filteredGroups]);
+  }, [groupsForMemberQueries]);
 
   const customIds = useMemo(() => customGroupIdSet(filteredGroups), [filteredGroups]);
 

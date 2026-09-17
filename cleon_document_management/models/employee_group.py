@@ -63,7 +63,13 @@ class DocEmployeeGroup(models.Model):
         help="For custom groups only: when enabled, the group appears in the Employee Files folder list.",
     )
 
-    @api.constrains("company_id", "organizing_dimension", "dimension_value_key", "group_kind")
+    @api.constrains(
+        "company_id",
+        "organizing_dimension",
+        "dimension_value_key",
+        "parent_group_id",
+        "group_kind",
+    )
     def _check_system_managed_unique(self):
         for group in self:
             if group.group_kind != "system_managed":
@@ -72,6 +78,7 @@ class DocEmployeeGroup(models.Model):
                 raise ValidationError(
                     _("System-managed groups require a dimension value key.")
                 )
+            parent_id = group.parent_group_id.id if group.parent_group_id else False
             duplicate = self.search_count(
                 [
                     ("id", "!=", group.id),
@@ -79,6 +86,7 @@ class DocEmployeeGroup(models.Model):
                     ("group_kind", "=", "system_managed"),
                     ("organizing_dimension", "=", group.organizing_dimension),
                     ("dimension_value_key", "=", group.dimension_value_key),
+                    ("parent_group_id", "=", parent_id),
                 ]
             )
             if duplicate:
@@ -86,10 +94,20 @@ class DocEmployeeGroup(models.Model):
                     _("A system-managed group already exists for this dimension value.")
                 )
 
-    @api.depends("member_ids", "member_ids.document_count", "member_ids.attention_count")
+    @api.depends(
+        "member_ids",
+        "member_ids.document_count",
+        "member_ids.attention_count",
+        "child_ids",
+        "child_ids.member_ids",
+        "child_ids.member_ids.document_count",
+        "child_ids.member_ids.attention_count",
+    )
     def _compute_stats(self):
         for group in self:
             members = group.member_ids
+            if group.child_ids:
+                members = group.child_ids.mapped("member_ids")
             group.employee_count = len(members)
             group.document_count = sum(members.mapped("document_count"))
             group.attention_count = sum(members.mapped("attention_count"))
@@ -105,6 +123,9 @@ class DocEmployeeGroup(models.Model):
             "organizing_dimension": self.organizing_dimension or "",
             "dimension_value_key": self.dimension_value_key or "",
             "parent_group_id": self.parent_group_id.id if self.parent_group_id else False,
+            "parent_group_name": self.parent_group_id.name
+            if self.parent_group_id
+            else "",
             "employee_count": self.employee_count,
             "document_count": self.document_count,
             "attention_count": self.attention_count,

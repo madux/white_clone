@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, Download, Loader2 } from "lucide-react";
+import { AlertTriangle, Download, Loader2, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import ListPagination from "./ListPagination";
 import { api } from "../../../lib/api";
@@ -43,11 +43,24 @@ function classificationBadge(classification: string) {
 export default function EmployeeFilesIssuesPage() {
   const [category, setCategory] = useState("all");
   const [page, setPage] = useState(1);
-  const issues = useEmployeeFileIssues(category, page, EMPLOYEE_FILE_LIST_PAGE_SIZE);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => setSearch(searchInput), 300);
+    return () => window.clearTimeout(handle);
+  }, [searchInput]);
+
+  const issues = useEmployeeFileIssues(
+    category,
+    page,
+    EMPLOYEE_FILE_LIST_PAGE_SIZE,
+    search,
+  );
 
   useEffect(() => {
     setPage(1);
-  }, [category]);
+  }, [category, search]);
   const stats = useEmployeeFilesHomeStats();
   const action = useEmployeeFileIssueAction();
 
@@ -64,24 +77,13 @@ export default function EmployeeFilesIssuesPage() {
 
   return (
     <div className={PAGE_CLASS}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-            Employee Files
-          </p>
-          <Link
-            href="/pages/employee"
-            className="mt-1 inline-block text-sm font-semibold text-brand-pink hover:underline"
-          >
-            ← Back to home
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-            Issues &amp; reconciliation
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-            Open items from setup and EMS sync that need HR or document admin follow-up.
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <Link
+          href="/pages/employee"
+          className="text-sm font-semibold text-brand-pink hover:underline"
+        >
+          ← Back
+        </Link>
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -118,7 +120,20 @@ export default function EmployeeFilesIssuesPage() {
         </div>
       ) : null}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <label className="relative block">
+          <Search
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="Search by employee name, issue title, or employee ID…"
+            className="field w-full pl-10 text-sm"
+          />
+        </label>
         <SectionTabs
           ariaLabel="Issue classifications"
           value={category}
@@ -143,9 +158,11 @@ export default function EmployeeFilesIssuesPage() {
           <div className="px-6 py-16 text-center">
             <p className="text-sm font-semibold text-slate-800">No open items in this category</p>
             <p className="mt-1 text-sm text-slate-500">
-              {category === "all"
-                ? "Everything reconciled for now."
-                : "Try another category or return after the next EMS sync."}
+              {search.trim()
+                ? "No issues match your search in this category."
+                : category === "all"
+                  ? "Everything reconciled for now."
+                  : "Try another category or return after the next EMS sync."}
             </p>
             <Link
               href="/pages/employee"
@@ -180,6 +197,11 @@ export default function EmployeeFilesIssuesPage() {
                       <tr key={rowKey} className="transition hover:bg-pink-50/20">
                         <td className="px-5 py-4 align-top">
                           <p className="font-semibold text-slate-900">{issue.name}</p>
+                          {issue.issue_type_label ? (
+                            <p className="mt-1 text-xs font-medium text-slate-500">
+                              {issue.issue_type_label}
+                            </p>
+                          ) : null}
                           <span
                             className={`mt-2 inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${classificationBadge(classification)}`}
                           >
@@ -224,7 +246,11 @@ export default function EmployeeFilesIssuesPage() {
                                 })
                               }
                             >
-                              {issue.recommended_action === "retry" ? "Retry" : "Resolve"}
+                              {issue.recommended_action === "retry"
+                                ? "Retry"
+                                : issue.recommended_action === "sync_now"
+                                  ? "Sync now"
+                                  : "Resolve"}
                             </button>
                           )}
                         </td>

@@ -10,18 +10,10 @@ import {
 import SectionTabs from "./SectionTabs";
 import { api } from "../../../lib/api";
 import EmployeeFilesGroupExplorer from "./EmployeeFilesGroupExplorer";
+import { employeeFileDimensionLabel } from "../../../lib/employeeFileDimensions";
 import type { EmployeeFileGroup } from "../../../lib/types";
 
 type HomeView = "groups" | "employees" | "documents";
-
-const DIMENSION_LABELS: Record<string, string> = {
-  department: "Department",
-  branch: "Branch",
-  grade: "Grade / Level",
-  employment_type: "Employment Type",
-  work_location: "Location",
-  status: "Status",
-};
 
 export default function EmployeeFilesHome() {
   const config = useEmployeeFilesConfig();
@@ -70,7 +62,7 @@ export default function EmployeeFilesHome() {
     () =>
       (config.data?.organizing_dimensions ?? []).map((key) => ({
         id: key,
-        label: `By ${DIMENSION_LABELS[key] ?? key}`,
+        label: `By ${employeeFileDimensionLabel(key)}`,
       })),
     [config.data?.organizing_dimensions],
   );
@@ -86,13 +78,7 @@ export default function EmployeeFilesHome() {
 
   return (
     <div className="min-h-full mx-auto w-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Employee Files</h1>
-          <p className="text-sm text-slate-500">
-            EMS-derived organization with reconciliation statistics.
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-4">
         {attention > 0 ? (
           <Link
             href="/pages/employee/issues"

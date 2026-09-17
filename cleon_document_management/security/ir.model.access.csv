@@ -14,6 +14,7 @@ access_doc_document_acknowledgement_manager,doc.document.acknowledgement manager
 access_doc_document_acknowledgement_admin,doc.document.acknowledgement admin,model_doc_document_acknowledgement,cleon_document_management.group_document_admin,1,1,1,1
 
 access_doc_document_type_user,doc.document.type user,model_doc_document_type,cleon_document_management.group_document_user,1,0,0,0
+access_doc_document_type_manager,doc.document.type manager,model_doc_document_type,cleon_document_management.group_document_manager,1,1,1,1
 access_doc_document_type_admin,doc.document.type admin,model_doc_document_type,cleon_document_management.group_document_admin,1,1,1,1
 
 access_doc_retention_policy_user,doc.retention.policy user,model_doc_retention_policy,cleon_document_management.group_document_user,1,0,0,0

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+import re
 import threading
 
 from odoo import api, fields, models, _
@@ -10,7 +11,9 @@ from .employee_issue import (
     CLASSIFICATION_LABELS,
     EXCLUSION_REASON_TO_CLASSIFICATION,
     ISSUE_CATEGORIES,
+    ISSUE_TYPE_DEFAULTS,
     classification_label,
+    hr_details_for_issue_type,
     normalize_issue_classification,
 )
 from .employee_setup import SETUP_STAGES
@@ -18,6 +21,51 @@ from .employee_setup import SETUP_STAGES
 _logger = logging.getLogger(__name__)
 
 SETUP_PROGRESS_BATCH = 25
+
+# EF-D1 / EF-F1: configurable employee file header fields (hr.employee keys).
+HEADER_FIELD_CATALOG = [
+    {"key": "employee_id", "label": "Employee ID", "ems_managed": True},
+    {"key": "name", "label": "Full name", "ems_managed": True},
+    {"key": "department_id", "label": "Department", "ems_managed": True},
+    {"key": "job_id", "label": "Position", "ems_managed": True},
+    {"key": "work_location", "label": "Location", "ems_managed": True},
+    {"key": "branch", "label": "Branch", "ems_managed": True},
+    {"key": "grade", "label": "Grade / level", "ems_managed": True},
+    {"key": "employment_type", "label": "Employment type", "ems_managed": True},
+    {"key": "status", "label": "Status", "ems_managed": True},
+    {"key": "work_email", "label": "Work email", "ems_managed": True},
+    {"key": "work_phone", "label": "Work phone", "ems_managed": True},
+]
+
+
+class _EmployeeFilesPreviewConfig:
+    """Wizard overlay for setup preview (avoid record.new() / missing company context)."""
+
+    def __init__(self, config, wizard_values=None):
+        wizard_values = dict(wizard_values or {})
+        self.company_id = config.company_id or config.env.company
+        if "organizing_dimensions" in wizard_values:
+            self._dimensions = [d for d in wizard_values["organizing_dimensions"] if d]
+        else:
+            self._dimensions = config.get_organizing_dimensions()
+        self.primary_organizing_dimension = (
+            self._dimensions[0] if self._dimensions else config.primary_organizing_dimension
+        )
+        self.sub_organizing_dimension = wizard_values.get(
+            "sub_organizing_dimension", config.sub_organizing_dimension or "none"
+        )
+        self.include_inactive = wizard_values.get(
+            "include_inactive", config.include_inactive
+        )
+        self.exclude_test_employees = wizard_values.get(
+            "exclude_test_employees", config.exclude_test_employees
+        )
+        self.collect_existing_documents = wizard_values.get(
+            "collect_existing_documents", config.collect_existing_documents
+        )
+
+    def get_organizing_dimensions(self):
+        return list(self._dimensions)
 
 
 def _run_setup_in_background(db_name, uid, run_id, company_id):
@@ -56,7 +104,15 @@ class DocEmployeeFilesService(models.AbstractModel):
 
     @api.model
     def _employee_domain(self, company):
-        return [("company_id", "=", company.id)]
+        company = company or self.env.company
+        company_ids = [company.id]
+        if getattr(company, "child_ids", None):
+            company_ids.extend(company.child_ids.ids)
+        return [
+            "|",
+            ("company_id", "=", False),
+            ("company_id", "in", company_ids),
+        ]
 
     @api.model
     def _is_test_employee(self, employee):
@@ -77,8 +133,10 @@ class DocEmployeeFilesService(models.AbstractModel):
         if dimension == "grade" and hasattr(employee, "grade_id"):
             grade = employee.grade_id
             return (str(grade.id), grade.name) if grade else (False, False)
-        if dimension == "employment_type" and hasattr(employee, "employment_type_id"):
-            et = employee.employment_type_id
+        if dimension == "employment_type":
+            et = getattr(employee, "employment_type_id", False) or getattr(
+                employee, "employee_type_id", False
+            )
             return (str(et.id), et.name) if et else (False, False)
         if dimension == "work_location":
             loc = getattr(employee, "work_location_id", False) or getattr(
@@ -92,8 +150,11 @@ class DocEmployeeFilesService(models.AbstractModel):
 
     @api.model
     def _eligible_employees(self, config):
-        Employee = self.env["hr.employee"].sudo()
-        domain = self._employee_domain(config.company_id)
+        company = config.company_id or self.env.company
+        Employee = self.env["hr.employee"].sudo().with_company(company)
+        if config.include_inactive:
+            Employee = Employee.with_context(active_test=False)
+        domain = self._employee_domain(company)
         if not config.include_inactive:
             domain.append(("active", "=", True))
         employees = Employee.search(domain)
@@ -126,12 +187,119 @@ class DocEmployeeFilesService(models.AbstractModel):
             included.append(employee)
         return included, excluded_counts
 
+    CONFIG_DRIVEN_EXCLUSION_REASONS = ("inactive", "test_employee")
+    DOCUMENT_LINK_ISSUE_TYPES = (
+        "unmatched_document",
+        "upload_failed",
+        "processing_failed",
+        "duplicate_document",
+    )
+    SYNC_ISSUE_TYPES = ("sync_failed",)
+    INTEGRATION_ISSUE_TYPES = ("integration_failed",)
+    EF_DOCUMENT_RECONCILE_CTX = "skip_ef_document_reconcile"
+
     @api.model
-    def setup_preview(self, wizard_values=None):
-        config = self.env["doc.employee.files.config"].get_for_company()
-        wizard_values = wizard_values or {}
-        if wizard_values.get("organizing_dimensions"):
-            config.set_organizing_dimensions(wizard_values["organizing_dimensions"])
+    def _has_manual_exclusion(self, employee, config):
+        return bool(
+            self.env["doc.employee.exclusion"]
+            .sudo()
+            .search(
+                [
+                    ("company_id", "=", config.company_id.id),
+                    ("employee_id", "=", employee.id),
+                    ("reason", "=", "manual"),
+                    ("active", "=", True),
+                ],
+                limit=1,
+            )
+        )
+
+    @api.model
+    def _config_exclusion_reasons(self, employee, config):
+        reasons = set()
+        if not config.include_inactive and not employee.active:
+            reasons.add("inactive")
+        if config.exclude_test_employees and self._is_test_employee(employee):
+            reasons.add("test_employee")
+        return reasons
+
+    @api.model
+    def _is_ef_eligible(self, employee, config):
+        if self._has_manual_exclusion(employee, config):
+            return False
+        if self._config_exclusion_reasons(employee, config):
+            return False
+        return True
+
+    @api.model
+    def _sync_config_exclusions(self, employee, config):
+        Exclusion = self.env["doc.employee.exclusion"].sudo()
+        company_id = config.company_id.id
+        desired = self._config_exclusion_reasons(employee, config)
+        auto_note = _("Maintained automatically from inclusion settings.")
+        for reason in self.CONFIG_DRIVEN_EXCLUSION_REASONS:
+            domain = [
+                ("company_id", "=", company_id),
+                ("employee_id", "=", employee.id),
+                ("reason", "=", reason),
+            ]
+            active_row = Exclusion.search(domain + [("active", "=", True)], limit=1)
+            inactive_row = Exclusion.search(domain + [("active", "=", False)], limit=1)
+            if reason in desired:
+                if active_row:
+                    continue
+                if inactive_row:
+                    inactive_row.write(
+                        {
+                            "active": True,
+                            "justification": auto_note,
+                            "configured_by_id": False,
+                        }
+                    )
+                else:
+                    Exclusion.create(
+                        {
+                            "company_id": company_id,
+                            "employee_id": employee.id,
+                            "reason": reason,
+                            "justification": auto_note,
+                            "configured_by_id": False,
+                        }
+                    )
+            elif active_row:
+                active_row.write({"active": False})
+
+    @api.model
+    def _primary_organizing_dimension(self, config):
+        dimensions = config.get_organizing_dimensions()
+        if not dimensions:
+            return False
+        return config.primary_organizing_dimension or dimensions[0]
+
+    @api.model
+    def _sub_organizing_dimension(self, config):
+        sub = config.sub_organizing_dimension or "none"
+        if sub == "none":
+            return False
+        return sub
+
+    @api.model
+    def _nested_primary_groups(self, config):
+        primary = self._primary_organizing_dimension(config)
+        sub = self._sub_organizing_dimension(config)
+        if not primary or not sub or sub == primary:
+            return False
+        return True
+
+    @api.model
+    def _nested_child_dimension_value_key(self, parent_key, sub_key):
+        return "%s::%s" % (parent_key, sub_key)
+
+    @api.model
+    def _preview_config(self, config, wizard_values=None, persist=False):
+        """Apply wizard overrides for preview; optionally persist to the stored config."""
+        wizard_values = dict(wizard_values or {})
+        overrides = {}
         for key in (
             "include_all_existing",
             "include_inactive",
@@ -141,54 +309,810 @@ class DocEmployeeFilesService(models.AbstractModel):
             "sub_organizing_dimension",
         ):
             if key in wizard_values:
-                config.write({key: wizard_values[key]})
+                overrides[key] = wizard_values[key]
+        if "organizing_dimensions" in wizard_values:
+            dims = [d for d in wizard_values["organizing_dimensions"] if d]
+            overrides["organizing_dimension_ids"] = json.dumps(dims)
+            overrides["primary_organizing_dimension"] = dims[0] if dims else False
+        if persist:
+            if "organizing_dimensions" in wizard_values:
+                config.set_organizing_dimensions(wizard_values["organizing_dimensions"])
+            if overrides:
+                config.write(overrides)
+            return config
+        if not overrides:
+            return config
+        return config.new(overrides)
 
-        dimensions = config.get_organizing_dimensions()
+    @api.model
+    def _ensure_system_managed_group(
+        self,
+        company_id,
+        dimension,
+        value_key,
+        label,
+        parent_group=False,
+    ):
+        Group = self.env["doc.employee.group"].sudo()
+        domain = [
+            ("company_id", "=", company_id),
+            ("group_kind", "=", "system_managed"),
+            ("organizing_dimension", "=", dimension),
+            ("dimension_value_key", "=", value_key),
+            ("parent_group_id", "=", parent_group.id if parent_group else False),
+        ]
+        group = Group.search(domain, limit=1)
+        if not group:
+            group = Group.create(
+                {
+                    "name": label,
+                    "group_kind": "system_managed",
+                    "company_id": company_id,
+                    "organizing_dimension": dimension,
+                    "dimension_value_key": value_key,
+                    "parent_group_id": parent_group.id if parent_group else False,
+                }
+            )
+        elif label and group.name != label:
+            group.write({"name": label})
+        return group
+
+    @api.model
+    def _open_org_attribute_issue(
+        self, employee, employee_file, config, setup_run_id=False
+    ):
+        primary = self._primary_organizing_dimension(config)
+        if not primary:
+            return False
+        key, _label = self._dimension_value(employee, primary)
+        if key:
+            return False
+        Issue = self.env["doc.employee.issue"].sudo()
+        existing = Issue.search(
+            [
+                ("company_id", "=", config.company_id.id),
+                ("employee_id", "=", employee.id),
+                ("issue_type", "=", "no_org_attribute"),
+                ("state", "=", "open"),
+            ],
+            limit=1,
+        )
+        if existing:
+            return False
+        vals = {
+            "company_id": config.company_id.id,
+            "name": _("No organizational attribute: %s") % employee.name,
+            "category": "unresolved_data",
+            "issue_type": "no_org_attribute",
+            "details": _("Assign the organizing attribute in EMS."),
+            "employee_id": employee.id,
+            "employee_file_id": employee_file.id if employee_file else False,
+            "recoverable": False,
+            "recommended_action": "view_in_ems",
+        }
+        if setup_run_id:
+            vals["setup_run_id"] = setup_run_id
+        Issue.create(vals)
+        return True
+
+    @api.model
+    def _resolve_org_attribute_issues(self, employee, company_id):
+        Issue = self.env["doc.employee.issue"].sudo()
+        open_issues = Issue.search(
+            [
+                ("company_id", "=", company_id),
+                ("employee_id", "=", employee.id),
+                ("issue_type", "=", "no_org_attribute"),
+                ("state", "=", "open"),
+            ]
+        )
+        if open_issues:
+            open_issues.write({"state": "resolved"})
+
+    @api.model
+    def _open_init_failed_issue(self, employee, config, error, setup_run_id=False):
+        Issue = self.env["doc.employee.issue"].sudo()
+        existing = Issue.search(
+            [
+                ("company_id", "=", config.company_id.id),
+                ("employee_id", "=", employee.id),
+                ("issue_type", "=", "init_failed"),
+                ("state", "=", "open"),
+            ],
+            limit=1,
+        )
+        if existing:
+            existing.write(
+                {"details": hr_details_for_issue_type("init_failed")}
+            )
+            return existing
+        defaults = ISSUE_TYPE_DEFAULTS["init_failed"]
+        vals = {
+            "company_id": config.company_id.id,
+            "name": _("Initialization failed: %s") % employee.name,
+            "category": defaults["category"],
+            "issue_type": "init_failed",
+            "details": hr_details_for_issue_type("init_failed"),
+            "employee_id": employee.id,
+            "recoverable": defaults["recoverable"],
+            "recommended_action": defaults["recommended_action"],
+        }
+        if setup_run_id:
+            vals["setup_run_id"] = setup_run_id
+        return Issue.create(vals)
+
+    @api.model
+    def _resolve_init_failed_issues(self, employee, company_id):
+        Issue = self.env["doc.employee.issue"].sudo()
+        open_issues = Issue.search(
+            [
+                ("company_id", "=", company_id),
+                ("employee_id", "=", employee.id),
+                ("issue_type", "=", "init_failed"),
+                ("state", "=", "open"),
+            ]
+        )
+        if open_issues:
+            open_issues.write({"state": "resolved"})
+
+    @api.model
+    def _wind_down_excluded_employee(self, employee, config):
+        company_id = config.company_id.id
+        self._resolve_org_attribute_issues(employee, company_id)
+        EmployeeFile = self.env["doc.employee.file"].sudo()
+        employee_file = EmployeeFile.search(
+            [
+                ("employee_id", "=", employee.id),
+                ("company_id", "=", company_id),
+            ],
+            limit=1,
+        )
+        if not employee_file:
+            return
+        employee_file.write({"state": "inactive"})
+        Group = self.env["doc.employee.group"].sudo()
+        system_groups = Group.search(
+            [
+                ("company_id", "=", company_id),
+                ("group_kind", "=", "system_managed"),
+                ("member_ids", "in", employee_file.id),
+            ]
+        )
+        for group in system_groups:
+            group.write({"member_ids": [(3, employee_file.id)]})
+
+    @api.model
+    def reconcile_employee_from_ems(self, employee):
+        config = self.env["doc.employee.files.config"].get_for_company(
+            employee.company_id
+        )
+        if not config.setup_complete:
+            return
+        self._sync_config_exclusions(employee, config)
+        if not self._is_ef_eligible(employee, config):
+            self._wind_down_excluded_employee(employee, config)
+            return
+
+        company_id = config.company_id.id
+        try:
+            employee_file = self._ensure_employee_file(employee, sync_groups=False)
+            if employee_file:
+                employee_file._ensure_storage_folder()
+        except Exception as error:
+            _logger.exception(
+                "Employee file init failed during EMS reconcile for %s", employee.id
+            )
+            self._open_init_failed_issue(employee, config, error)
+            return
+
+        if not employee_file:
+            return
+
+        self._resolve_init_failed_issues(employee, company_id)
+        primary = self._primary_organizing_dimension(config)
+        if primary:
+            key, _label = self._dimension_value(employee, primary)
+            if key:
+                self._resolve_org_attribute_issues(employee, company_id)
+            else:
+                self._open_org_attribute_issue(employee, employee_file, config)
+        employee_file.write(
+            {"state": "active" if employee.active else "inactive"}
+        )
+        try:
+            self.sync_employee_system_groups(employee, employee_file)
+            self._resolve_sync_failed_issues(employee, company_id)
+        except Exception as error:
+            _logger.exception(
+                "Employee Files sync failed during EMS reconcile for %s",
+                employee.id,
+            )
+            self._open_sync_failed_issue(
+                employee, config, error, employee_file=employee_file
+            )
+
+    @api.model
+    def reconcile_all_employees_from_ems(self, company=None):
+        company = company or self.env.company
+        config = self.env["doc.employee.files.config"].get_for_company(company)
+        if not config.setup_complete:
+            return
+        employees = self.env["hr.employee"].sudo().search(
+            self._employee_domain(company)
+        )
+        for employee in employees:
+            self.reconcile_employee_from_ems(employee)
+        self._cleanup_obsolete_system_groups(config)
+
+    @api.model
+    def _cleanup_obsolete_system_groups(self, config):
+        """Remove system-managed groups that no longer match organizing config."""
+        company_id = config.company_id.id
+        Group = self.env["doc.employee.group"].sudo()
+        allowed_dims = set(config.get_organizing_dimensions())
+        nested = self._nested_primary_groups(config)
+        sub = self._sub_organizing_dimension(config)
+
+        groups = Group.search(
+            [
+                ("company_id", "=", company_id),
+                ("group_kind", "=", "system_managed"),
+            ]
+        )
+        obsolete = Group.browse()
+        for group in groups:
+            dim = group.organizing_dimension
+            if dim not in allowed_dims:
+                obsolete |= group
+                continue
+            if nested and sub and dim == sub and not group.parent_group_id:
+                obsolete |= group
+                continue
+            if group.parent_group_id:
+                if not nested or dim != sub:
+                    obsolete |= group
+
+        if not obsolete:
+            return
+
+        for group in obsolete:
+            if group.member_ids:
+                group.write({"member_ids": [(5, 0, 0)]})
+        obsolete_ids = obsolete.ids
+        children = obsolete.filtered("parent_group_id")
+        if children:
+            children.unlink()
+        root_obsolete = Group.search(
+            [("id", "in", obsolete_ids), ("parent_group_id", "=", False)]
+        )
+        for group in root_obsolete:
+            if not group.child_ids:
+                group.unlink()
+
+    @api.model
+    def _integration_module_name_from_error(self, error):
+        message = str(error or "")
+        if isinstance(error, ImportError):
+            return error.name or _("required integration")
+        for token in ("cleon_", "hr_", "doc."):
+            if token in message:
+                fragment = message.split(token, 1)[-1].split()[0].split("'")[0]
+                return token.rstrip(".") + fragment.split(".")[0]
+        if "module" in message.lower():
+            return _("connected module")
+        return _("Document Management")
+
+    @api.model
+    def _classify_document_link_issue_type(self, document, employee_file, error):
+        if (
+            employee_file
+            and document.employee_file_id
+            and document.employee_file_id != employee_file
+        ):
+            return "duplicate_document"
+        text = str(error or "").lower()
+        if any(
+            marker in text
+            for marker in ("duplicate", "unique", "already exists", "already linked")
+        ):
+            return "duplicate_document"
+        if any(marker in text for marker in ("upload", "attachment", "mimetype")):
+            return "upload_failed"
+        if any(
+            marker in text
+            for marker in ("process", "index", "ocr", "extract", "classif")
+        ):
+            return "processing_failed"
+        return "unmatched_document"
+
+    @api.model
+    def _document_link_issue_title(self, issue_type, document):
+        titles = {
+            "duplicate_document": _("Duplicate document: %s"),
+            "upload_failed": _("Document upload failed: %s"),
+            "processing_failed": _("Document processing failed: %s"),
+            "unmatched_document": _("Unmatched document: %s"),
+        }
+        template = titles.get(issue_type, _("Document issue: %s"))
+        return template % document.name
+
+    @api.model
+    def _open_sync_failed_issue(
+        self, employee, config, error, employee_file=False, setup_run_id=False
+    ):
+        Issue = self.env["doc.employee.issue"].sudo()
+        company_id = config.company_id.id
+        existing = Issue.search(
+            [
+                ("company_id", "=", company_id),
+                ("employee_id", "=", employee.id),
+                ("issue_type", "=", "sync_failed"),
+                ("state", "=", "open"),
+            ],
+            limit=1,
+        )
+        defaults = ISSUE_TYPE_DEFAULTS["sync_failed"]
+        details = hr_details_for_issue_type("sync_failed")
+        if existing:
+            existing.write({"details": details})
+            return existing
+        vals = {
+            "company_id": company_id,
+            "name": _("Synchronization failed: %s") % employee.name,
+            "category": defaults["category"],
+            "issue_type": "sync_failed",
+            "details": details,
+            "employee_id": employee.id,
+            "employee_file_id": employee_file.id if employee_file else False,
+            "recoverable": defaults["recoverable"],
+            "recommended_action": defaults["recommended_action"],
+        }
+        if setup_run_id:
+            vals["setup_run_id"] = setup_run_id
+        _logger.warning(
+            "Sync failed for employee %s: %s", employee.id, error
+        )
+        return Issue.create(vals)
+
+    @api.model
+    def _resolve_sync_failed_issues(self, employee, company_id):
+        Issue = self.env["doc.employee.issue"].sudo()
+        open_issues = Issue.search(
+            [
+                ("company_id", "=", company_id),
+                ("employee_id", "=", employee.id),
+                ("issue_type", "=", "sync_failed"),
+                ("state", "=", "open"),
+            ]
+        )
+        if open_issues:
+            open_issues.write({"state": "resolved"})
+
+    @api.model
+    def _open_integration_failed_issue(
+        self,
+        employee,
+        config,
+        error,
+        module_name=None,
+        employee_file=False,
+        setup_run_id=False,
+    ):
+        Issue = self.env["doc.employee.issue"].sudo()
+        company_id = config.company_id.id
+        module_name = module_name or self._integration_module_name_from_error(error)
+        existing = Issue.search(
+            [
+                ("company_id", "=", company_id),
+                ("employee_id", "=", employee.id),
+                ("issue_type", "=", "integration_failed"),
+                ("state", "=", "open"),
+            ],
+            limit=1,
+        )
+        defaults = ISSUE_TYPE_DEFAULTS["integration_failed"]
+        details = hr_details_for_issue_type(
+            "integration_failed", module_name=module_name
+        )
+        if existing:
+            existing.write({"details": details})
+            return existing
+        vals = {
+            "company_id": company_id,
+            "name": _("Integration failed: %s") % employee.name,
+            "category": defaults["category"],
+            "issue_type": "integration_failed",
+            "details": details,
+            "employee_id": employee.id,
+            "employee_file_id": employee_file.id if employee_file else False,
+            "recoverable": defaults["recoverable"],
+            "recommended_action": defaults["recommended_action"],
+        }
+        if setup_run_id:
+            vals["setup_run_id"] = setup_run_id
+        _logger.warning(
+            "Integration failed for employee %s (%s): %s",
+            employee.id,
+            module_name,
+            error,
+        )
+        return Issue.create(vals)
+
+    @api.model
+    def _resolve_integration_failed_issues(self, employee, company_id):
+        Issue = self.env["doc.employee.issue"].sudo()
+        open_issues = Issue.search(
+            [
+                ("company_id", "=", company_id),
+                ("employee_id", "=", employee.id),
+                ("issue_type", "=", "integration_failed"),
+                ("state", "=", "open"),
+            ]
+        )
+        if open_issues:
+            open_issues.write({"state": "resolved"})
+
+    @api.model
+    def _open_document_link_issue(
+        self,
+        document,
+        employee,
+        employee_file,
+        error,
+        setup_run_id=False,
+        issue_type=None,
+    ):
+        Issue = self.env["doc.employee.issue"].sudo()
+        company_id = employee.company_id.id
+        issue_type = issue_type or self._classify_document_link_issue_type(
+            document, employee_file, error
+        )
+        if issue_type not in self.DOCUMENT_LINK_ISSUE_TYPES:
+            issue_type = "unmatched_document"
+        existing = Issue.search(
+            [
+                ("company_id", "=", company_id),
+                ("document_id", "=", document.id),
+                ("issue_type", "=", issue_type),
+                ("state", "=", "open"),
+            ],
+            limit=1,
+        )
+        defaults = ISSUE_TYPE_DEFAULTS.get(
+            issue_type, ISSUE_TYPE_DEFAULTS["unmatched_document"]
+        )
+        details = hr_details_for_issue_type(issue_type)
+        if existing:
+            existing.write({"details": details})
+            return existing
+        vals = {
+            "company_id": company_id,
+            "name": self._document_link_issue_title(issue_type, document),
+            "category": defaults["category"],
+            "issue_type": issue_type,
+            "details": details,
+            "employee_id": employee.id,
+            "employee_file_id": employee_file.id if employee_file else False,
+            "document_id": document.id,
+            "recoverable": defaults["recoverable"],
+            "recommended_action": defaults["recommended_action"],
+        }
+        if setup_run_id:
+            vals["setup_run_id"] = setup_run_id
+        _logger.warning(
+            "Document link issue (%s) for doc %s: %s",
+            issue_type,
+            document.id,
+            error,
+        )
+        return Issue.create(vals)
+
+    @api.model
+    def _resolve_document_link_issues(self, document):
+        Issue = self.env["doc.employee.issue"].sudo()
+        open_issues = Issue.search(
+            [
+                ("document_id", "=", document.id),
+                ("issue_type", "in", list(self.DOCUMENT_LINK_ISSUE_TYPES)),
+                ("state", "=", "open"),
+            ]
+        )
+        if open_issues:
+            open_issues.write({"state": "resolved"})
+
+    @api.model
+    def _link_document_to_employee_file(
+        self, document, employee_file, setup_run_id=False
+    ):
+        employee = document.employee_id
+        if not employee or not employee_file:
+            return False
+        if (
+            document.employee_file_id
+            and document.employee_file_id != employee_file
+        ):
+            self._open_document_link_issue(
+                document,
+                employee,
+                employee_file,
+                _("Document is already linked to another employee file."),
+                setup_run_id=setup_run_id,
+                issue_type="duplicate_document",
+            )
+            return False
+        try:
+            vals = {"employee_file_id": employee_file.id}
+            if employee_file.storage_folder_id:
+                vals["folder_id"] = employee_file.storage_folder_id.id
+            document.with_context(
+                **{self.EF_DOCUMENT_RECONCILE_CTX: True}
+            ).sudo().write(vals)
+            self._resolve_document_link_issues(document)
+            return True
+        except Exception as error:
+            _logger.exception(
+                "Document link failed for doc %s employee file %s",
+                document.id,
+                employee_file.id,
+            )
+            self._open_document_link_issue(
+                document,
+                employee,
+                employee_file,
+                error,
+                setup_run_id=setup_run_id,
+            )
+            return False
+
+    @api.model
+    def _collect_employee_documents_into_file(
+        self, employee, employee_file, config, setup_run_id=False
+    ):
+        """Link existing EMS documents into the employee file (setup / retry)."""
+        Document = self.env["doc.document"].sudo()
+        try:
+            docs = Document.search(
+                [
+                    ("employee_id", "=", employee.id),
+                    ("active", "=", True),
+                ]
+            )
+        except Exception as error:
+            self._open_integration_failed_issue(
+                employee,
+                config,
+                error,
+                employee_file=employee_file,
+                setup_run_id=setup_run_id,
+            )
+            return 0, 1
+        linked = 0
+        attention = 0
+        for doc in docs:
+            try:
+                if self._link_document_to_employee_file(
+                    doc, employee_file, setup_run_id=setup_run_id
+                ):
+                    linked += 1
+                else:
+                    attention += 1
+            except Exception as error:
+                _logger.exception(
+                    "Document collection failed for employee %s doc %s",
+                    employee.id,
+                    doc.id,
+                )
+                module_name = self._integration_module_name_from_error(error)
+                self._open_integration_failed_issue(
+                    employee,
+                    config,
+                    error,
+                    module_name=module_name,
+                    employee_file=employee_file,
+                    setup_run_id=setup_run_id,
+                )
+                attention += 1
+        if linked and not attention:
+            self._resolve_integration_failed_issues(
+                employee, config.company_id.id
+            )
+        return linked, attention
+
+    @api.model
+    def reconcile_document_employee_file(self, document):
+        document = document.exists()
+        if not document or not document.active or not document.employee_id:
+            return
+        employee = document.employee_id
+        config = self.env["doc.employee.files.config"].get_for_company(
+            employee.company_id
+        )
+        if not config.setup_complete or not self._is_ef_eligible(employee, config):
+            return
+        employee_file = document.employee_file_id
+        if not employee_file:
+            employee_file = self.env["doc.employee.file"].sudo().search(
+                [
+                    ("employee_id", "=", employee.id),
+                    ("company_id", "=", employee.company_id.id),
+                ],
+                limit=1,
+            )
+        if not employee_file:
+            return
+        if (
+            document.employee_file_id == employee_file
+            and document.folder_id == employee_file.storage_folder_id
+        ):
+            self._resolve_document_link_issues(document)
+            return
+        self._link_document_to_employee_file(document, employee_file)
+
+    @api.model
+    def reconcile_all_documents_for_company(self, company=None):
+        company = company or self.env.company
+        config = self.env["doc.employee.files.config"].get_for_company(company)
+        if not config.setup_complete:
+            return
+        documents = self.env["doc.document"].sudo().search(
+            [
+                ("employee_id.company_id", "=", company.id),
+                ("employee_id", "!=", False),
+                ("active", "=", True),
+            ]
+        )
+        for document in documents:
+            self.reconcile_document_employee_file(document)
+
+    @api.model
+    def cron_reconcile_all_companies(self):
+        Config = self.env["doc.employee.files.config"].sudo()
+        for config in Config.search([("setup_complete", "=", True)]):
+            company = config.company_id
+            service = self.with_company(company)
+            service.reconcile_all_employees_from_ems(company)
+            service.reconcile_all_documents_for_company(company)
+
+    @api.model
+    def _preview_group_buckets(self, included, dimension, primary, sub, nested_primary):
+        group_keys = {}
+        missing_primary = 0
+        for employee in included:
+            if nested_primary and dimension == primary:
+                parent_key, parent_label = self._dimension_value(employee, primary)
+                if not parent_key:
+                    missing_primary += 1
+                    continue
+                sub_key, sub_label = self._dimension_value(employee, sub)
+                bucket_key = parent_key
+                bucket_name = parent_label
+                if sub_key:
+                    bucket_key = self._nested_child_dimension_value_key(
+                        parent_key, sub_key
+                    )
+                    bucket_name = "%s · %s" % (parent_label, sub_label)
+                group_keys.setdefault(
+                    bucket_key, {"name": bucket_name, "employees": 0, "documents": 0}
+                )
+                group_keys[bucket_key]["employees"] += 1
+            else:
+                key, label = self._dimension_value(employee, dimension)
+                if not key:
+                    if dimension == primary:
+                        missing_primary += 1
+                    continue
+                group_keys.setdefault(key, {"name": label, "employees": 0, "documents": 0})
+                group_keys[key]["employees"] += 1
+
+        Document = self.env["doc.document"].sudo()
+        for key, bucket in group_keys.items():
+            if nested_primary and dimension == primary and "::" in key:
+                parent_key, sub_key = key.split("::", 1)
+                emp_ids = [
+                    e.id
+                    for e in included
+                    if self._dimension_value(e, primary)[0] == parent_key
+                    and self._dimension_value(e, sub)[0] == sub_key
+                ]
+            elif nested_primary and dimension == primary:
+                emp_ids = [
+                    e.id
+                    for e in included
+                    if self._dimension_value(e, primary)[0] == key
+                    and not self._dimension_value(e, sub)[0]
+                ]
+            else:
+                emp_ids = [
+                    e.id
+                    for e in included
+                    if self._dimension_value(e, dimension)[0] == key
+                ]
+            bucket["documents"] = Document.search_count(
+                [("employee_id", "in", emp_ids), ("active", "=", True)]
+            )
+        return group_keys, missing_primary
+
+    @api.model
+    def setup_preview(self, wizard_values=None, persist=False):
+        config = self.env["doc.employee.files.config"].get_for_company()
+        wizard_values = dict(wizard_values or {})
+        if persist:
+            self._preview_config(config, wizard_values, persist=True)
+            preview_config = config
+        else:
+            preview_config = _EmployeeFilesPreviewConfig(config, wizard_values)
+
+        dimensions = preview_config.get_organizing_dimensions()
         if not dimensions:
             raise UserError(_("Select at least one organizing dimension."))
 
-        included, excluded_counts = self._eligible_employees(config)
-        primary = dimensions[0]
-        group_keys = {}
-        no_department = 0
-        for employee in included:
-            key, label = self._dimension_value(employee, primary)
-            if not key:
-                no_department += 1
-                continue
-            group_keys.setdefault(key, {"name": label, "employees": 0, "documents": 0})
-            group_keys[key]["employees"] += 1
+        company = preview_config.company_id or self.env.company
+        ems_employees_in_company = self.env["hr.employee"].sudo().with_company(
+            company
+        ).search_count(self._employee_domain(company))
 
+        included, excluded_counts = self._eligible_employees(preview_config)
+        primary = self._primary_organizing_dimension(preview_config)
+        sub = self._sub_organizing_dimension(preview_config)
+        nested_primary = self._nested_primary_groups(preview_config)
+
+        dimension_summaries = []
+        total_groups = 0
+        need_attention_expected = 0
+        for dimension in dimensions:
+            buckets, missing = self._preview_group_buckets(
+                included,
+                dimension,
+                primary,
+                sub,
+                nested_primary,
+            )
+            if dimension == primary:
+                need_attention_expected = missing
+            total_groups += len(buckets)
+            dimension_summaries.append(
+                {
+                    "dimension": dimension,
+                    "groups_to_create": len(buckets),
+                    "group_breakdown": [
+                        {
+                            "name": data["name"],
+                            "employees": data["employees"],
+                            "documents": data["documents"],
+                            "excluded": 0,
+                        }
+                        for data in buckets.values()
+                    ],
+                }
+            )
+
+        primary_buckets, _missing = self._preview_group_buckets(
+            included, primary, primary, sub, nested_primary
+        )
         doc_count = 0
-        if config.collect_existing_documents:
+        if preview_config.collect_existing_documents:
             doc_count = self.env["doc.document"].sudo().search_count(
                 [
                     ("employee_id", "in", [e.id for e in included]),
                     ("active", "=", True),
                 ]
             )
-            for key, bucket in group_keys.items():
-                emp_ids = [
-                    e.id
-                    for e in included
-                    if self._dimension_value(e, primary)[0] == key
-                ]
-                bucket["documents"] = self.env["doc.document"].sudo().search_count(
-                    [
-                        ("employee_id", "in", emp_ids),
-                        ("active", "=", True),
-                    ]
-                )
 
         total_excluded = sum(excluded_counts.values())
         return {
             "organizing_dimensions": dimensions,
-            "groups_to_create": len(group_keys),
+            "sub_organizing_dimension": preview_config.sub_organizing_dimension
+            or "none",
+            "primary_organizing_dimension": primary or "",
+            "nested_primary_view": bool(nested_primary),
+            "groups_to_create": total_groups,
             "employees_included": len(included),
+            "ems_employees_in_company": ems_employees_in_company,
             "documents_expected": doc_count,
-            "need_attention_expected": no_department,
+            "need_attention_expected": need_attention_expected,
             "excluded_total": total_excluded,
             "excluded_breakdown": excluded_counts,
+            "dimension_summaries": dimension_summaries,
             "group_breakdown": [
                 {
                     "name": data["name"],
@@ -196,7 +1120,7 @@ class DocEmployeeFilesService(models.AbstractModel):
                     "documents": data["documents"],
                     "excluded": 0,
                 }
-                for data in group_keys.values()
+                for data in primary_buckets.values()
             ],
         }
 
@@ -208,14 +1132,13 @@ class DocEmployeeFilesService(models.AbstractModel):
             raise AccessError(_("Employee Files setup requires document administrator access."))
 
         config = self.env["doc.employee.files.config"].get_for_company()
-        preview = self.setup_preview(wizard_values)
+        preview = self.setup_preview(wizard_values, persist=True)
         config.write(
             {
                 "setup_complete": False,
                 "primary_organizing_dimension": preview["organizing_dimensions"][0],
             }
         )
-        config.set_organizing_dimensions(preview["organizing_dimensions"])
 
         run = self.env["doc.employee.setup.run"].sudo().create(
             {
@@ -297,7 +1220,6 @@ class DocEmployeeFilesService(models.AbstractModel):
         dimensions = config.get_organizing_dimensions()
         primary = dimensions[0]
         EmployeeFile = self.env["doc.employee.file"].sudo()
-        Group = self.env["doc.employee.group"].sudo()
         initialized = 0
         collected = 0
         attention = 0
@@ -325,24 +1247,14 @@ class DocEmployeeFilesService(models.AbstractModel):
             except Exception as error:
                 _logger.exception("Employee file init failed for %s", employee.id)
                 attention += 1
-                Issue.create(
-                    {
-                        "company_id": config.company_id.id,
-                        "name": _("Initialization failed: %s") % employee.name,
-                        "category": "initialization_failed",
-                        "issue_type": "init_failed",
-                        "details": str(error),
-                        "employee_id": employee.id,
-                        "recoverable": True,
-                        "recommended_action": "retry",
-                        "setup_run_id": run.id,
-                    }
+                self._open_init_failed_issue(
+                    employee, config, error, setup_run_id=run.id
                 )
             if index % SETUP_PROGRESS_BATCH == 0 or index == len(included):
                 _stage_progress("create_files", initialized, len(included))
         _stage_done("create_files", initialized, len(included))
 
-        organize_total = len(included) * max(len(dimensions), 1)
+        organize_total = len(included)
         dim_labels = {
             "department": _("Department"),
             "branch": _("Branch"),
@@ -361,81 +1273,35 @@ class DocEmployeeFilesService(models.AbstractModel):
             )
             _commit_progress()
         _stage("organize_groups", organize_total)
-        system_groups = {}
         organized = 0
-        for dimension in dimensions:
-            for employee in included:
-                employee_file = EmployeeFile.search(
-                    [
-                        ("employee_id", "=", employee.id),
-                        ("company_id", "=", config.company_id.id),
-                    ],
-                    limit=1,
-                )
-                if not employee_file:
-                    continue
-                key, label = self._dimension_value(employee, dimension)
-                if not key:
-                    if dimension == primary:
-                        attention += 1
-                        existing = Issue.search(
-                            [
-                                ("employee_id", "=", employee.id),
-                                ("issue_type", "=", "no_org_attribute"),
-                                ("state", "=", "open"),
-                            ],
-                            limit=1,
-                        )
-                        if not existing:
-                            Issue.create(
-                                {
-                                    "company_id": config.company_id.id,
-                                    "name": _("No organizational attribute: %s")
-                                    % employee.name,
-                                    "category": "unresolved_data",
-                                    "issue_type": "no_org_attribute",
-                                    "details": _(
-                                        "Assign the organizing attribute in EMS."
-                                    ),
-                                    "employee_id": employee.id,
-                                    "employee_file_id": employee_file.id,
-                                    "recoverable": False,
-                                    "recommended_action": "view_in_ems",
-                                }
-                            )
-                    continue
-                cache_key = (dimension, key)
-                group = system_groups.get(cache_key)
-                if not group:
-                    group = Group.search(
-                        [
-                            ("company_id", "=", config.company_id.id),
-                            ("group_kind", "=", "system_managed"),
-                            ("organizing_dimension", "=", dimension),
-                            ("dimension_value_key", "=", key),
-                        ],
-                        limit=1,
-                    )
-                    if not group:
-                        group = Group.create(
-                            {
-                                "name": label,
-                                "group_kind": "system_managed",
-                                "company_id": config.company_id.id,
-                                "organizing_dimension": dimension,
-                                "dimension_value_key": key,
-                            }
-                        )
-                    system_groups[cache_key] = group
-                if employee_file not in group.member_ids:
-                    group.write({"member_ids": [(4, employee_file.id)]})
-                organized += 1
-                if organized % SETUP_PROGRESS_BATCH == 0:
-                    _stage_progress("organize_groups", organized, organize_total)
+        for index, employee in enumerate(included, start=1):
+            employee_file = EmployeeFile.search(
+                [
+                    ("employee_id", "=", employee.id),
+                    ("company_id", "=", config.company_id.id),
+                ],
+                limit=1,
+            )
+            if not employee_file:
+                continue
+            primary_key, _label = self._dimension_value(employee, primary)
+            if not primary_key:
+                if self._open_org_attribute_issue(
+                    employee,
+                    employee_file,
+                    config,
+                    setup_run_id=run.id,
+                ):
+                    attention += 1
+            self.with_context(employee_files_allow_group_sync=True).sync_employee_system_groups(
+                employee, employee_file
+            )
+            organized += 1
+            if index % SETUP_PROGRESS_BATCH == 0 or index == len(included):
+                _stage_progress("organize_groups", organized, organize_total)
         _stage_done("organize_groups", organized, organize_total)
 
         if config.collect_existing_documents:
-            Document = self.env["doc.document"].sudo()
             _stage("collect_documents", len(included))
             for doc_index, employee in enumerate(included, start=1):
                 employee_file = EmployeeFile.search(
@@ -447,36 +1313,14 @@ class DocEmployeeFilesService(models.AbstractModel):
                 )
                 if not employee_file:
                     continue
-                docs = Document.search(
-                    [
-                        ("employee_id", "=", employee.id),
-                        ("active", "=", True),
-                    ]
+                linked, failed = self._collect_employee_documents_into_file(
+                    employee,
+                    employee_file,
+                    config,
+                    setup_run_id=run.id,
                 )
-                for doc in docs:
-                    try:
-                        vals = {"employee_file_id": employee_file.id}
-                        if employee_file.storage_folder_id:
-                            vals["folder_id"] = employee_file.storage_folder_id.id
-                        doc.write(vals)
-                        collected += 1
-                    except Exception as error:
-                        attention += 1
-                        Issue.create(
-                            {
-                                "company_id": config.company_id.id,
-                                "name": _("Unmatched document: %s") % doc.name,
-                                "category": "unmatched_document",
-                                "issue_type": "unmatched_document",
-                                "details": str(error),
-                                "employee_id": employee.id,
-                                "employee_file_id": employee_file.id,
-                                "document_id": doc.id,
-                                "recoverable": True,
-                                "recommended_action": "retry",
-                                "setup_run_id": run.id,
-                            }
-                        )
+                collected += linked
+                attention += failed
                 if doc_index % SETUP_PROGRESS_BATCH == 0 or doc_index == len(included):
                     _stage_progress("collect_documents", doc_index, len(included))
             _stage_done("collect_documents", len(included), len(included))
@@ -495,6 +1339,9 @@ class DocEmployeeFilesService(models.AbstractModel):
 
         _stage("finalize", 1)
         config.write({"setup_complete": True})
+        self.with_company(config.company_id).reconcile_all_employees_from_ems(
+            config.company_id
+        )
         run.write(
             {
                 "state": "done",
@@ -561,13 +1408,41 @@ class DocEmployeeFilesService(models.AbstractModel):
     ):
         Group = self.env["doc.employee.group"]
         config = self.env["doc.employee.files.config"].get_for_company()
-        base = [("company_id", "=", self.env.company.id), ("active", "=", True)]
+        company = config.company_id or self.env.company
+        base = [("company_id", "=", company.id), ("active", "=", True)]
 
         if for_home:
             system_domain = base + [("group_kind", "=", "system_managed")]
             if dimension:
-                system_domain.append(("organizing_dimension", "=", dimension))
-            groups = Group.search(system_domain)
+                primary = self._primary_organizing_dimension(config)
+                nested = self._nested_primary_groups(config)
+                if nested and dimension == primary:
+                    sub = self._sub_organizing_dimension(config)
+                    parents = Group.search(
+                        system_domain
+                        + [
+                            ("organizing_dimension", "=", dimension),
+                            ("parent_group_id", "=", False),
+                        ]
+                    )
+                    child_domain = base + [
+                        ("group_kind", "=", "system_managed"),
+                        ("parent_group_id", "in", parents.ids),
+                    ]
+                    if sub:
+                        child_domain.append(("organizing_dimension", "=", sub))
+                    children = Group.search(child_domain)
+                    groups = parents | children
+                else:
+                    groups = Group.search(
+                        system_domain
+                        + [
+                            ("organizing_dimension", "=", dimension),
+                            ("parent_group_id", "=", False),
+                        ]
+                    )
+            else:
+                groups = Group.search(system_domain)
             if config.enable_custom_groups:
                 custom = Group.search(
                     base
@@ -718,7 +1593,21 @@ class DocEmployeeFilesService(models.AbstractModel):
         }
 
     @api.model
-    def _all_reconciliation_items(self, category="all"):
+    def _issue_matches_search(self, row, search=None):
+        needle = (search or "").strip().lower()
+        if not needle:
+            return True
+        employee_id = row.get("employee_id")
+        if needle.isdigit() and employee_id and str(employee_id) == needle:
+            return True
+        for field in ("employee_name", "name", "details"):
+            value = (row.get(field) or "").lower()
+            if needle in value:
+                return True
+        return False
+
+    @api.model
+    def _all_reconciliation_items(self, category="all", search=None):
         company_id = self.env.company.id
         items = []
         Issue = self.env["doc.employee.issue"]
@@ -729,6 +1618,8 @@ class DocEmployeeFilesService(models.AbstractModel):
             row = issue.serialize_for_api()
             if category != "all" and row["classification"] != category:
                 continue
+            if not self._issue_matches_search(row, search):
+                continue
             items.append(row)
         Exclusion = self.env["doc.employee.exclusion"]
         for exclusion in Exclusion.search(
@@ -737,6 +1628,8 @@ class DocEmployeeFilesService(models.AbstractModel):
         ):
             row = self._reconciliation_item_from_exclusion(exclusion)
             if category != "all" and row["classification"] != category:
+                continue
+            if not self._issue_matches_search(row, search):
                 continue
             items.append(row)
         items.sort(
@@ -750,10 +1643,13 @@ class DocEmployeeFilesService(models.AbstractModel):
         return len(self._all_reconciliation_items(category="all"))
 
     @api.model
-    def list_issues(self, category="all", limit=10, offset=0):
+    def list_issues(self, category="all", limit=10, offset=0, search=None):
         limit = max(1, min(int(limit or 10), 100))
         offset = max(0, int(offset or 0))
-        items = self._all_reconciliation_items(category=category or "all")
+        items = self._all_reconciliation_items(
+            category=category or "all",
+            search=search,
+        )
         total = len(items)
         return items[offset : offset + limit], total
 
@@ -812,18 +1708,65 @@ class DocEmployeeFilesService(models.AbstractModel):
                         partner_ids=config.error_escalation_user_id.partner_id.ids,
                     )
             try:
-                if issue.employee_id and issue.issue_type == "init_failed":
-                    self._ensure_employee_file(issue.employee_id)
+                if issue.employee_id and issue.issue_type in (
+                    "init_failed",
+                    "sync_failed",
+                ):
+                    self.reconcile_employee_from_ems(issue.employee_id)
+                elif issue.issue_type == "integration_failed" and issue.employee_id:
+                    employee_file = issue.employee_file_id
+                    if not employee_file:
+                        employee_file = self.env["doc.employee.file"].sudo().search(
+                            [
+                                ("employee_id", "=", issue.employee_id.id),
+                                ("company_id", "=", issue.company_id.id),
+                            ],
+                            limit=1,
+                        )
+                    if employee_file:
+                        _linked, failed = self._collect_employee_documents_into_file(
+                            issue.employee_id,
+                            employee_file,
+                            config,
+                        )
+                        if failed:
+                            raise UserError(
+                                _(
+                                    "Document collection still failed for this employee."
+                                )
+                            )
+                    else:
+                        raise UserError(
+                            _("No employee file exists to collect documents into.")
+                        )
                 elif issue.document_id:
-                    issue.document_id.write(
-                        {"employee_file_id": issue.employee_file_id.id}
-                        if issue.employee_file_id
-                        else {}
+                    self.reconcile_document_employee_file(issue.document_id)
+                    still_open = self.env["doc.employee.issue"].sudo().search_count(
+                        [
+                            ("document_id", "=", issue.document_id.id),
+                            ("state", "=", "open"),
+                            (
+                                "issue_type",
+                                "in",
+                                list(self.DOCUMENT_LINK_ISSUE_TYPES),
+                            ),
+                        ]
                     )
+                    if still_open:
+                        raise UserError(
+                            _("Document could not be linked to the employee file.")
+                        )
                 issue.write({"state": "resolved"})
             except Exception as error:
-                issue.write({"details": str(error)})
-                raise UserError(str(error))
+                _logger.exception("Issue action failed for issue %s", issue.id)
+                details = hr_details_for_issue_type(issue.issue_type)
+                if issue.issue_type == "integration_failed":
+                    details = hr_details_for_issue_type(
+                        issue.issue_type,
+                        module_name=self._integration_module_name_from_error(error),
+                    )
+                issue.write({"details": details})
+                raise UserError(details) from error
         elif action == "resolve":
             issue.write({"state": "resolved"})
         elif action == "view_in_ems":
@@ -831,7 +1774,7 @@ class DocEmployeeFilesService(models.AbstractModel):
         return issue.serialize_for_api()
 
     @api.model
-    def _ensure_employee_file(self, employee):
+    def _ensure_employee_file(self, employee, sync_groups=True):
         config = self.env["doc.employee.files.config"].get_for_company(
             employee.company_id
         )
@@ -854,7 +1797,10 @@ class DocEmployeeFilesService(models.AbstractModel):
                 }
             )
             employee_file._ensure_storage_folder()
-        self.sync_employee_system_groups(employee, employee_file)
+        elif sync_groups:
+            employee_file._ensure_storage_folder()
+        if sync_groups:
+            self.sync_employee_system_groups(employee, employee_file)
         return employee_file
 
     @api.model
@@ -862,7 +1808,8 @@ class DocEmployeeFilesService(models.AbstractModel):
         config = self.env["doc.employee.files.config"].get_for_company(
             employee.company_id
         )
-        if not config.setup_complete:
+        allow_during_setup = self.env.context.get("employee_files_allow_group_sync")
+        if not config.setup_complete and not allow_during_setup:
             return
         employee_file = employee_file or self.env["doc.employee.file"].search(
             [
@@ -873,69 +1820,111 @@ class DocEmployeeFilesService(models.AbstractModel):
         )
         if not employee_file:
             return
+        company_id = employee.company_id.id
         Group = self.env["doc.employee.group"].sudo()
+        primary = self._primary_organizing_dimension(config)
+        sub = self._sub_organizing_dimension(config)
+        nested_primary = self._nested_primary_groups(config)
+        desired_groups = Group.browse()
+
         for dimension in config.get_organizing_dimensions():
-            key, label = self._dimension_value(employee, dimension)
-            groups = Group.search(
-                [
-                    ("company_id", "=", employee.company_id.id),
-                    ("group_kind", "=", "system_managed"),
-                    ("organizing_dimension", "=", dimension),
-                ]
-            )
-            for group in groups:
-                if employee_file in group.member_ids and (
-                    not key or group.dimension_value_key != key
-                ):
-                    group.write({"member_ids": [(3, employee_file.id)]})
-            if not key:
+            # Sub-dimension is represented only as nested children under primary.
+            if nested_primary and sub and dimension == sub:
                 continue
-            group = Group.search(
-                [
-                    ("company_id", "=", employee.company_id.id),
-                    ("group_kind", "=", "system_managed"),
-                    ("organizing_dimension", "=", dimension),
-                    ("dimension_value_key", "=", key),
-                ],
-                limit=1,
-            )
-            if not group:
-                group = Group.create(
-                    {
-                        "name": label,
-                        "group_kind": "system_managed",
-                        "company_id": employee.company_id.id,
-                        "organizing_dimension": dimension,
-                        "dimension_value_key": key,
-                    }
+            nested_view = nested_primary and dimension == primary
+            if nested_view:
+                parent_key, parent_label = self._dimension_value(employee, primary)
+                if not parent_key:
+                    continue
+                parent = self._ensure_system_managed_group(
+                    company_id,
+                    primary,
+                    parent_key,
+                    parent_label,
+                    parent_group=False,
                 )
+                sub_key, sub_label = self._dimension_value(employee, sub)
+                if sub_key:
+                    child_key = self._nested_child_dimension_value_key(
+                        parent_key, sub_key
+                    )
+                    child = self._ensure_system_managed_group(
+                        company_id,
+                        sub,
+                        child_key,
+                        sub_label,
+                        parent_group=parent,
+                    )
+                    desired_groups |= child
+                    if employee_file in parent.member_ids:
+                        parent.write({"member_ids": [(3, employee_file.id)]})
+                else:
+                    desired_groups |= parent
+            else:
+                key, label = self._dimension_value(employee, dimension)
+                if not key:
+                    continue
+                group = self._ensure_system_managed_group(
+                    company_id,
+                    dimension,
+                    key,
+                    label,
+                    parent_group=False,
+                )
+                desired_groups |= group
+
+        stale = Group.search(
+            [
+                ("company_id", "=", company_id),
+                ("group_kind", "=", "system_managed"),
+                ("member_ids", "in", employee_file.id),
+            ]
+        )
+        for group in stale:
+            if group not in desired_groups:
+                group.write({"member_ids": [(3, employee_file.id)]})
+        for group in desired_groups:
             if employee_file not in group.member_ids:
                 group.write({"member_ids": [(4, employee_file.id)]})
+        self._prune_parent_group_membership(employee_file, desired_groups)
 
     @api.model
-    def on_employee_changed(self, employee, changed_fields):
-        config = self.env["doc.employee.files.config"].get_for_company(
-            employee.company_id
+    def _prune_parent_group_membership(self, employee_file, leaf_groups):
+        """Remove parent system-group rows when the employee is on a nested child."""
+        Group = self.env["doc.employee.group"].sudo()
+        parents = leaf_groups.mapped("parent_group_id").filtered(
+            lambda parent: parent
+            and parent.group_kind == "system_managed"
+            and employee_file in parent.member_ids
         )
-        if not config.setup_complete:
-            return
-        employee_file = self._ensure_employee_file(employee)
+        if parents:
+            parents.write({"member_ids": [(3, employee_file.id)]})
+
+    @api.model
+    def on_employee_changed(self, employee, changed_fields=None):
         org_fields = {
             "department_id",
             "active",
             "job_id",
         }
-        if org_fields.intersection(changed_fields):
-            old_dep = changed_fields.get("department_id")
-            if isinstance(old_dep, tuple):
-                old_dep = old_dep[0]
-            employee_file.message_post(
-                body=_("Employee organizational data changed in EMS: %s")
-                % ", ".join(sorted(changed_fields.keys()))
+        if changed_fields and org_fields.intersection(changed_fields):
+            config = self.env["doc.employee.files.config"].get_for_company(
+                employee.company_id
             )
-            self.sync_employee_system_groups(employee, employee_file)
-            if not employee.active and not config.include_inactive:
-                employee_file.write({"state": "inactive"})
+            if config.setup_complete:
+                employee_file = self.env["doc.employee.file"].sudo().search(
+                    [
+                        ("employee_id", "=", employee.id),
+                        ("company_id", "=", employee.company_id.id),
+                    ],
+                    limit=1,
+                )
+                if employee_file:
+                    employee_file.message_post(
+                        body=_("Employee organizational data changed in EMS: %s")
+                        % ", ".join(sorted(changed_fields.keys()))
+                    )
+        self.reconcile_employee_from_ems(employee)
 
     @api.model
     def list_ems_employees(self, search=None, limit=200):
@@ -978,6 +1967,322 @@ class DocEmployeeFilesService(models.AbstractModel):
             domain.append(("reason", "=", reason))
         rows = self.env["doc.employee.exclusion"].search(domain)
         return [row.serialize_for_api() for row in rows]
+
+    @api.model
+    def _canonical_system_group(self, group):
+        group = group.exists()
+        if not group or group.group_kind != "system_managed":
+            return group
+        if not group.dimension_value_key:
+            return self.env["doc.employee.group"].browse()
+        Group = self.env["doc.employee.group"].sudo()
+        parent_id = group.parent_group_id.id if group.parent_group_id else False
+        return Group.search(
+            [
+                ("company_id", "=", group.company_id.id),
+                ("group_kind", "=", "system_managed"),
+                ("organizing_dimension", "=", group.organizing_dimension),
+                ("dimension_value_key", "=", group.dimension_value_key),
+                ("parent_group_id", "=", parent_id),
+                ("active", "=", True),
+            ],
+            order="id desc",
+            limit=1,
+        )
+
+    @api.model
+    def related_groups_for_employee_file(self, employee_file):
+        """Groups for profile Related groups tab (canonical, no duplicates)."""
+        Group = self.env["doc.employee.group"].sudo()
+        employee_file = employee_file.exists()
+        if not employee_file:
+            return Group.browse()
+        config = self.env["doc.employee.files.config"].get_for_company(
+            employee_file.company_id
+        )
+        allowed_dims = set(config.get_organizing_dimensions())
+        nested = self._nested_primary_groups(config)
+        sub = self._sub_organizing_dimension(config)
+
+        memberships = Group.search(
+            [
+                ("company_id", "=", employee_file.company_id.id),
+                ("member_ids", "in", employee_file.id),
+                ("active", "=", True),
+            ],
+            order="name, id",
+        )
+        if not memberships:
+            return Group.browse()
+
+        stale = Group.browse()
+        canonical_by_id = {}
+
+        for group in memberships:
+            if group.group_kind == "custom":
+                canonical_by_id[group.id] = group
+                continue
+            canonical = self._canonical_system_group(group)
+            if not canonical:
+                stale |= group
+                continue
+            if canonical.organizing_dimension not in allowed_dims:
+                stale |= group
+                continue
+            if group.parent_group_id and (not nested or group.organizing_dimension != sub):
+                stale |= group
+                continue
+            if group.id != canonical.id:
+                stale |= group
+            canonical_by_id[canonical.id] = canonical
+
+        if nested and sub:
+            nested_sub = [
+                group
+                for group in canonical_by_id.values()
+                if group.organizing_dimension == sub and group.parent_group_id
+            ]
+            if nested_sub:
+                for group in list(canonical_by_id.values()):
+                    if (
+                        group.organizing_dimension == sub
+                        and not group.parent_group_id
+                    ):
+                        stale |= group
+                        canonical_by_id.pop(group.id, None)
+
+        canonical_groups = Group.browse(list(canonical_by_id.keys()))
+        by_id = {group.id: group for group in canonical_groups}
+        chosen = Group.browse()
+        seen_system_keys = set()
+        seen_sub_labels = set()
+
+        for group in canonical_groups:
+            if group.group_kind == "custom":
+                chosen |= group
+                continue
+            if (
+                nested
+                and sub
+                and group.organizing_dimension == sub
+                and group.parent_group_id
+            ):
+                label_key = (group.name or "").strip().lower()
+                if label_key and label_key in seen_sub_labels:
+                    stale |= group
+                    continue
+                if label_key:
+                    seen_sub_labels.add(label_key)
+            nested_children = group.child_ids.filtered(
+                lambda child: child.active
+                and child.id in by_id
+                and employee_file in child.member_ids
+            )
+            if nested_children:
+                continue
+            system_key = (
+                group.organizing_dimension or "",
+                group.dimension_value_key or "",
+                group.parent_group_id.id if group.parent_group_id else 0,
+            )
+            if system_key in seen_system_keys:
+                continue
+            seen_system_keys.add(system_key)
+            chosen |= group
+
+        if stale:
+            for group in stale:
+                if employee_file in group.member_ids:
+                    group.write({"member_ids": [(3, employee_file.id)]})
+
+        return chosen.sorted(key=lambda item: (item.group_kind != "custom", item.name or ""))
+
+    @api.model
+    def get_header_field_catalog(self):
+        return [
+            {
+                "key": item["key"],
+                "label": _(item["label"]),
+                "ems_managed": item["ems_managed"],
+            }
+            for item in HEADER_FIELD_CATALOG
+        ]
+
+    @api.model
+    def _header_field_display_value(self, employee, key):
+        if key == "employee_id":
+            code = getattr(employee, "barcode", False) or getattr(
+                employee, "identification_id", False
+            )
+            return code or f"EMP-{employee.id}"
+        if key == "name":
+            return employee.name or ""
+        if key == "department_id":
+            return employee.department_id.name if employee.department_id else ""
+        if key == "job_id":
+            job = employee.job_id
+            if job:
+                return job.name
+            return getattr(employee, "job_title", "") or ""
+        if key in ("work_location", "branch", "grade", "employment_type", "status"):
+            _dim_key, label = self._dimension_value(employee, key)
+            return label or ""
+        if key == "work_email":
+            return employee.work_email or ""
+        if key == "work_phone":
+            return employee.work_phone or employee.mobile_phone or ""
+        return ""
+
+    @api.model
+    def build_employee_file_header_fields(self, employee, config=None):
+        config = config or self.env["doc.employee.files.config"].get_for_company(
+            employee.company_id
+        )
+        catalog = {item["key"]: item for item in HEADER_FIELD_CATALOG}
+        rows = []
+        for key in config.get_header_fields():
+            meta = catalog.get(key)
+            if not meta:
+                continue
+            rows.append(
+                {
+                    "key": key,
+                    "label": _(meta["label"]),
+                    "value": self._header_field_display_value(employee, key) or "—",
+                    "ems_managed": meta["ems_managed"],
+                }
+            )
+        return rows
+
+    @api.model
+    def _employee_file_document_domain(self, employee_file):
+        employee = employee_file.employee_id
+        return [
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            "|",
+            ("employee_file_id", "=", employee_file.id),
+            "&",
+            ("employee_id", "=", employee.id),
+            ("employee_file_id", "=", False),
+        ]
+
+    @api.model
+    def list_employee_file_documents(self, employee_file, user=None):
+        user = user or self.env.user
+        Document = self.env["doc.document"]
+        docs = Document.search(
+            self._employee_file_document_domain(employee_file),
+            order="create_date desc",
+        )
+        return [
+            doc.serialize_for_api(user)
+            for doc in docs
+        ]
+
+    @api.model
+    def list_employee_file_activity(self, employee_file, limit=40):
+        env = self.env
+        user = env.user
+        Document = env["doc.document"].sudo()
+        limit = max(1, min(int(limit or 40), 100))
+
+        doc_ids = Document.search(
+            self._employee_file_document_domain(employee_file)
+        ).ids
+
+        def _plain_message(body):
+            text = re.sub(r"<[^>]+>", " ", body or "")
+            return " ".join(text.split())
+
+        activity_log = []
+        message_domain = [
+            ("message_type", "in", ["comment", "notification"]),
+            "|",
+            "&",
+            ("model", "=", "doc.employee.file"),
+            ("res_id", "=", employee_file.id),
+            "&",
+            ("model", "=", "doc.document"),
+            ("res_id", "in", doc_ids or [0]),
+        ]
+        messages = env["mail.message"].sudo().search(
+            message_domain,
+            order="date desc",
+            limit=limit,
+        )
+        for message in messages:
+            text = _plain_message(message.body)
+            if not text:
+                continue
+            document = False
+            if message.model == "doc.document":
+                document = Document.browse(message.res_id).exists()
+            lowered = text.lower()
+            if "acknowledged" in lowered:
+                kind = "acknowledgement"
+            elif "submitted" in lowered and "review" in lowered:
+                kind = "approval"
+            elif "approved" in lowered or "rejected" in lowered:
+                kind = "approval"
+            elif message.model == "doc.employee.file":
+                kind = "update"
+            else:
+                kind = "update"
+            activity_log.append(
+                {
+                    "id": message.id,
+                    "kind": kind,
+                    "message": text,
+                    "document_id": document.id if document else False,
+                    "document_name": document.name if document else "",
+                    "folder_id": document.folder_id.id if document else False,
+                    "folder_name": document.folder_id.folder_name
+                    if document and document.folder_id
+                    else "",
+                    "folder_type": document.folder_id.folder_type
+                    if document and document.folder_id
+                    else "employee",
+                    "employee_id": employee_file.employee_id.id,
+                    "actor_name": message.author_id.name or _("System"),
+                    "occurred_at": fields.Datetime.to_string(message.date),
+                }
+            )
+
+        existing_doc_ids = {item["document_id"] for item in activity_log if item["document_id"]}
+        recent = Document.search(
+            [("id", "in", doc_ids)],
+            order="create_date desc",
+            limit=10,
+        )
+        for document in recent:
+            if document.id in existing_doc_ids:
+                continue
+            activity_log.append(
+                {
+                    "id": -(document.id),
+                    "kind": "upload",
+                    "message": _("%(actor)s added %(document)s")
+                    % {
+                        "actor": document.uploaded_by.name or _("Someone"),
+                        "document": document.name,
+                    },
+                    "document_id": document.id,
+                    "document_name": document.name,
+                    "folder_id": document.folder_id.id,
+                    "folder_name": document.folder_id.folder_name,
+                    "folder_type": document.folder_id.folder_type,
+                    "employee_id": employee_file.employee_id.id,
+                    "actor_name": document.uploaded_by.name or _("System"),
+                    "occurred_at": fields.Datetime.to_string(document.create_date),
+                }
+            )
+
+        activity_log.sort(
+            key=lambda item: item["occurred_at"] or "",
+            reverse=True,
+        )
+        return activity_log[:limit]
 
     @api.model
     def custom_group_overlap(self, group_ids):

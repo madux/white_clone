@@ -9,13 +9,16 @@ import {
   FileText,
   FolderCog,
   History,
+  Pencil,
   Plus,
+  Power,
+  PowerOff,
   RefreshCw,
   RotateCcw,
   Save,
   Search,
   Shield,
-  ShieldCheck,
+  Trash2,
   X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
@@ -24,6 +27,7 @@ import { useSearchParams } from "next/navigation";
 import { useToast } from "../../../hooks/useToast";
 import {
   useSaveSettings,
+  useDeleteSettingsDocumentType,
   useSaveSettingsDocumentType,
   useSettings,
   useToggleSettingsDocumentType,
@@ -58,13 +62,6 @@ const sections = [
     shortLabel: "Types",
     description: "Keep classification consistent across every upload.",
     icon: FileText,
-  },
-  {
-    id: "approval",
-    label: "Approval workflow",
-    shortLabel: "Approvals",
-    description: "Set the default review rule and approval chain.",
-    icon: ShieldCheck,
   },
   {
     id: "access",
@@ -151,12 +148,67 @@ export default function SettingsPage() {
   const save = useSaveSettings();
   const saveType = useSaveSettingsDocumentType();
   const toggleType = useToggleSettingsDocumentType();
+  const deleteType = useDeleteSettingsDocumentType();
+
+  const openDocumentTypeForm = (item?: Record<string, any>) => {
+    const base = {
+      name: "",
+      category: "other",
+      description: "",
+      is_mandatory_default: false,
+      expiry_applicable: false,
+      require_upload_approval: false,
+      require_issue_date: false,
+      require_description: false,
+      enable_versioning: true,
+      duplicate_detection_mode: "inherit" as const,
+      approval_flow: "any" as const,
+      approver_ids: [] as number[],
+      default_retention_years: 7,
+    };
+    if (!item) {
+      setTypeForm(base);
+      return;
+    }
+    setTypeForm({
+      ...base,
+      ...item,
+      approver_ids:
+        item.approver_ids ??
+        (item.approvers ?? []).map((approver: { id: number }) => approver.id),
+    });
+  };
+
+  const handleDeleteDocumentType = async (item: { id: number; name: string }) => {
+    if (
+      !window.confirm(
+        `Delete document type "${item.name}"? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      const result = await deleteType.mutateAsync(item.id);
+      if (result.success) {
+        setNotice({ message: "Document type deleted." });
+      } else {
+        setNotice({
+          message: result.message || "Unable to delete document type.",
+          error: true,
+        });
+      }
+    } catch {
+      setNotice({
+        message: "The document type could not be deleted.",
+        error: true,
+      });
+    }
+  };
   const updateOnboarding = useUpdateOnboarding();
   const [section, setSection] = useState<SectionId>("types");
   const [settings, setSettings] = useState<Record<string, any> | null>(null);
   const [typeForm, setTypeForm] = useState<Record<string, any> | null>(null);
   const [search, setSearch] = useState("");
-  const [approverSearch, setApproverSearch] = useState("");
   const [notice, setNotice] = useState<{
     message: string;
     error?: boolean;
@@ -171,13 +223,11 @@ export default function SettingsPage() {
   const guideTarget = params.get("guide");
   const requestedSection = params.get("section");
   const guideSection: SectionId | null =
-    guideTarget === "document-types"
+    guideTarget === "document-types" || guideTarget === "approval-workflow"
       ? "types"
-      : guideTarget === "approval-workflow"
-        ? "approval"
-        : guideTarget === "sharing"
-          ? "access"
-          : null;
+      : guideTarget === "sharing"
+        ? "access"
+        : null;
 
   useEffect(() => {
     if (query.data?.settings && !settings) setSettings(query.data.settings);
@@ -199,11 +249,6 @@ export default function SettingsPage() {
   const values = settings ?? query.data?.settings ?? fallbackSettings;
   const documentTypes = query.data?.document_types ?? [];
   const allApprovers = query.data?.approvers ?? [];
-  const selectedApprovers = Array.isArray(values.default_approver_ids)
-    ? values.default_approver_ids.map(Number)
-    : [];
-  const currentSection =
-    visibleSections.find((item) => item.id === section) ?? visibleSections[0];
 
   const filteredTypes = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -215,34 +260,9 @@ export default function SettingsPage() {
     );
   }, [documentTypes, search]);
 
-  const filteredApprovers = useMemo(() => {
-    const term = approverSearch.trim().toLowerCase();
-    if (!term) return allApprovers;
-    return allApprovers.filter((item: any) =>
-      `${item.name} ${item.email}`.toLowerCase().includes(term),
-    );
-  }, [allApprovers, approverSearch]);
-
   const update = (key: string, value: any) => {
     setSettings({ ...values, [key]: value });
     setNotice(null);
-  };
-
-  const toggleApprover = (id: number) => {
-    const next = selectedApprovers.includes(id)
-      ? selectedApprovers.filter((value: number) => value !== id)
-      : [...selectedApprovers, id];
-    update("default_approver_ids", next);
-  };
-
-  const moveApprover = (id: number, direction: -1 | 1) => {
-    const index = selectedApprovers.indexOf(id);
-    const nextIndex = index + direction;
-    if (index < 0 || nextIndex < 0 || nextIndex >= selectedApprovers.length)
-      return;
-    const next = [...selectedApprovers];
-    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-    update("default_approver_ids", next);
   };
 
   const saveSettings = async () => {
@@ -328,18 +348,7 @@ export default function SettingsPage() {
 
         <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
           <div className="border-b border-slate-200 px-5 pt-5 sm:px-8 sm:pt-7">
-            <div className="flex items-start justify-between gap-5">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-pink">
-                  Workspace controls
-                </p>
-                <h2 className="mt-1 text-lg font-bold text-slate-900">
-                  Configure your document experience
-                </h2>
-              </div>
-              <ShieldCheck className="hidden h-7 w-7 text-pink-200 sm:block" />
-            </div>
-            <div className="mt-6 overflow-x-auto pb-1">
+            <div className="overflow-x-auto pb-1">
               <SectionTabs
                 items={visibleSections.map((item) => ({
                   id: item.id,
@@ -364,9 +373,10 @@ export default function SettingsPage() {
                 total={documentTypes.length}
                 search={search}
                 setSearch={setSearch}
-                edit={setTypeForm}
+                edit={openDocumentTypeForm}
                 toggle={(id: number) => toggleType.mutate(id)}
-                loading={toggleType.isPending}
+                onDelete={handleDeleteDocumentType}
+                loading={toggleType.isPending || deleteType.isPending}
               />
             ) : section === "employee_files" ? (
               <EmployeeFilesSettingsPanel />
@@ -401,13 +411,6 @@ export default function SettingsPage() {
                 section={section}
                 values={values}
                 update={update}
-                allApprovers={allApprovers}
-                approvers={filteredApprovers}
-                approverSearch={approverSearch}
-                setApproverSearch={setApproverSearch}
-                selected={selectedApprovers}
-                toggleApprover={toggleApprover}
-                moveApprover={moveApprover}
                 save={saveSettings}
                 saving={save.isPending}
               />
@@ -422,6 +425,7 @@ export default function SettingsPage() {
           setForm={setTypeForm}
           submit={saveDocumentType}
           saving={saveType.isPending}
+          allApprovers={allApprovers}
         />
       )}
     </div>
@@ -449,6 +453,7 @@ function Types({
   setSearch,
   edit,
   toggle,
+  onDelete,
   loading,
 }: any) {
   return (
@@ -456,17 +461,11 @@ function Types({
       <div className="flex flex-col gap-5 border-b border-slate-100 pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h3 className="text-xl font-bold tracking-[-0.02em] text-slate-900">
-              Classification library
-            </h3>
+            <h3 className="text-lg font-bold text-slate-900">Document types</h3>
             <span className="rounded-full bg-pink-50 px-2.5 py-1 text-xs font-bold text-brand-text">
               {total}
             </span>
           </div>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
-            Use consistent document types across employee, organizational, and
-            compliance records.
-          </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <label className="relative block sm:w-64">
@@ -480,16 +479,7 @@ function Types({
           </label>
           <button
             type="button"
-            onClick={() =>
-              edit({
-                name: "",
-                category: "other",
-                description: "",
-                is_mandatory_default: false,
-                expiry_applicable: false,
-                default_retention_years: 7,
-              })
-            }
+            onClick={() => edit()}
             className="inline-flex items-center justify-center gap-2 !rounded-xl bg-gradient-to-r from-brand-text to-brand-pink px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_18px_rgba(232,62,140,0.18)] transition hover:brightness-105"
           >
             <Plus className="h-4 w-4" /> Add type
@@ -515,16 +505,7 @@ function Types({
           {total === 0 && (
             <button
               type="button"
-              onClick={() =>
-                edit({
-                  name: "",
-                  category: "other",
-                  description: "",
-                  is_mandatory_default: false,
-                  expiry_applicable: false,
-                  default_retention_years: 7,
-                })
-              }
+              onClick={() => edit()}
               className="mt-5 !rounded-xl border border-brand-pink/30 bg-white px-4 py-2.5 text-sm font-bold text-brand-text hover:bg-pink-50"
             >
               Create first type
@@ -569,21 +550,41 @@ function Types({
                     </span>
                   </td>
                   <td className="px-5 py-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => edit(item)}
-                      className="mr-3 text-xs font-bold text-brand-text hover:text-brand-pink"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      disabled={loading}
-                      onClick={() => toggle(item.id)}
-                      className="text-xs font-bold text-slate-500 hover:text-slate-800 disabled:opacity-50"
-                    >
-                      {item.active ? "Deactivate" : "Activate"}
-                    </button>
+                    <div className="inline-flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        title="Edit document type"
+                        aria-label="Edit document type"
+                        onClick={() => edit(item)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-pink-50 hover:text-brand-pink"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        title={item.active ? "Deactivate" : "Activate"}
+                        aria-label={item.active ? "Deactivate" : "Activate"}
+                        disabled={loading}
+                        onClick={() => toggle(item.id)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+                      >
+                        {item.active ? (
+                          <PowerOff className="h-4 w-4" />
+                        ) : (
+                          <Power className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        title="Delete document type"
+                        aria-label="Delete document type"
+                        disabled={loading}
+                        onClick={() => void onDelete(item)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -599,47 +600,11 @@ function SettingsPanel({
   section,
   values,
   update,
-  allApprovers,
-  approvers,
-  approverSearch,
-  setApproverSearch,
-  selected,
-  toggleApprover,
-  moveApprover,
   save,
   saving,
 }: any) {
   return (
     <section>
-      <div className="mb-8 flex flex-col gap-2 border-b border-slate-100 pb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">
-          {sections.find((item) => item.id === section)?.label}
-        </p>
-        <h3 className="text-2xl font-bold tracking-[-0.03em] text-slate-900">
-          {section === "approval"
-            ? "Make review predictable"
-            : section === "access"
-              ? "Set the default audience"
-              : "Keep documents recoverable"}
-        </h3>
-        <p className="max-w-2xl text-sm leading-6 text-slate-500">
-          {sections.find((item) => item.id === section)?.description}
-        </p>
-      </div>
-
-      {section === "approval" && (
-        <ApprovalPanel
-          values={values}
-          update={update}
-          allApprovers={allApprovers}
-          approvers={approvers}
-          approverSearch={approverSearch}
-          setApproverSearch={setApproverSearch}
-          selected={selected}
-          toggleApprover={toggleApprover}
-          moveApprover={moveApprover}
-        />
-      )}
       {section === "access" && (
         <AccessPanel
           value={values.default_access_scope || "all_staff"}
@@ -665,236 +630,6 @@ function SettingsPanel({
         </button>
       </div>
     </section>
-  );
-}
-
-function ApprovalPanel({
-  values,
-  update,
-  allApprovers,
-  approvers,
-  approverSearch,
-  setApproverSearch,
-  selected,
-  toggleApprover,
-  moveApprover,
-}: any) {
-  const selectedPeople = selected
-    .map((id: number) =>
-      allApprovers.find((item: any) => Number(item.id) === id),
-    )
-    .filter(Boolean);
-  const requireApproval = Boolean(values.default_require_upload_approval);
-  const sequential = values.default_approval_flow === "sequential";
-  return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-bold text-slate-800">
-              Require approval for new uploads
-            </p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              New employee folders inherit these defaults until customized per
-              folder. Pending uploads also follow the department folder chain,
-              or these defaults when no folder exists yet.
-            </p>
-          </div>
-          <Switch
-            checked={requireApproval}
-            onChange={() =>
-              update(
-                "default_require_upload_approval",
-                !requireApproval,
-              )
-            }
-          />
-        </div>
-        {!requireApproval && (
-          <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-semibold text-emerald-800">
-            Uploads are submitted without a review step. Turn this on when you
-            want managers to approve documents before they are filed.
-          </p>
-        )}
-      </div>
-
-      {requireApproval && (
-        <>
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-sm font-bold text-slate-800">Review mode</p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Choose how selected reviewers can approve a document.
-            </p>
-            <div className="mt-4 grid gap-1 rounded-xl bg-slate-100 p-1 sm:grid-cols-3">
-              {[
-                {
-                  value: "any",
-                  label: "Single approver",
-                  description: "One selected reviewer can approve.",
-                },
-                {
-                  value: "sequential",
-                  label: "Sequential",
-                  description: "Reviewers approve in the order you set.",
-                },
-                {
-                  value: "random",
-                  label: "All reviewers",
-                  description: "Everyone must approve; order does not matter.",
-                },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => update("default_approval_flow", option.value)}
-                  aria-pressed={values.default_approval_flow === option.value}
-                  className={`!rounded-lg px-3 py-2.5 text-left transition ${values.default_approval_flow === option.value ? "bg-white text-brand-text shadow-sm" : "text-slate-400 hover:bg-white/70 hover:text-slate-700"}`}
-                >
-                  <span className="block text-xs font-bold">{option.label}</span>
-                  <span className={`mt-1 block text-[10px] font-medium leading-4 ${values.default_approval_flow === option.value ? "text-slate-500" : "text-slate-400"}`}>
-                    {option.description}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div
-            className={`rounded-2xl border p-5 ${sequential ? "border-pink-200 bg-pink-50/40" : "border-slate-200 bg-white"}`}
-          >
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-sm font-bold text-slate-900">
-                Approval chain
-              </h4>
-              {sequential && (
-                <span className="rounded-full bg-pink-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-text">
-                  Ordered
-                </span>
-              )}
-            </div>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              {sequential
-                ? "Select reviewers and arrange the order they must approve in."
-                : "Select the people who can review new documents."}
-            </p>
-          </div>
-          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm">
-            {selected.length} selected
-          </span>
-        </div>
-        {sequential && selected.length === 0 && (
-          <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-semibold text-amber-800">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            Sequential review needs at least one approver.
-          </div>
-        )}
-
-        {sequential && selectedPeople.length > 0 && (
-          <div className="mt-5 rounded-xl border border-pink-100 bg-white p-3">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-              Review order
-            </p>
-            <div className="space-y-2">
-              {selectedPeople.map((person: any, index: number) => (
-                <div
-                  key={person.id}
-                  className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2.5"
-                >
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-text text-[10px] font-bold text-white">
-                    {index + 1}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold text-slate-700">
-                      {person.name}
-                    </span>
-                    <span className="block truncate text-xs text-slate-400">
-                      {person.email || "Workspace user"}
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => moveApprover(Number(person.id), -1)}
-                    disabled={index === 0}
-                    className="!rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-brand-text disabled:opacity-30"
-                    aria-label={`Move ${person.name} up`}
-                  >
-                    <ArrowUp className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moveApprover(Number(person.id), 1)}
-                    disabled={index === selectedPeople.length - 1}
-                    className="!rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-brand-text disabled:opacity-30"
-                    aria-label={`Move ${person.name} down`}
-                  >
-                    <ArrowDown className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleApprover(Number(person.id))}
-                    className="!rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-red-600"
-                    aria-label={`Remove ${person.name}`}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <label className="relative mt-5 block">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            value={approverSearch}
-            onChange={(event) => setApproverSearch(event.target.value)}
-            placeholder="Search employees or approvers"
-            className="field bg-white pl-10"
-          />
-        </label>
-        {approvers.length === 0 ? (
-          <p className="mt-4 rounded-xl bg-white px-4 py-6 text-center text-sm text-slate-500">
-            No approvers match your search.
-          </p>
-        ) : (
-          <div className="mt-3 grid max-h-60 gap-2 overflow-y-auto sm:grid-cols-2">
-            {approvers.map((item: any) => {
-              const checked = selected.includes(Number(item.id));
-              return (
-                <label
-                  key={item.id}
-                  className={`flex cursor-pointer items-center gap-3 !rounded-xl border p-3 transition ${checked ? "border-brand-pink bg-white shadow-sm" : "border-slate-200 bg-white hover:border-pink-200"}`}
-                >
-                  <span
-                    className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${checked ? "border-brand-pink bg-brand-pink text-white" : "border-slate-300 bg-white"}`}
-                  >
-                    {checked && <Check className="h-3.5 w-3.5" />}
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleApprover(Number(item.id))}
-                    className="sr-only"
-                  />
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-slate-700">
-                      {item.name}
-                    </span>
-                    <span className="block truncate text-xs text-slate-400">
-                      {item.email || "Workspace user"}
-                    </span>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        )}
-          </div>
-        </>
-      )}
-    </div>
   );
 }
 
@@ -1080,7 +815,131 @@ function Switch({
   );
 }
 
-function TypeModal({ form, setForm, submit, saving }: any) {
+function TypeApprovalEditor({ form, setForm, allApprovers }: any) {
+  const selectedIds: number[] = form.approver_ids ?? [];
+  const sequential = form.approval_flow === "sequential";
+
+  const toggleApprover = (id: number) => {
+    const next = selectedIds.includes(id)
+      ? selectedIds.filter((value) => value !== id)
+      : [...selectedIds, id];
+    setForm({ ...form, approver_ids: next });
+  };
+
+  const moveApprover = (id: number, direction: -1 | 1) => {
+    const index = selectedIds.indexOf(id);
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= selectedIds.length) return;
+    const next = [...selectedIds];
+    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    setForm({ ...form, approver_ids: next });
+  };
+
+  const selectedPeople = selectedIds
+    .map((id) => allApprovers.find((item: any) => Number(item.id) === id))
+    .filter(Boolean);
+
+  return (
+    <div className="sm:col-span-2 space-y-4 rounded-2xl border border-pink-100 bg-pink-50/30 p-4">
+      <p className="text-sm font-bold text-slate-800">Approval pipeline</p>
+      <div className="grid gap-1 rounded-xl bg-slate-100 p-1 sm:grid-cols-3">
+        {[
+          {
+            value: "any",
+            label: "Single approver",
+            description: "One selected reviewer can approve.",
+          },
+          {
+            value: "sequential",
+            label: "Sequential",
+            description: "Reviewers approve in the order you set.",
+          },
+          {
+            value: "random",
+            label: "All approvers",
+            description: "Everyone must approve.",
+          },
+        ].map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() =>
+              setForm({ ...form, approval_flow: option.value })
+            }
+            aria-pressed={form.approval_flow === option.value}
+            className={`!rounded-lg px-3 py-2.5 text-left transition ${form.approval_flow === option.value ? "bg-white text-brand-text shadow-sm" : "text-slate-400 hover:bg-white/70 hover:text-slate-700"}`}
+          >
+            <span className="block text-xs font-bold">{option.label}</span>
+            <span className="mt-1 block text-[10px] font-medium leading-4 text-slate-500">
+              {option.description}
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
+          {allApprovers.map((person: any) => {
+            const active = selectedIds.includes(Number(person.id));
+            return (
+              <button
+                key={person.id}
+                type="button"
+                onClick={() => toggleApprover(Number(person.id))}
+                className={`mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${active ? "bg-pink-50 font-semibold text-brand-text" : "text-slate-600 hover:bg-slate-50"}`}
+              >
+                <span>{person.name}</span>
+                {active ? <Check className="h-4 w-4" /> : null}
+              </button>
+            );
+          })}
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+            Selected approvers
+          </p>
+          {selectedPeople.length ? (
+            <ul className="mt-2 space-y-2">
+              {selectedPeople.map((person: any) => (
+                <li
+                  key={person.id}
+                  className="flex items-center justify-between gap-2 text-sm font-medium text-slate-700"
+                >
+                  <span>{person.name}</span>
+                  {sequential ? (
+                    <span className="flex gap-1">
+                      <button
+                        type="button"
+                        aria-label="Move up"
+                        onClick={() => moveApprover(Number(person.id), -1)}
+                        className="rounded-lg p-1 hover:bg-slate-100"
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Move down"
+                        onClick={() => moveApprover(Number(person.id), 1)}
+                        className="rounded-lg p-1 hover:bg-slate-100"
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </button>
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-xs text-slate-500">
+              Choose at least one approver for this type.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TypeModal({ form, setForm, submit, saving, allApprovers }: any) {
   return (
     <ModalDialog
       title={form.id ? "Edit document type" : "Add document type"}
@@ -1171,6 +1030,78 @@ function TypeModal({ form, setForm, submit, saving }: any) {
               className="h-4 w-4 accent-pink-600"
             />
             Expiry applicable
+          </label>
+          <label className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
+            <input
+              type="checkbox"
+              checked={Boolean(form.enable_versioning ?? true)}
+              onChange={(event) =>
+                setForm({ ...form, enable_versioning: event.target.checked })
+              }
+              className="h-4 w-4 accent-pink-600"
+            />
+            Enable versioning (Update replaces current file)
+          </label>
+          <label className="sm:col-span-2 block">
+            <span className="label">Duplicate handling</span>
+            <ThemedSelect
+              value={String(form.duplicate_detection_mode || "inherit")}
+              onChange={(value) =>
+                setForm({ ...form, duplicate_detection_mode: value })
+              }
+              options={[
+                { value: "inherit", label: "Inherit company default" },
+                { value: "warn", label: "Warn user" },
+                { value: "prevent", label: "Prevent duplicate" },
+                {
+                  value: "allow_confirm",
+                  label: "Allow with confirmation",
+                },
+              ]}
+            />
+          </label>
+          <label className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
+            <input
+              type="checkbox"
+              checked={Boolean(form.require_upload_approval)}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  require_upload_approval: event.target.checked,
+                })
+              }
+              className="h-4 w-4 accent-pink-600"
+            />
+            Require approval before this type becomes current
+          </label>
+          {form.require_upload_approval ? (
+            <TypeApprovalEditor
+              form={form}
+              setForm={setForm}
+              allApprovers={allApprovers}
+            />
+          ) : null}
+          <label className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
+            <input
+              type="checkbox"
+              checked={Boolean(form.require_issue_date)}
+              onChange={(event) =>
+                setForm({ ...form, require_issue_date: event.target.checked })
+              }
+              className="h-4 w-4 accent-pink-600"
+            />
+            Require issue date on upload
+          </label>
+          <label className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
+            <input
+              type="checkbox"
+              checked={Boolean(form.require_description)}
+              onChange={(event) =>
+                setForm({ ...form, require_description: event.target.checked })
+              }
+              className="h-4 w-4 accent-pink-600"
+            />
+            Require description on upload
           </label>
         </div>
         <div className="mt-8 flex justify-end gap-2 border-t border-slate-100 pt-5">

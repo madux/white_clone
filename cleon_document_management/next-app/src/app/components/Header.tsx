@@ -13,6 +13,7 @@ import {
   useDocuments,
   useFolders,
   useMyWorkspace,
+  useMyReviewAlerts,
   usePolicies,
 } from "../../../hooks/useDocuments";
 import { api } from "../../../lib/api";
@@ -21,6 +22,7 @@ import type {
   AdminAttention,
   ApprovalInboxItem,
   ExpiringDocument,
+  ReviewAlertItem,
 } from "../../../lib/types";
 import { documentViewHref } from "../../../lib/documentLinks";
 import BackButton from "./BackButton";
@@ -152,6 +154,7 @@ export default function Header() {
   const folders = useFolders();
   const documents = useDocuments(undefined, false, isDocumentManager);
   const myWorkspace = useMyWorkspace();
+  const reviewAlerts = useMyReviewAlerts(true);
   const targets = useComplianceTargets(isDocumentManager);
   const policies = usePolicies(isDocumentManager);
   const attention = useAdminAttention(isDocumentManager);
@@ -267,11 +270,13 @@ export default function Header() {
   const expiringItems: ExpiringDocument[] = isDocumentManager
     ? dashboardStats.data?.expiring_items ?? []
     : myWorkspace.data?.expiring_documents ?? [];
+  const reviewAlertCount = reviewAlerts.data?.count ?? 0;
   const panelCount = attentionOpen === "approval-inbox"
     ? approvalInbox.data?.count ?? 0
-    : (attention.data?.count ?? 0) + expiringItems.length;
+    : (attention.data?.count ?? 0) + expiringItems.length + reviewAlertCount;
   const notificationBadgeCount =
-    (attention.data?.count ?? 0) + expiringItems.length;
+    (attention.data?.count ?? 0) + expiringItems.length + reviewAlertCount;
+  const employeeNotificationCount = reviewAlertCount + expiringItems.length;
   return (
     <header className="mx-auto w-full max-w-[1650px] rounded-2xl border border-slate-200 bg-white px-6 py-3.5 shadow-sm">
       <div className="flex items-center justify-between gap-4">
@@ -347,7 +352,8 @@ export default function Header() {
 
         {/* Actions & Profile */}
         <div ref={attentionRef} className="relative flex items-center gap-2 sm:gap-3">
-          {isDocumentManager && <>
+          {isDocumentManager ? (
+          <>
           <button
             type="button"
             onClick={() => setAttentionOpen(attentionOpen === "approval-inbox" ? null : "approval-inbox")}
@@ -368,7 +374,7 @@ export default function Header() {
             <Bell className="h-5 w-5" />
             {!!notificationBadgeCount && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-pink px-1 text-center text-[9px] font-bold text-white">{notificationBadgeCount}</span>}
           </button>
-          {attentionOpen && (
+          {attentionOpen ? (
             <div className="absolute right-0 top-12 z-[110] w-[min(400px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
               <div className="flex items-center justify-between border-b border-slate-100 px-2 pb-3">
                 <div>
@@ -389,6 +395,23 @@ export default function Header() {
                 </span>
               </div>
               <div className="max-h-80 overflow-y-auto">
+                {attentionOpen === "notifications" &&
+                  (reviewAlerts.data?.items ?? []).map((item: ReviewAlertItem) => (
+                    <Link
+                      key={`review-alert-${item.id}`}
+                      href={`/pages/my-documents?tab=files&doc=${item.document_id}`}
+                      onClick={() => setAttentionOpen(null)}
+                      className="mb-2 block rounded-xl border border-red-100 bg-red-50 px-3 py-3 transition hover:bg-red-100/70"
+                    >
+                      <p className="text-xs font-semibold leading-5 text-red-900">
+                        {item.message}
+                      </p>
+                      <p className="mt-1 text-[10px] text-red-700">
+                        {item.document}
+                        {item.rejection_reason ? ` · ${item.rejection_reason}` : ""}
+                      </p>
+                    </Link>
+                  ))}
                 {attentionOpen === "notifications" &&
                   expiringItems.map((item) => (
                     <Link
@@ -436,8 +459,87 @@ export default function Header() {
                 )}
               </div>
             </div>
+          ) : null}
+          </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  setAttentionOpen(attentionOpen === "notifications" ? null : "notifications")
+                }
+                aria-label="Open notifications"
+                className="relative rounded-xl p-2.5 text-slate-400 transition hover:bg-white hover:text-brand-pink"
+                title="Notifications"
+              >
+                <Bell className="h-5 w-5" />
+                {!!employeeNotificationCount && (
+                  <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-pink px-1 text-center text-[9px] font-bold text-white">
+                    {employeeNotificationCount}
+                  </span>
+                )}
+              </button>
+              {attentionOpen === "notifications" && (
+                <div className="absolute right-0 top-12 z-[110] w-[min(400px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-slate-100 px-2 pb-3">
+                    <div>
+                      <strong className="text-sm text-slate-900">Notifications</strong>
+                      <p className="mt-0.5 text-[11px] text-slate-400">
+                        Document reviews and expiring files
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-pink-50 px-2 py-1 text-[10px] font-bold text-brand-pink">
+                      {employeeNotificationCount} pending
+                    </span>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {(reviewAlerts.data?.items ?? []).map((item: ReviewAlertItem) => (
+                      <Link
+                        key={`review-alert-${item.id}`}
+                        href={`/pages/my-documents?tab=files&doc=${item.document_id}`}
+                        onClick={() => setAttentionOpen(null)}
+                        className="mb-2 block rounded-xl border border-red-100 bg-red-50 px-3 py-3 transition hover:bg-red-100/70"
+                      >
+                        <p className="text-xs font-semibold leading-5 text-red-900">
+                          {item.message}
+                        </p>
+                        <p className="mt-1 text-[10px] text-red-700">
+                          {item.document}
+                          {item.rejection_reason ? ` · ${item.rejection_reason}` : ""}
+                        </p>
+                      </Link>
+                    ))}
+                    {expiringItems.map((item) => (
+                      <Link
+                        key={`expiring-${item.id}`}
+                        href={documentViewHref(item, isDocumentManager)}
+                        onClick={() => setAttentionOpen(null)}
+                        className="mb-2 block rounded-xl border border-orange-100 bg-orange-50 px-3 py-3 transition hover:bg-orange-100/70"
+                      >
+                        <div className="flex items-start gap-3">
+                          <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
+                          <div>
+                            <p className="text-xs font-semibold leading-5 text-orange-900">
+                              {item.name}
+                            </p>
+                            <p className="mt-1 text-[10px] text-orange-700">
+                              {item.document_type} · Expires{" "}
+                              {formatExpiryDate(item.expiry_date)}
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                    {!employeeNotificationCount && (
+                      <p className="px-2 py-8 text-center text-xs text-slate-400">
+                        No actions require your attention.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
-          </>}
           <div className="h-4 w-[1px] bg-slate-200" />
           <UserWidget />
         </div>

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import csv
 import io
+import json
 
 from odoo import http
 from odoo.exceptions import AccessError, UserError
@@ -76,9 +77,7 @@ class EmployeeFilesController(http.Controller):
         }
         values = {key: kwargs[key] for key in writable if key in kwargs}
         if "header_field_keys" in kwargs:
-            values["header_field_keys"] = kwargs["header_field_keys"]
-        if "organizing_dimensions" in kwargs:
-            config.set_organizing_dimensions(kwargs["organizing_dimensions"])
+            config.set_header_field_keys(kwargs["header_field_keys"])
         if "error_escalation_user_id" in kwargs:
             values["error_escalation_user_id"] = int(
                 kwargs["error_escalation_user_id"] or 0
@@ -89,8 +88,59 @@ class EmployeeFilesController(http.Controller):
             values["integration_mapping_json"] = kwargs["integration_mapping_json"]
         if "category_action_matrix_json" in kwargs:
             values["category_action_matrix_json"] = kwargs["category_action_matrix_json"]
-        config.write(values)
+        reconcile_flags = ("include_inactive", "exclude_test_employees")
+        prior = {key: config[key] for key in reconcile_flags}
+        prior_dims = config.get_organizing_dimensions()
+        prior_sub = config.sub_organizing_dimension
+        if values:
+            config.write(values)
+        if "organizing_dimensions" in kwargs:
+            config.set_organizing_dimensions(kwargs["organizing_dimensions"])
+        dim_changed = (
+            "organizing_dimensions" in kwargs
+            and config.get_organizing_dimensions() != prior_dims
+        )
+        sub_changed = (
+            "sub_organizing_dimension" in kwargs
+            and config.sub_organizing_dimension != prior_sub
+        )
+        if (
+            dim_changed
+            or sub_changed
+            or any(
+                key in values and prior[key] != config[key] for key in reconcile_flags
+            )
+        ):
+            self._service().reconcile_all_employees_from_ems(config.company_id)
         return {"success": True, "data": config.serialize_for_api()}
+
+    @http.route(
+        "/api/employee-files/config/header-fields",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def save_header_field_keys(self, header_field_keys=None, **kwargs):
+        self._require_admin_or_manager()
+        keys = header_field_keys
+        if keys is None and "header_field_keys" in kwargs:
+            keys = kwargs["header_field_keys"]
+        config = request.env["doc.employee.files.config"].get_for_company()
+        config.set_header_field_keys(keys or [])
+        return {"success": True, "data": config.serialize_for_api()}
+
+    @http.route(
+        "/api/employee-files/config/preview",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def config_organizing_preview(self, **kwargs):
+        self._require_admin()
+        data = self._service().setup_preview(kwargs, persist=False)
+        return {"success": True, "data": data}
 
     @http.route(
         "/api/employee-files/setup/preview",
@@ -353,18 +403,116 @@ class EmployeeFilesController(http.Controller):
                 ],
                 limit=1,
             )
+        ems_note = (
+            "Organizational fields are read-only here. "
+            "Update the employee record in EMS to change them."
+        )
+        if not employee_file and employee_id:
+            employee = (
+                request.env["hr.employee"]
+                .sudo()
+                .browse(int(employee_id))
+                .exists()
+            )
+            if not employee:
+                return {"success": False, "message": "Employee not found."}
+            config = request.env["doc.employee.files.config"].get_for_company(
+                employee.company_id
+            )
+            header_fields = self._service().build_employee_file_header_fields(
+                employee, config
+            )
+            return {
+                "success": True,
+                "data": {
+                    "id": False,
+                    "employee_id": employee.id,
+                    "employee_name": employee.name,
+                    "department_id": employee.department_id.id
+                    if employee.department_id
+                    else False,
+                    "department_name": employee.department_id.name
+                    if employee.department_id
+                    else "",
+                    "job_title": employee.job_id.name if employee.job_id else "",
+                    "document_count": 0,
+                    "attention_count": 0,
+                    "state": "active" if employee.active else "inactive",
+                    "favorite": False,
+                    "storage_folder_id": False,
+                    "related_groups": [],
+                    "header_fields": header_fields,
+                    "ems_read_only_note": ems_note,
+                },
+            }
         if not employee_file:
             return {"success": False, "message": "Employee File not found."}
-        groups = request.env["doc.employee.group"].search(
-            [("member_ids", "in", employee_file.id)]
+        employee = employee_file.employee_id
+        self._service().sync_employee_system_groups(employee, employee_file)
+        groups = self._service().related_groups_for_employee_file(employee_file)
+        config = request.env["doc.employee.files.config"].get_for_company(
+            employee_file.company_id
+        )
+        header_fields = self._service().build_employee_file_header_fields(
+            employee, config
         )
         return {
             "success": True,
             "data": {
                 **employee_file.serialize_for_api(request.env.user),
                 "related_groups": [group.serialize_for_api() for group in groups],
+                "header_fields": header_fields,
+                "ems_read_only_note": ems_note,
             },
         }
+
+    @http.route(
+        "/api/employee-files/employee-file/documents",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def get_employee_file_documents(self, employee_id=None, id=None, **kwargs):
+        EmployeeFile = request.env["doc.employee.file"]
+        employee_file = EmployeeFile.browse(int(id or 0)).exists()
+        if not employee_file and employee_id:
+            employee_file = EmployeeFile.search(
+                [
+                    ("employee_id", "=", int(employee_id)),
+                    ("company_id", "=", request.env.company.id),
+                ],
+                limit=1,
+            )
+        if not employee_file:
+            return {"success": False, "message": "Employee File not found."}
+        documents = self._service().list_employee_file_documents(
+            employee_file, request.env.user
+        )
+        return {"success": True, "data": documents}
+
+    @http.route(
+        "/api/employee-files/employee-file/activity",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def get_employee_file_activity(self, employee_id=None, id=None, **kwargs):
+        EmployeeFile = request.env["doc.employee.file"]
+        employee_file = EmployeeFile.browse(int(id or 0)).exists()
+        if not employee_file and employee_id:
+            employee_file = EmployeeFile.search(
+                [
+                    ("employee_id", "=", int(employee_id)),
+                    ("company_id", "=", request.env.company.id),
+                ],
+                limit=1,
+            )
+        if not employee_file:
+            return {"success": False, "message": "Employee File not found."}
+        activity = self._service().list_employee_file_activity(employee_file)
+        return {"success": True, "data": activity}
 
     @http.route(
         "/api/employee-files/favorite",
@@ -393,8 +541,10 @@ class EmployeeFilesController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def list_issues(self, category="all", limit=10, offset=0, **kwargs):
-        rows, total = self._service().list_issues(category, limit, offset)
+    def list_issues(self, category="all", limit=10, offset=0, search=None, **kwargs):
+        rows, total = self._service().list_issues(
+            category, limit, offset, search=search
+        )
         limit = max(1, min(int(limit or 10), 100))
         offset = max(0, int(offset or 0))
         return {
@@ -490,6 +640,11 @@ class EmployeeFilesController(http.Controller):
                     }
                 ).id
             )
+        service = self._service()
+        for employee_id in ids:
+            employee = request.env["hr.employee"].sudo().browse(employee_id).exists()
+            if employee:
+                service.reconcile_employee_from_ems(employee)
         return {"success": True, "ids": created}
 
     @http.route(
@@ -516,8 +671,11 @@ class EmployeeFilesController(http.Controller):
     def remove_exclusion(self, id=None, **kwargs):
         self._require_admin()
         exclusion = request.env["doc.employee.exclusion"].browse(int(id or 0)).exists()
+        employee = exclusion.employee_id if exclusion else False
         if exclusion:
             exclusion.write({"active": False})
+        if employee:
+            self._service().reconcile_employee_from_ems(employee)
         return {"success": True}
 
     @http.route(
@@ -742,16 +900,29 @@ class EmployeeFilesController(http.Controller):
             ("department", "Department", "department_id"),
             ("branch", "Branch", "branch_id"),
             ("grade", "Grade / Level", "grade_id"),
-            ("employment_type", "Employment Type", "employment_type_id"),
+            (
+                "employment_type",
+                "Employment Type",
+                ("employment_type_id", "employee_type_id"),
+            ),
             ("work_location", "Location", "work_location_id"),
             ("status", "Status", None),
         ]
         for key, label, field_name in checks:
             populated = True
-            if field_name and field_name in Employee._fields:
-                populated = bool(
-                    Employee.search_count(company_domain + [(field_name, "!=", False)])
+            if field_name:
+                field_names = (
+                    field_name if isinstance(field_name, (list, tuple)) else (field_name,)
                 )
+                populated = False
+                for fname in field_names:
+                    if fname not in Employee._fields:
+                        continue
+                    if Employee.search_count(
+                        company_domain + [(fname, "!=", False)]
+                    ):
+                        populated = True
+                        break
             options.append(
                 {
                     "key": key,

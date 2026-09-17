@@ -64,6 +64,89 @@ ISSUE_TAXONOMY = [
     ("pending_classification", "Pending Classification"),
 ]
 
+ISSUE_TYPE_LABELS = dict(ISSUE_TAXONOMY)
+
+ISSUE_TYPE_DEFAULTS = {
+    "init_failed": {
+        "category": "initialization_failed",
+        "recommended_action": "retry",
+        "recoverable": True,
+    },
+    "sync_failed": {
+        "category": "unresolved_data",
+        "recommended_action": "sync_now",
+        "recoverable": True,
+    },
+    "integration_failed": {
+        "category": "unresolved_data",
+        "recommended_action": "retry",
+        "recoverable": True,
+    },
+    "duplicate_document": {
+        "category": "unresolved_data",
+        "recommended_action": "resolve",
+        "recoverable": True,
+    },
+    "upload_failed": {
+        "category": "unresolved_data",
+        "recommended_action": "retry",
+        "recoverable": True,
+    },
+    "processing_failed": {
+        "category": "unresolved_data",
+        "recommended_action": "retry",
+        "recoverable": True,
+    },
+    "unmatched_document": {
+        "category": "unresolved_data",
+        "recommended_action": "retry",
+        "recoverable": True,
+    },
+    "no_org_attribute": {
+        "category": "unresolved_data",
+        "recommended_action": "view_in_ems",
+        "recoverable": False,
+    },
+}
+
+
+def issue_type_label(issue_type):
+    return ISSUE_TYPE_LABELS.get(issue_type, issue_type or "")
+
+
+def hr_details_for_issue_type(issue_type, module_name=None):
+    """Plain-language issue text for HR (no raw stack traces)."""
+    if issue_type == "duplicate_document":
+        return _(
+            "This document appears to duplicate an existing record on the employee file. "
+            "Review the existing file or upload a new version instead of creating a duplicate."
+        )
+    if issue_type == "sync_failed":
+        return _(
+            "Employee Files could not sync this employee's groups or folder membership from EMS. "
+            "Correct the employee record in EMS, then use Sync Now or Retry."
+        )
+    if issue_type == "integration_failed":
+        if module_name:
+            return _(
+                "The %(module)s integration is unavailable or returned an error while collecting "
+                "documents. Ensure the module is installed and enabled, then retry.",
+                module=module_name,
+            )
+        return _(
+            "A required integration for document collection is unavailable or returned an error. "
+            "Contact your administrator, then retry."
+        )
+    if issue_type == "upload_failed":
+        return _("The document could not be uploaded to the employee file. Try again or contact support.")
+    if issue_type == "processing_failed":
+        return _("The document was uploaded but could not be processed for the employee file. Try Retry.")
+    if issue_type == "unmatched_document":
+        return _("The document could not be matched or linked to this employee file. Try Retry after reviewing the file.")
+    if issue_type == "init_failed":
+        return _("Employee file initialization failed. Retry after correcting EMS or configuration issues.")
+    return _("An error occurred. Use the recommended action or contact your administrator.")
+
 EXCLUSION_REASONS = [
     ("inactive", "Inactive (per configuration)"),
     ("test_employee", "Test employee (per configuration)"),
@@ -135,6 +218,7 @@ class DocEmployeeIssue(models.Model):
             "classification": classification,
             "classification_label": classification_label(classification),
             "issue_type": self.issue_type,
+            "issue_type_label": issue_type_label(self.issue_type),
             "details": self.details or "",
             "state": self.state,
             "recoverable": self.recoverable,

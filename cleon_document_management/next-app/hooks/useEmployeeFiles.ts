@@ -20,14 +20,22 @@ export const EMPLOYEE_FILES_KEYS = {
     groupId: number,
     params: { search?: string; limit?: number; offset?: number },
   ) => ["employee-files", "group-members", groupId, params],
-  issues: (category: string, params: { limit?: number; offset?: number }) => [
-    "employee-files",
-    "issues",
-    category,
-    params,
-  ],
+  issues: (
+    category: string,
+    params: { search?: string; limit?: number; offset?: number },
+  ) => ["employee-files", "issues", category, params],
   dimensions: ["employee-files", "dimensions"],
   exclusions: (reason?: string) => ["employee-files", "exclusions", reason ?? "all"],
+  fileDocuments: (employeeId: number) => [
+    "employee-files",
+    "file-documents",
+    employeeId,
+  ],
+  fileActivity: (employeeId: number) => [
+    "employee-files",
+    "file-activity",
+    employeeId,
+  ],
 };
 
 export function useEmployeeFilesConfig() {
@@ -86,16 +94,20 @@ export function useRemoveEmployeeFileExclusion() {
   });
 }
 
-export function useEmployeeFileGroups(params: {
-  group_kind?: string;
-  dimension?: string;
-  search?: string;
-  for_home?: boolean;
-  include_all_custom?: boolean;
-}) {
+export function useEmployeeFileGroups(
+  params: {
+    group_kind?: string;
+    dimension?: string;
+    search?: string;
+    for_home?: boolean;
+    include_all_custom?: boolean;
+  },
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: EMPLOYEE_FILES_KEYS.groups(params),
     queryFn: () => api.listEmployeeFileGroups(params),
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -156,11 +168,22 @@ export function useEmployeeFileIssues(
   category = "all",
   page = 1,
   pageSize = EMPLOYEE_FILE_LIST_PAGE_SIZE,
+  search?: string,
 ) {
   const offset = (Math.max(page, 1) - 1) * pageSize;
+  const trimmedSearch = search?.trim() || undefined;
   return useQuery({
-    queryKey: EMPLOYEE_FILES_KEYS.issues(category, { limit: pageSize, offset }),
-    queryFn: () => api.listEmployeeFileIssues(category, { limit: pageSize, offset }),
+    queryKey: EMPLOYEE_FILES_KEYS.issues(category, {
+      search: trimmedSearch,
+      limit: pageSize,
+      offset,
+    }),
+    queryFn: () =>
+      api.listEmployeeFileIssues(category, {
+        search: trimmedSearch,
+        limit: pageSize,
+        offset,
+      }),
   });
 }
 
@@ -179,8 +202,27 @@ export function useSaveEmployeeFilesConfig() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.saveEmployeeFilesConfig,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data) {
+        queryClient.setQueryData(EMPLOYEE_FILES_KEYS.config, data);
+      }
       queryClient.invalidateQueries({ queryKey: EMPLOYEE_FILES_KEYS.config });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "groups"] });
+      queryClient.invalidateQueries({ queryKey: EMPLOYEE_FILES_KEYS.stats });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "summary"] });
+    },
+  });
+}
+
+export function useSaveEmployeeFilesHeaderFields() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.saveEmployeeFilesHeaderFields,
+    onSuccess: (data) => {
+      if (data) {
+        queryClient.setQueryData(EMPLOYEE_FILES_KEYS.config, data);
+      }
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "summary"] });
     },
   });
 }
@@ -190,6 +232,43 @@ export function useEmployeeFileSummary(employeeId: number) {
     queryKey: ["employee-files", "summary", employeeId],
     queryFn: () => api.getEmployeeFileSummary(employeeId),
     enabled: employeeId > 0,
+  });
+}
+
+export function useEmployeeFileDocuments(employeeId: number) {
+  return useQuery({
+    queryKey: EMPLOYEE_FILES_KEYS.fileDocuments(employeeId),
+    queryFn: () => api.getEmployeeFileDocuments(employeeId),
+    enabled: employeeId > 0,
+  });
+}
+
+export function useEmployeeFileActivity(employeeId: number) {
+  return useQuery({
+    queryKey: EMPLOYEE_FILES_KEYS.fileActivity(employeeId),
+    queryFn: () => api.getEmployeeFileActivity(employeeId),
+    enabled: employeeId > 0,
+  });
+}
+
+export function useRemoveEmployeeFilesFromGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      groupId,
+      employeeFileIds,
+    }: {
+      groupId: number;
+      employeeFileIds: number[];
+    }) => api.removeEmployeeFilesFromGroup(groupId, employeeFileIds),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "groups"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "summary"] });
+      queryClient.invalidateQueries({
+        queryKey: EMPLOYEE_FILES_KEYS.group(variables.groupId),
+      });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "group-members"] });
+    },
   });
 }
 

@@ -10,6 +10,19 @@ function documentGroupKey(document: DocDocument) {
   return `${document.document_type_id}:${document.name.trim().toLowerCase()}`;
 }
 
+function documentPrimaryRank(document: DocDocument): number {
+  if (
+    document.approval_state === "approved" ||
+    document.approval_state === "not_required"
+  ) {
+    return 0;
+  }
+  if (document.approval_state === "pending") {
+    return 1;
+  }
+  return 2;
+}
+
 export function getGroupMemberIds(group: EmployeeDocumentGroup): number[] {
   return [group.primary.id, ...group.relatedDocuments.map((document) => document.id)];
 }
@@ -47,9 +60,11 @@ export function groupEmployeeDocuments(documents: DocDocument[]): EmployeeDocume
   }
 
   return [...groups.values()].map((list) => {
-    const sorted = [...list].sort((left, right) =>
-      right.write_date.localeCompare(left.write_date),
-    );
+    const sorted = [...list].sort((left, right) => {
+      const rankDiff = documentPrimaryRank(left) - documentPrimaryRank(right);
+      if (rankDiff !== 0) return rankDiff;
+      return right.write_date.localeCompare(left.write_date);
+    });
     const primary = sorted[0];
     const relatedDocuments = sorted.slice(1);
     const archivedVersions = primary.version_count ?? 0;

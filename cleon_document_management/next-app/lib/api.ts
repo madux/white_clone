@@ -9,6 +9,7 @@ import type {
   User,
   AdminAttention,
   ApprovalInbox,
+  ReviewAlertItem,
   PendingEmployeeUploads,
   MyPendingUploads,
   MyCompliance,
@@ -22,7 +23,7 @@ import type {
   ModuleRoleMember,
   DocumentType,
   ShareLink,
-  UploadDuplicateMatch,
+  UploadConflict,
 } from "./types";
 
 interface JsonRpcResponse<T> {
@@ -338,8 +339,11 @@ export const api = {
     files: File[];
     document_type_ids: number[];
     expiry_dates?: string[];
+    issue_dates?: string[];
+    descriptions?: string[];
     replace_document_ids?: Array<number | null>;
     change_notes?: string[];
+    allow_separate_duplicates?: boolean[];
   }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
@@ -347,11 +351,23 @@ export const api = {
     if (payload.expiry_dates?.length) {
       form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
     }
+    if (payload.issue_dates?.length) {
+      form.append("issue_dates", JSON.stringify(payload.issue_dates));
+    }
+    if (payload.descriptions?.length) {
+      form.append("descriptions", JSON.stringify(payload.descriptions));
+    }
     if (payload.replace_document_ids?.length) {
       form.append("replace_document_ids", JSON.stringify(payload.replace_document_ids));
     }
     if (payload.change_notes?.length) {
       form.append("change_notes", JSON.stringify(payload.change_notes));
+    }
+    if (payload.allow_separate_duplicates?.length) {
+      form.append(
+        "allow_separate_duplicates",
+        JSON.stringify(payload.allow_separate_duplicates),
+      );
     }
     return multipartClient
       .post<{
@@ -367,8 +383,11 @@ export const api = {
     employee_id: number;
     document_type_ids: number[];
     expiry_dates?: string[];
+    issue_dates?: string[];
+    descriptions?: string[];
     replace_document_ids?: Array<number | null>;
     change_notes?: string[];
+    allow_separate_duplicates?: boolean[];
   }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
@@ -377,11 +396,23 @@ export const api = {
     if (payload.expiry_dates?.length) {
       form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
     }
+    if (payload.issue_dates?.length) {
+      form.append("issue_dates", JSON.stringify(payload.issue_dates));
+    }
+    if (payload.descriptions?.length) {
+      form.append("descriptions", JSON.stringify(payload.descriptions));
+    }
     if (payload.replace_document_ids?.length) {
       form.append("replace_document_ids", JSON.stringify(payload.replace_document_ids));
     }
     if (payload.change_notes?.length) {
       form.append("change_notes", JSON.stringify(payload.change_notes));
+    }
+    if (payload.allow_separate_duplicates?.length) {
+      form.append(
+        "allow_separate_duplicates",
+        JSON.stringify(payload.allow_separate_duplicates),
+      );
     }
     return multipartClient
       .post<{ success: boolean; data?: { id: number; name: string }; message?: string }>(
@@ -391,15 +422,15 @@ export const api = {
       .then((response) => response.data);
   },
 
-  checkUploadDuplicates: (payload: {
+  checkUploadConflicts: (payload: {
     employee_id: number;
-    items: { filename: string; document_type_id: number }[];
+    items: { document_type_id: number }[];
   }) =>
     rpc<{
       success: boolean;
-      matches?: UploadDuplicateMatch[];
+      conflicts?: UploadConflict[];
       message?: string;
-    }>("/api/check-upload-duplicates", payload),
+    }>("/api/check-upload-conflicts", payload),
 
   requestDocumentApproval: (id: number) => {
     return rpc<{
@@ -504,6 +535,18 @@ export const api = {
   }) =>
     rpc<{ success: boolean; data: any }>("/api/document-review", payload),
 
+  getMyReviewAlerts: () =>
+    rpc<{
+      success: boolean;
+      data: { count: number; items: ReviewAlertItem[] };
+    }>("/api/my-review-alerts", {}),
+
+  acknowledgeReviewDecision: (id: number) =>
+    rpc<{ success: boolean; data?: { id: number; review_decision_unread: boolean } }>(
+      "/api/document/acknowledge-review-decision",
+      { id },
+    ),
+
   getDocumentLifecycle: (lifecycle: "archived" | "recycle_bin") =>
     rpc<{ success: boolean; data: DocDocument[] }>(
       "/api/document-lifecycle",
@@ -534,6 +577,12 @@ export const api = {
   toggleSettingsDocumentType: (id: number) =>
     rpc<{ success: boolean; active?: boolean; message?: string }>(
       "/api/settings/document-type/toggle",
+      { id },
+    ),
+
+  deleteSettingsDocumentType: (id: number) =>
+    rpc<{ success: boolean; message?: string }>(
+      "/api/settings/document-type/delete",
       { id },
     ),
 
@@ -773,6 +822,18 @@ export const api = {
       payload,
     ).then((r) => r.data),
 
+  saveEmployeeFilesHeaderFields: (headerFieldKeys: string[]) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesConfig }>(
+      "/api/employee-files/config/header-fields",
+      { header_field_keys: headerFieldKeys },
+    ).then((r) => r.data),
+
+  previewEmployeeFilesOrganizing: (payload: Record<string, unknown>) =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFilesSetupPreview;
+    }>("/api/employee-files/config/preview", payload).then((r) => r.data),
+
   getEmployeeFilesDimensions: () =>
     rpc<{
       success: boolean;
@@ -879,9 +940,21 @@ export const api = {
       { employee_id: employeeId },
     ).then((r) => r.data),
 
+  getEmployeeFileDocuments: (employeeId: number) =>
+    rpc<{ success: boolean; data: import("./types").DocDocument[] }>(
+      "/api/employee-files/employee-file/documents",
+      { employee_id: employeeId },
+    ).then((r) => r.data),
+
+  getEmployeeFileActivity: (employeeId: number) =>
+    rpc<{ success: boolean; data: import("./types").WorkspaceActivityEvent[] }>(
+      "/api/employee-files/employee-file/activity",
+      { employee_id: employeeId },
+    ).then((r) => r.data),
+
   listEmployeeFileIssues: (
     category = "all",
-    params?: { limit?: number; offset?: number },
+    params?: { search?: string; limit?: number; offset?: number },
   ) =>
     rpc<{
       success: boolean;
@@ -914,6 +987,12 @@ export const api = {
   addEmployeeFilesToGroup: (groupId: number, employeeFileIds: number[]) =>
     rpc<{ success: boolean; data: import("./types").EmployeeFileGroup }>(
       "/api/employee-files/group/add-members",
+      { id: groupId, employee_file_ids: employeeFileIds },
+    ).then((r) => r.data),
+
+  removeEmployeeFilesFromGroup: (groupId: number, employeeFileIds: number[]) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup }>(
+      "/api/employee-files/group/remove-members",
       { id: groupId, employee_file_ids: employeeFileIds },
     ).then((r) => r.data),
 

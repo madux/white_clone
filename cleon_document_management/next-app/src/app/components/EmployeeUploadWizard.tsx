@@ -2,6 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import type { DocumentType } from "../../../lib/types";
+import {
+  firstUploadMetadataError,
+  typeRequiresDescription,
+  typeRequiresExpiry,
+  typeRequiresIssueDate,
+} from "../../../lib/uploadMetadataHelpers";
 
 type Props = {
   documentTypes: DocumentType[];
@@ -26,10 +32,22 @@ export default function EmployeeUploadWizard({ documentTypes, onSubmit, onClose 
   const selectedType = documentTypes.find(
     (type) => String(type.id) === documentTypeId,
   );
+  const typeId = documentTypeId;
 
   const handleFinish = async (event: FormEvent) => {
     event.preventDefault();
     if (!file || !selectedType) return;
+    const metadataError = firstUploadMetadataError(
+      [String(selectedType.id)],
+      [expiryDate],
+      [issueDate],
+      [description],
+      documentTypes,
+    );
+    if (metadataError) {
+      setError(metadataError);
+      return;
+    }
     setPending(true);
     setError("");
     try {
@@ -42,7 +60,7 @@ export default function EmployeeUploadWizard({ documentTypes, onSubmit, onClose 
           description,
         },
       });
-      setStep(4);
+      setStep(3);
     } catch (err: any) {
       setError(err?.message || "Upload failed.");
     } finally {
@@ -50,7 +68,16 @@ export default function EmployeeUploadWizard({ documentTypes, onSubmit, onClose 
     }
   };
 
-  if (step === 4) {
+  const canContinueStep1 = Boolean(file && documentTypeId);
+  const canContinueStep2 = !firstUploadMetadataError(
+    documentTypeId ? [documentTypeId] : [],
+    [expiryDate],
+    [issueDate],
+    [description],
+    documentTypes,
+  );
+
+  if (step === 3) {
     return (
       <div className="space-y-4 p-2 text-center">
         <p className="text-lg font-semibold text-slate-900">Document submitted</p>
@@ -62,9 +89,9 @@ export default function EmployeeUploadWizard({ documentTypes, onSubmit, onClose 
   }
 
   return (
-    <form className="space-y-4" onSubmit={step === 3 ? handleFinish : (e) => e.preventDefault()}>
+    <form className="space-y-4" onSubmit={step === 2 ? handleFinish : (e) => e.preventDefault()}>
       <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-        Step {step} of 3
+        Step {step} of 2
       </p>
       {step === 1 ? (
         <>
@@ -86,38 +113,57 @@ export default function EmployeeUploadWizard({ documentTypes, onSubmit, onClose 
             required
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
           />
+          {documentTypeId ? (
+            <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                Document details
+              </p>
+              <label className="block text-sm font-medium text-slate-700">
+                Issue date
+                {typeRequiresIssueDate(typeId, documentTypes) ? " (required)" : ""}
+              </label>
+              <input
+                type="date"
+                className="field w-full"
+                value={issueDate}
+                required={typeRequiresIssueDate(typeId, documentTypes)}
+                onChange={(event) => setIssueDate(event.target.value)}
+              />
+              {typeRequiresExpiry(typeId, documentTypes) ? (
+                <>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Expiry date (required)
+                  </label>
+                  <input
+                    type="date"
+                    className="field w-full"
+                    value={expiryDate}
+                    required
+                    onChange={(event) => setExpiryDate(event.target.value)}
+                  />
+                </>
+              ) : null}
+              <label className="block text-sm font-medium text-slate-700">
+                Description
+                {typeRequiresDescription(typeId, documentTypes) ? " (required)" : ""}
+              </label>
+              <textarea
+                className="field w-full min-h-20"
+                value={description}
+                required={typeRequiresDescription(typeId, documentTypes)}
+                onChange={(event) => setDescription(event.target.value)}
+              />
+            </div>
+          ) : null}
         </>
       ) : null}
       {step === 2 ? (
-        <>
-          <label className="block text-sm font-medium text-slate-700">Issue date</label>
-          <input
-            type="date"
-            className="field w-full"
-            value={issueDate}
-            onChange={(event) => setIssueDate(event.target.value)}
-          />
-          <label className="block text-sm font-medium text-slate-700">Expiry date</label>
-          <input
-            type="date"
-            className="field w-full"
-            value={expiryDate}
-            onChange={(event) => setExpiryDate(event.target.value)}
-          />
-          <label className="block text-sm font-medium text-slate-700">Description</label>
-          <textarea
-            className="field w-full"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-          />
-        </>
-      ) : null}
-      {step === 3 ? (
         <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
           <p><strong>Type:</strong> {selectedType?.name}</p>
           <p><strong>File:</strong> {file?.name}</p>
           {issueDate ? <p><strong>Issue date:</strong> {issueDate}</p> : null}
           {expiryDate ? <p><strong>Expiry:</strong> {expiryDate}</p> : null}
+          {description ? <p><strong>Description:</strong> {description}</p> : null}
         </div>
       ) : null}
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -129,14 +175,28 @@ export default function EmployeeUploadWizard({ documentTypes, onSubmit, onClose 
         >
           {step === 1 ? "Cancel" : "Back"}
         </button>
-        {step < 3 ? (
+        {step < 2 ? (
           <button
             type="button"
-            className="rounded-xl bg-brand-pink px-4 py-2 text-sm font-semibold text-white"
-            onClick={() => setStep(step + 1)}
-            disabled={step === 1 && (!file || !documentTypeId)}
+            className="rounded-xl bg-brand-pink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            onClick={() => {
+              const metadataError = firstUploadMetadataError(
+                [documentTypeId],
+                [expiryDate],
+                [issueDate],
+                [description],
+                documentTypes,
+              );
+              if (metadataError) {
+                setError(metadataError);
+                return;
+              }
+              setError("");
+              setStep(2);
+            }}
+            disabled={!canContinueStep1 || !canContinueStep2}
           >
-            Continue
+            Review
           </button>
         ) : (
           <button

@@ -8,6 +8,7 @@ import {
 import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 import type { EmployeeDocumentGroup } from "../../../lib/groupEmployeeDocuments";
 import { approvalDisplayLabel, canReviewDocument } from "../../../lib/approvalHelpers";
+import { canUpdateDocument } from "../../../lib/documentUpdateHelpers";
 import type { DocDocument } from "../../../lib/types";
 import DocumentActions from "./DocumentActions";
 import FolderDocumentTreeGroup from "./FolderDocumentTreeGroup";
@@ -36,6 +37,8 @@ function DocumentRowActions({
   reviewPending,
   onApprove,
   onReject,
+  onUpdate,
+  showUpdateAction,
   deleteRelatedIds = [],
 }: {
   document: DocDocument;
@@ -43,10 +46,25 @@ function DocumentRowActions({
   reviewPending: boolean;
   onApprove: () => void;
   onReject: () => void;
+  onUpdate?: () => void;
+  showUpdateAction?: boolean;
   deleteRelatedIds?: number[];
 }) {
+  const showUpdate =
+    showUpdateAction && onUpdate && canUpdateDocument(document);
+
   return (
     <div className="ml-auto flex shrink-0 items-center gap-2">
+      {showUpdate ? (
+        <button
+          type="button"
+          onClick={onUpdate}
+          className="employee-tree-open-link"
+          title="Upload a new version of this file"
+        >
+          Update
+        </button>
+      ) : null}
       {showReviewActions && canReviewDocument(document) ? (
         <>
           <button
@@ -87,6 +105,8 @@ function ProfileDocumentRow({
   onView,
   onApprove,
   onReject,
+  onUpdate,
+  showUpdateAction,
   reviewPending,
   showReviewActions,
   deleteRelatedIds = [],
@@ -98,6 +118,8 @@ function ProfileDocumentRow({
   onView: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onUpdate?: () => void;
+  showUpdateAction?: boolean;
   reviewPending: boolean;
   showReviewActions: boolean;
   deleteRelatedIds?: number[];
@@ -124,19 +146,27 @@ function ProfileDocumentRow({
       >
         {document.name}
       </button>
+      <small className="hidden w-24 shrink-0 text-slate-500 lg:inline">
+        {document.document_category_label ?? "—"}
+      </small>
+      <small className="hidden w-32 shrink-0 text-slate-600 sm:inline">
+        {document.document_type || "—"}
+      </small>
+      <small className="hidden w-28 shrink-0 text-slate-400 md:inline">
+        {formatDocumentDateShort(document.created_at || document.write_date)}
+      </small>
+      <small className="hidden w-14 shrink-0 tabular-nums text-slate-500 md:inline">
+        v{document.current_version_number ?? 1}
+      </small>
       <DocumentStatusBadge document={document} />
-      <small className="hidden shrink-0 text-slate-400 sm:inline">
-        {document.expiry_date ?? "No expiry"}
-      </small>
-      <small className="hidden shrink-0 text-slate-400 md:inline">
-        {formatDocumentDateShort(document.write_date)}
-      </small>
       <DocumentRowActions
         document={document}
         showReviewActions={showReviewActions}
         reviewPending={reviewPending}
         onApprove={onApprove}
         onReject={onReject}
+        onUpdate={onUpdate}
+        showUpdateAction={showUpdateAction}
         deleteRelatedIds={deleteRelatedIds}
       />
     </div>
@@ -158,6 +188,8 @@ export default function EmployeeProfileDocumentTree({
   reviewPending,
   showReviewActions,
   isDocumentManager,
+  onUpdate,
+  showUpdateAction = false,
 }: {
   groups: EmployeeDocumentGroup[];
   selected: number[];
@@ -173,6 +205,8 @@ export default function EmployeeProfileDocumentTree({
   reviewPending: boolean;
   showReviewActions: boolean;
   isDocumentManager: boolean;
+  onUpdate?: (document: DocDocument) => void;
+  showUpdateAction?: boolean;
 }) {
   const documentAction = useDocumentAction();
   const deleteVersion = useDeleteDocumentVersion();
@@ -206,10 +240,12 @@ export default function EmployeeProfileDocumentTree({
             aria-label="Select all documents"
             className="h-4 w-4 shrink-0 accent-pink-600"
           />
-          <div className="min-w-0 flex-1 font-bold text-slate-800">Employee files</div>
-          <small className="hidden text-slate-400 sm:inline">Status</small>
-          <small className="hidden text-slate-400 sm:inline">Expiry</small>
-          <small className="hidden text-slate-400 md:inline">Modified</small>
+          <div className="min-w-0 flex-1 font-bold text-slate-800">Documents</div>
+          <small className="hidden w-24 text-slate-400 lg:inline">Category</small>
+          <small className="hidden w-32 text-slate-400 sm:inline">Document type</small>
+          <small className="hidden w-28 text-slate-400 md:inline">Upload date</small>
+          <small className="hidden w-14 text-slate-400 md:inline">Version</small>
+          <small className="hidden text-slate-400 sm:inline">Approval</small>
           <span className="hidden w-[88px] sm:inline" aria-hidden />
         </div>
         <div className="employee-tree-file-group !ml-4 !border-l-pink-100">
@@ -218,19 +254,27 @@ export default function EmployeeProfileDocumentTree({
             const expanded = expandedDocuments.includes(document.id);
             const rowSuffix = (
               <>
+                <small className="hidden w-24 shrink-0 text-slate-500 lg:inline">
+                  {document.document_category_label ?? "—"}
+                </small>
+                <small className="hidden w-32 shrink-0 text-slate-600 sm:inline">
+                  {document.document_type || "—"}
+                </small>
+                <small className="hidden w-28 shrink-0 text-slate-400 md:inline">
+                  {formatDocumentDateShort(document.created_at || document.write_date)}
+                </small>
+                <small className="hidden w-14 shrink-0 tabular-nums text-slate-500 md:inline">
+                  v{document.current_version_number ?? 1}
+                </small>
                 <DocumentStatusBadge document={document} />
-                <small className="hidden shrink-0 text-slate-400 sm:inline">
-                  {document.expiry_date ?? "No expiry"}
-                </small>
-                <small className="hidden shrink-0 text-slate-400 md:inline">
-                  {formatDocumentDateShort(document.write_date)}
-                </small>
                 <DocumentRowActions
                   document={document}
                   showReviewActions={showReviewActions}
                   reviewPending={reviewPending}
                   onApprove={() => onApprove(document)}
                   onReject={() => onReject(document)}
+                  onUpdate={onUpdate ? () => onUpdate(document) : undefined}
+                  showUpdateAction={showUpdateAction}
                   deleteRelatedIds={group.relatedDocuments.map((item) => item.id)}
                 />
               </>
@@ -271,6 +315,8 @@ export default function EmployeeProfileDocumentTree({
                 onView={() => onView(document)}
                 onApprove={() => onApprove(document)}
                 onReject={() => onReject(document)}
+                onUpdate={onUpdate ? () => onUpdate(document) : undefined}
+                showUpdateAction={showUpdateAction}
                 reviewPending={reviewPending}
                 showReviewActions={showReviewActions}
                 deleteRelatedIds={group.relatedDocuments.map((item) => item.id)}

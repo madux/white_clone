@@ -115,7 +115,7 @@ class HrEmployee(models.Model):
         config = self.env["doc.employee.files.config"].get_for_company()
         for employee in employees:
             if config.setup_complete:
-                service._ensure_employee_file(employee)
+                service.reconcile_employee_from_ems(employee)
             else:
                 self.env["doc.folder"].link_employee_to_department_folder(employee)
         self.env["doc.compliance.policy"]._trigger_lifecycle_event(employees, "onboarding")

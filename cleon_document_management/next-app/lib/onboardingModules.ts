@@ -37,7 +37,7 @@ export const ONBOARDING_MODULE_META: Record<
   },
   administration: {
     label: "Administration",
-    subtitle: "Types, approvals, and access defaults",
+    subtitle: "Document types, access defaults, and lifecycle",
   },
 };
 
@@ -148,17 +148,10 @@ const administrationSteps: GuideStep[] = [
   {
     id: "document-types",
     title: "Create document types",
-    description: "Set up the categories your organization will use when files are uploaded.",
+    description:
+      "Set up upload categories and, when needed, require approval with approvers on each type.",
     href: "/pages/settings?guide=document-types",
     action: "Open Settings",
-  },
-  {
-    id: "approval-workflow",
-    title: "Configure approval workflow",
-    description:
-      "Choose the review mode and assign approvers for employee folders. Sequential workflows follow the order you set.",
-    href: "/pages/settings?guide=approval-workflow",
-    action: "Configure approvals",
   },
   {
     id: "sharing",

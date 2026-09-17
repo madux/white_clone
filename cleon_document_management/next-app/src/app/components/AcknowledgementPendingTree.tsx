@@ -13,6 +13,7 @@ import type {
   AcknowledgementFolderNode,
 } from "../../../lib/types";
 import AcknowledgementDocumentPanel from "./AcknowledgementDocumentPanel";
+import AnimatedTreeCollapse from "./AnimatedTreeCollapse";
 
 type PercentFilter = "below100" | "below90" | "below80" | "above80";
 
@@ -190,8 +191,10 @@ export default function AcknowledgementPendingTree({
                   </span>
                 </button>
 
-                {folderExpanded ? (
-                  <div className="ack-tree-documents">
+                <AnimatedTreeCollapse
+                  open={folderExpanded}
+                  className="ack-tree-documents"
+                >
                     {folder.documents.map((document) => {
                       const expanded =
                         expandedDocumentId === document.document_id;
@@ -224,14 +227,13 @@ export default function AcknowledgementPendingTree({
                               {document.acknowledgement_percent}%
                             </span>
                           </button>
-                          {expanded ? (
+                          <AnimatedTreeCollapse open={expanded}>
                             <AcknowledgementDocumentPanel document={document} />
-                          ) : null}
+                          </AnimatedTreeCollapse>
                         </div>
                       );
                     })}
-                  </div>
-                ) : null}
+                </AnimatedTreeCollapse>
               </div>
             );
           })}

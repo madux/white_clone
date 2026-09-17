@@ -6,6 +6,8 @@ import {
   useDeleteDocumentVersion,
   useDocumentAction,
 } from "../../../hooks/useDocuments";
+import { approvalDisplayLabel } from "../../../lib/approvalHelpers";
+import { canUpdateDocument } from "../../../lib/documentUpdateHelpers";
 import { formatStatusLabel } from "../../../lib/formatLabel";
 import { groupEmployeeDocuments } from "../../../lib/groupEmployeeDocuments";
 import type { DocDocument } from "../../../lib/types";
@@ -30,6 +32,7 @@ function PersonalDocumentRow({
   onToggleSelect,
   onView,
   onRequestApproval,
+  onUpdate,
   deleteRelatedIds = [],
   depth = 2,
 }: {
@@ -39,11 +42,13 @@ function PersonalDocumentRow({
   onToggleSelect: () => void;
   onView: () => void;
   onRequestApproval?: () => void;
+  onUpdate?: () => void;
   deleteRelatedIds?: number[];
   depth?: number;
 }) {
   const requiresApproval = document.approval_state === "pending";
   const statusKey = requiresApproval ? "pending" : document.state;
+  const showUpdate = onUpdate && canUpdateDocument(document);
 
   return (
     <div
@@ -71,11 +76,23 @@ function PersonalDocumentRow({
       </small>
       <span className={`employee-tree-badge ${states[statusKey] || ""}`}>
         {requiresApproval
-          ? "Requires Approval"
+          ? approvalDisplayLabel(document)
           : formatStatusLabel(document.state)}
       </span>
       {pendingStatus ? (
         <span className="employee-tree-badge pending">{pendingStatus}</span>
+      ) : null}
+      {document.rejection_reason &&
+      (document.approval_state === "rejected" ||
+        document.last_review_decision === "rejected") ? (
+        <span
+          className="employee-tree-badge suspended max-w-[12rem] truncate"
+          title={document.rejection_reason}
+        >
+          {document.approval_state === "rejected"
+            ? "Rejected"
+            : "Update rejected"}
+        </span>
       ) : null}
       <small className="hidden shrink-0 text-slate-400 md:inline">
         {document.write_date?.slice(0, 10) || "—"}
@@ -88,6 +105,16 @@ function PersonalDocumentRow({
         >
           View
         </button>
+        {showUpdate ? (
+          <button
+            type="button"
+            onClick={onUpdate}
+            className="employee-tree-open-link"
+            title="Upload a new version of this file"
+          >
+            Update
+          </button>
+        ) : null}
         {(document.state === "draft" || document.state === "rejected") &&
         document.approval_state !== "pending" &&
         !pendingStatus &&
@@ -117,6 +144,7 @@ export default function PersonalDocumentTree({
   guideTarget,
   onView,
   onRequestApproval,
+  onUpdate,
 }: {
   documents: DocDocument[];
   search: string;
@@ -124,6 +152,7 @@ export default function PersonalDocumentTree({
   guideTarget?: string;
   onView: (document: DocDocument) => void;
   onRequestApproval?: (document: DocDocument) => void;
+  onUpdate?: (document: DocDocument) => void;
 }) {
   const [selected, setSelected] = useState<number[]>([]);
   const [expandedDocuments, setExpandedDocuments] = useState<Record<number, boolean>>(
@@ -242,11 +271,23 @@ export default function PersonalDocumentTree({
                     className={`employee-tree-badge ${states[statusKey] || ""} ${guideTarget === "approval" ? "guide-status-badge" : ""}`}
                   >
                     {requiresApproval
-                      ? "Requires Approval"
+                      ? approvalDisplayLabel(document)
                       : formatStatusLabel(document.state)}
                   </span>
                   {pendingStatus ? (
                     <span className="employee-tree-badge pending">{pendingStatus}</span>
+                  ) : null}
+                  {document.rejection_reason &&
+                  (document.approval_state === "rejected" ||
+                    document.last_review_decision === "rejected") ? (
+                    <span
+                      className="employee-tree-badge suspended max-w-[12rem] truncate"
+                      title={document.rejection_reason}
+                    >
+                      {document.approval_state === "rejected"
+                        ? "Rejected"
+                        : "Update rejected"}
+                    </span>
                   ) : null}
                   <small className="hidden shrink-0 text-slate-400 md:inline">
                     {document.write_date?.slice(0, 10) || "—"}
@@ -259,6 +300,16 @@ export default function PersonalDocumentTree({
                     >
                       View
                     </button>
+                    {onUpdate && canUpdateDocument(document) ? (
+                      <button
+                        type="button"
+                        onClick={() => onUpdate(document)}
+                        className="employee-tree-open-link"
+                        title="Upload a new version of this file"
+                      >
+                        Update
+                      </button>
+                    ) : null}
                     {(document.state === "draft" || document.state === "rejected") &&
                     document.approval_state !== "pending" &&
                     !pendingStatus &&
@@ -331,6 +382,7 @@ export default function PersonalDocumentTree({
                       ? () => onRequestApproval(document)
                       : undefined
                   }
+                  onUpdate={onUpdate ? () => onUpdate(document) : undefined}
                   deleteRelatedIds={group.relatedDocuments.map((item) => item.id)}
                   depth={2}
                 />

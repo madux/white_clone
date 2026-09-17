@@ -1,19 +1,23 @@
 # -*- coding: utf-8 -*-
 """Reset EF-QA EMS roster: realistic names and mixed active/inactive for QA.
 
-Removes existing employees whose barcode matches EF-QA-* (and linked DMS
-employee-file rows for those EMS ids), then creates a fresh roster.
+Removes existing employees whose barcode matches EF-QA-* (including inactive/
+archived EMS rows) and linked DMS employee-file rows, then creates a fresh roster.
 
 Run from Odoo shell:
     cd ~/Documents/Projects/odoo-17.0
     .venv/bin/python odoo-bin shell -c odoo.conf -d white_cleon_17 \\
         < /path/to/white_clone/scripts/seed_ef_qa_roster.py
 
+Or in Cursor: Cmd+Shift+P → "Tasks: Run Task" → "Odoo: Seed EF-QA roster"
+(see scripts/run_odoo_shell.sh and .vscode/tasks.json)
+
 Environment:
     SEED_EF_QA_COUNT=1000          How many EF-QA employees to create (default 1000)
     SEED_EF_QA_PREFIX=EF-QA-       Barcode prefix (default)
     SEED_EF_QA_INACTIVE_EVERY=7    Every Nth employee is inactive (default 7 → ~14%)
     SEED_EF_QA_SKIP_DELETE=0       Set 1 to only update names/active on existing EF-QA rows
+    WHITE_CLONE_SCRIPTS_DIR=       If stdin shell cannot resolve __file__ (optional; default ~/Documents/Projects/white_clone/scripts)
 """
 from __future__ import annotations
 
@@ -79,6 +83,28 @@ def _log(msg):
     print(msg)
 
 
+def _employee_model():
+    """Include archived/inactive hr.employee rows (barcode uniqueness is global)."""
+    return env["hr.employee"].sudo().with_context(active_test=False)
+
+
+def _scripts_dir():
+    """Directory containing this repo's scripts/ (stdin Odoo shell has no __file__)."""
+    script_file = globals().get("__file__")
+    if script_file:
+        return os.path.dirname(os.path.abspath(script_file))
+    env_dir = os.environ.get("WHITE_CLONE_SCRIPTS_DIR", "").strip()
+    if env_dir:
+        return os.path.abspath(env_dir)
+    default = os.path.expanduser("~/Documents/Projects/white_clone/scripts")
+    if os.path.isdir(default):
+        return default
+    raise SystemExit(
+        "Cannot locate scripts directory when run via Odoo shell stdin.\n"
+        "Set WHITE_CLONE_SCRIPTS_DIR to your white_clone/scripts path."
+    )
+
+
 def _slug(text):
     text = unicodedata.normalize("NFKD", text)
     text = text.encode("ascii", "ignore").decode("ascii")
@@ -94,6 +120,27 @@ def _person_for_index(index):
     full_name = f"{first} {last}"
     active = (index % INACTIVE_EVERY) != 0
     return full_name, active
+
+
+def _employment_types():
+    Type = env["hr.core_employment_type"].sudo()
+    names = ["Full-time", "Part-time", "Contract", "Intern"]
+    types = Type.browse()
+    for name in names:
+        row = Type.search([("name", "=", name)], limit=1)
+        if not row:
+            row = Type.create({"name": name})
+        types |= row
+    return types
+
+
+def _employment_type_field():
+    Employee = env["hr.employee"]
+    if "employee_type_id" in Employee._fields:
+        return "employee_type_id"
+    if "employment_type_id" in Employee._fields:
+        return "employment_type_id"
+    return None
 
 
 def _clear_dms_links(employee_ids):
@@ -115,7 +162,7 @@ def _clear_dms_links(employee_ids):
 
 
 def _delete_ef_qa_roster():
-    Employee = env["hr.employee"].sudo()
+    Employee = _employee_model()
     qa = Employee.search([("barcode", "=like", f"{PREFIX}%")])
     if not qa:
         _log(f"No employees with barcode {PREFIX}* — nothing to delete.")
@@ -128,7 +175,7 @@ def _delete_ef_qa_roster():
 
 
 def _update_existing_ef_qa():
-    Employee = env["hr.employee"].sudo()
+    Employee = _employee_model()
     qa = Employee.search([("barcode", "=like", f"{PREFIX}%")], order="barcode")
     if not qa:
         return 0, 0
@@ -136,16 +183,19 @@ def _update_existing_ef_qa():
     active_n = 0
     inactive_n = 0
     width = max(5, len(str(max(COUNT, len(qa)))))
+    emp_types = _employment_types()
+    et_field = _employment_type_field()
     for index, emp in enumerate(qa, start=1):
         name, active = _person_for_index(index)
         slug = _slug(name)
-        emp.write(
-            {
-                "name": name,
-                "active": active,
-                "work_email": f"{slug}.{index:0{width}d}@example.test",
-            }
-        )
+        vals = {
+            "name": name,
+            "active": active,
+            "work_email": f"{slug}.{index:0{width}d}@example.test",
+        }
+        if et_field and emp_types:
+            vals[et_field] = emp_types[(index - 1) % len(emp_types)].id
+        emp.write(vals)
         updated += 1
         if active:
             active_n += 1
@@ -157,7 +207,7 @@ def _update_existing_ef_qa():
 
 def _create_roster():
     company = env.company
-    Employee = env["hr.employee"].sudo()
+    Employee = _employee_model()
     Department = env["hr.department"].sudo()
     departments = Department.search([("company_id", "=", company.id)])
     if not departments:
@@ -167,6 +217,8 @@ def _create_roster():
     active_n = 0
     inactive_n = 0
     width = max(5, len(str(COUNT)))
+    emp_types = _employment_types()
+    et_field = _employment_type_field()
 
     for index in range(1, COUNT + 1):
         barcode = f"{PREFIX}{index:0{width}d}"
@@ -175,16 +227,17 @@ def _create_roster():
         name, active = _person_for_index(index)
         slug = _slug(name)
         dep = departments[(index - 1) % len(departments)] if departments else False
-        Employee.create(
-            {
-                "name": name,
-                "company_id": company.id,
-                "barcode": barcode,
-                "department_id": dep.id if dep else False,
-                "work_email": f"{slug}.{index:0{width}d}@example.test",
-                "active": active,
-            }
-        )
+        vals = {
+            "name": name,
+            "company_id": company.id,
+            "barcode": barcode,
+            "department_id": dep.id if dep else False,
+            "work_email": f"{slug}.{index:0{width}d}@example.test",
+            "active": active,
+        }
+        if et_field and emp_types:
+            vals[et_field] = emp_types[(index - 1) % len(emp_types)].id
+        Employee.create(vals)
         created += 1
         if active:
             active_n += 1
@@ -215,10 +268,14 @@ def main():
             f"({active_n} active, {inactive_n} inactive)."
         )
 
-    Employee = env["hr.employee"].sudo()
+    Employee = _employee_model()
     total = Employee.search_count([("company_id", "=", company.id)])
     qa_active = Employee.search_count(
-        [("company_id", "=", company.id), ("barcode", "=like", f"{PREFIX}%"), ("active", "=", True)]
+        [
+            ("company_id", "=", company.id),
+            ("barcode", "=like", f"{PREFIX}%"),
+            ("active", "=", True),
+        ]
     )
     qa_inactive = Employee.search_count(
         [
@@ -233,7 +290,7 @@ def main():
     if _truthy("SEED_EF_QA_APPLY_ATTENTION_CASES", "1"):
         _log("Applying EF-QA attention cases (missing departments)…")
         attention_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "seed_ef_qa_attention_cases.py"
+            _scripts_dir(), "seed_ef_qa_attention_cases.py"
         )
         with open(attention_path, encoding="utf-8") as fh:
             exec(compile(fh.read(), attention_path, "exec"), globals())

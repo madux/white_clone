@@ -53,19 +53,6 @@ function ActivityPageContent() {
 
   return (
     <div className="mx-auto min-h-full max-w-[1200px] space-y-6 bg-slate-50 p-6 pb-10">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">
-          Workspace
-        </p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
-          Activity
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-500">
-          Track document uploads, approvals, and acknowledgements across the
-          workspace.
-        </p>
-      </div>
-
       {activity.isError && (
         <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
           <AlertCircle className="h-5 w-5 shrink-0" />

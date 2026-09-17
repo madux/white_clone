@@ -21,12 +21,17 @@ import { documentViewHref } from "../../../lib/documentLinks";
 import type { DocDocument, DocFolder } from "../../../lib/types";
 import type { EmployeeLifecycleStatus } from "../../../lib/types";
 import FolderActions from "./FolderActions";
+import AnimatedTreeCollapse from "./AnimatedTreeCollapse";
 import FolderDocumentTreeGroup from "./FolderDocumentTreeGroup";
 
 export type FolderTreeRow = {
   folder: DocFolder;
   documents: DocDocument[];
   employees: FolderEmployeeGroup[];
+  /** Nested system-managed sub-groups (EF-A8). */
+  depth?: number;
+  /** Child groups rendered inside this folder when expanded (not as top-level rows). */
+  nestedRows?: FolderTreeRow[];
 };
 
 const LIFECYCLE_LABELS: Record<EmployeeLifecycleStatus, string> = {
@@ -262,7 +267,7 @@ export default function FolderEmployeeFileTree({
 
   return (
     <div className="employee-file-tree p-4">
-      {rows.map(({ folder, documents: folderDocuments, employees }) => {
+      {rows.map(({ folder, documents: folderDocuments, employees, depth = 0, nestedRows }) => {
         const folderExpanded = expandedFolders[folder.id] ?? singleFolderExpanded;
         const employeeCount =
           kind === "employee"
@@ -271,7 +276,11 @@ export default function FolderEmployeeFileTree({
         const memberList = employeeMemberLists?.[folder.id];
 
         return (
-          <div className="employee-tree-folder" key={folder.id}>
+          <div
+            className="employee-tree-folder"
+            key={folder.id}
+            style={depth > 0 ? { marginLeft: `${depth * 20}px` } : undefined}
+          >
             <div className="employee-tree-row employee-tree-row-folder">
               {onToggleFolderSelected ? (
                 <input
@@ -357,9 +366,27 @@ export default function FolderEmployeeFileTree({
               ) : null}
             </div>
 
-            {folderExpanded ? (
-              <div className="employee-tree-children">
-                {kind === "employee" && memberList ? (
+            <AnimatedTreeCollapse
+              open={folderExpanded}
+              className="employee-tree-children"
+            >
+                {kind === "employee" && nestedRows?.length ? (
+                  <FolderEmployeeFileTree
+                    kind="employee"
+                    rows={nestedRows}
+                    isDocumentManager={isDocumentManager}
+                    singleFolderExpanded={false}
+                    showFolderOpenLink={showFolderOpenLink}
+                    employeeGroupLinkMode={employeeGroupLinkMode}
+                    customGroupIds={customGroupIds}
+                    expandedFolders={expandedFolders}
+                    onFolderExpandedChange={onFolderExpandedChange}
+                    employeeMemberLists={employeeMemberLists}
+                    employeeCountDisplay={employeeCountDisplay}
+                    emptyMessage={emptyMessage}
+                  />
+                ) : null}
+                {kind === "employee" && memberList && !nestedRows?.length ? (
                   <div
                     className="space-y-3 border-b border-slate-100 bg-slate-50/60 px-4 py-3"
                     style={{ marginLeft: "20px" }}
@@ -385,7 +412,7 @@ export default function FolderEmployeeFileTree({
                     />
                   </div>
                 ) : null}
-                {kind === "employee" ? (
+                {kind === "employee" && !nestedRows?.length ? (
                   employees.length ? (
                     employees.map((employee) => {
                       const employeeKey = `${folder.id}-${employee.id}`;
@@ -469,8 +496,10 @@ export default function FolderEmployeeFileTree({
                               </button>
                             ) : null}
                           </div>
-                          {employeeExpanded ? (
-                            <div className="employee-tree-file-group">
+                          <AnimatedTreeCollapse
+                            open={employeeExpanded}
+                            className="employee-tree-file-group"
+                          >
                               {employee.documents.length ? (
                                 groupEmployeeDocuments(employee.documents).map(
                                   (group) => {
@@ -523,8 +552,7 @@ export default function FolderEmployeeFileTree({
                                   No files for this employee yet.
                                 </p>
                               )}
-                            </div>
-                          ) : null}
+                          </AnimatedTreeCollapse>
                         </div>
                       );
                     })
@@ -572,8 +600,7 @@ export default function FolderEmployeeFileTree({
                     No documents in this folder yet.
                   </p>
                 )}
-              </div>
-            ) : null}
+            </AnimatedTreeCollapse>
           </div>
         );
       })}

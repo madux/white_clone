@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -23,6 +23,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { EmployeeFilesSetupPreview, EmployeeFilesSetupRun } from "../../../lib/types";
 import { useCurrentUser } from "../../../hooks/useDocuments";
 import UiSwitch from "./UiSwitch";
+import ThemedSelect from "./ThemedSelect";
+import { employeeFileDimensionLabel } from "../../../lib/employeeFileDimensions";
 
 type Step = "empty" | "dimension" | "options" | "review" | "processing" | "complete";
 
@@ -35,6 +37,8 @@ const FLOW_STEPS = [
   { id: "review", label: "Review" },
   { id: "processing", label: "Setup" },
 ] as const;
+
+type FlowStepId = (typeof FLOW_STEPS)[number]["id"];
 
 const PRIMARY_BTN =
   "inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(232,62,140,0.18)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50";
@@ -51,56 +55,79 @@ function stepIndex(step: Step): number {
 }
 
 function WizardPage({
-  title,
-  description,
   step,
   children,
   footer,
+  onFlowStepClick,
+  canNavigateToFlowStep,
 }: {
-  title: string;
+  title?: string;
   description?: string;
   step: Step;
   children: ReactNode;
   footer?: ReactNode;
+  onFlowStepClick?: (flowStepId: FlowStepId) => void;
+  canNavigateToFlowStep?: (index: number, flowStepId: FlowStepId) => boolean;
 }) {
   const active = stepIndex(step);
 
+  const stepClass = (isCurrent: boolean, isDone: boolean, clickable: boolean) => {
+    if (isCurrent) {
+      return "border-brand-pink bg-pink-50 text-brand-text";
+    }
+    if (isDone) {
+      return "border-slate-200 bg-white text-slate-700";
+    }
+    if (clickable) {
+      return "border-slate-200 bg-white text-slate-600 hover:border-pink-200 hover:bg-pink-50/40";
+    }
+    return "border-slate-100 bg-slate-50 text-slate-400";
+  };
+
   return (
     <div className={WIZARD_PAGE_CLASS}>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-          Employee Files
-        </p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
-        {description ? (
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{description}</p>
-        ) : null}
-      </div>
-
       {active >= 0 ? (
         <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {FLOW_STEPS.map((item, index) => {
             const isCurrent = index === active;
             const isDone = index < active || step === "complete";
+            const clickable =
+              item.id !== "processing" &&
+              Boolean(onFlowStepClick) &&
+              (canNavigateToFlowStep?.(index, item.id) ?? false);
+            const className = `rounded-xl border px-3 py-2.5 text-xs font-bold transition ${stepClass(
+              isCurrent,
+              isDone,
+              clickable,
+            )}`;
+
+            const content = (
+              <span className="flex items-center gap-2">
+                {isDone && !isCurrent ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-brand-pink" />
+                ) : (
+                  <span className="text-[10px] opacity-80">{index + 1}.</span>
+                )}
+                {item.label}
+              </span>
+            );
+
             return (
-              <li
-                key={item.id}
-                className={`rounded-xl border px-3 py-2.5 text-xs font-bold transition ${
-                  isCurrent
-                    ? "border-brand-pink bg-pink-50 text-brand-text"
-                    : isDone
-                      ? "border-slate-200 bg-white text-slate-700"
-                      : "border-slate-100 bg-slate-50 text-slate-400"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  {isDone && !isCurrent ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-brand-pink" />
-                  ) : (
-                    <span className="text-[10px] opacity-80">{index + 1}.</span>
-                  )}
-                  {item.label}
-                </span>
+              <li key={item.id}>
+                {clickable ? (
+                  <button
+                    type="button"
+                    className={`${className} w-full text-left`}
+                    onClick={() => onFlowStepClick?.(item.id)}
+                    aria-current={isCurrent ? "step" : undefined}
+                  >
+                    {content}
+                  </button>
+                ) : (
+                  <div className={className} aria-current={isCurrent ? "step" : undefined}>
+                    {content}
+                  </div>
+                )}
               </li>
             );
           })}
@@ -128,10 +155,12 @@ export default function EmployeeFilesSetupWizard() {
   const [step, setStep] = useState<Step>("empty");
   const [exclusionDialog, setExclusionDialog] = useState<"select" | "view" | null>(null);
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
+  const [subOrganizingDimension, setSubOrganizingDimension] = useState("none");
   const [includeInactive, setIncludeInactive] = useState(false);
   const [excludeTest, setExcludeTest] = useState(true);
   const [collectDocs, setCollectDocs] = useState(true);
   const [preview, setPreview] = useState<EmployeeFilesSetupPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [run, setRun] = useState<EmployeeFilesSetupRun | null>(null);
   const [liveRun, setLiveRun] = useState<EmployeeFilesSetupRun | null>(null);
   const [activeRunId, setActiveRunId] = useState<number | null>(null);
@@ -157,25 +186,55 @@ export default function EmployeeFilesSetupWizard() {
   const refreshExclusions = () => {
     queryClient.invalidateQueries({ queryKey: ["employee-files", "exclusions"] });
   };
+  const subDimensionOptions = useMemo(() => {
+    const primary = selectedDimensions[0];
+    return [
+      { value: "none", label: "None (flat groups only)" },
+      ...selectedDimensions
+        .filter((key) => key && key !== primary)
+        .map((key) => ({ value: key, label: employeeFileDimensionLabel(key) })),
+    ];
+  }, [selectedDimensions]);
+
   const wizardPayload = useMemo(
     () => ({
       organizing_dimensions: selectedDimensions,
+      sub_organizing_dimension: subOrganizingDimension,
       include_inactive: includeInactive,
       exclude_test_employees: excludeTest,
       collect_existing_documents: collectDocs,
     }),
-    [selectedDimensions, includeInactive, excludeTest, collectDocs],
+    [
+      selectedDimensions,
+      subOrganizingDimension,
+      includeInactive,
+      excludeTest,
+      collectDocs,
+    ],
   );
 
-  const loadPreview = async () => {
+  const refreshPreview = useCallback(async () => {
+    setPreviewLoading(true);
     setError("");
     try {
       const data = await api.previewEmployeeFilesSetup(wizardPayload);
       setPreview(data);
-      setStep("review");
+      return true;
     } catch (err: any) {
       setError(err?.message || "Unable to load preview.");
+      return false;
+    } finally {
+      setPreviewLoading(false);
     }
+  }, [wizardPayload]);
+
+  useEffect(() => {
+    if (step !== "review") return;
+    void refreshPreview();
+  }, [step, refreshPreview]);
+
+  const goToReview = async () => {
+    setStep("review");
   };
 
   const finishSetup = async (data: EmployeeFilesSetupRun) => {
@@ -246,6 +305,31 @@ export default function EmployeeFilesSetupWizard() {
     );
   };
 
+  const canNavigateToFlowStep = useCallback(
+    (_index: number, flowStepId: FlowStepId) => {
+      if (step === "processing" || step === "complete") return false;
+      if (flowStepId === "processing") return false;
+      if (flowStepId === "dimension") return true;
+      return selectedDimensions.length > 0;
+    },
+    [selectedDimensions.length, step],
+  );
+
+  const onFlowStepClick = useCallback(
+    (flowStepId: FlowStepId) => {
+      if (flowStepId === "processing") return;
+      if (step === "processing" || step === "complete") return;
+      if (flowStepId !== "dimension" && !selectedDimensions.length) return;
+      setStep(flowStepId);
+    },
+    [selectedDimensions.length, step],
+  );
+
+  const wizardChrome = {
+    onFlowStepClick,
+    canNavigateToFlowStep,
+  };
+
   if (config.data?.setup_complete) {
     return null;
   }
@@ -253,18 +337,6 @@ export default function EmployeeFilesSetupWizard() {
   if (step === "empty") {
     return (
       <div className={WIZARD_PAGE_CLASS}>
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-            Employee Files
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-            Set up Employee Files
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            Connect to EMS, create one file per employee, and organize folders automatically.
-          </p>
-        </div>
-
         <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-2xl border border-pink-100 bg-gradient-to-br from-pink-50/80 to-white p-8 shadow-sm">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-brand-pink shadow-sm">
@@ -330,13 +402,11 @@ export default function EmployeeFilesSetupWizard() {
     return (
       <WizardPage
         step={step}
+        {...wizardChrome}
         title="How should Employee Files be organized?"
         description="Choose one or more EMS dimensions. System-managed groups are created from the values in each dimension you select."
         footer={
-          <>
-            <button type="button" className={SECONDARY_BTN} onClick={() => setStep("empty")}>
-              Back
-            </button>
+          <div className="flex w-full flex-wrap items-center justify-end gap-3">
             <button
               type="button"
               disabled={!selectedDimensions.length}
@@ -346,7 +416,7 @@ export default function EmployeeFilesSetupWizard() {
               Continue
               <ChevronRight className="h-4 w-4" />
             </button>
-          </>
+          </div>
         }
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -397,20 +467,32 @@ export default function EmployeeFilesSetupWizard() {
     return (
       <WizardPage
         step={step}
+        {...wizardChrome}
         title="Additional options"
         description="Fine-tune who is included and how existing documents are handled during the first sync."
         footer={
-          <>
-            <button type="button" className={SECONDARY_BTN} onClick={() => setStep("dimension")}>
-              Back
-            </button>
-            <button type="button" className={PRIMARY_BTN} onClick={loadPreview}>
+          <div className="flex w-full flex-wrap items-center justify-end gap-3">
+            <button type="button" className={PRIMARY_BTN} onClick={goToReview}>
               Continue to review
               <ChevronRight className="h-4 w-4" />
             </button>
-          </>
+          </div>
         }
       >
+        {selectedDimensions.length > 1 ? (
+          <div className="mb-6 max-w-md">
+            <p className="mb-2 text-xs font-bold uppercase text-slate-400">
+              Sub-group within primary view
+            </p>
+            <ThemedSelect
+              value={subOrganizingDimension}
+              onChange={setSubOrganizingDimension}
+              options={subDimensionOptions}
+              ariaLabel="Sub-group within primary view"
+            />
+          </div>
+        ) : null}
+
         <div className="grid gap-4 lg:grid-cols-3">
           <OptionCard
             title="Inactive employees"
@@ -483,30 +565,63 @@ export default function EmployeeFilesSetupWizard() {
     );
   }
 
-  if (step === "review" && preview) {
+  if (step === "review") {
     return (
       <WizardPage
         step={step}
+        {...wizardChrome}
         title="Review and confirm"
-        description="These counts are estimated from your EMS data and the options you selected."
+        description="Counts are loaded from live EMS data each time you open this step."
         footer={
-          <>
-            <button type="button" className={SECONDARY_BTN} onClick={() => setStep("options")}>
-              Back
-            </button>
-            <button type="button" className={PRIMARY_BTN} onClick={startSetup}>
+          <div className="flex w-full flex-wrap items-center justify-end gap-3">
+            <button
+              type="button"
+              className={PRIMARY_BTN}
+              onClick={startSetup}
+              disabled={previewLoading || !preview}
+            >
               Confirm and start setup
             </button>
-          </>
+          </div>
         }
       >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <Stat label="Groups to create" value={preview.groups_to_create} />
-          <Stat label="Employees included" value={preview.employees_included} />
-          <Stat label="Documents to collect" value={preview.documents_expected} />
-          <Stat label="Will need attention" value={preview.need_attention_expected} highlight />
-          <Stat label="Will be excluded" value={preview.excluded_total} />
-        </div>
+        {previewLoading && !preview ? (
+          <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-600">
+            <Loader2 className="h-5 w-5 animate-spin text-brand-pink" />
+            Loading preview from EMS…
+          </div>
+        ) : preview ? (
+          <div className="relative">
+            {previewLoading ? (
+              <p className="mb-3 flex items-center gap-2 text-xs text-slate-500">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-pink" />
+                Updating counts…
+              </p>
+            ) : null}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              <Stat label="Groups to create" value={preview.groups_to_create} />
+              <Stat label="Employees included" value={preview.employees_included} />
+              <Stat label="Documents to collect" value={preview.documents_expected} />
+              <Stat label="Will need attention" value={preview.need_attention_expected} highlight />
+              <Stat label="Will be excluded" value={preview.excluded_total} />
+            </div>
+            {preview.employees_included === 0 &&
+            (preview.ems_employees_in_company ?? 0) > 0 ? (
+              <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                EMS has {preview.ems_employees_in_company} employee(s) for this company, but none
+                match your inclusion rules. Try enabling &quot;Include inactive employees&quot;, turn
+                off &quot;Exclude test employees&quot;, or check manual exclusions.
+              </p>
+            ) : null}
+            {preview.employees_included === 0 &&
+            (preview.ems_employees_in_company ?? 0) === 0 ? (
+              <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                No EMS employees were found for the current company. Seed or create employees in
+                Odoo, then open Review again from the steps above.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         {error ? (
           <p className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
@@ -522,6 +637,7 @@ export default function EmployeeFilesSetupWizard() {
     return (
       <WizardPage
         step={step}
+        {...wizardChrome}
         title="Setting up Employee Files"
         description="Processing continues on the server if you leave this page. You can return anytime to see live progress."
       >
@@ -553,6 +669,7 @@ export default function EmployeeFilesSetupWizard() {
     return (
       <WizardPage
         step={step}
+        {...wizardChrome}
         title="Setup complete"
         description="Employee Files is ready. Open the home view or review reconciliation issues."
       >

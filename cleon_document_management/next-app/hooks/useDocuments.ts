@@ -38,6 +38,7 @@ export const QUERY_KEYS = {
     status: string,
   ) => ["admin", "document-acknowledgement-audience", documentId, page, search, status],
   myPendingUploads: ["documents", "my-pending-uploads"],
+  myReviewAlerts: ["documents", "my-review-alerts"],
   myCompliance: ["documents", "my-compliance"],
   onboarding: ["user", "onboarding"],
 };
@@ -105,6 +106,15 @@ export function useMyPendingUploads() {
   return useQuery({
     queryKey: QUERY_KEYS.myPendingUploads,
     queryFn: () => api.getMyPendingUploads().then((result) => result.data),
+    refetchInterval: 30000,
+  });
+}
+
+export function useMyReviewAlerts(enabled = true) {
+  return useQuery({
+    queryKey: QUERY_KEYS.myReviewAlerts,
+    queryFn: () => api.getMyReviewAlerts().then((result) => result.data),
+    enabled,
     refetchInterval: 30000,
   });
 }
@@ -248,6 +258,17 @@ export function useToggleSettingsDocumentType() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.toggleSettingsDocumentType,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["document-settings"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documentTypes });
+    },
+  });
+}
+
+export function useDeleteSettingsDocumentType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteSettingsDocumentType,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["document-settings"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documentTypes });
@@ -603,6 +624,8 @@ export function useUploadEmployeeDocument() {
     onSuccess: () => {
       invalidateDocumentQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-activity"] });
     },
   });
 }
@@ -680,6 +703,12 @@ export function useReviewDocument() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.approvalInbox });
       queryClient.invalidateQueries({ queryKey: ["admin", "attention"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.myPendingUploads });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.myReviewAlerts });
+      queryClient.invalidateQueries({ queryKey: ["documents", "mine"] });
+      queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-activity"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
     },
   });

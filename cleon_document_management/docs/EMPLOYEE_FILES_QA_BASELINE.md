@@ -43,10 +43,13 @@
 | Concern | Location |
 |---------|----------|
 | Domain models | `models/employee_file.py`, `employee_group.py`, `employee_files_config.py`, `employee_issue.py`, `employee_setup.py` |
-| Orchestration | `models/employee_files_service.py` |
+| Orchestration | `models/employee_files_service.py` (`reconcile_employee_from_ems`, `reconcile_all_employees_from_ems`) |
 | APIs | `controllers/employee_files.py` |
 | Next UI | `EmployeeFilesWorkspace.tsx`, `EmployeeFilesSetupWizard.tsx`, `EmployeeFilesHome.tsx` |
-| HR sync | `models/hr_employee.py` |
+| HR sync | `models/hr_employee.py` — create/write call EMS reconciliation after `setup_complete` |
+| Ongoing reconciliation | Config-driven `doc.employee.exclusion` rows; open/resolve `doc.employee.issue` on EMS and settings changes |
+| Scheduled reconcile | `data/employee_files_cron.xml` → `doc.employee.files.service.cron_reconcile_all_companies` (daily) |
+| Document link reconcile | `models/hr_document.py` create/write → `reconcile_document_employee_file` |
 
 ---
 

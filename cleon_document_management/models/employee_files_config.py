@@ -135,13 +135,34 @@ class DocEmployeeFilesConfig(models.Model):
         self.ensure_one()
         import json
 
+        raw = self.header_field_keys
+        if not raw:
+            return ["employee_id", "name", "department_id", "job_id"]
         try:
-            return json.loads(self.header_field_keys or "[]")
+            keys = json.loads(raw)
         except (TypeError, ValueError):
             return ["employee_id", "name", "department_id", "job_id"]
+        if not isinstance(keys, list):
+            return ["employee_id", "name", "department_id", "job_id"]
+        return [key for key in keys if isinstance(key, str) and key.strip()]
+
+    def set_header_field_keys(self, keys):
+        self.ensure_one()
+        import json
+
+        if isinstance(keys, str):
+            try:
+                keys = json.loads(keys)
+            except (TypeError, ValueError):
+                keys = []
+        if not isinstance(keys, (list, tuple)):
+            keys = []
+        cleaned = [key for key in keys if isinstance(key, str) and key.strip()]
+        self.write({"header_field_keys": json.dumps(cleaned)})
 
     def serialize_for_api(self):
         self.ensure_one()
+        service = self.env["doc.employee.files.service"]
         return {
             "setup_complete": self.setup_complete,
             "primary_organizing_dimension": self.primary_organizing_dimension or "",
@@ -158,6 +179,7 @@ class DocEmployeeFilesConfig(models.Model):
             "max_file_size_mb": self.max_file_size_mb,
             "allowed_file_types": self.allowed_file_types or "",
             "header_field_keys": self.get_header_fields(),
+            "available_header_fields": service.get_header_field_catalog(),
             "max_issue_retry_attempts": self.max_issue_retry_attempts,
             "enable_custom_groups": self.enable_custom_groups,
             "enable_esign": self.enable_esign,

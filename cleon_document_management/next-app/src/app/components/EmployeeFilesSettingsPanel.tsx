@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   useEmployeeFilesConfig,
   useSaveEmployeeFilesConfig,
+  useSaveEmployeeFilesHeaderFields,
 } from "../../../hooks/useEmployeeFiles";
 import ThemedSelect from "./ThemedSelect";
 import { useToast } from "../../../hooks/useToast";
@@ -11,18 +12,30 @@ import type { EmployeeFilesConfig } from "../../../lib/types";
 import SectionTabs from "./SectionTabs";
 import EmployeeFilesCustomGroupsSettings from "./EmployeeFilesCustomGroupsSettings";
 import EmployeeFilesExclusionsSettings from "./EmployeeFilesExclusionsSettings";
+import EmployeeFilesOrganizingDimensionsSettings from "./EmployeeFilesOrganizingDimensionsSettings";
+import EmployeeFilesHeaderFieldsSettings from "./EmployeeFilesHeaderFieldsSettings";
+import { normalizeHeaderFieldKeys } from "../../../lib/employeeFileHeaderFields";
 
-type SettingsTab = "general" | "custom_groups" | "excluded_employees";
+type SettingsTab =
+  | "general"
+  | "employee_information"
+  | "custom_groups"
+  | "excluded_employees";
 
 export default function EmployeeFilesSettingsPanel() {
   const config = useEmployeeFilesConfig();
   const save = useSaveEmployeeFilesConfig();
+  const saveHeaderFields = useSaveEmployeeFilesHeaderFields();
   const { showToast } = useToast();
   const [values, setValues] = useState<Partial<EmployeeFilesConfig>>({});
   const [tab, setTab] = useState<SettingsTab>("general");
 
   useEffect(() => {
-    if (config.data) setValues(config.data);
+    if (!config.data) return;
+    setValues({
+      ...config.data,
+      header_field_keys: normalizeHeaderFieldKeys(config.data.header_field_keys),
+    });
   }, [config.data]);
 
   const update = (key: keyof EmployeeFilesConfig, value: unknown) => {
@@ -38,29 +51,65 @@ export default function EmployeeFilesSettingsPanel() {
     }
   };
 
+  const onSaveHeaderFields = async () => {
+    const keys = normalizeHeaderFieldKeys(values.header_field_keys);
+    try {
+      const data = await saveHeaderFields.mutateAsync(keys);
+      setValues((current) => ({
+        ...current,
+        ...data,
+        header_field_keys: normalizeHeaderFieldKeys(data.header_field_keys),
+      }));
+      showToast("Employee file header fields saved.");
+    } catch (error: any) {
+      showToast(
+        error?.message || "Unable to save header fields. Document manager access is required.",
+        "error",
+      );
+    }
+  };
+
   if (config.isLoading) {
     return <p className="text-sm text-slate-500">Loading Employee Files settings…</p>;
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-bold text-slate-900">Employee Files (v3)</h3>
-        <p className="text-sm text-slate-500">
-          Grouping, upload rules, notifications, and error handling for the EMS-driven Employee Files module.
-        </p>
-      </div>
-
       <SectionTabs
         ariaLabel="Employee Files settings"
         value={tab}
         onChange={(value) => setTab(value as SettingsTab)}
         items={[
           { id: "general", label: "General" },
+          { id: "employee_information", label: "Employee information" },
           { id: "excluded_employees", label: "Excluded employees" },
           { id: "custom_groups", label: "Custom groups" },
         ]}
       />
+
+      {tab === "employee_information" ? (
+        <div className="space-y-4">
+          <EmployeeFilesHeaderFieldsSettings
+            available={
+              values.available_header_fields ??
+              config.data?.available_header_fields ??
+              []
+            }
+            selectedKeys={normalizeHeaderFieldKeys(
+              values.header_field_keys ?? config.data?.header_field_keys,
+            )}
+            onChange={(keys) => update("header_field_keys", keys)}
+          />
+          <button
+            type="button"
+            onClick={() => void onSaveHeaderFields()}
+            disabled={saveHeaderFields.isPending}
+            className="rounded-xl bg-brand-pink px-5 py-2.5 text-sm font-semibold text-white"
+          >
+            {saveHeaderFields.isPending ? "Saving…" : "Save header fields"}
+          </button>
+        </div>
+      ) : null}
 
       {tab === "excluded_employees" ? <EmployeeFilesExclusionsSettings /> : null}
 
@@ -72,6 +121,21 @@ export default function EmployeeFilesSettingsPanel() {
 
       {tab === "general" ? (
       <>
+      {config.data?.setup_complete ? (
+        <EmployeeFilesOrganizingDimensionsSettings
+          organizingDimensions={values.organizing_dimensions ?? []}
+          subOrganizingDimension={values.sub_organizing_dimension ?? "none"}
+          includeInactive={Boolean(values.include_inactive)}
+          excludeTestEmployees={Boolean(values.exclude_test_employees)}
+          onOrganizingDimensionsChange={(dimensions) =>
+            update("organizing_dimensions", dimensions)
+          }
+          onSubOrganizingDimensionChange={(value) =>
+            update("sub_organizing_dimension", value)
+          }
+        />
+      ) : null}
+
       <div className="grid gap-4 lg:grid-cols-2">
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input
@@ -109,7 +173,9 @@ export default function EmployeeFilesSettingsPanel() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
-          <p className="mb-2 text-xs font-bold uppercase text-slate-400">Duplicate detection</p>
+          <p className="mb-2 text-xs font-bold uppercase text-slate-400">
+            Default duplicate policy (types set to Inherit)
+          </p>
           <ThemedSelect
             value={String(values.duplicate_detection_mode || "warn")}
             onChange={(value) => update("duplicate_detection_mode", value)}

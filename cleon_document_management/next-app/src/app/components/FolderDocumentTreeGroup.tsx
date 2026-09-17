@@ -14,6 +14,7 @@ import { documentViewHref } from "../../../lib/documentLinks";
 import type { EmployeeDocumentGroup } from "../../../lib/groupEmployeeDocuments";
 import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 import type { DocDocument } from "../../../lib/types";
+import AnimatedTreeCollapse from "./AnimatedTreeCollapse";
 
 const baseUrl = (process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "");
 
@@ -237,16 +238,21 @@ export default function FolderDocumentTreeGroup({
         <small className="truncate text-slate-400">{document.document_type}</small>
         {suffix}
       </div>
-      {hasHistory && expanded ? (
-        <VersionHistoryRows
-          documentId={document.id}
-          relatedDocuments={group.relatedDocuments}
-          isDocumentManager={isDocumentManager}
-          onDocumentOpen={onDocumentOpen}
-          onDeleteVersion={onDeleteVersion}
-          onDeleteRelatedDocument={onDeleteRelatedDocument}
-          depth={depth + 1}
-        />
+      {hasHistory ? (
+        <AnimatedTreeCollapse
+          open={expanded}
+          className="employee-tree-version-group"
+        >
+          <VersionHistoryRows
+            documentId={document.id}
+            relatedDocuments={group.relatedDocuments}
+            isDocumentManager={isDocumentManager}
+            onDocumentOpen={onDocumentOpen}
+            onDeleteVersion={onDeleteVersion}
+            onDeleteRelatedDocument={onDeleteRelatedDocument}
+            depth={depth + 1}
+          />
+        </AnimatedTreeCollapse>
       ) : null}
     </div>
   );

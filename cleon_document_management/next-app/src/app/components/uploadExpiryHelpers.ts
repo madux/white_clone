@@ -1,20 +1,15 @@
 import type { DocumentType } from "../../../lib/types";
+import {
+  missingUploadMetadata,
+  typeRequiresExpiry,
+} from "../../../lib/uploadMetadataHelpers";
 
-export function typeRequiresExpiry(
-  typeId: string,
-  types: DocumentType[],
-): boolean {
-  const match = types.find((item) => String(item.id) === typeId);
-  return match?.expiry_applicable === true;
-}
+export { typeRequiresExpiry };
 
 export function missingExpiryDates(
   typeIds: string[],
   expiryDates: string[],
   types: DocumentType[],
 ): boolean {
-  return typeIds.some(
-    (typeId, index) =>
-      typeRequiresExpiry(typeId, types) && !expiryDates[index]?.trim(),
-  );
+  return missingUploadMetadata(typeIds, expiryDates, [], [], types);
 }

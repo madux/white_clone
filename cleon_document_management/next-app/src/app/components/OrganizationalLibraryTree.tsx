@@ -15,6 +15,7 @@ import type {
   DocFolder,
 } from "../../../lib/types";
 import AcknowledgementDocumentPanel from "./AcknowledgementDocumentPanel";
+import AnimatedTreeCollapse from "./AnimatedTreeCollapse";
 import FolderActions from "./FolderActions";
 
 export type AckPercentFilter = "below100" | "below90" | "below80" | "above80";
@@ -245,8 +246,10 @@ export default function OrganizationalLibraryTree({
                 </Link>
               </div>
 
-              {folderExpanded ? (
-                <div className="ack-tree-documents">
+              <AnimatedTreeCollapse
+                open={folderExpanded}
+                className="ack-tree-documents"
+              >
                   {documents.length ? (
                     documents.map((document) => {
                       const ackDoc = ackDocMap.get(document.id);
@@ -287,9 +290,9 @@ export default function OrganizationalLibraryTree({
                                 : "—"}
                             </span>
                           </button>
-                          {expanded ? (
+                          <AnimatedTreeCollapse open={expanded}>
                             <AcknowledgementDocumentPanel document={ackNode} />
-                          ) : null}
+                          </AnimatedTreeCollapse>
                         </div>
                       );
                     })
@@ -298,8 +301,7 @@ export default function OrganizationalLibraryTree({
                       No documents in this folder yet.
                     </p>
                   )}
-                </div>
-              ) : null}
+              </AnimatedTreeCollapse>
             </div>
           );
         },
