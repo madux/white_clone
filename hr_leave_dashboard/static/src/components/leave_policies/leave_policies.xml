@@ -161,7 +161,7 @@
             <div>
               <div class="o_lp_title_wrap">
                 <h3><t t-esc="state.form.id ? 'Edit' : 'Add'"/> Leave Policy</h3>
-                <span class="o_lp_mode_tag" t-if="state.form.mode === 'advanced'">Advanced overrides configured</span>
+                <span class="o_lp_mode_tag" t-if="hasAdvancedOverrides">Advanced overrides configured</span>
               </div>
               <p class="o_lp_subtitle">
                 Organisation defaults are prefilled. Open Advanced Settings only when this policy needs more precise overrides.
@@ -169,13 +169,19 @@
             </div>
             <div class="o_lp_header_actions">
               <button type="button"
-                      t-att-class="'o_lp_mode_btn ' + (state.form.advancedOpen ? 'active' : '')"
+                      t-att-class="'o_lp_adv_disclosure ' + (state.form.advancedOpen ? 'expanded ' : '') + (hasAdvancedOverrides ? 'configured' : '')"
                       t-on-click="toggleAdvanced"
-                      title="Show or hide granular policy overrides">
-                <i class="fa fa-sliders me-1"/>
-                <t t-esc="state.form.advancedOpen ? 'Hide Advanced Settings' : 'Advanced Settings'"/>
+                      t-att-title="state.form.advancedOpen ? 'Collapse Advanced Settings' : 'Expand Advanced Settings'">
+                <span class="o_lp_adv_icon">
+                  <i class="fa fa-sliders"/>
+                </span>
+                <span class="o_lp_adv_text">Advanced Settings</span>
+                <span t-if="hasAdvancedOverrides" class="o_lp_adv_configured_pill">Configured</span>
+                <span class="o_lp_adv_chevron">
+                  <i t-att-class="state.form.advancedOpen ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
+                </span>
               </button>
-              <button class="o_lp_close_btn" t-on-click="closeWizard" title="Close">×</button>
+              <button class="o_lp_close_btn" t-on-click="closeWizard" title="Close" aria-label="Close">×</button>
             </div>
           </t>
 
@@ -249,95 +255,189 @@
                 </div>
               </section>
 
-              <!-- B. Accrual Configuration (Jibble-inspired segmented controls) -->
+              <!-- B. Accrual Configuration -->
               <section class="o_lp_card">
                 <div class="o_lp_card_title">
                   <i class="fa fa-calculator text-primary"/>
                   <h4>B. Accrual Configuration</h4>
+                  <span t-if="hasAdvancedOverrides" class="badge bg-light text-primary ms-auto">Granular Overrides Active</span>
                 </div>
 
-                <div class="o_lp_grid">
-                  <!-- Compensation Segmented Pill Control (Jibble-Style) -->
-                  <div>
-                    <span class="o_lp_label">Compensation *</span>
-                    <div class="o_lp_pill_group">
-                      <button type="button"
-                              t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.compensation === 'paid' ? 'active' : '')"
-                              t-on-click="() => state.form.simple_accrual.compensation = 'paid'">
-                        <i class="fa fa-check me-1" t-if="state.form.simple_accrual.compensation === 'paid'"/> Paid
+                <t t-if="hasAdvancedOverrides">
+                  <!-- Advanced Configuration Summary Card (No silent no-ops!) -->
+                  <div class="o_lp_adv_summary_box">
+                    <div class="o_lp_adv_summary_banner">
+                      <i class="fa fa-info-circle text-primary me-2"/>
+                      <span>This policy contains granular per-leave-type rules. Common settings are summarized below.</span>
+                    </div>
+
+                    <div class="o_lp_adv_summary_grid">
+                      <div class="o_lp_summary_item">
+                        <span class="o_lp_summary_label">Accrual Amount / Entitlement</span>
+                        <span class="o_lp_summary_value">
+                          <t t-if="summaryAccrualAmount === 'Varies by Leave Type'">
+                            <span class="o_lp_varies_badge"><i class="fa fa-sliders me-1"/>Varies by Leave Type</span>
+                          </t>
+                          <t t-else="" t-esc="summaryAccrualAmount"/>
+                        </span>
+                      </div>
+                      <div class="o_lp_summary_item">
+                        <span class="o_lp_summary_label">Unit</span>
+                        <span class="o_lp_summary_value">
+                          <t t-if="summaryUnit === 'Varies by Leave Type'">
+                            <span class="o_lp_varies_badge"><i class="fa fa-sliders me-1"/>Varies by Leave Type</span>
+                          </t>
+                          <t t-else="" t-esc="summaryUnit"/>
+                        </span>
+                      </div>
+                      <div class="o_lp_summary_item">
+                        <span class="o_lp_summary_label">Compensation</span>
+                        <span class="o_lp_summary_value">
+                          <t t-if="summaryCompensation === 'Varies by Leave Type'">
+                            <span class="o_lp_varies_badge"><i class="fa fa-sliders me-1"/>Varies by Leave Type</span>
+                          </t>
+                          <t t-else="" t-esc="summaryCompensation"/>
+                        </span>
+                      </div>
+                      <div class="o_lp_summary_item">
+                        <span class="o_lp_summary_label">Minimum Notice</span>
+                        <span class="o_lp_summary_value">
+                          <t t-if="summaryNoticeDays === 'Varies by Leave Type'">
+                            <span class="o_lp_varies_badge"><i class="fa fa-sliders me-1"/>Varies by Leave Type</span>
+                          </t>
+                          <t t-else="" t-esc="summaryNoticeDays"/>
+                        </span>
+                      </div>
+                      <div class="o_lp_summary_item">
+                        <span class="o_lp_summary_label">Supporting Documents</span>
+                        <span class="o_lp_summary_value">
+                          <t t-if="summaryDocPolicy === 'Varies by Leave Type'">
+                            <span class="o_lp_varies_badge"><i class="fa fa-sliders me-1"/>Varies by Leave Type</span>
+                          </t>
+                          <t t-else="" t-esc="summaryDocPolicy"/>
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Per-type Breakdown Table -->
+                    <div class="o_lp_adv_lines_preview mt-3">
+                      <table class="table table-sm table-bordered mb-2">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Leave Type</th>
+                            <th>Entitlement</th>
+                            <th>Unit</th>
+                            <th>Notice</th>
+                            <th>Documents</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr t-foreach="state.form.lines" t-as="l" t-key="l_index">
+                            <td><strong><t t-esc="getLeaveTypeName(l.leave_type_id) || l.new_leave_type_name || 'Unspecified'"/></strong></td>
+                            <td><t t-esc="l.accrual_amount"/> / <t t-esc="l.accrual_period"/></td>
+                            <td><t t-esc="l.unit"/></td>
+                            <td><t t-esc="l.minimum_notice_days ? (l.minimum_notice_days + ' days') : 'None'"/></td>
+                            <td><t t-esc="l.document_policy === 'required' ? 'Required' : (l.document_policy === 'optional' ? 'Optional' : 'Not Required')"/></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="o_lp_adv_summary_actions mt-3">
+                      <button type="button" class="btn btn-sm btn-primary" t-on-click="() => this.openAdvancedFromSummary(2)">
+                        <i class="fa fa-sliders me-1"/> Edit in Advanced Settings
                       </button>
-                      <button type="button"
-                              t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.compensation === 'unpaid' ? 'active' : '')"
-                              t-on-click="() => state.form.simple_accrual.compensation = 'unpaid'">
-                        <i class="fa fa-check me-1" t-if="state.form.simple_accrual.compensation === 'unpaid'"/> Unpaid
+                      <button type="button" class="btn btn-sm btn-outline-secondary ms-2" t-on-click="applyCommonValuesToAllTypes">
+                        <i class="fa fa-refresh me-1"/> Apply Common Values to All Types
                       </button>
                     </div>
                   </div>
+                </t>
 
-                  <!-- Unit Segmented Pill Control -->
-                  <div>
-                    <span class="o_lp_label">Unit *</span>
-                    <div class="o_lp_pill_group">
-                      <button type="button"
-                              t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.unit === 'days' ? 'active' : '')"
-                              t-on-click="() => state.form.simple_accrual.unit = 'days'">
-                        Days
-                      </button>
-                      <button type="button"
-                              t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.unit === 'hours' ? 'active' : '')"
-                              t-on-click="() => state.form.simple_accrual.unit = 'hours'">
-                        Hours
-                      </button>
+                <t t-else="">
+                  <div class="o_lp_grid">
+                    <!-- Compensation Segmented Pill Control (Jibble-Style) -->
+                    <div>
+                      <span class="o_lp_label">Compensation *</span>
+                      <div class="o_lp_pill_group">
+                        <button type="button"
+                                t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.compensation === 'paid' ? 'active' : '')"
+                                t-on-click="() => state.form.simple_accrual.compensation = 'paid'">
+                          <i class="fa fa-check me-1" t-if="state.form.simple_accrual.compensation === 'paid'"/> Paid
+                        </button>
+                        <button type="button"
+                                t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.compensation === 'unpaid' ? 'active' : '')"
+                                t-on-click="() => state.form.simple_accrual.compensation = 'unpaid'">
+                          <i class="fa fa-check me-1" t-if="state.form.simple_accrual.compensation === 'unpaid'"/> Unpaid
+                        </button>
+                      </div>
                     </div>
+
+                    <!-- Unit Segmented Pill Control -->
+                    <div>
+                      <span class="o_lp_label">Unit *</span>
+                      <div class="o_lp_pill_group">
+                        <button type="button"
+                                t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.unit === 'days' ? 'active' : '')"
+                                t-on-click="() => state.form.simple_accrual.unit = 'days'">
+                          Days
+                        </button>
+                        <button type="button"
+                                t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.unit === 'hours' ? 'active' : '')"
+                                t-on-click="() => state.form.simple_accrual.unit = 'hours'">
+                          Hours
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Accrual Period -->
+                    <label>
+                      <span>Schedule of Accrual / Period *</span>
+                      <select t-model="state.form.simple_accrual.accrual_period">
+                        <option value="annually">Annually</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="none">Fixed / No Accrual Cycle</option>
+                      </select>
+                    </label>
+
+                    <!-- Accrual Basis / Start Date -->
+                    <label>
+                      <span>Accrual Basis / Start Date *</span>
+                      <select t-model="state.form.simple_accrual.accrual_basis">
+                        <option value="join_date">Joined Date</option>
+                        <option value="calendar">Calendar Year (1st Jan)</option>
+                        <option value="anniversary">Anniversary</option>
+                      </select>
+                    </label>
+
+                    <!-- Accrual Amount / Entitled (NO conflicting duplicate Entitlement per year field) -->
+                    <label>
+                      <span>Accrual Amount / Entitlement *</span>
+                      <div class="input-group">
+                        <input type="number" min="0" step="0.5" t-model.number="state.form.simple_accrual.accrual_amount" class="form-control"/>
+                        <span class="input-group-text">
+                          <t t-esc="state.form.simple_accrual.unit"/>
+                          <t t-if="state.form.simple_accrual.accrual_period === 'annually'"> / year</t>
+                          <t t-elif="state.form.simple_accrual.accrual_period === 'monthly'"> / month</t>
+                        </span>
+                      </div>
+                    </label>
+
+                    <!-- Waiting Period -->
+                    <label>
+                      <span>Waiting Period (Optional)</span>
+                      <div class="input-group">
+                        <input type="number" min="0" t-model.number="state.form.simple_accrual.waiting_period_days" class="form-control"/>
+                        <span class="input-group-text">days after joined date</span>
+                      </div>
+                    </label>
                   </div>
-
-                  <!-- Accrual Period -->
-                  <label>
-                    <span>Schedule of Accrual / Period *</span>
-                    <select t-model="state.form.simple_accrual.accrual_period">
-                      <option value="annually">Annually</option>
-                      <option value="monthly">Monthly</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="none">Fixed / No Accrual Cycle</option>
-                    </select>
-                  </label>
-
-                  <!-- Accrual Basis / Start Date -->
-                  <label>
-                    <span>Accrual Basis / Start Date *</span>
-                    <select t-model="state.form.simple_accrual.accrual_basis">
-                      <option value="join_date">Joined Date</option>
-                      <option value="calendar">Calendar Year (1st Jan)</option>
-                      <option value="anniversary">Anniversary</option>
-                    </select>
-                  </label>
-
-                  <!-- Accrual Amount / Entitled (NO conflicting duplicate Entitlement per year field) -->
-                  <label>
-                    <span>Accrual Amount / Entitlement *</span>
-                    <div class="input-group">
-                      <input type="number" min="0" step="0.5" t-model.number="state.form.simple_accrual.accrual_amount" class="form-control"/>
-                      <span class="input-group-text">
-                        <t t-esc="state.form.simple_accrual.unit"/>
-                        <t t-if="state.form.simple_accrual.accrual_period === 'annually'"> / year</t>
-                        <t t-elif="state.form.simple_accrual.accrual_period === 'monthly'"> / month</t>
-                      </span>
-                    </div>
-                  </label>
-
-                  <!-- Waiting Period -->
-                  <label>
-                    <span>Waiting Period (Optional)</span>
-                    <div class="input-group">
-                      <input type="number" min="0" t-model.number="state.form.simple_accrual.waiting_period_days" class="form-control"/>
-                      <span class="input-group-text">days after joined date</span>
-                    </div>
-                  </label>
-                </div>
+                </t>
               </section>
 
               <!-- C. Leave Calculation -->
-              <section class="o_lp_card">
+              <section t-if="!hasAdvancedOverrides" class="o_lp_card">
                 <div class="o_lp_card_title">
                   <i class="fa fa-calendar-check-o text-primary"/>
                   <h4>C. Leave Calculation</h4>
@@ -698,18 +798,19 @@
                   <div class="o_lp_summary_card">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                       <b class="text-uppercase small text-muted">Basic Information</b>
-                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.goStep(1)">Edit</button>
+                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.editFromReview('basic')">Edit</button>
                     </div>
                     <div class="o_lp_review_row"><span>Policy Name:</span> <strong><t t-esc="state.form.name"/></strong></div>
                     <div class="o_lp_review_row">
                       <span>Leave Type(s):</span>
                       <span>
-                        <t t-if="!state.form.advancedOpen">
+                        <t t-if="state.form.mode !== 'advanced'">
                           <span class="badge bg-light text-dark border me-1" t-foreach="state.form.simple_leave_type_ids" t-as="tid" t-key="tid" t-esc="getLeaveTypeName(tid)"/>
                           <span class="badge bg-light text-primary border me-1" t-foreach="state.form.custom_type_names" t-as="cn" t-key="cn" t-esc="cn"/>
                         </t>
                         <t t-else="">
-                          <span class="badge bg-light text-dark border me-1" t-foreach="state.form.lines" t-as="ln" t-key="ln_index" t-esc="ln.leave_type || ln.new_leave_type_name || 'Type ' + (ln_index + 1)"/>
+                          <span class="badge bg-light text-dark border me-1" t-foreach="state.form.lines" t-as="ln" t-key="ln_index" t-esc="ln.leave_type || ln.new_leave_type_name || getLeaveTypeName(ln.leave_type_id) || 'Type ' + (ln_index + 1)"/>
+                          <span class="badge bg-info-subtle text-info border ms-1"><i class="fa fa-sliders me-1"/>Advanced Overrides</span>
                         </t>
                       </span>
                     </div>
@@ -721,9 +822,9 @@
                   <div class="o_lp_summary_card">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                       <b class="text-uppercase small text-muted">Accrual Configuration</b>
-                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.goStep(state.form.advancedOpen ? 2 : 1)">Edit</button>
+                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.editFromReview('accrual')">Edit</button>
                     </div>
-                    <t t-if="!state.form.advancedOpen">
+                    <t t-if="state.form.mode !== 'advanced'">
                       <div class="o_lp_review_row"><span>Compensation:</span> <strong class="text-capitalize" t-esc="state.form.simple_accrual.compensation"/></div>
                       <div class="o_lp_review_row"><span>Unit:</span> <strong class="text-capitalize" t-esc="state.form.simple_accrual.unit"/></div>
                       <div class="o_lp_review_row"><span>Schedule:</span> <strong class="text-capitalize" t-esc="state.form.simple_accrual.accrual_period"/></div>
@@ -732,7 +833,7 @@
                     </t>
                     <t t-else="">
                       <div t-foreach="state.form.lines" t-as="ln" t-key="ln_index" class="mb-1 pb-1 border-bottom">
-                        <strong><t t-esc="ln.leave_type || ln.new_leave_type_name || 'Type'"/>:</strong>
+                        <strong><t t-esc="ln.leave_type || ln.new_leave_type_name || getLeaveTypeName(ln.leave_type_id) || 'Type'"/>:</strong>
                         <t t-esc="ln.accrual_amount"/> <t t-esc="ln.unit"/> / <t t-esc="ln.accrual_period"/> (<t t-esc="ln.compensation"/>)
                       </div>
                     </t>
@@ -742,7 +843,7 @@
                   <div class="o_lp_summary_card">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                       <b class="text-uppercase small text-muted">Carry Forward &amp; Approval</b>
-                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.goStep(state.form.advancedOpen ? 4 : 2)">Edit</button>
+                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.editFromReview('carry')">Edit</button>
                     </div>
                     <div class="o_lp_review_row"><span>Carry Forward:</span> <strong t-esc="state.form.carry.enabled ? ('Yes (Max ' + state.form.carry.maximum + ')') : 'No'"/></div>
                     <div class="o_lp_review_row" t-if="state.form.carry.enabled">
@@ -751,6 +852,19 @@
                     </div>
                     <div class="o_lp_review_row"><span>Approval:</span> <strong t-esc="state.form.approval.required ? 'Required (Default 2-stage)' : 'Not Required'"/></div>
                     <div class="o_lp_review_row"><span>AI Insights:</span> <strong t-esc="state.form.ai_enabled ? 'Enabled' : 'Disabled'"/></div>
+                  </div>
+
+                  <!-- Rules & Overrides (Advanced) Card -->
+                  <div t-if="state.form.mode === 'advanced'" class="o_lp_summary_card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <b class="text-uppercase small text-muted">Rules &amp; Overrides (Advanced)</b>
+                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.editFromReview('rules')">Edit</button>
+                    </div>
+                    <div t-foreach="state.form.lines" t-as="ln" t-key="ln_index" class="mb-2 pb-1 border-bottom small">
+                      <strong><t t-esc="ln.leave_type || ln.new_leave_type_name || getLeaveTypeName(ln.leave_type_id) || 'Type'"/>:</strong>
+                      <div>Notice: <t t-esc="ln.minimum_notice_days || 0"/> day(s) | Doc: <span class="text-capitalize" t-esc="(ln.document_policy || 'not_required').replace('_', ' ')"/></div>
+                      <div>Negative Bal: <t t-esc="ln.allow_negative_balance ? 'Allowed' : 'Disallowed'"/> | Half-day: <t t-esc="ln.allow_half_day ? 'Yes' : 'No'"/></div>
+                    </div>
                   </div>
                 </div>
 

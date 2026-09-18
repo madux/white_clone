@@ -50,6 +50,7 @@
             'hr_leave_dashboard/static/src/css/leave_types.css',
             'hr_leave_dashboard/static/src/components/policy_controls.js',
             'hr_leave_dashboard/static/src/components/shared_drawers.xml',
+            'hr_leave_dashboard/static/src/components/leave_policies/leave_policy_state.js',
             'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.js',
             'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.xml',
             'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.css',

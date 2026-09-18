@@ -3,96 +3,9 @@
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { SettingsPanel, TagsPicker } from "../policy_controls";
+import { newLine, newForm, hasAdvancedOverrides } from "./leave_policy_state";
 
-const newLine = (typeId = "", typeName = "", defaults = {}) => ({
-    leave_type_id: typeId ? Number(typeId) : "",
-    new_leave_type_name: typeName || "",
-    classification: "other",
-    compensation: "paid",
-    unit: defaults.unit || "days",
-    entitlement_type: "fixed",
-    accrual_period: "annually",
-    accrual_basis: "join_date",
-    accrual_amount: 21,
-    waiting_period_days: 0,
-    exclude_public_holidays: true,
-    exclude_non_working_days: true,
-    minimum_notice_days: Number(defaults.minimum_notice_days || 0),
-    minimum_duration: 0,
-    maximum_duration: 0,
-    allow_backdated: false,
-    allow_half_day: defaults.allow_half_day !== false,
-    allow_overlap: false,
-    document_policy: defaults.supporting_document_policy === "never" || !defaults.supporting_document_policy ? "not_required" : "required",
-    document_required_after_days: defaults.supporting_document_policy === "conditional" ? 3 : 0,
-    accepted_document_types: "",
-    allow_negative_balance: Boolean(defaults.allow_negative_balance),
-    blackout_period_ids: [],
-});
-
-const newForm = (mode = "simple", defaults = {}) => ({
-    id: false,
-    mode, // "simple" | "advanced"
-    advancedOpen: false,
-    organisation_defaults: { ...defaults },
-    name: "",
-    code: "",
-    description: "",
-    policy_type: "paid",
-    category: "General",
-    color: "#E91E78",
-    ai_enabled: true,
-    state: "active",
-    apply_to: "all", // "all" | "selected" | "conditions"
-    condition_match: "all",
-    minimum_tenure_months: 0,
-    // Simple mode specific helpers
-    simple_leave_type_ids: [],
-    custom_type_names: [],
-    new_custom_name: "",
-    simple_accrual: {
-        compensation: "paid",
-        unit: defaults.unit || "days",
-        accrual_period: "annually",
-        accrual_basis: "join_date",
-        accrual_amount: 21,
-        waiting_period_days: 0,
-        exclude_public_holidays: true,
-        exclude_non_working_days: true,
-    },
-    selected: {
-        employee_ids: [],
-        department_ids: [],
-        unit_ids: [],
-        grade_ids: [],
-        location_ids: [],
-        employee_type_ids: [],
-        job_ids: [],
-    },
-    carry: {
-        enabled: Boolean(defaults.allow_carryover),
-        maximum: 5,
-        expiry_type: "period", // "never" | "period"
-        expiry_value: 3,
-        expiry_unit: "months",
-        priority: "current", // "current" | "carried"
-    },
-    approval: {
-        required: defaults.approval_workflow !== "none",
-        workflow: "default", // "default" | "custom"
-        workflow_type_id: false,
-        chain_id: false,
-        template_id: false,
-    },
-    rules: {
-        multiple: true,
-        withdrawal: true,
-        half_day: defaults.allow_half_day !== false,
-        before_accrual: true,
-    },
-    lines: [newLine("", "", defaults)],
-    conflict_resolution: "review", // "review" | "keep" | "replace"
-});
+export { newLine, newForm, hasAdvancedOverrides };
 
 export class LeavePoliciesPage extends Component {
     static components = { SettingsPanel, TagsPicker };
@@ -182,14 +95,90 @@ export class LeavePoliciesPage extends Component {
         this.state.wizard = true;
     }
 
-    toggleAdvanced() {
-        if (!this.state.form.advancedOpen && this.state.form.mode !== "advanced") {
-            this.syncSimpleLines();
-            // This is retained for backward-compatible persistence only. It is
-            // configuration depth, not a separate kind of Leave Policy.
-            this.state.form.mode = "advanced";
+    get hasAdvancedOverrides() {
+        return hasAdvancedOverrides(this.state.form);
+    }
+
+    get summaryAccrualAmount() {
+        const lines = this.state.form.lines || [];
+        if (!lines.length) return "-";
+        const first = lines[0].accrual_amount;
+        const allSame = lines.every(l => Number(l.accrual_amount) === Number(first));
+        return allSame ? `${first} ${lines[0].unit || 'days'}` : "Varies by Leave Type";
+    }
+
+    get summaryUnit() {
+        const lines = this.state.form.lines || [];
+        if (!lines.length) return "-";
+        const first = lines[0].unit;
+        const allSame = lines.every(l => l.unit === first);
+        return allSame ? first : "Varies by Leave Type";
+    }
+
+    get summaryCompensation() {
+        const lines = this.state.form.lines || [];
+        if (!lines.length) return "-";
+        const first = lines[0].compensation;
+        const allSame = lines.every(l => l.compensation === first);
+        return allSame ? (first === "paid" ? "Paid" : "Unpaid") : "Varies by Leave Type";
+    }
+
+    get summaryNoticeDays() {
+        const lines = this.state.form.lines || [];
+        if (!lines.length) return "-";
+        const first = Number(lines[0].minimum_notice_days || 0);
+        const allSame = lines.every(l => Number(l.minimum_notice_days || 0) === first);
+        return allSame ? (first ? `${first} days` : "None") : "Varies by Leave Type";
+    }
+
+    get summaryDocPolicy() {
+        const lines = this.state.form.lines || [];
+        if (!lines.length) return "-";
+        const first = lines[0].document_policy || "not_required";
+        const allSame = lines.every(l => (l.document_policy || "not_required") === first);
+        if (!allSame) return "Varies by Leave Type";
+        return first === "required" ? "Required" : (first === "optional" ? "Optional" : "Not Required");
+    }
+
+    openAdvancedFromSummary(step = 2) {
+        this.state.form.advancedOpen = true;
+        this.state.step = step;
+    }
+
+    applyCommonValuesToAllTypes() {
+        const common = this.state.form.simple_accrual;
+        const defaults = this.state.form.organisation_defaults || {};
+        for (const line of this.state.form.lines) {
+            line.compensation = common.compensation;
+            line.unit = common.unit;
+            line.accrual_period = common.accrual_period;
+            line.accrual_basis = common.accrual_basis;
+            line.accrual_amount = common.accrual_amount;
+            line.waiting_period_days = common.waiting_period_days;
+            line.exclude_public_holidays = common.exclude_public_holidays;
+            line.exclude_non_working_days = common.exclude_non_working_days;
+
+            line.minimum_notice_days = Number(defaults.minimum_notice_days || 0);
+            line.document_policy = defaults.supporting_document_policy === "always" ? "required" : (defaults.supporting_document_policy === "conditional" ? "optional" : "not_required");
+            line.document_required_after_days = 0;
+            line.accepted_document_types = "";
+            line.blackout_period_ids = [];
+            line.minimum_duration = 0;
+            line.maximum_duration = 0;
+            line.allow_backdated = false;
+            line.allow_overlap = false;
+            line.allow_half_day = defaults.allow_half_day !== false;
+            line.allow_negative_balance = Boolean(defaults.allow_negative_balance);
         }
+        this.syncSimpleLines();
+        this.notification.add("Common settings applied to all leave types.", { type: "info" });
+    }
+
+    toggleAdvanced() {
         this.state.form.advancedOpen = !this.state.form.advancedOpen;
+        if (this.state.form.advancedOpen && !this.hasAdvancedOverrides) {
+            this.syncSimpleLines();
+        }
         this.state.step = 1;
     }
 
@@ -203,7 +192,13 @@ export class LeavePoliciesPage extends Component {
         const id = Number(typeId);
         if (id && !this.state.form.simple_leave_type_ids.includes(id)) {
             this.state.form.simple_leave_type_ids.push(id);
-            this.syncSimpleLines();
+            if (this.hasAdvancedOverrides) {
+                if (!this.state.form.lines.some(l => l.leave_type_id === id)) {
+                    this.state.form.lines.push(newLine(id, "", this.state.form.organisation_defaults));
+                }
+            } else {
+                this.syncSimpleLines();
+            }
         }
         this.state.typeDropdownOpen = false;
     }
@@ -213,7 +208,14 @@ export class LeavePoliciesPage extends Component {
         const index = this.state.form.simple_leave_type_ids.indexOf(id);
         if (index >= 0) {
             this.state.form.simple_leave_type_ids.splice(index, 1);
-            this.syncSimpleLines();
+            if (this.hasAdvancedOverrides) {
+                const lineIdx = this.state.form.lines.findIndex(l => l.leave_type_id === id);
+                if (lineIdx >= 0) {
+                    this.state.form.lines.splice(lineIdx, 1);
+                }
+            } else {
+                this.syncSimpleLines();
+            }
         }
     }
 
@@ -222,16 +224,33 @@ export class LeavePoliciesPage extends Component {
         if (name && !this.state.form.custom_type_names.includes(name)) {
             this.state.form.custom_type_names.push(name);
             this.state.form.new_custom_name = "";
-            this.syncSimpleLines();
+            if (this.hasAdvancedOverrides) {
+                if (!this.state.form.lines.some(l => l.new_leave_type_name === name)) {
+                    this.state.form.lines.push(newLine("", name, this.state.form.organisation_defaults));
+                }
+            } else {
+                this.syncSimpleLines();
+            }
         }
     }
 
     removeCustomType(index) {
+        const name = this.state.form.custom_type_names[index];
         this.state.form.custom_type_names.splice(index, 1);
-        this.syncSimpleLines();
+        if (this.hasAdvancedOverrides) {
+            const lineIdx = this.state.form.lines.findIndex(l => l.new_leave_type_name === name);
+            if (lineIdx >= 0) {
+                this.state.form.lines.splice(lineIdx, 1);
+            }
+        } else {
+            this.syncSimpleLines();
+        }
     }
 
     syncSimpleLines() {
+        if (this.hasAdvancedOverrides) {
+            return;
+        }
         const accrual = this.state.form.simple_accrual;
         const newLines = [];
 
@@ -328,9 +347,17 @@ export class LeavePoliciesPage extends Component {
     }
 
     removeLine(index) {
-        if (this.state.form.lines.length > 1) {
-            this.state.form.lines.splice(index, 1);
+        const line = this.state.form.lines[index];
+        if (line) {
+            if (line.leave_type_id) {
+                const sIdx = this.state.form.simple_leave_type_ids.indexOf(line.leave_type_id);
+                if (sIdx >= 0) this.state.form.simple_leave_type_ids.splice(sIdx, 1);
+            } else if (line.new_leave_type_name) {
+                const cIdx = this.state.form.custom_type_names.indexOf(line.new_leave_type_name);
+                if (cIdx >= 0) this.state.form.custom_type_names.splice(cIdx, 1);
+            }
         }
+        this.state.form.lines.splice(index, 1);
     }
 
     toggleSelected(group, id) {
@@ -347,32 +374,60 @@ export class LeavePoliciesPage extends Component {
         return this.state.form.selected[group].includes(Number(id));
     }
 
-    validateStep() {
-        const isAdv = this.state.form.advancedOpen;
-        if (this.state.step === 1 && !this.state.form.name.trim()) {
+    validateStep(isSaving = false) {
+        const isAdv = this.hasAdvancedOverrides || this.state.form.advancedOpen;
+        if ((this.state.step === 1 || isSaving) && !this.state.form.name.trim()) {
             return "Policy Name is required.";
         }
-        if (!isAdv && this.state.step === 1) {
+        if (!isAdv && (this.state.step === 1 || isSaving)) {
             const hasTypes = (this.state.form.simple_leave_type_ids.length > 0) || (this.state.form.custom_type_names.length > 0);
             if (!hasTypes) {
                 return "Select or add at least one Leave Type.";
             }
-            if (this.state.form.simple_accrual.accrual_amount < 0) {
+            if (Number(this.state.form.simple_accrual.accrual_amount) < 0) {
                 return "Accrual amount cannot be negative.";
             }
         }
-        if (isAdv && this.state.step === 2) {
-            if (!this.state.form.lines.length || this.state.form.lines.some(l => !l.leave_type_id && !(l.new_leave_type_name || "").trim())) {
+        if (isAdv && (this.state.step === 2 || !this.state.form.advancedOpen || isSaving)) {
+            const lines = this.state.form.lines || [];
+            if (!lines.length || lines.some(l => !l.leave_type_id && !(l.new_leave_type_name || "").trim())) {
                 return "Select or add at least one Leave Type.";
             }
+            for (const l of lines) {
+                if (Number(l.accrual_amount) < 0) {
+                    return "Accrual amount cannot be negative.";
+                }
+                if (Number(l.waiting_period_days) < 0 || Number(l.minimum_notice_days) < 0 || Number(l.minimum_duration) < 0 || Number(l.maximum_duration) < 0 || Number(l.document_required_after_days) < 0) {
+                    return "Policy type limits cannot be negative.";
+                }
+                if (Number(l.maximum_duration) > 0 && Number(l.minimum_duration) > Number(l.maximum_duration)) {
+                    return "Minimum duration cannot exceed maximum duration.";
+                }
+            }
+        }
+        if (Number(this.state.form.carry.maximum) < 0 || Number(this.state.form.carry.expiry_value) < 0) {
+            return "Policy limits cannot be negative.";
         }
         return "";
+    }
+
+    editFromReview(section) {
+        if (this.hasAdvancedOverrides || this.state.form.advancedOpen) {
+            this.state.form.advancedOpen = true;
+            if (section === "basic") this.state.step = 1;
+            else if (section === "accrual") this.state.step = 2;
+            else if (section === "rules") this.state.step = 3;
+            else if (section === "carry") this.state.step = 4;
+        } else {
+            if (section === "basic" || section === "accrual") this.state.step = 1;
+            else if (section === "carry") this.state.step = 2;
+        }
     }
 
     next() {
         const error = this.validateStep();
         if (error) return this.notification.add(error, { type: "warning" });
-        if (!this.state.form.advancedOpen) {
+        if (!this.hasAdvancedOverrides) {
             this.syncSimpleLines();
         }
         this.state.step++;
@@ -396,10 +451,10 @@ export class LeavePoliciesPage extends Component {
     }
 
     async save(asDraft = false) {
-        const error = this.validateStep();
+        const error = this.validateStep(true);
         if (error) return this.notification.add(error, { type: "warning" });
 
-        if (!this.state.form.advancedOpen) {
+        if (!this.hasAdvancedOverrides) {
             this.syncSimpleLines();
         }
 
@@ -416,6 +471,7 @@ export class LeavePoliciesPage extends Component {
             }
             if (payload.carry.expiry_type === "never") payload.carry.expiry_value = 0;
             payload.state = asDraft === true ? "draft" : "active";
+            payload.mode = this.hasAdvancedOverrides ? "advanced" : "simple";
 
             if (payload.state === "active") {
                 this.state.conflicts = await this.orm.call("hr.leave.policy", "preview_policy_conflicts", [payload]);
@@ -453,7 +509,7 @@ export class LeavePoliciesPage extends Component {
             ...detail,
             mode: detail.mode,
             advancedOpen: false,
-            lines: detail.lines.length ? detail.lines.map(line => ({ ...newLine(), ...line })) : [newLine()],
+            lines: detail.lines.length ? detail.lines.map(line => ({ ...newLine("", "", this.state.options.policy_defaults || {}), ...line })) : [newLine("", "", this.state.options.policy_defaults || {})],
         };
         this.syncFromLines();
         this.state.form.carry.expiry_type = detail.carry.expiry_value ? "period" : "never";

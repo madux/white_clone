@@ -18,6 +18,10 @@ class TestLeavePolicies(TransactionCase):
             "name": "Structured Annual", "leave_code": "SAN", "company_id": cls.env.company.id,
             "policy_classification": "annual", "requires_allocation": "no", "leave_validation_type": "manager",
         })
+        cls.sick = cls.env["hr.leave.type"].create({
+            "name": "Structured Sick", "leave_code": "SSK", "company_id": cls.env.company.id,
+            "policy_classification": "sick", "requires_allocation": "no", "leave_validation_type": "manager",
+        })
 
     def payload(self, name, employees, leave_type=None, state="active", policy_id=None):
         data = {
@@ -523,5 +527,323 @@ class TestLeavePolicies(TransactionCase):
         self.assertEqual(active_policy.state, "active")
         self.assertTrue(active_policy.active)
         self.assertTrue(active_policy.assignment_ids)
+
+    def test_normal_policy_creation_from_organisation_defaults(self):
+        self.env.company.write({
+            "leave_default_unit": "hours",
+            "leave_default_approval_workflow": "none",
+            "leave_default_supporting_document_policy": "always",
+            "leave_default_minimum_notice_days": 5,
+            "leave_default_allow_half_day": False,
+            "leave_default_allow_carryover": True,
+            "leave_default_max_balance_cap": 12,
+            "leave_default_allow_negative_balance": True,
+            "leave_default_team_overlap_percent": 15,
+            "leave_default_block_overlap_threshold": True,
+        })
+        defaults = self.Policy.get_policy_page_data()["options"]["policy_defaults"]
+        self.assertEqual(defaults["unit"], "hours")
+        self.assertEqual(defaults["approval_workflow"], "none")
+        self.assertEqual(defaults["supporting_document_policy"], "always")
+        self.assertEqual(defaults["minimum_notice_days"], 5)
+        self.assertFalse(defaults["allow_half_day"])
+        self.assertTrue(defaults["allow_carryover"])
+        self.assertEqual(defaults["maximum_balance_cap"], 12)
+        self.assertTrue(defaults["allow_negative_balance"])
+        self.assertEqual(defaults["team_overlap_percent"], 15)
+        self.assertTrue(defaults["block_overlap_threshold"])
+
+        # Creating policy using organisation defaults
+        payload = {
+            "name": "Org Defaults Policy", "code": "ORGDEF1", "mode": "simple", "state": "draft",
+            "apply_to": "all",
+            "lines": [{
+                "leave_type_id": self.annual.id,
+                "compensation": "paid",
+                "unit": defaults["unit"],
+                "entitlement_type": "fixed",
+                "accrual_period": "annually",
+                "accrual_basis": "join_date",
+                "accrual_amount": 21,
+                "waiting_period_days": 0,
+                "minimum_notice_days": defaults["minimum_notice_days"],
+                "allow_half_day": defaults["allow_half_day"],
+                "allow_negative_balance": defaults["allow_negative_balance"],
+                "allow_overlap": False if defaults["block_overlap_threshold"] else True,
+                "document_policy": "required" if defaults["supporting_document_policy"] == "always" else "not_required",
+                "document_required_after_days": 0,
+            }],
+            "carry": {
+                "enabled": defaults["allow_carryover"],
+                "maximum": defaults["maximum_balance_cap"],
+                "expiry_type": "period",
+                "expiry_value": 3,
+                "expiry_unit": "months",
+                "priority": "current",
+            },
+            "approval": {
+                "required": defaults["approval_workflow"] != "none",
+                "workflow": "default",
+            },
+            "rules": {
+                "multiple": True, "withdrawal": True,
+                "half_day": defaults["allow_half_day"],
+                "team_overlap_percent": defaults["team_overlap_percent"],
+                "block_overlap_threshold": defaults["block_overlap_threshold"],
+            },
+        }
+        res = self.Policy.save_policy(payload)
+        policy = self.Policy.browse(res["id"])
+        self.assertEqual(policy.line_ids.unit, "hours")
+        self.assertEqual(policy.line_ids.minimum_notice_days, 5)
+        self.assertFalse(policy.line_ids.allow_half_day)
+        self.assertTrue(policy.line_ids.allow_negative_balance)
+        self.assertFalse(policy.line_ids.allow_overlap)
+        self.assertEqual(policy.line_ids.document_policy, "required")
+        self.assertEqual(policy.line_ids.document_required_after_days, 0)
+        self.assertTrue(policy.allow_carry_forward)
+        self.assertEqual(policy.maximum_carry_forward, 12)
+        self.assertFalse(policy.approval_required)
+
+        # Later change to company defaults must not silently mutate existing effective policy
+        self.env.company.write({
+            "leave_default_unit": "days",
+            "leave_default_minimum_notice_days": 0,
+            "leave_default_max_balance_cap": 25,
+        })
+        policy.invalidate_recordset()
+        self.assertEqual(policy.line_ids.unit, "hours")
+        self.assertEqual(policy.line_ids.minimum_notice_days, 5)
+        self.assertEqual(policy.maximum_carry_forward, 12)
+
+    def test_advanced_overrides_preserved_when_advanced_collapsed(self):
+        # Customize two Leave Types differently, then save while collapsed (mode='advanced')
+        payload = {
+            "name": "Distinct Overrides Policy", "code": "DISTINC1", "mode": "advanced", "state": "draft",
+            "apply_to": "all",
+            "lines": [
+                {
+                    "leave_type_id": self.annual.id,
+                    "compensation": "paid", "unit": "days", "entitlement_type": "fixed",
+                    "accrual_period": "annually", "accrual_basis": "join_date",
+                    "accrual_amount": 20, "waiting_period_days": 0,
+                    "minimum_notice_days": 10, "document_policy": "required",
+                    "allow_negative_balance": False, "allow_half_day": True,
+                },
+                {
+                    "leave_type_id": self.sick.id,
+                    "compensation": "paid", "unit": "days", "entitlement_type": "fixed",
+                    "accrual_period": "annually", "accrual_basis": "join_date",
+                    "accrual_amount": 10, "waiting_period_days": 0,
+                    "minimum_notice_days": 0, "document_policy": "not_required",
+                    "allow_negative_balance": True, "allow_half_day": False,
+                },
+            ],
+            "carry": {"enabled": True, "maximum": 5, "expiry_value": 0, "priority": "current"},
+            "approval": {"required": True, "workflow": "default"},
+            "rules": {"multiple": True, "withdrawal": True, "half_day": True},
+        }
+        res = self.Policy.save_policy(payload)
+        policy = self.Policy.browse(res["id"])
+        self.assertEqual(len(policy.line_ids), 2)
+        annual_line = policy.line_ids.filtered(lambda l: l.leave_type_id == self.annual)
+        sick_line = policy.line_ids.filtered(lambda l: l.leave_type_id == self.sick)
+        self.assertEqual(annual_line.accrual_amount, 20)
+        self.assertEqual(annual_line.minimum_notice_days, 10)
+        self.assertEqual(annual_line.document_policy, "required")
+        self.assertFalse(annual_line.allow_negative_balance)
+        self.assertTrue(annual_line.allow_half_day)
+
+        self.assertEqual(sick_line.accrual_amount, 10)
+        self.assertEqual(sick_line.minimum_notice_days, 0)
+        self.assertEqual(sick_line.document_policy, "not_required")
+        self.assertTrue(sick_line.allow_negative_balance)
+        self.assertFalse(sick_line.allow_half_day)
+
+    def test_reopen_advanced_values_unchanged(self):
+        # Create policy with advanced overrides
+        payload = {
+            "name": "Reopen Advanced Policy", "code": "REOPEN1", "mode": "advanced", "state": "draft",
+            "apply_to": "all",
+            "lines": [
+                {
+                    "leave_type_id": self.annual.id,
+                    "accrual_amount": 25, "minimum_notice_days": 14,
+                    "document_policy": "required", "allow_negative_balance": False,
+                },
+                {
+                    "leave_type_id": self.sick.id,
+                    "accrual_amount": 12, "minimum_notice_days": 1,
+                    "document_policy": "optional", "allow_negative_balance": True,
+                },
+            ],
+            "carry": {"enabled": True, "maximum": 8, "expiry_value": 0, "priority": "current"},
+            "approval": {"required": True, "workflow": "default"},
+            "rules": {"multiple": True, "withdrawal": True, "half_day": True},
+        }
+        res = self.Policy.save_policy(payload)
+        details = self.Policy.get_policy_details(res["id"])
+        self.assertEqual(details["mode"], "advanced")
+        self.assertEqual(len(details["lines"]), 2)
+        annual_detail = next(l for l in details["lines"] if l["leave_type_id"] == self.annual.id)
+        sick_detail = next(l for l in details["lines"] if l["leave_type_id"] == self.sick.id)
+        self.assertEqual(annual_detail["accrual_amount"], 25)
+        self.assertEqual(annual_detail["minimum_notice_days"], 14)
+        self.assertEqual(annual_detail["document_policy"], "required")
+        self.assertFalse(annual_detail["allow_negative_balance"])
+        self.assertEqual(sick_detail["accrual_amount"], 12)
+        self.assertEqual(sick_detail["minimum_notice_days"], 1)
+        self.assertEqual(sick_detail["document_policy"], "optional")
+        self.assertTrue(sick_detail["allow_negative_balance"])
+
+    def test_edit_existing_advanced_policy_collapsed_preserves_values(self):
+        # Initial policy with distinct per-type rules
+        payload = {
+            "name": "Initial Adv Policy", "code": "INITADV1", "mode": "advanced", "state": "draft",
+            "apply_to": "all",
+            "lines": [
+                {
+                    "leave_type_id": self.annual.id,
+                    "accrual_amount": 20, "minimum_notice_days": 10,
+                    "document_policy": "required", "allow_negative_balance": False,
+                },
+                {
+                    "leave_type_id": self.sick.id,
+                    "accrual_amount": 8, "minimum_notice_days": 0,
+                    "document_policy": "not_required", "allow_negative_balance": True,
+                },
+            ],
+            "carry": {"enabled": True, "maximum": 5, "expiry_value": 0, "priority": "current"},
+            "approval": {"required": True, "workflow": "default"},
+            "rules": {"multiple": True, "withdrawal": True, "half_day": True},
+        }
+        res = self.Policy.save_policy(payload)
+        policy_id = res["id"]
+        policy = self.Policy.browse(policy_id)
+        original_line_ids = sorted(policy.line_ids.ids)
+
+        # Admin loads policy details (where advancedOpen is false in frontend)
+        details = self.Policy.get_policy_details(policy_id)
+        # Modify only the policy name
+        details["name"] = "Renamed Harmless Edit"
+        # Save while collapsed (payload contains original lines intact)
+        self.Policy.save_policy(details)
+
+        policy.invalidate_recordset()
+        self.assertEqual(policy.name, "Renamed Harmless Edit")
+        self.assertEqual(sorted(policy.line_ids.ids), original_line_ids)
+        annual_line = policy.line_ids.filtered(lambda l: l.leave_type_id == self.annual)
+        sick_line = policy.line_ids.filtered(lambda l: l.leave_type_id == self.sick)
+        self.assertEqual(annual_line.accrual_amount, 20)
+        self.assertEqual(annual_line.minimum_notice_days, 10)
+        self.assertEqual(annual_line.document_policy, "required")
+        self.assertEqual(sick_line.accrual_amount, 8)
+        self.assertEqual(sick_line.minimum_notice_days, 0)
+        self.assertEqual(sick_line.document_policy, "not_required")
+
+    def test_advanced_validation_applies_while_collapsed(self):
+        # 1. Negative accrual amount fails validation
+        invalid_negative_amount = {
+            "name": "Invalid Neg Accrual", "code": "INVNEG1", "mode": "advanced", "state": "draft",
+            "apply_to": "all",
+            "lines": [{
+                "leave_type_id": self.annual.id, "accrual_amount": -5,
+            }],
+            "carry": {"enabled": True, "maximum": 5, "expiry_value": 0, "priority": "current"},
+            "approval": {"required": True, "workflow": "default"},
+            "rules": {"multiple": True, "withdrawal": True, "half_day": True},
+        }
+        with self.assertRaises(ValidationError) as ctx:
+            self.Policy.save_policy(invalid_negative_amount)
+        self.assertIn("Policy type limits cannot be negative", str(ctx.exception))
+
+        # 2. Min duration > Max duration fails validation
+        invalid_duration = {
+            "name": "Invalid Duration", "code": "INVDUR1", "mode": "advanced", "state": "draft",
+            "apply_to": "all",
+            "lines": [{
+                "leave_type_id": self.annual.id, "accrual_amount": 10,
+                "minimum_duration": 10, "maximum_duration": 5,
+            }],
+            "carry": {"enabled": True, "maximum": 5, "expiry_value": 0, "priority": "current"},
+            "approval": {"required": True, "workflow": "default"},
+            "rules": {"multiple": True, "withdrawal": True, "half_day": True},
+        }
+        with self.assertRaises(ValidationError) as ctx:
+            self.Policy.save_policy(invalid_duration)
+        self.assertIn("Minimum duration cannot exceed maximum duration", str(ctx.exception))
+
+    def test_repeated_show_hide_is_lossless(self):
+        # Simulate repeated open/hide cycles by retrieving details and saving without line mutation
+        payload = {
+            "name": "Lossless Cycles Policy", "code": "LOSSLES1", "mode": "advanced", "state": "draft",
+            "apply_to": "all",
+            "lines": [
+                {
+                    "leave_type_id": self.annual.id,
+                    "accrual_amount": 22, "minimum_notice_days": 5,
+                    "document_policy": "required", "allow_negative_balance": False,
+                },
+                {
+                    "leave_type_id": self.sick.id,
+                    "accrual_amount": 11, "minimum_notice_days": 2,
+                    "document_policy": "optional", "allow_negative_balance": True,
+                },
+            ],
+            "carry": {"enabled": True, "maximum": 6, "expiry_value": 0, "priority": "current"},
+            "approval": {"required": True, "workflow": "default"},
+            "rules": {"multiple": True, "withdrawal": True, "half_day": True},
+        }
+        res = self.Policy.save_policy(payload)
+        policy_id = res["id"]
+
+        # Run 3 consecutive simulated toggle/save cycles
+        for cycle in range(3):
+            details = self.Policy.get_policy_details(policy_id)
+            self.assertEqual(len(details["lines"]), 2)
+            # Harmless description update during cycle
+            details["description"] = f"Cycle {cycle + 1} test"
+            self.Policy.save_policy(details)
+
+        policy = self.Policy.browse(policy_id)
+        self.assertEqual(len(policy.line_ids), 2)
+        annual_line = policy.line_ids.filtered(lambda l: l.leave_type_id == self.annual)
+        sick_line = policy.line_ids.filtered(lambda l: l.leave_type_id == self.sick)
+        self.assertEqual(annual_line.accrual_amount, 22)
+        self.assertEqual(annual_line.minimum_notice_days, 5)
+        self.assertEqual(sick_line.accrual_amount, 11)
+        self.assertEqual(sick_line.minimum_notice_days, 2)
+        self.assertEqual(policy.description, "Cycle 3 test")
+
+    def test_create_normal_policy_without_opening_advanced(self):
+        # Policy created purely through the normal flow (mode='simple')
+        payload = {
+            "name": "Pure Normal Policy", "code": "NORMAL1", "mode": "simple", "state": "draft",
+            "apply_to": "all",
+            "lines": [
+                {
+                    "leave_type_id": self.annual.id,
+                    "compensation": "paid", "unit": "days", "entitlement_type": "fixed",
+                    "accrual_period": "annually", "accrual_basis": "join_date",
+                    "accrual_amount": 21, "waiting_period_days": 0,
+                },
+                {
+                    "leave_type_id": self.sick.id,
+                    "compensation": "paid", "unit": "days", "entitlement_type": "fixed",
+                    "accrual_period": "annually", "accrual_basis": "join_date",
+                    "accrual_amount": 21, "waiting_period_days": 0,
+                },
+            ],
+            "carry": {"enabled": True, "maximum": 5, "expiry_value": 3, "expiry_unit": "months", "priority": "current"},
+            "approval": {"required": True, "workflow": "default"},
+            "rules": {"multiple": True, "withdrawal": True, "half_day": True},
+        }
+        res = self.Policy.save_policy(payload)
+        policy = self.Policy.browse(res["id"])
+        self.assertEqual(policy.policy_mode, "simple")
+        self.assertEqual(len(policy.line_ids), 2)
+        # Both lines share the common accrual amount of 21
+        self.assertEqual(set(policy.line_ids.mapped("accrual_amount")), {21.0})
+        self.assertEqual(set(policy.line_ids.mapped("unit")), {"days"})
 
 
