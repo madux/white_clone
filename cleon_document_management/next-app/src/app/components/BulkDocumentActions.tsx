@@ -1,9 +1,19 @@
 "use client";
 
-import { Download, FileHeart, FolderInput, Pin, Trash2, X, ToggleLeft, ToggleRight } from "lucide-react";
+import {
+  Archive,
+  Download,
+  FileHeart,
+  FolderInput,
+  Pin,
+  Trash2,
+  X,
+  ToggleLeft,
+  ToggleRight,
+} from "lucide-react";
 import { useState } from "react";
 import { api } from "../../../lib/api";
-import { useDocumentAction } from "../../../hooks/useDocuments";
+import { useCurrentUser, useDocumentAction } from "../../../hooks/useDocuments";
 import {
   expandDeleteDocumentIds,
   type EmployeeDocumentGroup,
@@ -26,6 +36,11 @@ export default function BulkDocumentActions({
 }) {
   const [running, setRunning] = useState(false);
   const action = useDocumentAction();
+  const currentUser = useCurrentUser();
+  const isDocumentManager =
+    currentUser.data?.employee_files_permissions?.can_access_ef_home === true ||
+    currentUser.data?.is_document_manager === true;
+  const canArchive = organizational || isDocumentManager;
   if (!selected.length) return null;
 
   const deleteIds = groups ? expandDeleteDocumentIds(selected, groups) : selected;
@@ -58,6 +73,25 @@ export default function BulkDocumentActions({
     const actionName =
       selectedDocuments[0].active === false ? "activate" : "deactivate";
     for (const id of selected) await action.mutateAsync({ id, action: actionName });
+    setRunning(false);
+    onClear();
+  };
+
+  const archivableSelected = selectedDocuments.filter(
+    (document) =>
+      document.active !== false && document.distribution_status !== "archived",
+  );
+
+  const archiveSelected = async () => {
+    if (!archivableSelected.length) return;
+    const message = organizational
+      ? `Archive ${archivableSelected.length} selected document${archivableSelected.length === 1 ? "" : "s"}? They will be removed from active sharing until restored.`
+      : `Archive ${archivableSelected.length} selected document${archivableSelected.length === 1 ? "" : "s"}? They will leave active employee file lists. Restore from Archived when needed.`;
+    if (!window.confirm(message)) return;
+    setRunning(true);
+    for (const document of archivableSelected) {
+      await action.mutateAsync({ id: document.id, action: "archive" });
+    }
     setRunning(false);
     onClear();
   };
@@ -113,6 +147,17 @@ export default function BulkDocumentActions({
         <Pin />
         Pin
       </button>
+      {canArchive && archivableSelected.length > 0 ? (
+        <button
+          disabled={running}
+          type="button"
+          onClick={archiveSelected}
+          className="bulk-button"
+        >
+          <Archive />
+          Archive
+        </button>
+      ) : null}
       <button disabled={running} type="button" onClick={download} className="bulk-button">
         <Download />
         Download

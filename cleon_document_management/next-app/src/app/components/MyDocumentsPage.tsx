@@ -63,6 +63,7 @@ import { formatStatusLabel } from "../../../lib/formatLabel";
 import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 import SectionTabs from "./SectionTabs";
 import PersonalDocumentTree from "./PersonalDocumentTree";
+import { documentPreviewUrl } from "../../../lib/documentPreviewUrls";
 
 type Tab = "dashboard" | "files" | "shared" | "activity";
 type FileView = "files" | "outstanding";
@@ -116,24 +117,56 @@ function DocumentTable({
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <SortableTable className="w-full min-w-[850px] text-left">
-          <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
+        <SortableTable className="w-full min-w-[850px]">
+          <thead>
             <tr>
-              {selectable && <th className="w-12 px-5 py-4"><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : visibleIds)} aria-label="Select all my files" className="h-4 w-4 accent-pink-600" /></th>}
-              <th className="px-5 py-4">Document</th>
-              <th className="px-5 py-4">Category</th>
-              <th className={`px-5 py-4 ${guideTarget === "approval" ? "guide-status-emphasis" : ""}`}>Status</th>
-              <th className="px-5 py-4">
-                {shared ? "Shared by" : "Last updated"}
+              {selectable && (
+                <th className="dms-col-check">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={() =>
+                      setSelected(allSelected ? [] : visibleIds)
+                    }
+                    aria-label="Select all my files"
+                    className="h-4 w-4 accent-pink-600"
+                  />
+                </th>
+              )}
+              <th>Document</th>
+              <th>Category</th>
+              <th
+                className={
+                  guideTarget === "approval" ? "guide-status-emphasis" : ""
+                }
+              >
+                Status
               </th>
-              <th className="px-5 py-4 text-right">Actions</th>
+              <th>{shared ? "Shared by" : "Last updated"}</th>
+              <th className="dms-col-actions">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
               {rows.map((document) => (
               <tr key={document.id} className="transition hover:bg-pink-50/30">
-                {selectable && <td className="w-12 px-5 py-4"><input type="checkbox" checked={selected.includes(document.id)} onChange={() => setSelected((current) => current.includes(document.id) ? current.filter((id) => id !== document.id) : [...current, document.id])} aria-label={`Select ${document.name}`} className="h-4 w-4 accent-pink-600" /></td>}
-                <td className="px-5 py-4">
+                {selectable && (
+                  <td className="dms-col-check">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(document.id)}
+                      onChange={() =>
+                        setSelected((current) =>
+                          current.includes(document.id)
+                            ? current.filter((id) => id !== document.id)
+                            : [...current, document.id],
+                        )
+                      }
+                      aria-label={`Select ${document.name}`}
+                      className="h-4 w-4 accent-pink-600"
+                    />
+                  </td>
+                )}
+                <td>
                   <button
                     type="button"
                     onClick={() => onView(document)}
@@ -162,10 +195,14 @@ function DocumentTable({
                     </span>
                   </button>
                 </td>
-                <td className="px-5 py-4 text-sm text-slate-600">
+                <td className="text-sm text-slate-600">
                   {document.document_type}
                 </td>
-                <td className={`px-5 py-4 ${guideTarget === "approval" ? "guide-status-emphasis" : ""}`}>
+                <td
+                  className={
+                    guideTarget === "approval" ? "guide-status-emphasis" : ""
+                  }
+                >
                   {(() => {
                     const isOutstandingPlaceholder = document.id < 0;
                     const requiresApproval =
@@ -189,12 +226,12 @@ function DocumentTable({
                     );
                   })()}
                 </td>
-                <td className="px-5 py-4 text-sm text-slate-500">
+                <td className="text-sm text-slate-500">
                   {shared
                     ? document.shared_by || "Document administrator"
                     : formatDocumentDateShort(document.write_date, "Required")}
                 </td>
-                <td className="px-5 py-4">
+                <td className="dms-col-actions">
                   <div className="flex items-center justify-end gap-2">
                     <button
                       type="button"
@@ -270,6 +307,7 @@ export default function MyDocumentsPage() {
   const [fileView, setFileView] = useState<FileView>("files");
   const [search, setSearch] = useState("");
   const [viewing, setViewing] = useState<any>(null);
+  const [viewingVersionId, setViewingVersionId] = useState<number | null>(null);
   const [updatingDocument, setUpdatingDocument] = useState<DocDocument | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadConflictWarning, setUploadConflictWarning] = useState<{
@@ -376,7 +414,7 @@ export default function MyDocumentsPage() {
   const needsAckCount = shared.filter((document) => !document.acknowledged).length;
   const previewUrl =
     viewing?.id > 0
-      ? `${(process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "")}/document-management/document/${viewing.id}/preview`
+      ? documentPreviewUrl(viewing.id, { variant: "current" })
       : "";
 
   const runUploadConflictPreflight = async (
@@ -812,7 +850,14 @@ export default function MyDocumentsPage() {
               search={search}
               pendingStatusById={pendingStatusById}
               guideTarget={guideTarget || undefined}
-              onView={setViewing}
+              onView={(document) => {
+                setViewing(document);
+                setViewingVersionId(null);
+              }}
+              onViewVersion={(document, versionId) => {
+                setViewing(document);
+                setViewingVersionId(versionId);
+              }}
               onUpdate={setUpdatingDocument}
               onRequestApproval={async (document) => {
                 if (
@@ -914,9 +959,13 @@ export default function MyDocumentsPage() {
           ]
             .filter(Boolean)
             .join(" · ")}
-          onClose={() => setViewing(null)}
+          onClose={() => {
+            setViewing(null);
+            setViewingVersionId(null);
+          }}
           previewUrl={viewing.id > 0 ? previewUrl : undefined}
           documentId={viewing.id > 0 ? viewing.id : undefined}
+          initialVersionId={viewingVersionId}
           placeholder={
             viewing.id < 0 ? (
               <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 shadow-sm">
@@ -1210,7 +1259,7 @@ export default function MyDocumentsPage() {
                     );
                   })}
                 </div>
-                {!uploadRequirement && (
+                {!uploadRequirement && uploadFiles.length > 1 && (
                   <details className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
                     <summary className="cursor-pointer text-xs font-bold text-slate-700">
                       Advanced configuration

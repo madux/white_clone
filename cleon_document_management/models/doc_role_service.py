@@ -8,15 +8,19 @@ class DocRoleService(models.AbstractModel):
     _description = "Document Management role assignment service"
 
     @api.model
-    def _require_system_admin(self):
-        if not self.env.user.has_group("base.group_system"):
+    def _require_platform_admin(self):
+        user = self.env.user
+        if not (
+            user.has_group("base.group_system")
+            or user.has_group("cleon_document_management.group_document_admin")
+        ):
             raise AccessError(
-                _("Only system administrators can manage Document Management roles.")
+                _("Document administrator access is required to manage platform roles.")
             )
 
     @api.model
     def _definitions(self):
-        self._require_system_admin()
+        self._require_platform_admin()
         rows = self.env["doc.role.definition"]._document_management_definitions()
         return [
             {
@@ -60,7 +64,7 @@ class DocRoleService(models.AbstractModel):
 
     @api.model
     def list_members(self, search="", limit=50):
-        self._require_system_admin()
+        self._require_platform_admin()
         self.env["doc.role.definition"].sync_registry()
         domain = self._company_employee_domain()
         if search:
@@ -104,7 +108,7 @@ class DocRoleService(models.AbstractModel):
 
     @api.model
     def assign_roles(self, employee_id, assignments):
-        self._require_system_admin()
+        self._require_platform_admin()
         self.env["doc.role.definition"].sync_registry()
         employee = self.env["hr.employee"].sudo().browse(int(employee_id))
         if not employee or not employee.active:
@@ -135,17 +139,7 @@ class DocRoleService(models.AbstractModel):
             if enabled and not has_group:
                 user.write({"groups_id": [(4, definition.group_id.id)]})
                 self._write_audit(user, employee, definition, "grant")
-                if role_key == "admin":
-                    manager_def = self._definition_for("manager")
-                    if manager_def.group_id not in user.groups_id:
-                        user.write({"groups_id": [(4, manager_def.group_id.id)]})
-                        self._write_audit(user, employee, manager_def, "grant")
             elif not enabled and has_group:
-                if role_key == "manager":
-                    admin_def = self._definition_for("admin")
-                    if admin_def.group_id in user.groups_id:
-                        user.write({"groups_id": [(3, admin_def.group_id.id)]})
-                        self._write_audit(user, employee, admin_def, "revoke")
                 user.write({"groups_id": [(3, definition.group_id.id)]})
                 self._write_audit(user, employee, definition, "revoke")
 

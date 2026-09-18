@@ -314,8 +314,24 @@ class Document(models.Model):
             )
             document.write({"pinned_user_ids": [command]})
 
+    def _ef_permission(self):
+        return self.env["doc.employee.files.permission"]
+
     def _is_document_manager(self):
-        return self.env.user.has_group("cleon_document_management.group_document_manager")
+        perm = self._ef_permission()
+        user = self.env.user
+        if perm.user_is_platform_admin(user) or perm.user_has_legacy_manager(user):
+            return True
+        return perm.user_can_access_ef_home(user)
+
+    def _can_ef_manage_document(self, action_field):
+        self.ensure_one()
+        perm = self._ef_permission()
+        user = self.env.user
+        folder = self.folder_id
+        if folder.folder_type == "employee" and self.employee_id:
+            return perm.user_can_on_document(user, self, action_field)
+        return perm.user_is_platform_admin(user) or perm.user_has_legacy_manager(user)
 
     def _employee_self_service_write_fields(self):
         """Fields a non-manager may update on their own documents."""
@@ -351,13 +367,15 @@ class Document(models.Model):
         return result
 
     def unlink(self):
-        if not self._is_document_manager():
-            raise AccessError(_("Only document managers can delete documents."))
+        for document in self:
+            if not document._can_ef_manage_document("action_delete"):
+                raise AccessError(_("You do not have permission to delete this document."))
         return super().unlink()
 
     def action_archive(self):
-        if not self._is_document_manager():
-            raise AccessError(_("Only document managers can archive documents."))
+        for document in self:
+            if not document._can_ef_manage_document("action_archive"):
+                raise AccessError(_("You do not have permission to archive this document."))
         self.write({"active": False, "distribution_status": "archived", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
 
     def _user_owns_document(self):
@@ -369,18 +387,20 @@ class Document(models.Model):
 
     def action_restore(self):
         for document in self:
-            if not document._is_document_manager() and not document._user_owns_document():
-                raise AccessError(_("Only document managers can restore documents."))
+            if not document._can_ef_manage_document("action_delete") and not document._user_owns_document():
+                raise AccessError(_("You do not have permission to restore this document."))
         self.write({"active": True, "distribution_status": "active", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
 
     def action_deactivate(self):
-        if not self._is_document_manager():
-            raise AccessError(_("Only document managers can deactivate documents."))
+        for document in self:
+            if not document._can_ef_manage_document("action_delete"):
+                raise AccessError(_("You do not have permission to deactivate this document."))
         self.write({"active": False, "distribution_status": "deactivated", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
 
     def action_move_to_recycle_bin(self):
-        if not self._is_document_manager():
-            raise AccessError(_("Only document managers can delete documents."))
+        for document in self:
+            if not document._can_ef_manage_document("action_delete"):
+                raise AccessError(_("You do not have permission to delete this document."))
         now = fields.Datetime.now()
         try:
             retention_days = max(int(self.env["ir.config_parameter"].sudo().get_param(

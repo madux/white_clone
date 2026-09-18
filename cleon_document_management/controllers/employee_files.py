@@ -15,27 +15,30 @@ class EmployeeFilesController(http.Controller):
         return request.env["doc.employee.files.service"]
 
     @staticmethod
+    def _permission():
+        return request.env["doc.employee.files.permission"]
+
+    @staticmethod
     def _require_manager():
-        if not request.env.user.has_group(
-            "cleon_document_management.group_document_manager"
-        ):
-            raise AccessError("Document manager access is required.")
+        EmployeeFilesController._permission().require_ef_home_access(request.env.user)
 
     @staticmethod
     def _require_admin():
         if not request.env.user.has_group(
             "cleon_document_management.group_document_admin"
-        ):
+        ) and not request.env.user.has_group("base.group_system"):
             raise AccessError("Document administrator access is required.")
 
     @staticmethod
     def _require_admin_or_manager():
         user = request.env.user
-        if not (
-            user.has_group("cleon_document_management.group_document_admin")
-            or user.has_group("cleon_document_management.group_document_manager")
-        ):
-            raise AccessError("Document manager access is required.")
+        perm = EmployeeFilesController._permission()
+        if perm.user_is_platform_admin(user):
+            return
+        perms = perm.serialize_user_permissions(user)
+        if perms.get("actions_any_category", {}).get("manage_settings"):
+            return
+        perm.require_ef_home_access(user)
 
     @http.route(
         "/api/employee-files/config",
@@ -349,7 +352,13 @@ class EmployeeFilesController(http.Controller):
         csrf=False,
     )
     def list_employee_files(self, search=None, limit=10, offset=0, **kwargs):
-        files, total = self._service().list_employee_files(search, limit, offset)
+        files, total = self._service().list_employee_files(
+            search,
+            limit,
+            offset,
+            department_id=kwargs.get("department_id"),
+            order=kwargs.get("order"),
+        )
         user = request.env.user
         limit = max(1, min(int(limit or 10), 100))
         offset = max(0, int(offset or 0))
@@ -686,9 +695,45 @@ class EmployeeFilesController(http.Controller):
         csrf=False,
     )
     def global_search(self, query=None, scope="all", limit=50, **kwargs):
+        self._require_admin_or_manager()
         return {
             "success": True,
             "data": self._service().global_search(query, scope, limit),
+        }
+
+    @http.route(
+        "/api/employee-files/documents/search",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def search_employee_documents(self, **kwargs):
+        self._require_admin_or_manager()
+        limit = max(1, min(int(kwargs.get("limit") or 25), 100))
+        offset = max(0, int(kwargs.get("offset") or 0))
+        filters = {
+            "query": kwargs.get("query"),
+            "category": kwargs.get("category"),
+            "document_type_id": kwargs.get("document_type_id"),
+            "department_id": kwargs.get("department_id"),
+            "source": kwargs.get("source"),
+            "status": kwargs.get("status"),
+        }
+        items, total = self._service().search_employee_documents(
+            filters,
+            limit=limit,
+            offset=offset,
+            order=kwargs.get("order"),
+        )
+        return {
+            "success": True,
+            "data": {
+                "items": items,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+            },
         }
 
     @http.route(
@@ -736,15 +781,32 @@ class EmployeeFilesController(http.Controller):
         document = request.env["doc.document"].browse(int(document_id or 0)).exists()
         if not document:
             return {"success": False, "message": "Document not found."}
-        relations = request.env["doc.document.relation"].search(
+        document.check_access_rule("read")
+        Relation = request.env["doc.document.relation"].sudo()
+        relations = Relation.search(
             [
+                "|",
                 ("source_document_id", "=", document.id),
+                ("target_document_id", "=", document.id),
             ]
         )
-        return {
-            "success": True,
-            "data": [relation.serialize_for_api() for relation in relations],
-        }
+        payload = []
+        for relation in relations:
+            try:
+                relation.source_document_id.check_access_rule("read")
+                relation.target_document_id.check_access_rule("read")
+            except AccessError:
+                continue
+            row = relation.serialize_for_document(document)
+            if row:
+                payload.append(row)
+        payload.sort(
+            key=lambda item: (
+                item.get("relation_type_label") or "",
+                item.get("related_document_name") or "",
+            )
+        )
+        return {"success": True, "data": payload}
 
     @http.route(
         "/api/employee-files/document/relation/add",
@@ -757,14 +819,60 @@ class EmployeeFilesController(http.Controller):
         self, source_document_id=None, target_document_id=None, relation_type=None, **kwargs
     ):
         self._require_manager()
-        relation = request.env["doc.document.relation"].create(
+        source = request.env["doc.document"].browse(int(source_document_id or 0)).exists()
+        target = request.env["doc.document"].browse(int(target_document_id or 0)).exists()
+        if not source or not target:
+            return {"success": False, "message": "Document not found."}
+        if source.id == target.id:
+            return {
+                "success": False,
+                "message": "A document cannot be related to itself.",
+            }
+        source.check_access_rule("read")
+        target.check_access_rule("read")
+        rel_type = relation_type or "related"
+        allowed = {"amendment", "renewal", "supporting", "related"}
+        if rel_type not in allowed:
+            return {"success": False, "message": "Unsupported relationship type."}
+        Relation = request.env["doc.document.relation"]
+        existing = Relation.search(
+            [
+                ("source_document_id", "=", source.id),
+                ("target_document_id", "=", target.id),
+                ("relation_type", "=", rel_type),
+            ],
+            limit=1,
+        )
+        if existing:
+            return {"success": False, "message": "This relationship already exists."}
+        relation = Relation.create(
             {
-                "source_document_id": int(source_document_id),
-                "target_document_id": int(target_document_id),
-                "relation_type": relation_type or "related",
+                "source_document_id": source.id,
+                "target_document_id": target.id,
+                "relation_type": rel_type,
             }
         )
-        return {"success": True, "data": relation.serialize_for_api()}
+        return {
+            "success": True,
+            "data": relation.serialize_for_document(source),
+        }
+
+    @http.route(
+        "/api/employee-files/document/relation/remove",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def remove_document_relation(self, relation_id=None, **kwargs):
+        self._require_manager()
+        relation = request.env["doc.document.relation"].browse(int(relation_id or 0)).exists()
+        if not relation:
+            return {"success": False, "message": "Relationship not found."}
+        relation.source_document_id.check_access_rule("read")
+        relation.target_document_id.check_access_rule("read")
+        relation.unlink()
+        return {"success": True, "message": "Relationship removed."}
 
     @http.route(
         "/api/employee-files/signature/request",

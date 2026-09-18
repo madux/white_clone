@@ -93,7 +93,7 @@ const employeeFilesSteps: GuideStep[] = [
     id: "ef-issues",
     title: "Issues & reconciliation",
     description: "Review employees or documents that need attention after setup or EMS changes.",
-    href: "/pages/employee/issues",
+    href: "/pages/employee?tab=issues",
     action: "View issues",
   },
   {

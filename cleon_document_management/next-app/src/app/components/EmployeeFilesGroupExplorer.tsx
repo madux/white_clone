@@ -280,7 +280,10 @@ export default function EmployeeFilesGroupExplorer({
       <FolderEmployeeFileTree
         kind="employee"
         rows={treeRows}
-        isDocumentManager={currentUser.data?.is_document_manager === true}
+        isDocumentManager={
+          currentUser.data?.employee_files_permissions?.can_access_ef_home === true ||
+          currentUser.data?.is_document_manager === true
+        }
         singleFolderExpanded={false}
         showFolderOpenLink={!groups.some((group) => group.id === 0)}
         employeeGroupLinkMode

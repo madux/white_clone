@@ -34,7 +34,12 @@ export default function SortableTable({ children, className = "" }: { children: 
     });
     return () => handlers.forEach((cleanup) => cleanup());
   }, []);
-  return <table ref={tableRef} data-sortable-managed="true" className={className}>{children}</table>;
+  const merged = ["dms-table", className].filter(Boolean).join(" ");
+  return (
+    <table ref={tableRef} data-sortable-managed="true" className={merged}>
+      {children}
+    </table>
+  );
 }
 
 export function SortableTableManager() {
@@ -44,6 +49,7 @@ export function SortableTableManager() {
     const cleanups: (() => void)[] = [];
     tables.forEach((table) => {
       table.dataset.sortableManaged = "true";
+      table.classList.add("dms-table");
       Array.from(table.querySelectorAll<HTMLTableCellElement>("thead th")).forEach((header, index) => {
         if (header.querySelector("input,button") || !header.textContent?.trim()) return;
         header.classList.add("cursor-pointer", "select-none", "hover:text-brand-pink");

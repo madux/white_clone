@@ -7,7 +7,11 @@ from odoo import http, fields
 from odoo.http import request
 from odoo.tools.misc import file_path
 
-from .access import user_is_document_admin, user_is_document_manager
+from .access import (
+    user_employee_files_permissions,
+    user_is_document_admin,
+    user_is_document_manager,
+)
 from .main import _expiring_documents_domain, _serialize_expiring_document
 from .onboarding_state import ONBOARDING_STEPS, serialize_for_api, update_state
 
@@ -82,8 +86,11 @@ class NextAppController(http.Controller):
                 "company_name": user.company_id.name,
                 "tz": user.tz or "",
                 "is_admin": user.has_group("base.group_system"),
-                "is_document_manager": user_is_document_manager(user),
+                "is_document_manager": user_is_document_manager(user, request.env),
                 "is_document_admin": user_is_document_admin(user),
+                "employee_files_permissions": user_employee_files_permissions(
+                    user, request.env
+                ),
             }
         )
         return f"<script>window.__ODOO_USER__={user_data}</script>"
@@ -152,8 +159,11 @@ class NextAppController(http.Controller):
                     "company_name": user.company_id.name if user.company_id else "",
                     "tz": user.tz or "",
                     "is_admin": user.has_group("base.group_system"),
-                    "is_document_manager": user_is_document_manager(user),
+                    "is_document_manager": user_is_document_manager(user, request.env),
                     "is_document_admin": user_is_document_admin(user),
+                    "employee_files_permissions": user_employee_files_permissions(
+                        user, request.env
+                    ),
                     "groups": user.groups_id.mapped("name"),
                 },
             }
@@ -165,7 +175,7 @@ class NextAppController(http.Controller):
     def api_admin_attention(self, **kwargs):
         """In-app attention items for managers; separate from Odoo's chatter UI."""
         user = request.env.user
-        if not user_is_document_manager(user):
+        if not user_is_document_manager(user, request.env):
             return {"success": True, "data": {"count": 0, "notifications": []}}
         approvals = request.env["doc.document.approval"].search(
             [
@@ -196,7 +206,7 @@ class NextAppController(http.Controller):
     def api_admin_approval_inbox(self, **kwargs):
         """Return approval tasks that are ready for the current manager's decision."""
         user = request.env.user
-        if not user.has_group("cleon_document_management.group_document_manager"):
+        if not user_is_document_manager(user, request.env):
             return {"success": True, "data": {"count": 0, "items": []}}
 
         approvals = request.env["doc.document.approval"].search(
@@ -242,7 +252,7 @@ class NextAppController(http.Controller):
     )
     def api_pending_employee_uploads(self, **kwargs):
         user = request.env.user
-        if not user.has_group("cleon_document_management.group_document_manager"):
+        if not user_is_document_manager(user, request.env):
             return {"success": True, "data": {"count": 0, "items": []}}
 
         request.env["doc.folder"].backfill_recycle_origin_links()
@@ -252,17 +262,9 @@ class NextAppController(http.Controller):
         )
         if not pending_folders:
             pending_folders = request.env["doc.folder"].get_pending_upload_folder()
-        documents = request.env["doc.document"].search(
-            [
-                ("folder_id", "in", pending_folders.ids),
-                ("employee_id", "!=", False),
-                ("active", "=", True),
-                ("deleted_at", "=", False),
-            ],
-            order="create_date desc",
-        )
-        items = []
-        for document in documents:
+        Document = request.env["doc.document"]
+
+        def pending_upload_item(document):
             employee = document.employee_id
             if document.approval_state == "pending":
                 status = "pending_review"
@@ -272,23 +274,56 @@ class NextAppController(http.Controller):
                 status = "awaiting_folder"
             else:
                 status = "awaiting_folder"
-            items.append(
-                {
-                    "id": document.id,
-                    "name": document.name,
-                    "document_type": document.document_type_id.name,
-                    "employee_id": employee.id,
-                    "employee_name": employee.name,
-                    "department": employee.department_id.name or "",
-                    "department_id": employee.department_id.id or False,
-                    "approval_state": document.approval_state,
-                    "state": document.state,
-                    "status": status,
-                    "origin_folder_id": document.recycle_origin_folder_id.id or False,
-                    "origin_folder_name": document.recycle_origin_folder_id.folder_name or "",
-                    "created_at": document.create_date,
-                }
-            )
+            return {
+                "id": document.id,
+                "name": document.name,
+                "document_type": document.document_type_id.name,
+                "employee_id": employee.id,
+                "employee_name": employee.name,
+                "department": employee.department_id.name or "",
+                "department_id": employee.department_id.id or False,
+                "approval_state": document.approval_state,
+                "state": document.state,
+                "status": status,
+                "status_label": dict(
+                    pending_review="Pending review",
+                    awaiting_folder="Awaiting folder",
+                    awaiting_folder_restore="Restore folder to reassign",
+                ).get(status, status),
+                "origin_folder_id": document.recycle_origin_folder_id.id or False,
+                "origin_folder_name": document.recycle_origin_folder_id.folder_name or "",
+                "created_at": document.create_date,
+            }
+
+        documents = Document.search(
+            [
+                ("folder_id", "in", pending_folders.ids),
+                ("employee_id", "!=", False),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ],
+            order="create_date desc",
+        )
+        items = []
+        seen_document_ids = set()
+        for document in documents:
+            items.append(pending_upload_item(document))
+            seen_document_ids.add(document.id)
+
+        approval_pending = Document.search(
+            [
+                ("employee_id", "!=", False),
+                ("approval_state", "=", "pending"),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+                ("id", "not in", list(seen_document_ids) or [0]),
+            ],
+            order="create_date desc",
+        )
+        for document in approval_pending:
+            items.append(pending_upload_item(document))
+            seen_document_ids.add(document.id)
+
         return {"success": True, "data": {"count": len(items), "items": items}}
 
     @http.route("/api/onboarding", type="json", auth="user", methods=["POST"], csrf=False)
@@ -298,7 +333,7 @@ class NextAppController(http.Controller):
             "success": True,
             "data": serialize_for_api(
                 user.document_onboarding_state,
-                user_is_document_manager(user),
+                user_is_document_manager(user, request.env),
                 env=request.env,
             ),
         }
@@ -329,7 +364,7 @@ class NextAppController(http.Controller):
         return {
             "success": True,
             "data": serialize_for_api(
-                state, user_is_document_manager(user), env=request.env
+                state, user_is_document_manager(user, request.env), env=request.env
             ),
         }
 
@@ -376,7 +411,7 @@ class NextAppController(http.Controller):
     )
     def api_workspace_activity(self, **kwargs):
         user = request.env.user
-        if not user_is_document_manager(user):
+        if not user_is_document_manager(user, request.env):
             return {
                 "success": False,
                 "message": "Document manager access is required.",
@@ -605,7 +640,7 @@ class NextAppController(http.Controller):
         **kwargs,
     ):
         user = request.env.user
-        if not user_is_document_manager(user):
+        if not user_is_document_manager(user, request.env):
             return {
                 "success": False,
                 "message": "Document manager access is required.",

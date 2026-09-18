@@ -122,11 +122,23 @@ class HrEmployee(models.Model):
         return employees
 
     def write(self, vals):
-        result = super().write(vals)
         service = self.env["doc.employee.files.service"]
         config = self.env["doc.employee.files.config"].get_for_company()
+        tracked_keys = set(vals.keys()) & {"department_id", "active", "job_id"}
+        before = {}
+        if config.setup_complete and tracked_keys:
+            for employee in self:
+                before[employee.id] = {
+                    key: service._ems_field_display(employee, key)
+                    for key in tracked_keys
+                }
+        result = super().write(vals)
         if config.setup_complete:
             for employee in self:
+                if before.get(employee.id):
+                    service.log_ems_organizational_changes(
+                        employee, before[employee.id]
+                    )
                 service.on_employee_changed(employee, vals)
         elif "department_id" in vals:
             for employee in self:

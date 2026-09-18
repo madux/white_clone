@@ -7,7 +7,6 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   LayoutDashboard,
   Users,
   Trash2,
@@ -53,11 +52,6 @@ export default function Sidebar() {
       name: "Organizational Files",
       link: "/pages/organization",
       icon: Building2,
-    },
-    {
-      name: "Pending Uploads",
-      link: "/pages/pending-uploads",
-      icon: Clock3,
     },
     { name: "Activity", link: "/pages/activity", icon: Activity },
 

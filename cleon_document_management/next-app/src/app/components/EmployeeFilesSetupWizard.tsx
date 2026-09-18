@@ -708,7 +708,7 @@ export default function EmployeeFilesSetupWizard() {
           </Link>
           {run.need_attention > 0 ? (
             <Link
-              href="/pages/employee/issues"
+              href="/pages/employee?tab=issues"
               className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-5 py-2.5 text-sm font-semibold text-amber-900"
             >
               View Issues ({run.need_attention})

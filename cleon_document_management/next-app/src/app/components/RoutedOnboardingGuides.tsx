@@ -11,7 +11,6 @@ const WORKSPACE_PATH_PREFIXES = [
   "/pages/quick-access",
   "/pages/archived",
   "/pages/recycle-bin",
-  "/pages/pending-uploads",
   "/pages/activity",
   "/pages/my-compliance",
 ];

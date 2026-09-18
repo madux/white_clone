@@ -134,7 +134,7 @@ const rolesSection = {
   id: "roles" as const,
   label: "Module roles",
   shortLabel: "Roles",
-  description: "Assign manager and administrator responsibilities.",
+  description: "Employee Files roles and platform administrator access.",
   icon: Shield,
 };
 
@@ -214,10 +214,13 @@ export default function SettingsPage() {
     error?: boolean;
   } | null>(null);
 
+  const canManageRoles =
+    currentUser.data?.is_document_admin === true ||
+    currentUser.data?.is_admin === true;
+
   const visibleSections = useMemo(
-    () =>
-      currentUser.data?.is_admin ? [...sections, rolesSection] : [...sections],
-    [currentUser.data?.is_admin],
+    () => (canManageRoles ? [...sections, rolesSection] : [...sections]),
+    [canManageRoles],
   );
 
   const guideTarget = params.get("guide");
@@ -238,13 +241,13 @@ export default function SettingsPage() {
   }, [guideSection]);
 
   useEffect(() => {
-    if (requestedSection === "roles" && currentUser.data?.is_admin) {
+    if (requestedSection === "roles" && canManageRoles) {
       setSection("roles");
     }
     if (requestedSection === "employee_files") {
       setSection("employee_files");
     }
-  }, [requestedSection, currentUser.data?.is_admin]);
+  }, [requestedSection, canManageRoles]);
 
   const values = settings ?? query.data?.settings ?? fallbackSettings;
   const documentTypes = query.data?.document_types ?? [];

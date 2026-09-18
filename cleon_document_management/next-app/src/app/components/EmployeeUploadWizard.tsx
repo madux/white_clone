@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { Upload } from "lucide-react";
 import type { DocumentType } from "../../../lib/types";
 import {
   firstUploadMetadataError,
@@ -8,6 +9,8 @@ import {
   typeRequiresExpiry,
   typeRequiresIssueDate,
 } from "../../../lib/uploadMetadataHelpers";
+import ThemedSelect from "./ThemedSelect";
+import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
 
 type Props = {
   documentTypes: DocumentType[];
@@ -33,6 +36,11 @@ export default function EmployeeUploadWizard({ documentTypes, onSubmit, onClose 
     (type) => String(type.id) === documentTypeId,
   );
   const typeId = documentTypeId;
+
+  const typeOptions = documentTypes.map((type) => ({
+    value: String(type.id),
+    label: type.name,
+  }));
 
   const handleFinish = async (event: FormEvent) => {
     event.preventDefault();
@@ -79,9 +87,13 @@ export default function EmployeeUploadWizard({ documentTypes, onSubmit, onClose 
 
   if (step === 3) {
     return (
-      <div className="space-y-4 p-2 text-center">
+      <div className="space-y-4 py-4 text-center">
         <p className="text-lg font-semibold text-slate-900">Document submitted</p>
-        <button type="button" className="text-sm font-semibold text-brand-pink" onClick={onClose}>
+        <button
+          type="button"
+          className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 text-sm font-bold text-white"
+          onClick={onClose}
+        >
           Close
         </button>
       </div>
@@ -89,88 +101,124 @@ export default function EmployeeUploadWizard({ documentTypes, onSubmit, onClose 
   }
 
   return (
-    <form className="space-y-4" onSubmit={step === 2 ? handleFinish : (e) => e.preventDefault()}>
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+    <form
+      className="space-y-4"
+      onSubmit={step === 2 ? handleFinish : (e) => e.preventDefault()}
+    >
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
         Step {step} of 2
       </p>
       {step === 1 ? (
         <>
-          <label className="block text-sm font-medium text-slate-700">Document type</label>
-          <select
-            className="field w-full"
-            value={documentTypeId}
-            onChange={(event) => setDocumentTypeId(event.target.value)}
-            required
-          >
-            <option value="">Select type</option>
-            {documentTypes.map((type) => (
-              <option key={type.id} value={type.id}>{type.name}</option>
-            ))}
-          </select>
-          <label className="block text-sm font-medium text-slate-700">File</label>
-          <input
-            type="file"
-            required
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          />
+          <label className="block">
+            <span className="label">Document type</span>
+            <div className="mt-1 flex items-end gap-2">
+              <div className="min-w-0 flex-1">
+                <ThemedSelect
+                  value={documentTypeId}
+                  onChange={setDocumentTypeId}
+                  placeholder="Select a type"
+                  options={typeOptions}
+                  portaled
+                  ariaLabel="Document type"
+                />
+              </div>
+              <InlineDocumentTypeCreator
+                onCreated={(type) => setDocumentTypeId(String(type.id))}
+              />
+            </div>
+          </label>
+          <label className="block">
+            <span className="label">File</span>
+            <span className="mt-1 flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-brand-pink/40 bg-pink-50/50 px-4 py-6 text-sm font-semibold text-brand-text">
+              <Upload className="h-5 w-5 shrink-0" />
+              {file ? file.name : "Choose a file from your computer"}
+              <input
+                type="file"
+                required
+                className="hidden"
+                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              />
+            </span>
+          </label>
           {documentTypeId ? (
-            <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+            <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
                 Document details
               </p>
-              <label className="block text-sm font-medium text-slate-700">
-                Issue date
-                {typeRequiresIssueDate(typeId, documentTypes) ? " (required)" : ""}
+              <label className="block">
+                <span className="label">
+                  Issue date
+                  {typeRequiresIssueDate(typeId, documentTypes) ? " (required)" : ""}
+                </span>
+                <input
+                  type="date"
+                  className="field mt-1 w-full"
+                  value={issueDate}
+                  required={typeRequiresIssueDate(typeId, documentTypes)}
+                  onChange={(event) => setIssueDate(event.target.value)}
+                />
               </label>
-              <input
-                type="date"
-                className="field w-full"
-                value={issueDate}
-                required={typeRequiresIssueDate(typeId, documentTypes)}
-                onChange={(event) => setIssueDate(event.target.value)}
-              />
               {typeRequiresExpiry(typeId, documentTypes) ? (
-                <>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Expiry date (required)
-                  </label>
+                <label className="block">
+                  <span className="label">Expiry date (required)</span>
                   <input
                     type="date"
-                    className="field w-full"
+                    className="field mt-1 w-full"
                     value={expiryDate}
                     required
                     onChange={(event) => setExpiryDate(event.target.value)}
                   />
-                </>
+                </label>
               ) : null}
-              <label className="block text-sm font-medium text-slate-700">
-                Description
-                {typeRequiresDescription(typeId, documentTypes) ? " (required)" : ""}
+              <label className="block">
+                <span className="label">
+                  Description
+                  {typeRequiresDescription(typeId, documentTypes)
+                    ? " (required)"
+                    : ""}
+                </span>
+                <textarea
+                  className="field mt-1 min-h-20 w-full"
+                  value={description}
+                  required={typeRequiresDescription(typeId, documentTypes)}
+                  placeholder={
+                    typeRequiresDescription(typeId, documentTypes)
+                      ? "Required"
+                      : "Optional"
+                  }
+                  onChange={(event) => setDescription(event.target.value)}
+                />
               </label>
-              <textarea
-                className="field w-full min-h-20"
-                value={description}
-                required={typeRequiresDescription(typeId, documentTypes)}
-                onChange={(event) => setDescription(event.target.value)}
-              />
             </div>
           ) : null}
         </>
       ) : null}
       {step === 2 ? (
-        <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
-          <p><strong>Type:</strong> {selectedType?.name}</p>
-          <p><strong>File:</strong> {file?.name}</p>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+            Review
+          </p>
+          <p className="mt-2">
+            <strong>Type:</strong> {selectedType?.name}
+          </p>
+          <p>
+            <strong>File:</strong> {file?.name}
+          </p>
           {issueDate ? <p><strong>Issue date:</strong> {issueDate}</p> : null}
           {expiryDate ? <p><strong>Expiry:</strong> {expiryDate}</p> : null}
           {description ? <p><strong>Description:</strong> {description}</p> : null}
         </div>
       ) : null}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      <div className="flex justify-between pt-2">
+      {error ? (
+        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+          {error}
+        </p>
+      ) : null}
+      <div className="flex justify-between gap-2 pt-2">
         <button
           type="button"
-          className="text-sm text-slate-600"
+          className="rounded-full px-4 py-2.5 font-semibold text-slate-500"
           onClick={() => (step === 1 ? onClose() : setStep(step - 1))}
         >
           {step === 1 ? "Cancel" : "Back"}
@@ -178,7 +226,7 @@ export default function EmployeeUploadWizard({ documentTypes, onSubmit, onClose 
         {step < 2 ? (
           <button
             type="button"
-            className="rounded-xl bg-brand-pink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => {
               const metadataError = firstUploadMetadataError(
                 [documentTypeId],
@@ -202,7 +250,7 @@ export default function EmployeeUploadWizard({ documentTypes, onSubmit, onClose 
           <button
             type="submit"
             disabled={pending}
-            className="rounded-xl bg-brand-pink px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? "Submitting…" : "Submit"}
           </button>

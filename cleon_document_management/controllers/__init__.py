@@ -7,3 +7,4 @@ from . import document_actions
 from . import intelligence
 from . import roles
 from . import employee_files
+from . import employee_files_roles

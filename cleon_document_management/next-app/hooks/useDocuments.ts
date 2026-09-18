@@ -655,7 +655,14 @@ export function useDocumentAction() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.documentAction,
-    onSuccess: () => invalidateDocumentQueries(queryClient),
+    onSuccess: () => {
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "document-search"] });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.lifecycleDocuments("archived"),
+      });
+    },
   });
 }
 

@@ -3,7 +3,11 @@
 import { Archive, Download, Ellipsis, FileHeart, FolderInput, Pin, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../../../lib/api";
-import { useDocumentAction } from "../../../hooks/useDocuments";
+import {
+  canArchiveEmployeeDocuments,
+  canDeleteEmployeeDocuments,
+} from "../../../lib/employeeFilesAccess";
+import { useCurrentUser, useDocumentAction } from "../../../hooks/useDocuments";
 import { useClickOutside } from "../../../hooks/useClickOutside";
 
 export default function DocumentActions({
@@ -22,6 +26,12 @@ export default function DocumentActions({
   deleteRelatedIds?: number[];
 }) {
   const action = useDocumentAction();
+  const currentUser = useCurrentUser();
+  const canArchive =
+    active !== false &&
+    (organizational ||
+      canArchiveEmployeeDocuments(currentUser.data) ||
+      canDeleteEmployeeDocuments(currentUser.data));
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
@@ -31,12 +41,12 @@ export default function DocumentActions({
   useEffect(() => {
     if (!open || !buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    const menuHeight = organizational ? 290 : 230;
+    const menuHeight = organizational ? 290 : canArchive ? 280 : 230;
     setPosition({
       top: Math.max(12, rect.top - menuHeight - 8),
       right: Math.max(12, window.innerWidth - rect.right),
     });
-  }, [open, organizational]);
+  }, [open, organizational, canArchive]);
 
   const run = async (
     name: "favorite" | "pin" | "delete" | "archive" | "activate" | "deactivate",
@@ -54,13 +64,11 @@ export default function DocumentActions({
       setOpen(false);
       return;
     }
-    if (
-      name === "archive" &&
-      !window.confirm(
-        `Archive "${documentName}"? It will be removed from everyone it is shared with until restored.`,
-      )
-    ) {
-      return;
+    if (name === "archive") {
+      const message = organizational
+        ? `Archive "${documentName}"? It will be removed from everyone it is shared with until restored.`
+        : `Archive "${documentName}"? It will leave active employee file lists. Restore it from Archived when needed.`;
+      if (!window.confirm(message)) return;
     }
     await action.mutateAsync({ id: documentId, action: name });
     setOpen(false);
@@ -104,12 +112,12 @@ export default function DocumentActions({
               Move to folder
             </button>
           )}
-          {organizational && active !== false && (
+          {canArchive ? (
             <button type="button" onClick={() => run("archive")} className="menu-item">
               <Archive />
               Archive document
             </button>
-          )}
+          ) : null}
           {organizational && (
             <button
               type="button"

@@ -392,35 +392,37 @@ export default function OrganizationFolderPage() {
                     )}
                   </div>
                 ))}
-                <details className="rounded-xl border border-slate-200 bg-white p-3">
-                  <summary className="cursor-pointer text-xs font-bold text-slate-700">
-                    Advanced configuration
-                  </summary>
-                  <div className="mt-3 flex items-end gap-2">
-                    <label className="min-w-0 flex-1">
-                      <span className="label">
-                        Use one document type for all files
-                      </span>
-                      <ThemedSelect
-                        value={bulkTypeId}
-                        onChange={setBulkTypeId}
-                        placeholder="Select a type"
-                        options={(types.data ?? []).map((type: any) => ({
-                          value: String(type.id),
-                          label: type.name,
-                        }))}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      disabled={!bulkTypeId}
-                      onClick={() => setTypeIds(files.map(() => bulkTypeId))}
-                      className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50"
-                    >
-                      Apply to all
-                    </button>
-                  </div>
-                </details>
+                {files.length > 1 ? (
+                  <details className="rounded-xl border border-slate-200 bg-white p-3">
+                    <summary className="cursor-pointer text-xs font-bold text-slate-700">
+                      Advanced configuration
+                    </summary>
+                    <div className="mt-3 flex items-end gap-2">
+                      <label className="min-w-0 flex-1">
+                        <span className="label">
+                          Use one document type for all files
+                        </span>
+                        <ThemedSelect
+                          value={bulkTypeId}
+                          onChange={setBulkTypeId}
+                          placeholder="Select a type"
+                          options={(types.data ?? []).map((type: any) => ({
+                            value: String(type.id),
+                            label: type.name,
+                          }))}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={!bulkTypeId}
+                        onClick={() => setTypeIds(files.map(() => bulkTypeId))}
+                        className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50"
+                      >
+                        Apply to all
+                      </button>
+                    </div>
+                  </details>
+                ) : null}
               </div>
             )}
             <div className="mt-6 flex justify-end gap-2">

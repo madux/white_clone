@@ -127,3 +127,31 @@ export function filterGroupsToSubtree(
   };
   return groups.filter(inSubtree);
 }
+
+/** Top-level groups only for home card view (sub-dimension groups stay in folder drill-down). */
+export function employeeFileGroupsForCardView(
+  groups: EmployeeFileGroup[],
+  search = "",
+): EmployeeFileGroup[] {
+  const childrenByParent = buildChildrenByParentId(groups);
+  const roots = groups.filter((group) => !group.parent_group_id);
+  const needle = search.trim().toLowerCase();
+  if (!needle) {
+    return [...roots].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  const descendantMatches = (groupId: number): boolean => {
+    for (const child of childrenByParent.get(groupId) ?? []) {
+      if (child.name.toLowerCase().includes(needle)) return true;
+      if (descendantMatches(child.id)) return true;
+    }
+    return false;
+  };
+
+  return roots
+    .filter(
+      (root) =>
+        root.name.toLowerCase().includes(needle) || descendantMatches(root.id),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
+}

@@ -45,6 +45,7 @@ declare global {
       is_admin?: boolean;
       is_document_manager?: boolean;
       is_document_admin?: boolean;
+      employee_files_permissions?: import("./types").EmployeeFilesPermissions;
     };
   }
 }
@@ -125,6 +126,7 @@ export const api = {
         is_admin: rawUser.is_admin,
         is_document_manager: rawUser.is_document_manager,
         is_document_admin: rawUser.is_document_admin,
+        employee_files_permissions: rawUser.employee_files_permissions,
       };
       if (
         typeof window !== "undefined" &&
@@ -811,6 +813,39 @@ export const api = {
       },
     ).then((result) => result.data),
 
+  listEmployeeFilesRoles: () =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesRole[] }>(
+      "/api/employee-files/roles",
+    ).then((result) => result.data),
+
+  saveEmployeeFilesRole: (role: import("./types").EmployeeFilesRole) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesRole }>(
+      "/api/employee-files/roles/save",
+      { role },
+    ).then((result) => result.data),
+
+  deleteEmployeeFilesRole: (roleId: number) =>
+    rpc<{ success: boolean }>("/api/employee-files/roles/delete", {
+      role_id: roleId,
+    }),
+
+  getEmployeeFilesRoleMembers: (search = "") =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesRoleMembersPayload }>(
+      "/api/employee-files/roles/members",
+      { search, limit: 50 },
+    ).then((result) => result.data),
+
+  assignEmployeeFilesRoles: (userId: number, roleIds: number[]) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesRoleMember }>(
+      "/api/employee-files/roles/assign",
+      { user_id: userId, role_ids: roleIds },
+    ).then((result) => result.data),
+
+  listEmployeeFilesRoleDocumentTypes: () =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesDocumentTypeOption[] }>(
+      "/api/employee-files/roles/document-types",
+    ).then((result) => result.data),
+
   getEmployeeFilesConfig: () =>
     rpc<{ success: boolean; data: import("./types").EmployeeFilesConfig }>(
       "/api/employee-files/config",
@@ -915,10 +950,33 @@ export const api = {
       { id },
     ).then((r) => r.data),
 
+  searchEmployeeFilesDocuments: (params: {
+    query?: string;
+    category?: string;
+    document_type_id?: string | number;
+    department_id?: string | number;
+    source?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+    order?: string;
+  }) =>
+    rpc<{
+      success: boolean;
+      data: {
+        items: import("./types").DocDocument[];
+        total: number;
+        limit: number;
+        offset: number;
+      };
+    }>("/api/employee-files/documents/search", params).then((r) => r.data),
+
   listEmployeeFileSummaries: (params?: {
     search?: string;
     limit?: number;
     offset?: number;
+    department_id?: number | string;
+    order?: string;
   }) =>
     rpc<{ success: boolean; data: import("./types").EmployeeFileSummaryPage }>(
       "/api/employee-files/employee-files",
@@ -1019,6 +1077,47 @@ export const api = {
       "/api/employee-files/signature/request",
       { document_id: documentId, signer_employee_id: signerEmployeeId },
     ).then((r) => r.data),
+
+  getEmployeeDocumentRelations: (documentId: number) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: import("./types").DocDocumentRelation[];
+    }>("/api/employee-files/document/relations", {
+      document_id: documentId,
+    }).then((r) => {
+      if (!r.success) {
+        throw new Error(r.message || "Could not load document relationships.");
+      }
+      return r.data;
+    }),
+
+  addEmployeeDocumentRelation: (payload: {
+    source_document_id: number;
+    target_document_id: number;
+    relation_type: import("./types").DocumentRelationType;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: import("./types").DocDocumentRelation;
+    }>("/api/employee-files/document/relation/add", payload).then((r) => {
+      if (!r.success) {
+        throw new Error(r.message || "Could not add document relationship.");
+      }
+      return r.data;
+    }),
+
+  removeEmployeeDocumentRelation: (relationId: number) =>
+    rpc<{ success: boolean; message?: string }>(
+      "/api/employee-files/document/relation/remove",
+      { relation_id: relationId },
+    ).then((r) => {
+      if (!r.success) {
+        throw new Error(r.message || "Could not remove document relationship.");
+      }
+      return r;
+    }),
 };
 
 function triggerDownload(url: string) {

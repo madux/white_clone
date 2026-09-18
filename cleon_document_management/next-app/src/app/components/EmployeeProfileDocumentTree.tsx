@@ -12,6 +12,10 @@ import { canUpdateDocument } from "../../../lib/documentUpdateHelpers";
 import type { DocDocument } from "../../../lib/types";
 import DocumentActions from "./DocumentActions";
 import FolderDocumentTreeGroup from "./FolderDocumentTreeGroup";
+import {
+  employeeTreeCol,
+  employeeTreeColsAdmin,
+} from "../../../lib/employeeTreeColumns";
 
 function DocumentStatusBadge({ document }: { document: DocDocument }) {
   return (
@@ -54,7 +58,7 @@ function DocumentRowActions({
     showUpdateAction && onUpdate && canUpdateDocument(document);
 
   return (
-    <div className="ml-auto flex shrink-0 items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
       {showUpdate ? (
         <button
           type="button"
@@ -92,6 +96,7 @@ function DocumentRowActions({
       <DocumentActions
         documentId={document.id}
         documentName={document.name}
+        active={document.active !== false}
         deleteRelatedIds={deleteRelatedIds}
       />
     </div>
@@ -127,48 +132,56 @@ function ProfileDocumentRow({
 }) {
   return (
     <div
-      className="employee-tree-row employee-tree-row-file"
-      style={{ paddingLeft: `${depth * 20 + 16}px` }}
+      className={`employee-tree-row employee-tree-row-file ${employeeTreeColsAdmin}`}
     >
+      <div
+        className="employee-tree-leading"
+        style={{ paddingLeft: `${depth * 20 + 16}px` }}
+      >
       <input
         type="checkbox"
         checked={selected}
         onChange={onToggleSelect}
         aria-label={`Select ${document.name}`}
-        className="h-4 w-4 shrink-0 accent-pink-600"
+        className={`h-4 w-4 accent-pink-600 ${employeeTreeCol.check}`}
       />
-      <span className="employee-tree-spacer" aria-hidden />
-      <FileText className="h-4 w-4 shrink-0 text-brand-pink" />
+      <span className={employeeTreeCol.toggle} aria-hidden />
+      <FileText className={`h-4 w-4 shrink-0 text-brand-pink ${employeeTreeCol.icon}`} />
       <button
         type="button"
         onClick={onView}
-        className="min-w-0 flex-1 truncate text-left font-medium text-slate-700 hover:text-brand-pink"
+        className={`min-w-0 truncate text-left font-medium text-slate-700 hover:text-brand-pink ${employeeTreeCol.name}`}
       >
         {document.name}
       </button>
-      <small className="hidden w-24 shrink-0 text-slate-500 lg:inline">
+      </div>
+      <span className={employeeTreeCol.category}>
         {document.document_category_label ?? "—"}
-      </small>
-      <small className="hidden w-32 shrink-0 text-slate-600 sm:inline">
+      </span>
+      <span className={employeeTreeCol.docType}>
         {document.document_type || "—"}
-      </small>
-      <small className="hidden w-28 shrink-0 text-slate-400 md:inline">
+      </span>
+      <span className={employeeTreeCol.uploadDate}>
         {formatDocumentDateShort(document.created_at || document.write_date)}
-      </small>
-      <small className="hidden w-14 shrink-0 tabular-nums text-slate-500 md:inline">
+      </span>
+      <span className={employeeTreeCol.version}>
         v{document.current_version_number ?? 1}
-      </small>
-      <DocumentStatusBadge document={document} />
-      <DocumentRowActions
-        document={document}
-        showReviewActions={showReviewActions}
-        reviewPending={reviewPending}
-        onApprove={onApprove}
-        onReject={onReject}
-        onUpdate={onUpdate}
-        showUpdateAction={showUpdateAction}
-        deleteRelatedIds={deleteRelatedIds}
-      />
+      </span>
+      <div className={employeeTreeCol.status}>
+        <DocumentStatusBadge document={document} />
+      </div>
+      <div className={employeeTreeCol.actions}>
+        <DocumentRowActions
+          document={document}
+          showReviewActions={showReviewActions}
+          reviewPending={reviewPending}
+          onApprove={onApprove}
+          onReject={onReject}
+          onUpdate={onUpdate}
+          showUpdateAction={showUpdateAction}
+          deleteRelatedIds={deleteRelatedIds}
+        />
+      </div>
     </div>
   );
 }
@@ -183,6 +196,7 @@ export default function EmployeeProfileDocumentTree({
   onToggleExpand,
   onView,
   onOpenDocument,
+  onViewVersion,
   onApprove,
   onReject,
   reviewPending,
@@ -200,6 +214,7 @@ export default function EmployeeProfileDocumentTree({
   onToggleExpand: (id: number) => void;
   onView: (document: DocDocument) => void;
   onOpenDocument: (document: DocDocument) => void;
+  onViewVersion?: (document: DocDocument, versionId: number) => void;
   onApprove: (document: DocDocument) => void;
   onReject: (document: DocDocument) => void;
   reviewPending: boolean;
@@ -214,7 +229,7 @@ export default function EmployeeProfileDocumentTree({
   const handleDeleteVersion = async (versionId: number, versionNumber: number) => {
     if (
       !window.confirm(
-        `Delete version ${versionNumber}? This only removes that archived version.`,
+        `Delete version ${versionNumber}? This only removes that out-of-date version.`,
       )
     ) {
       return;
@@ -232,21 +247,49 @@ export default function EmployeeProfileDocumentTree({
   return (
     <div className="employee-file-tree border-t border-slate-100 p-4">
       <div className="employee-tree-folder">
-        <div className="employee-tree-row employee-tree-row-folder">
+        <div
+          className={`employee-tree-row employee-tree-row-folder ${employeeTreeColsAdmin}`}
+        >
+          <div className="employee-tree-leading">
           <input
             type="checkbox"
             checked={allSelected}
             onChange={onToggleAll}
             aria-label="Select all documents"
-            className="h-4 w-4 shrink-0 accent-pink-600"
+            className={`h-4 w-4 accent-pink-600 ${employeeTreeCol.check}`}
           />
-          <div className="min-w-0 flex-1 font-bold text-slate-800">Documents</div>
-          <small className="hidden w-24 text-slate-400 lg:inline">Category</small>
-          <small className="hidden w-32 text-slate-400 sm:inline">Document type</small>
-          <small className="hidden w-28 text-slate-400 md:inline">Upload date</small>
-          <small className="hidden w-14 text-slate-400 md:inline">Version</small>
-          <small className="hidden text-slate-400 sm:inline">Approval</small>
-          <span className="hidden w-[88px] sm:inline" aria-hidden />
+          <span className={employeeTreeCol.toggle} aria-hidden />
+          <span className={employeeTreeCol.icon} aria-hidden />
+          <div className={`font-bold text-slate-800 ${employeeTreeCol.name}`}>
+            Documents
+          </div>
+          </div>
+          <span
+            className={`${employeeTreeCol.category} employee-tree-col-header employee-tree-col-category`}
+          >
+            Category
+          </span>
+          <span
+            className={`${employeeTreeCol.docType} employee-tree-col-header employee-tree-col-doctype`}
+          >
+            Document type
+          </span>
+          <span
+            className={`${employeeTreeCol.uploadDate} employee-tree-col-header employee-tree-col-upload-date`}
+          >
+            Upload date
+          </span>
+          <span
+            className={`${employeeTreeCol.version} employee-tree-col-header employee-tree-col-version`}
+          >
+            Ver.
+          </span>
+          <span
+            className={`${employeeTreeCol.status} employee-tree-col-header employee-tree-col-status`}
+          >
+            Approval
+          </span>
+          <span className={employeeTreeCol.actions} aria-hidden />
         </div>
         <div className="employee-tree-file-group !ml-4 !border-l-pink-100">
           {groups.map((group) => {
@@ -254,29 +297,37 @@ export default function EmployeeProfileDocumentTree({
             const expanded = expandedDocuments.includes(document.id);
             const rowSuffix = (
               <>
-                <small className="hidden w-24 shrink-0 text-slate-500 lg:inline">
+                <span className={employeeTreeCol.category}>
                   {document.document_category_label ?? "—"}
-                </small>
-                <small className="hidden w-32 shrink-0 text-slate-600 sm:inline">
+                </span>
+                <span className={employeeTreeCol.docType}>
                   {document.document_type || "—"}
-                </small>
-                <small className="hidden w-28 shrink-0 text-slate-400 md:inline">
-                  {formatDocumentDateShort(document.created_at || document.write_date)}
-                </small>
-                <small className="hidden w-14 shrink-0 tabular-nums text-slate-500 md:inline">
+                </span>
+                <span className={employeeTreeCol.uploadDate}>
+                  {formatDocumentDateShort(
+                    document.created_at || document.write_date,
+                  )}
+                </span>
+                <span className={employeeTreeCol.version}>
                   v{document.current_version_number ?? 1}
-                </small>
-                <DocumentStatusBadge document={document} />
-                <DocumentRowActions
-                  document={document}
-                  showReviewActions={showReviewActions}
-                  reviewPending={reviewPending}
-                  onApprove={() => onApprove(document)}
-                  onReject={() => onReject(document)}
-                  onUpdate={onUpdate ? () => onUpdate(document) : undefined}
-                  showUpdateAction={showUpdateAction}
-                  deleteRelatedIds={group.relatedDocuments.map((item) => item.id)}
-                />
+                </span>
+                <div className={employeeTreeCol.status}>
+                  <DocumentStatusBadge document={document} />
+                </div>
+                <div className={employeeTreeCol.actions}>
+                  <DocumentRowActions
+                    document={document}
+                    showReviewActions={showReviewActions}
+                    reviewPending={reviewPending}
+                    onApprove={() => onApprove(document)}
+                    onReject={() => onReject(document)}
+                    onUpdate={onUpdate ? () => onUpdate(document) : undefined}
+                    showUpdateAction={showUpdateAction}
+                    deleteRelatedIds={group.relatedDocuments.map(
+                      (item) => item.id,
+                    )}
+                  />
+                </div>
               </>
             );
 
@@ -289,6 +340,7 @@ export default function EmployeeProfileDocumentTree({
                   onToggleExpand={() => onToggleExpand(document.id)}
                   isDocumentManager={isDocumentManager}
                   onDocumentOpen={onOpenDocument}
+                  onViewVersion={onViewVersion}
                   onDeleteVersion={handleDeleteVersion}
                   onDeleteRelatedDocument={handleDeleteRelatedDocument}
                   depth={2}
@@ -298,7 +350,7 @@ export default function EmployeeProfileDocumentTree({
                       checked={selected.includes(document.id)}
                       onChange={() => onToggleSelect(document.id)}
                       aria-label={`Select ${document.name}`}
-                      className="h-4 w-4 shrink-0 accent-pink-600"
+                      className={`h-4 w-4 shrink-0 accent-pink-600 ${employeeTreeCol.check}`}
                     />
                   }
                   suffix={rowSuffix}

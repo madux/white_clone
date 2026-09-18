@@ -12,7 +12,7 @@ import {
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -29,6 +29,8 @@ import ModalDialog from "./ModalDialog";
 import ThemedSelect from "./ThemedSelect";
 import DocumentFilterBar, { FilterState, INITIAL_FILTER_STATE, applyDocumentFilters } from "./DocumentFilterBar";
 import DocumentViewerDialog from "./DocumentViewerDialog";
+import DocumentRelationsPanel from "./DocumentRelationsPanel";
+import { documentPreviewUrl } from "../../../lib/documentPreviewUrls";
 import BackButton from "./BackButton";
 import EmployeeProfileDocumentTree from "./EmployeeProfileDocumentTree";
 import UpdateDocumentModal from "./UpdateDocumentModal";
@@ -71,6 +73,7 @@ import type { WorkspaceActivityEvent } from "../../../lib/types";
 
 export default function EmployeeProfilePage() {
   const params = useSearchParams();
+  const router = useRouter();
   const employeeId = Number(params.get("employee"));
   const queryClient = useQueryClient();
   const fileDocuments = useEmployeeFileDocuments(employeeId);
@@ -84,6 +87,7 @@ export default function EmployeeProfilePage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [selected, setSelected] = useState<number[]>([]);
   const [viewing, setViewing] = useState<any>(null);
+  const [viewingVersionId, setViewingVersionId] = useState<number | null>(null);
   const [updatingDocument, setUpdatingDocument] = useState<DocDocument | null>(null);
   const [rejecting, setRejecting] = useState<any>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -148,7 +152,13 @@ export default function EmployeeProfilePage() {
     });
   }, [employeeFileSummary.data?.related_groups]);
   const employeeFileId = employeeFileSummary.data?.id;
-  const isDocumentManager = currentUser.data?.is_document_manager === true;
+  const isDocumentManager =
+    currentUser.data?.is_document_manager === true ||
+    currentUser.data?.employee_files_permissions?.can_access_ef_home === true;
+  const canReviewEmployeeDocuments =
+    currentUser.data?.employee_files_permissions?.can_approve === true ||
+    currentUser.data?.is_document_manager === true ||
+    currentUser.data?.is_document_admin === true;
   const approved = employeeDocuments.filter(
     (document) => document.approval_state === "approved",
   ).length;
@@ -567,8 +577,18 @@ export default function EmployeeProfilePage() {
             onToggleAll={() => setSelected(allSelected ? [] : visibleIds)}
             onToggleSelect={toggleSelected}
             onToggleExpand={toggleExpanded}
-            onView={setViewing}
-            onOpenDocument={setViewing}
+            onView={(document) => {
+              setViewing(document);
+              setViewingVersionId(null);
+            }}
+            onOpenDocument={(document) => {
+              setViewing(document);
+              setViewingVersionId(null);
+            }}
+            onViewVersion={(document, versionId) => {
+              setViewing(document);
+              setViewingVersionId(versionId);
+            }}
             onApprove={(document) => void handleReview(document, "approve")}
             onReject={(document) => {
               setRejecting(document);
@@ -576,8 +596,8 @@ export default function EmployeeProfilePage() {
               setReviewError("");
             }}
             reviewPending={review.isPending}
-            showReviewActions={Boolean(currentUser.data?.is_document_manager)}
-            isDocumentManager={Boolean(currentUser.data?.is_document_manager)}
+            showReviewActions={canReviewEmployeeDocuments}
+            isDocumentManager={isDocumentManager}
             showUpdateAction={isDocumentManager}
             onUpdate={setUpdatingDocument}
           />
@@ -875,29 +895,33 @@ export default function EmployeeProfilePage() {
                     />
                   </div>
                 ))}
-                <button
-                  type="button"
-                  className="text-xs font-bold text-brand-pink"
-                  onClick={() => {
-                    const value = uploadTypes[0] ?? "";
-                    setUploadTypes(uploadFiles.map(() => value));
-                  }}
-                >
-                  Apply first type to all
-                </button>
+                {uploadFiles.length > 1 ? (
+                  <button
+                    type="button"
+                    className="text-xs font-bold text-brand-pink"
+                    onClick={() => {
+                      const value = uploadTypes[0] ?? "";
+                      setUploadTypes(uploadFiles.map(() => value));
+                    }}
+                  >
+                    Apply first type to all
+                  </button>
+                ) : null}
               </div>
             )}
-            <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <summary className="cursor-pointer text-xs font-bold text-slate-700">Advanced configuration</summary>
-              <div className="mt-3 flex items-end gap-2">
-                <label className="min-w-0 flex-1">
-                  <span className="label">Use one document type for all files</span>
-                  <ThemedSelect value={bulkUploadType} onChange={setBulkUploadType} placeholder="Select a type" options={(availableDocumentTypes.data ?? []).map((type) => ({ value: String(type.id), label: type.name }))} />
-                </label>
-                <InlineDocumentTypeCreator onCreated={(type) => setBulkUploadType(String(type.id))} />
-                <button type="button" disabled={!bulkUploadType} onClick={() => setUploadTypes(uploadFiles.map(() => bulkUploadType))} className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50">Apply to all</button>
-              </div>
-            </details>
+            {uploadFiles.length > 1 ? (
+              <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <summary className="cursor-pointer text-xs font-bold text-slate-700">Advanced configuration</summary>
+                <div className="mt-3 flex items-end gap-2">
+                  <label className="min-w-0 flex-1">
+                    <span className="label">Use one document type for all files</span>
+                    <ThemedSelect value={bulkUploadType} onChange={setBulkUploadType} placeholder="Select a type" options={(availableDocumentTypes.data ?? []).map((type) => ({ value: String(type.id), label: type.name }))} />
+                  </label>
+                  <InlineDocumentTypeCreator onCreated={(type) => setBulkUploadType(String(type.id))} />
+                  <button type="button" disabled={!bulkUploadType} onClick={() => setUploadTypes(uploadFiles.map(() => bulkUploadType))} className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50">Apply to all</button>
+                </div>
+              </details>
+            ) : null}
             {uploadError && <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{uploadError}</p>}
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={() => setShowUpload(false)} className="rounded-full px-4 py-2.5 font-semibold text-slate-500">Cancel</button>
@@ -932,41 +956,76 @@ export default function EmployeeProfilePage() {
               : "Document viewer"
           }
           description={viewing.document_type}
-          onClose={() => setViewing(null)}
+          onClose={() => {
+            setViewing(null);
+            setViewingVersionId(null);
+          }}
           documentId={viewing.id}
-          previewUrl={`${(process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "")}/document-management/document/${viewing.id}/preview`}
+          currentVersionNumber={viewing.current_version_number}
+          initialVersionId={viewingVersionId}
+          previewUrl={documentPreviewUrl(viewing.id, {
+            variant:
+              canReviewDocument(viewing) && viewing.approval_state === "pending"
+                ? "pending"
+                : "current",
+          })}
           footer={
-            viewing && canReviewDocument(viewing) ? (
-              <div>
-                <p className="text-sm font-semibold text-slate-700">
-                  This document is awaiting your approval.
-                </p>
-                <div className="mt-4 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    disabled={review.isPending}
-                    onClick={() => {
-                      setRejecting(viewing);
-                      setViewing(null);
-                      setRejectReason("");
-                      setReviewError("");
-                    }}
-                    className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2.5 text-sm font-bold text-red-600"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Reject
-                  </button>
-                  <button
-                    type="button"
-                    disabled={review.isPending}
-                    onClick={() => void handleReview(viewing, "approve")}
-                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-4 py-2.5 text-sm font-bold text-white"
-                  >
-                    <Check className="h-4 w-4" />
-                    Approve
-                  </button>
-                </div>
-              </div>
+            viewing ? (
+              <>
+                {canReviewDocument(viewing) ? (
+                  <div className="border-b border-slate-100 px-5 py-4">
+                    <p className="text-sm font-semibold text-slate-700">
+                      This document is awaiting your approval.
+                    </p>
+                    <div className="mt-4 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        disabled={review.isPending}
+                        onClick={() => {
+                          setRejecting(viewing);
+                          setViewing(null);
+                          setRejectReason("");
+                          setReviewError("");
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2.5 text-sm font-bold text-red-600"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Reject
+                      </button>
+                      <button
+                        type="button"
+                        disabled={review.isPending}
+                        onClick={() => void handleReview(viewing, "approve")}
+                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-4 py-2.5 text-sm font-bold text-white"
+                      >
+                        <Check className="h-4 w-4" />
+                        Approve
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                <DocumentRelationsPanel
+                  documentId={viewing.id}
+                  employeeId={employeeId}
+                  pickerDocuments={employeeDocuments}
+                  isManager={isDocumentManager}
+                  onOpenRelated={(relatedDocumentId, relatedEmployeeId) => {
+                    if (relatedEmployeeId === employeeId) {
+                      const match = employeeDocuments.find(
+                        (doc) => doc.id === relatedDocumentId,
+                      );
+                      if (match) {
+                        setViewing(match);
+                        setViewingVersionId(null);
+                      }
+                      return;
+                    }
+                    router.push(
+                      `/pages/employee/profile?employee=${relatedEmployeeId}&doc=${relatedDocumentId}`,
+                    );
+                  }}
+                />
+              </>
             ) : undefined
           }
         />

@@ -2,6 +2,14 @@ from odoo import fields, http
 from odoo.http import request
 
 
+def _user_can_ef_approve(document):
+    perm = request.env["doc.employee.files.permission"]
+    user = request.env.user
+    if document.employee_id and document.folder_id.folder_type == "employee":
+        return perm.user_can_on_document(user, document, "action_approve")
+    return perm.user_is_platform_admin(user) or perm.user_has_legacy_manager(user)
+
+
 class DocumentActions(http.Controller):
     @http.route(
         "/api/document/acknowledge",
@@ -43,15 +51,13 @@ class DocumentActions(http.Controller):
         "/api/document-review", type="json", auth="user", methods=["POST"], csrf=False
     )
     def review_document(self, id=None, action=None, reason=None, **kwargs):
-        if not request.env.user.has_group(
-            "cleon_document_management.group_document_manager"
-        ):
-            return {"success": False, "message": "Document manager access is required."}
         if action not in ("approve", "reject"):
             return {"success": False, "message": "Unsupported review action."}
         document = request.env["doc.document"].browse(int(id or 0)).exists()
         if not document:
             return {"success": False, "message": "Document not found."}
+        if not _user_can_ef_approve(document):
+            return {"success": False, "message": "You do not have permission to review this document."}
         approval_model = request.env["doc.document.approval"]
         flow = document._get_effective_approval_flow()
         approval = approval_model.search(
@@ -63,13 +69,7 @@ class DocumentActions(http.Controller):
             limit=1,
         )
         manager_override = False
-        if (
-            not approval
-            and flow != "sequential"
-            and request.env.user.has_group(
-                "cleon_document_management.group_document_manager"
-            )
-        ):
+        if not approval and flow != "sequential" and _user_can_ef_approve(document):
             approval = approval_model.search(
                 [
                     ("document_id", "=", document.id),

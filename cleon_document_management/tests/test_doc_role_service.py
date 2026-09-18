@@ -8,9 +8,9 @@ class TestDocRoleService(TransactionCase):
     def test_registry_seeds_document_management_roles(self):
         self.env["doc.role.definition"].sync_registry()
         rows = self.env["doc.role.definition"]._document_management_definitions()
-        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(rows), 2)
         assignable = rows.filtered("assignable")
-        self.assertEqual(set(assignable.mapped("role_key")), {"manager", "admin"})
+        self.assertEqual(set(assignable.mapped("role_key")), {"admin"})
         self.assertTrue(
             all(xml_id.startswith("cleon_document_management.")
                 for xml_id in rows.mapped("group_xml_id"))
@@ -18,11 +18,11 @@ class TestDocRoleService(TransactionCase):
 
     def test_registry_rewrites_foreign_group_assignments(self):
         self.env["doc.role.definition"].sync_registry()
-        manager = self.env["doc.role.definition"].search(
-            [("role_key", "=", "manager")],
+        admin_row = self.env["doc.role.definition"].search(
+            [("role_key", "=", "admin")],
             limit=1,
         )
-        manager.write(
+        admin_row.write(
             {
                 "group_xml_id": "cleon_social_gallery.group_social_gallery_manager",
                 "label": "Gallery Manager",
@@ -30,19 +30,19 @@ class TestDocRoleService(TransactionCase):
         )
 
         rows = self.env["doc.role.definition"]._document_management_definitions()
-        manager = self.env["doc.role.definition"].search(
-            [("role_key", "=", "manager")],
+        admin_row = self.env["doc.role.definition"].search(
+            [("role_key", "=", "admin")],
             limit=1,
         )
 
-        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(rows), 2)
         self.assertEqual(
-            manager.group_xml_id,
-            "cleon_document_management.group_document_manager",
+            admin_row.group_xml_id,
+            "cleon_document_management.group_document_admin",
         )
-        self.assertEqual(manager.label, "Document Manager")
+        self.assertEqual(admin_row.label, "Document Platform Administrator")
 
-    def test_grant_admin_also_grants_manager(self):
+    def test_grant_admin_group_only(self):
         self.env["doc.role.definition"].sync_registry()
         admin = self.env.ref("base.user_admin")
         employee = self.env["hr.employee"].search(
@@ -57,13 +57,10 @@ class TestDocRoleService(TransactionCase):
                 }
             )
 
-        manager_group = self.env.ref(
-            "cleon_document_management.group_document_manager"
-        )
         admin_group = self.env.ref(
             "cleon_document_management.group_document_admin"
         )
-        admin.write({"groups_id": [(3, manager_group.id), (3, admin_group.id)]})
+        admin.write({"groups_id": [(3, admin_group.id)]})
 
         service = self.env["doc.role.service"]
         service.with_user(admin).assign_roles(
@@ -71,5 +68,4 @@ class TestDocRoleService(TransactionCase):
             [{"role_key": "admin", "enabled": True}],
         )
 
-        self.assertIn(manager_group, admin.groups_id)
         self.assertIn(admin_group, admin.groups_id)

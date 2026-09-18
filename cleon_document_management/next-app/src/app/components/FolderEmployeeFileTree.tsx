@@ -181,7 +181,7 @@ export default function FolderEmployeeFileTree({
   const handleDeleteVersion = async (versionId: number, versionNumber: number) => {
     if (
       !window.confirm(
-        `Delete version ${versionNumber}? This only removes that archived version.`,
+        `Delete version ${versionNumber}? This only removes that out-of-date version.`,
       )
     ) {
       return;

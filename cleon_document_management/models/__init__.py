@@ -22,9 +22,14 @@ from . import doc_role_definition
 from . import doc_role_service
 from . import employee_files_config
 from . import employee_file
+from . import employee_file_change_log
 from . import employee_group
 from . import employee_issue
 from . import employee_setup
 from . import document_relation
 from . import employee_esign
 from . import employee_files_service
+from . import employee_files_role
+from . import employee_files_permission
+from . import employee_files_role_service
+from . import employee_files_role_audit

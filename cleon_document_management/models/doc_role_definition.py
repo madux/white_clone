@@ -10,7 +10,6 @@ class DocRoleDefinition(models.Model):
     role_key = fields.Selection(
         selection=[
             ("user", "User"),
-            ("manager", "Manager"),
             ("admin", "Administrator"),
         ],
         required=True,
@@ -24,7 +23,7 @@ class DocRoleDefinition(models.Model):
     sequence = fields.Integer(default=10)
     assignable = fields.Boolean(
         default=False,
-        help="Only manager and administrator roles can be assigned from the UI.",
+        help="Only the platform administrator role can be assigned from the legacy roles API.",
     )
     active = fields.Boolean(default=True)
 
@@ -49,21 +48,12 @@ class DocRoleDefinition(models.Model):
                 "assignable": False,
             },
             {
-                "role_key": "manager",
-                "group_xml_id": "cleon_document_management.group_document_manager",
-                "label": "Document Manager",
-                "description": "Manage employee and organizational folders, approvals, and compliance.",
-                "capabilities": "Employee/org folders · Pending uploads · Compliance · Activity",
-                "sequence": 20,
-                "assignable": True,
-            },
-            {
                 "role_key": "admin",
                 "group_xml_id": "cleon_document_management.group_document_admin",
-                "label": "Document Administrator",
-                "description": "Full document management configuration and intelligence settings.",
-                "capabilities": "Settings · Document Intelligence · global admin actions",
-                "sequence": 30,
+                "label": "Document Platform Administrator",
+                "description": "Module configuration, Employee Files role authoring, and intelligence settings.",
+                "capabilities": "Settings · Employee Files roles · Document Intelligence · Compliance admin",
+                "sequence": 20,
                 "assignable": True,
             },
         ]

@@ -13,9 +13,8 @@ import { useDocumentVersions } from "../../../hooks/useDocuments";
 import type { DocDocument } from "../../../lib/types";
 import { approvalDisplayLabel, canReviewDocument } from "../../../lib/approvalHelpers";
 import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
+import { documentVersionPreviewUrl } from "../../../lib/documentPreviewUrls";
 import DocumentActions from "./DocumentActions";
-
-const baseUrl = (process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "");
 
 function TreeChildCell({
   title,
@@ -89,7 +88,7 @@ function DocumentHistoryRows({
           <td className="px-5 py-3 text-sm text-slate-400">—</td>
           <td className="px-5 py-3">
             <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
-              Archived
+              Out of date
             </span>
           </td>
           <td className="px-5 py-3 text-sm text-slate-400">—</td>
@@ -97,17 +96,15 @@ function DocumentHistoryRows({
             {version.upload_date?.slice(0, 10)}
           </td>
           <td className="px-5 py-3 text-right">
-            {baseUrl ? (
-              <a
-                href={`${baseUrl}/document-management/document/version/${version.id}/preview`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-brand-pink hover:text-brand-pink"
-              >
-                Open
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            ) : null}
+            <a
+              href={documentVersionPreviewUrl(version.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-brand-pink hover:text-brand-pink"
+            >
+              Open
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </td>
         </tr>
       ))}
@@ -313,6 +310,7 @@ export default function EmployeeDocumentTreeRow({
             <DocumentActions
               documentId={document.id}
               documentName={document.name}
+              active={document.active !== false}
             />
           </div>
         </td>

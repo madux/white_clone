@@ -46,11 +46,11 @@ function AddEmployeeFilePicker({
 }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const filePage = useEmployeeFileSummaries(
-    search.trim() || undefined,
+  const filePage = useEmployeeFileSummaries({
+    search: search.trim() || undefined,
     page,
-    EMPLOYEE_FILE_LIST_PAGE_SIZE,
-  );
+    pageSize: EMPLOYEE_FILE_LIST_PAGE_SIZE,
+  });
 
   const filtered = useMemo(() => {
     const items = filePage.data?.items ?? [];

@@ -15,6 +15,8 @@ export const EMPLOYEE_FILES_KEYS = {
     search?: string;
     limit?: number;
     offset?: number;
+    department_id?: string;
+    order?: string;
   }) => ["employee-files", "files", params],
   groupMembers: (
     groupId: number,
@@ -35,6 +37,16 @@ export const EMPLOYEE_FILES_KEYS = {
     "employee-files",
     "file-activity",
     employeeId,
+  ],
+  documentSearch: (params: Record<string, unknown>) => [
+    "employee-files",
+    "document-search",
+    params,
+  ],
+  documentRelations: (documentId: number) => [
+    "employee-files",
+    "document-relations",
+    documentId,
   ],
 };
 
@@ -130,16 +142,95 @@ export function useEmployeeFileGroup(id: number) {
 }
 
 export function useEmployeeFileSummaries(
-  search?: string,
-  page = 1,
-  pageSize = EMPLOYEE_FILE_LIST_PAGE_SIZE,
-  enabled = true,
+  params: {
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    departmentId?: string;
+    order?: string;
+    enabled?: boolean;
+  } = {},
 ) {
+  const {
+    search,
+    page = 1,
+    pageSize = EMPLOYEE_FILE_LIST_PAGE_SIZE,
+    departmentId,
+    order,
+    enabled = true,
+  } = params;
   const offset = (Math.max(page, 1) - 1) * pageSize;
   return useQuery({
-    queryKey: EMPLOYEE_FILES_KEYS.files({ search, limit: pageSize, offset }),
+    queryKey: EMPLOYEE_FILES_KEYS.files({
+      search,
+      limit: pageSize,
+      offset,
+      department_id: departmentId,
+      order,
+    }),
     queryFn: () =>
-      api.listEmployeeFileSummaries({ search, limit: pageSize, offset }),
+      api.listEmployeeFileSummaries({
+        search,
+        limit: pageSize,
+        offset,
+        department_id: departmentId !== "all" ? departmentId : undefined,
+        order,
+      }),
+    enabled,
+  });
+}
+
+export function useEmployeeFilesDocumentSearch(
+  params: {
+    query?: string;
+    category?: string;
+    documentTypeId?: string;
+    departmentId?: string;
+    source?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+    order?: string;
+    enabled?: boolean;
+  },
+) {
+  const {
+    query,
+    category,
+    documentTypeId,
+    departmentId,
+    source,
+    status,
+    page = 1,
+    pageSize = 25,
+    order,
+    enabled = true,
+  } = params;
+  const offset = (Math.max(page, 1) - 1) * pageSize;
+  return useQuery({
+    queryKey: EMPLOYEE_FILES_KEYS.documentSearch({
+      query,
+      category,
+      documentTypeId,
+      departmentId,
+      source,
+      status,
+      limit: pageSize,
+      offset,
+      order,
+    }),
+    queryFn: () =>
+      api.searchEmployeeFilesDocuments({
+        query: query || undefined,
+        category: category !== "all" ? category : undefined,
+        document_type_id: documentTypeId !== "all" ? documentTypeId : undefined,
+        department_id: departmentId !== "all" ? departmentId : undefined,
+        source: source !== "all" ? source : undefined,
+        status: status !== "all" ? status : undefined,
+        limit: pageSize,
+        offset,
+        order,
+      }),
     enabled,
   });
 }
@@ -268,6 +359,48 @@ export function useRemoveEmployeeFilesFromGroup() {
         queryKey: EMPLOYEE_FILES_KEYS.group(variables.groupId),
       });
       queryClient.invalidateQueries({ queryKey: ["employee-files", "group-members"] });
+    },
+  });
+}
+
+export function useEmployeeDocumentRelations(documentId: number, enabled = true) {
+  return useQuery({
+    queryKey: EMPLOYEE_FILES_KEYS.documentRelations(documentId),
+    queryFn: () => api.getEmployeeDocumentRelations(documentId),
+    enabled: enabled && documentId > 0,
+  });
+}
+
+export function useAddEmployeeDocumentRelation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.addEmployeeDocumentRelation,
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: EMPLOYEE_FILES_KEYS.documentRelations(
+          variables.source_document_id,
+        ),
+      });
+      queryClient.invalidateQueries({
+        queryKey: EMPLOYEE_FILES_KEYS.documentRelations(
+          variables.target_document_id,
+        ),
+      });
+    },
+  });
+}
+
+export function useRemoveEmployeeDocumentRelation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { relationId: number; documentIds: number[] }) =>
+      api.removeEmployeeDocumentRelation(payload.relationId),
+    onSuccess: (_data, variables) => {
+      variables.documentIds.forEach((documentId) => {
+        queryClient.invalidateQueries({
+          queryKey: EMPLOYEE_FILES_KEYS.documentRelations(documentId),
+        });
+      });
     },
   });
 }

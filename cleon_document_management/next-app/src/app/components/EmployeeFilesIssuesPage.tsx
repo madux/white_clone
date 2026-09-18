@@ -40,7 +40,11 @@ function classificationBadge(classification: string) {
   }
 }
 
-export default function EmployeeFilesIssuesPage() {
+export default function EmployeeFilesIssuesPage({
+  embedded = false,
+}: {
+  embedded?: boolean;
+}) {
   const [category, setCategory] = useState("all");
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
@@ -76,14 +80,18 @@ export default function EmployeeFilesIssuesPage() {
   }, [issues.data?.summary.categories]);
 
   return (
-    <div className={PAGE_CLASS}>
+    <div className={embedded ? "space-y-6" : PAGE_CLASS}>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <Link
-          href="/pages/employee"
-          className="text-sm font-semibold text-brand-pink hover:underline"
-        >
-          ← Back
-        </Link>
+        {!embedded ? (
+          <Link
+            href="/pages/employee"
+            className="text-sm font-semibold text-brand-pink hover:underline"
+          >
+            ← Back
+          </Link>
+        ) : (
+          <span />
+        )}
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -164,23 +172,25 @@ export default function EmployeeFilesIssuesPage() {
                   ? "Everything reconciled for now."
                   : "Try another category or return after the next EMS sync."}
             </p>
-            <Link
-              href="/pages/employee"
-              className="mt-6 inline-flex rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(232,62,140,0.18)]"
-            >
-              Open Employee Files
-            </Link>
+            {!embedded ? (
+              <Link
+                href="/pages/employee"
+                className="mt-6 inline-flex rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(232,62,140,0.18)]"
+              >
+                Open Employee Files
+              </Link>
+            ) : null}
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+            <div className="dms-table-wrap overflow-x-auto">
+              <table className="dms-table min-w-full">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                    <th className="px-5 py-3.5">Issue</th>
-                    <th className="px-5 py-3.5">Employee</th>
-                    <th className="px-5 py-3.5">Details</th>
-                    <th className="px-5 py-3.5 text-right">Action</th>
+                  <tr>
+                    <th>Issue</th>
+                    <th>Employee</th>
+                    <th>Details</th>
+                    <th className="dms-col-actions">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -223,7 +233,7 @@ export default function EmployeeFilesIssuesPage() {
                         <td className="max-w-md px-5 py-4 align-top text-slate-600">
                           <p className="line-clamp-3 leading-relaxed">{issue.details || "—"}</p>
                         </td>
-                        <td className="px-5 py-4 align-top text-right">
+                        <td className="dms-col-actions align-top">
                           {issue.source === "exclusion" ? (
                             <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500">
                               Excluded

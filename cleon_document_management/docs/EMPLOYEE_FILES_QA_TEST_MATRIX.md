@@ -57,10 +57,10 @@ Update **Status** when you run tests.
 | EF-D3-E1 | — | `expiry_applicable` → upload without date blocked (UI + API) |
 | EF-D3-E2 | — | Expiry cron `_cron_send_expiry_alerts` / `expiry_alert_days` param |
 | EF-D4 | Partial | `classification_state`; reclassify API |
-| EF-D5 | Partial | Global search API; column picker TBD |
+| EF-D5 | Pass | Browse toolbar: search, filters, list/card, column picker, sort, pagination (groups/employees/documents) |
 | EF-D6 | Partial | Preview/actions; reclassify endpoint |
 | EF-D7 | Partial | Favourite API; export uses existing download |
-| EF-D8 | Partial | `doc.document.relation` + API |
+| EF-D8 | Pass | Relations UI in viewer; bidirectional list; add/remove link; version history current marker |
 | EF-D9 | Partial | Signature request stub + EF-F8 toggle |
 | EF-D10 | Pass | Compliance tab on profile |
 
@@ -70,7 +70,7 @@ Update **Status** when you run tests.
 |----|--------|---------------|
 | EF-E1 | Pass | `reconcile_employee_from_ems` → system group membership |
 | EF-E2 | Pass | Create employee → reconcile (file, issues, exclusions) when setup complete |
-| EF-E3 | Pass | EMS write → config exclusions synced; ineligible employees wound down |
+| EF-E3 | Pass | EMS write → audit log (old/new), chatter, email + activity for dept/job/status; reconcile |
 | EF-E4 | Pass | Assign primary org attribute in EMS → unresolved issue auto-resolved |
 | EF-E5 | Pass | Settings change `include_inactive` / `exclude_test_employees` → bulk reconcile |
 | EF-E6 | Pass | Daily cron `cron_reconcile_all_companies` — all tenants with `setup_complete` |
@@ -84,12 +84,24 @@ Update **Status** when you run tests.
 | EF-F2 | Pass | Settings → General organizing dimensions + preview |
 | EF-F3 | Pass | Existing document types section |
 | EF-F4 | Pass | Employee Files settings panel |
-| EF-F5 | Partial | Category matrix JSON |
+| EF-F5 | Partial | Per-user EF roles replace global category matrix JSON for authorization |
 | EF-F6 | Partial | Notification routing JSON |
 | EF-F7 | Partial | Integration mapping JSON |
 | EF-F8 | Partial | E-sign enable + stub provider |
 | EF-F9 | Pass | Lifecycle settings (existing) |
 | EF-F10 | Partial | Max retries + escalation user |
+
+## EF-R · Roles & permissions
+
+| ID | Status | Where |
+|----|--------|-------|
+| EF-R1 | Pass | Settings → Roles: create custom EF role (scope + category rows + actions) |
+| EF-R2 | Pass | View parent: disabling View clears dependent actions in UI; API rejects upload without view |
+| EF-R3 | Pass | Assign multiple EF roles per user; effective permission is union of roles |
+| EF-R4 | Pass | Own team scope: manager sees direct reports only (UI + API employee profile) |
+| EF-R5 | Pass | Migration seed **Full Employee Files access (migrated)** for legacy Document Managers |
+| EF-R6 | Pass | Platform administrator toggle (Document Platform Administrator) separate from EF roles |
+| EF-R7 | Pass | `/api/me` returns `employee_files_permissions`; EF UI gates use `can_approve` / `can_access_ef_home` |
 
 ## EF-G · Platform integrity
 

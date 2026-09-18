@@ -113,6 +113,7 @@ class DocEmployeeFile(models.Model):
             "id": self.id,
             "employee_id": employee.id,
             "employee_name": employee.name,
+            "employee_identification": employee.identification_id or employee.barcode or "",
             "department_id": employee.department_id.id if employee.department_id else False,
             "department_name": employee.department_id.name if employee.department_id else "",
             "job_title": employee.job_id.name if employee.job_id else "",

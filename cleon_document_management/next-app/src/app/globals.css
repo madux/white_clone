@@ -1406,6 +1406,385 @@ select.field option {
   box-shadow: none;
 }
 
+/* ——— App-wide data tables ——— */
+.dms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.dms-table thead th {
+  padding: 0.875rem 1.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  background: #f8fafc;
+  vertical-align: middle;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dms-table tbody td {
+  padding: 1rem 1.25rem;
+  vertical-align: middle;
+  text-align: left;
+  color: #334155;
+}
+
+.dms-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dms-table tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.dms-table .dms-col-num,
+.dms-table th.dms-col-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  width: 6.5rem;
+  min-width: 6.5rem;
+}
+
+.dms-table th.dms-col-num--wide {
+  width: 8.5rem;
+  min-width: 8.5rem;
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.dms-table thead th button {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.dms-table thead th button:hover {
+  color: #be1463;
+}
+
+.dms-table .dms-col-actions,
+.dms-table th.dms-col-actions {
+  text-align: right;
+  width: 1%;
+  white-space: nowrap;
+}
+
+.dms-table .dms-col-check,
+.dms-table th.dms-col-check {
+  width: 3rem;
+  padding-left: 1.25rem;
+  padding-right: 0.5rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.dms-table-wrap {
+  overflow-x: auto;
+}
+
+/* ——— Employee file tree column alignment ——— */
+.employee-tree-cols.employee-tree-row-file,
+.employee-tree-cols.employee-tree-row-folder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 14px;
+}
+
+.employee-tree-leading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 8rem;
+  min-width: 0;
+  padding-left: 14px;
+}
+
+.employee-tree-leading .employee-tree-col-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.employee-tree-cols--admin,
+.employee-tree-cols--personal {
+  padding-left: 0;
+}
+
+.employee-tree-col-check {
+  flex: 0 0 1.25rem;
+  width: 1.25rem;
+}
+
+.employee-tree-col-toggle {
+  flex: 0 0 1.75rem;
+  width: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.employee-tree-col-icon {
+  flex: 0 0 1.25rem;
+  width: 1.25rem;
+}
+
+.employee-tree-col-name {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+.employee-tree-col-category {
+  flex: 0 0 6rem;
+  width: 6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.employee-tree-col-doctype {
+  flex: 0 0 8rem;
+  width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.employee-tree-col-upload-date {
+  flex: 0 0 7rem;
+  width: 7rem;
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.employee-tree-col-version {
+  flex: 0 0 3.25rem;
+  width: 3.25rem;
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.employee-tree-col-status {
+  flex: 0 0 8.5rem;
+  width: 8.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.employee-tree-col-actions {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 9rem;
+}
+
+.employee-tree-cols--admin .employee-tree-col-header {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.employee-tree-cols--admin .employee-tree-col-category,
+.employee-tree-cols--admin .employee-tree-col-doctype,
+.employee-tree-cols--admin .employee-tree-col-upload-date,
+.employee-tree-cols--admin .employee-tree-col-version,
+.employee-tree-cols--admin .employee-tree-col-status {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .employee-tree-cols--admin .employee-tree-col-doctype {
+    display: block;
+  }
+  .employee-tree-cols--admin .employee-tree-col-status {
+    display: flex;
+  }
+  .employee-tree-cols--admin .employee-tree-col-header.employee-tree-col-doctype,
+  .employee-tree-cols--admin .employee-tree-col-header.employee-tree-col-status {
+    display: block;
+  }
+}
+
+@media (min-width: 768px) {
+  .employee-tree-cols--admin .employee-tree-col-upload-date,
+  .employee-tree-cols--admin .employee-tree-col-version {
+    display: block;
+  }
+  .employee-tree-cols--admin .employee-tree-col-header.employee-tree-col-upload-date,
+  .employee-tree-cols--admin .employee-tree-col-header.employee-tree-col-version {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+  .employee-tree-cols--admin .employee-tree-col-category {
+    display: block;
+  }
+  .employee-tree-cols--admin .employee-tree-col-header.employee-tree-col-category {
+    display: block;
+  }
+}
+
+.employee-tree-cols--personal .employee-tree-col-header {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.employee-tree-cols.employee-tree-cols--personal.employee-tree-row-file,
+.employee-tree-cols.employee-tree-cols--personal.employee-tree-row-folder {
+  display: grid;
+  grid-template-columns:
+    1.25rem 1.75rem 1.25rem minmax(0, 1fr) 6rem 8.5rem 7rem
+    minmax(8.5rem, max-content);
+  gap: 10px;
+  align-items: center;
+}
+
+.employee-tree-cols--personal .employee-tree-leading {
+  grid-column: 1 / 5;
+  flex: unset;
+  min-width: 0;
+}
+
+.employee-tree-cols--personal > .employee-tree-col-category {
+  grid-column: 5;
+  flex: unset;
+  width: auto;
+}
+
+.employee-tree-cols--personal > .employee-tree-col-status {
+  grid-column: 6;
+  flex: unset;
+  width: auto;
+}
+
+.employee-tree-cols--personal > .employee-tree-col-upload-date {
+  grid-column: 7;
+  flex: unset;
+  width: auto;
+}
+
+.employee-tree-cols--personal > .employee-tree-col-actions {
+  grid-column: 8;
+  margin-left: 0;
+  flex: unset;
+  min-width: 0;
+  justify-self: end;
+}
+
+.employee-tree-cols--personal .employee-tree-col-category,
+.employee-tree-cols--personal .employee-tree-col-status,
+.employee-tree-cols--personal .employee-tree-col-upload-date {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .employee-tree-cols--personal .employee-tree-col-category {
+    display: block;
+  }
+  .employee-tree-cols--personal .employee-tree-col-status {
+    display: flex;
+  }
+  .employee-tree-cols--personal .employee-tree-col-header.employee-tree-col-category,
+  .employee-tree-cols--personal .employee-tree-col-header.employee-tree-col-status {
+    display: block;
+    flex-wrap: nowrap;
+    align-items: unset;
+    justify-content: unset;
+    gap: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .employee-tree-cols--personal .employee-tree-col-upload-date {
+    display: block;
+  }
+  .employee-tree-cols--personal .employee-tree-col-header.employee-tree-col-upload-date {
+    display: block;
+  }
+}
+
+.employee-tree-cols--personal .employee-tree-col-doctype,
+.employee-tree-cols--personal .employee-tree-col-version {
+  display: none !important;
+}
+
+.dms-table--employee-files-docs {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.dms-table--employee-files-docs .dms-col-doc-name {
+  width: 22%;
+  min-width: 10rem;
+}
+
+.dms-table--employee-files-docs .dms-col-employee-name {
+  width: 16%;
+  min-width: 8rem;
+}
+
+.dms-table--employee-files-docs td.dms-col-doc-name,
+.dms-table--employee-files-docs td.dms-col-employee-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0;
+}
+
+.employee-tree-row-version.employee-tree-cols {
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+  min-height: 44px;
+}
+
+.employee-tree-row-version .employee-tree-col-name {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.employee-tree-row-version .employee-tree-version-line {
+  margin-top: 0.55rem;
+}
+
+.employee-tree-badge.outdated {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
 .table-actions-header,
 .table-actions-cell {
   text-align: center;
@@ -1969,6 +2348,29 @@ select.field option {
   margin-top: 0;
 }
 
+.roles-admin-page.is-embedded .roles-admin-sidebar {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.roles-admin-page.is-embedded .roles-admin-detail .roles-admin-panel {
+  background: #fff;
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.roles-admin-page.is-embedded .roles-admin-search {
+  border-color: #e2e8f0;
+  background: #fff;
+}
+
+.roles-admin-sidebar label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+
 .roles-admin-toolbar {
   display: flex;
   justify-content: space-between;
@@ -1987,4 +2389,186 @@ select.field option {
   .roles-admin-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ——— Employee Files role category access matrix ——— */
+.ef-role-access {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ef-role-access__intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ef-role-access__hint {
+  margin: 6px 0 0;
+  max-width: 42rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.ef-role-access__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  border: 1px solid #f9a8d4;
+  background: #fdf2f8;
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #be185d;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.ef-role-access__add:hover {
+  background: #fce7f3;
+  border-color: #f472b6;
+}
+
+.ef-role-access__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ef-role-access-row {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fafbfc 0%, #fff 48px);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.ef-role-access-row__header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ef-role-access-row__title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.ef-role-access-row__target {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ef-role-access-target-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.ef-role-access-row__remove {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.ef-role-access-row__remove:hover {
+  color: #dc2626;
+}
+
+.ef-role-access-matrix-wrap {
+  overflow-x: auto;
+  padding: 0 12px 14px;
+}
+
+.ef-role-access-matrix {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.ef-role-access-matrix thead th {
+  padding: 10px 6px 8px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  text-align: center;
+  vertical-align: bottom;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ef-role-access-matrix__label {
+  display: block;
+  white-space: nowrap;
+}
+
+.ef-role-access-matrix tbody td {
+  padding: 10px 6px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.ef-role-access-matrix__cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ef-role-access-matrix__cell:hover:not(.is-disabled) {
+  border-color: #f9a8d4;
+  background: #fffafb;
+}
+
+.ef-role-access-matrix__cell.is-on {
+  border-color: #e83e8c;
+  background: linear-gradient(145deg, #fff1f7 0%, #fce7f3 100%);
+  box-shadow: 0 0 0 3px rgb(232 62 140 / 0.12);
+}
+
+.ef-role-access-matrix__cell.is-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ef-role-access-matrix__check {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 3px;
+  background: transparent;
+  box-shadow: inset 0 0 0 2px #cbd5e1;
+}
+
+.ef-role-access-matrix__cell.is-on .ef-role-access-matrix__check {
+  background: #e83e8c;
+  box-shadow: none;
 }

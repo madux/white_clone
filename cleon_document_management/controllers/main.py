@@ -225,8 +225,6 @@ def _process_document_upload(
             raise ValidationError(_("The document type does not match the existing file."))
         if employee and document.employee_id.id != employee.id:
             raise ValidationError(_("This file belongs to another employee."))
-        if folder and document.folder_id.id != folder.id:
-            raise ValidationError(_("This file belongs to another folder."))
         if not document.active or document.deleted_at:
             raise ValidationError(_("Cannot create a new version for an inactive document."))
         document.replace_file_from_upload(
@@ -1936,7 +1934,13 @@ class DocumentUICreation(http.Controller):
         if not doc or not doc.attachment_id:
             return request.not_found()
         doc.check_access_rule("read")
-        attachment = doc._effective_preview_attachment()
+        variant = request.httprequest.args.get("variant")
+        if variant == "current":
+            attachment = doc.attachment_id
+        elif variant == "pending":
+            attachment = doc.pending_attachment_id
+        else:
+            attachment = doc._effective_preview_attachment()
         if not attachment:
             return request.not_found()
         return request.make_response(

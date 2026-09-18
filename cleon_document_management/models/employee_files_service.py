@@ -22,6 +22,12 @@ _logger = logging.getLogger(__name__)
 
 SETUP_PROGRESS_BATCH = 25
 
+EMS_TRACKED_ORG_FIELDS = {
+    "department_id": (_("Department"), _("Employee moved")),
+    "job_id": (_("Job position"), _("Employee job updated")),
+    "active": (_("Employment status"), _("Employee status updated")),
+}
+
 # EF-D1 / EF-F1: configurable employee file header fields (hr.employee keys).
 HEADER_FIELD_CATALOG = [
     {"key": "employee_id", "label": "Employee ID", "ems_managed": True},
@@ -1470,11 +1476,19 @@ class DocEmployeeFilesService(models.AbstractModel):
         return groups
 
     @api.model
-    def _employee_file_search_domain(self, search=None):
+    def _employee_file_search_domain(self, search=None, department_id=None):
         domain = [("company_id", "=", self.env.company.id)]
+        if department_id and str(department_id) != "all":
+            if str(department_id).isdigit():
+                domain.append(("employee_id.department_id", "=", int(department_id)))
+            else:
+                domain.append(
+                    ("employee_id.department_id.name", "ilike", str(department_id))
+                )
         needle = (search or "").strip()
         if needle:
             domain += [
+                "|",
                 "|",
                 "|",
                 "|",
@@ -1482,20 +1496,37 @@ class DocEmployeeFilesService(models.AbstractModel):
                 ("employee_id.barcode", "ilike", needle),
                 ("employee_id.work_email", "ilike", needle),
                 ("employee_id.identification_id", "ilike", needle),
+                ("employee_id.department_id.name", "ilike", needle),
             ]
         return domain
 
     @api.model
-    def list_employee_files(self, search=None, limit=10, offset=0):
+    def list_employee_files(
+        self, search=None, limit=10, offset=0, department_id=None, order="name asc"
+    ):
         limit = max(1, min(int(limit or 10), 100))
         offset = max(0, int(offset or 0))
-        domain = self._employee_file_search_domain(search)
+        domain = self._employee_file_search_domain(search, department_id=department_id)
         EmployeeFile = self.env["doc.employee.file"]
+        order = self._sanitize_employee_file_order(order)
         total = EmployeeFile.search_count(domain)
         files = EmployeeFile.search(
-            domain, limit=limit, offset=offset, order="employee_id"
+            domain, limit=limit, offset=offset, order=order
         )
         return files, total
+
+    @api.model
+    def _sanitize_employee_file_order(self, order):
+        allowed = {
+            "name asc": "employee_id asc",
+            "name desc": "employee_id desc",
+            "department asc": "employee_id asc",
+            "department desc": "employee_id desc",
+            "documents asc": "document_count asc",
+            "documents desc": "document_count desc",
+        }
+        key = (order or "name asc").strip().lower()
+        return allowed.get(key, "employee_id asc")
 
     @api.model
     def list_group_members(self, group_id, search=None, limit=10, offset=0):
@@ -1524,45 +1555,134 @@ class DocEmployeeFilesService(models.AbstractModel):
         return files, total
 
     @api.model
+    def _employee_document_search_domain(self, filters=None):
+        filters = filters or {}
+        company = self.env.company
+        domain = [
+            ("employee_id", "!=", False),
+            ("employee_id.company_id", "=", company.id),
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+        ]
+        query = (filters.get("query") or "").strip()
+        if query:
+            domain += [
+                "|",
+                "|",
+                "|",
+                "|",
+                ("name", "ilike", query),
+                ("document_type_id.name", "ilike", query),
+                ("employee_id.name", "ilike", query),
+                ("employee_id.identification_id", "ilike", query),
+                ("document_type_id.category", "ilike", query),
+            ]
+        category = filters.get("category")
+        if category and category != "all":
+            domain.append(("document_type_id.category", "=", category))
+        document_type_id = filters.get("document_type_id")
+        if document_type_id and str(document_type_id) != "all":
+            domain.append(("document_type_id", "=", int(document_type_id)))
+        department_id = filters.get("department_id")
+        if department_id and str(department_id) != "all":
+            if str(department_id).isdigit():
+                domain.append(("employee_id.department_id", "=", int(department_id)))
+            else:
+                domain.append(
+                    ("employee_id.department_id.name", "ilike", str(department_id))
+                )
+        source = filters.get("source")
+        if source == "employee":
+            domain.append(("folder_id.folder_type", "=", "employee"))
+        elif source == "organizational":
+            domain.append(("folder_id.folder_type", "=", "organizational"))
+        status = filters.get("status")
+        if status and status != "all":
+            if status == "pending_approval":
+                domain.append(("approval_state", "=", "pending"))
+            elif status == "expired":
+                domain.append(("state", "=", "expired"))
+            elif status == "expiring_30":
+                today = fields.Date.context_today(self)
+                domain += [
+                    ("has_expiry", "=", True),
+                    ("expiry_date", ">=", today),
+                    ("expiry_date", "<=", fields.Date.add(today, days=30)),
+                ]
+            else:
+                domain.append(("state", "=", status))
+        return domain
+
+    @api.model
+    def _sanitize_document_search_order(self, order):
+        allowed = {
+            "name asc": "name asc",
+            "name desc": "name desc",
+            "upload_date asc": "create_date asc",
+            "upload_date desc": "create_date desc",
+            "employee asc": "employee_id asc",
+            "employee desc": "employee_id desc",
+            "status asc": "state asc",
+            "status desc": "state desc",
+            "expiry asc": "expiry_date asc",
+            "expiry desc": "expiry_date desc",
+        }
+        key = (order or "upload_date desc").strip().lower()
+        return allowed.get(key, "create_date desc")
+
+    @api.model
+    def search_employee_documents(self, filters=None, limit=25, offset=0, order=None):
+        limit = max(1, min(int(limit or 25), 100))
+        offset = max(0, int(offset or 0))
+        Document = self.env["doc.document"]
+        domain = self._employee_document_search_domain(filters)
+        sort = self._sanitize_document_search_order(order)
+        total = Document.search_count(domain)
+        docs = Document.search(domain, limit=limit, offset=offset, order=sort)
+        user = self.env.user
+        items = []
+        for doc in docs:
+            try:
+                doc.check_access_rule("read")
+            except AccessError:
+                continue
+            row = doc.serialize_for_api(user)
+            folder = doc.folder_id
+            row["source_module"] = (
+                "employee_files"
+                if folder.folder_type == "employee"
+                else "organizational_files"
+            )
+            row["source_module_label"] = (
+                _("Employee Files")
+                if folder.folder_type == "employee"
+                else _("Organizational Files")
+            )
+            items.append(row)
+        return items, total
+
+    @api.model
     def global_search(self, query, scope="all", limit=50):
         query = (query or "").strip()
         if not query:
             return {"employees": [], "documents": []}
         EmployeeFile = self.env["doc.employee.file"]
-        Document = self.env["doc.document"]
+        limit = max(1, min(int(limit or 50), 100))
         employees = []
         documents = []
         if scope in ("all", "employees"):
-            files = EmployeeFile.search(
-                [
-                    ("company_id", "=", self.env.company.id),
-                    "|",
-                    ("employee_id.name", "ilike", query),
-                    ("employee_id.identification_id", "ilike", query),
-                ],
-                limit=limit,
+            files, _total = self.list_employee_files(
+                search=query, limit=limit, offset=0
             )
-            employees = [f.serialize_for_api() for f in files]
+            user = self.env.user
+            employees = [f.serialize_for_api(user) for f in files]
         if scope in ("all", "documents"):
-            docs = Document.search(
-                [
-                    ("employee_id.company_id", "=", self.env.company.id),
-                    "|",
-                    ("name", "ilike", query),
-                    ("document_type_id.name", "ilike", query),
-                ],
+            items, _total = self.search_employee_documents(
+                {"query": query},
                 limit=limit,
+                offset=0,
             )
-            documents = [
-                {
-                    "id": doc.id,
-                    "name": doc.name,
-                    "employee_id": doc.employee_id.id if doc.employee_id else False,
-                    "employee_name": doc.employee_id.name if doc.employee_id else "",
-                    "state": doc.state,
-                }
-                for doc in docs
-            ]
+            documents = items
         return {"employees": employees, "documents": documents}
 
     @api.model
@@ -1901,29 +2021,166 @@ class DocEmployeeFilesService(models.AbstractModel):
             parents.write({"member_ids": [(3, employee_file.id)]})
 
     @api.model
-    def on_employee_changed(self, employee, changed_fields=None):
-        org_fields = {
-            "department_id",
-            "active",
-            "job_id",
-        }
-        if changed_fields and org_fields.intersection(changed_fields):
-            config = self.env["doc.employee.files.config"].get_for_company(
-                employee.company_id
+    def _ems_field_display(self, employee, field_name):
+        employee = employee.sudo()
+        if field_name == "department_id":
+            return employee.department_id.name if employee.department_id else _("(none)")
+        if field_name == "job_id":
+            return employee.job_id.name if employee.job_id else _("(none)")
+        if field_name == "active":
+            return _("Active") if employee.active else _("Inactive")
+        return str(employee[field_name] or "")
+
+    @api.model
+    def log_ems_organizational_changes(self, employee, before_values):
+        """Persist EMS audit rows, chatter, email, and activities for org field changes."""
+        if not before_values:
+            return
+        config = self.env["doc.employee.files.config"].get_for_company(
+            employee.company_id
+        )
+        if not config.setup_complete:
+            return
+        employee_file = self.env["doc.employee.file"].sudo().search(
+            [
+                ("employee_id", "=", employee.id),
+                ("company_id", "=", employee.company_id.id),
+            ],
+            limit=1,
+        )
+        if not employee_file:
+            return
+        ChangeLog = self.env["doc.employee.file.change.log"].sudo()
+        for field_name, old_display in before_values.items():
+            meta = EMS_TRACKED_ORG_FIELDS.get(field_name)
+            if not meta:
+                continue
+            field_label, event_label = meta
+            new_display = self._ems_field_display(employee, field_name)
+            if (old_display or "") == (new_display or ""):
+                continue
+            log = ChangeLog.create(
+                {
+                    "company_id": employee.company_id.id,
+                    "employee_file_id": employee_file.id,
+                    "event_label": event_label,
+                    "field_name": field_name,
+                    "field_label": field_label,
+                    "old_value": old_display,
+                    "new_value": new_display,
+                }
             )
-            if config.setup_complete:
-                employee_file = self.env["doc.employee.file"].sudo().search(
-                    [
-                        ("employee_id", "=", employee.id),
-                        ("company_id", "=", employee.company_id.id),
-                    ],
-                    limit=1,
+            body = _(
+                "<p><strong>%(event)s</strong></p>"
+                "<p>%(field)s: %(old)s → %(new)s</p>"
+                "<p><em>%(time)s</em></p>"
+            ) % {
+                "event": event_label,
+                "field": field_label,
+                "old": old_display or "—",
+                "new": new_display or "—",
+                "time": fields.Datetime.to_string(log.changed_at),
+            }
+            employee_file.message_post(body=body, message_type="notification")
+            self._notify_ems_change_recipients(
+                employee_file, log, config, event_label, field_label, old_display, new_display
+            )
+            log.write({"notified": True})
+
+    @api.model
+    def _notify_ems_change_recipients(
+        self,
+        employee_file,
+        log,
+        config,
+        event_label,
+        field_label,
+        old_display,
+        new_display,
+    ):
+        manager_users = self.env["res.users"].sudo().search(
+            [
+                ("active", "=", True),
+                ("employee_files_role_ids", "!=", False),
+            ]
+        )
+        legacy_group = self.env.ref(
+            "cleon_document_management.group_document_manager",
+            raise_if_not_found=False,
+        )
+        if legacy_group:
+            manager_users |= legacy_group.users
+        admin_group = self.env.ref(
+            "cleon_document_management.group_document_admin",
+            raise_if_not_found=False,
+        )
+        if admin_group:
+            manager_users |= admin_group.users
+        manager_users = manager_users.filtered(lambda user: user.active and user.email)
+        if not manager_users:
+            return
+        employee_name = employee_file.employee_id.name or _("Employee")
+        subject = _("%(event)s — %(employee)s") % {
+            "event": event_label,
+            "employee": employee_name,
+        }
+        body_html = _(
+            "<p>An employee record was updated in EMS.</p>"
+            "<ul>"
+            "<li><strong>Employee:</strong> %(employee)s</li>"
+            "<li><strong>Change:</strong> %(event)s</li>"
+            "<li><strong>Field:</strong> %(field)s</li>"
+            "<li><strong>Previous value:</strong> %(old)s</li>"
+            "<li><strong>New value:</strong> %(new)s</li>"
+            "<li><strong>Time:</strong> %(time)s</li>"
+            "</ul>"
+        ) % {
+            "employee": employee_name,
+            "event": event_label,
+            "field": field_label,
+            "old": old_display or "—",
+            "new": new_display or "—",
+            "time": fields.Datetime.to_string(log.changed_at),
+        }
+        Mail = self.env["mail.mail"].sudo()
+        for user in manager_users:
+            try:
+                Mail.create(
+                    {
+                        "subject": subject,
+                        "body_html": body_html,
+                        "email_to": user.email,
+                        "auto_delete": True,
+                    }
+                ).send()
+            except Exception:
+                _logger.exception(
+                    "Employee Files EMS change mail failed for %s", user.email
                 )
-                if employee_file:
-                    employee_file.message_post(
-                        body=_("Employee organizational data changed in EMS: %s")
-                        % ", ".join(sorted(changed_fields.keys()))
-                    )
+        activity_type = self.env.ref(
+            "mail.mail_activity_data_todo", raise_if_not_found=False
+        )
+        if activity_type:
+            summary = _("%(event)s: %(employee)s") % {
+                "event": event_label,
+                "employee": employee_name,
+            }
+            note = _("%(field)s: %(old)s → %(new)s") % {
+                "field": field_label,
+                "old": old_display or "—",
+                "new": new_display or "—",
+            }
+            for user in manager_users:
+                employee_file.activity_schedule(
+                    activity_type_id=activity_type.id,
+                    user_id=user.id,
+                    date_deadline=fields.Date.context_today(self),
+                    summary=summary,
+                    note=note,
+                )
+
+    @api.model
+    def on_employee_changed(self, employee, changed_fields=None):
         self.reconcile_employee_from_ems(employee)
 
     @api.model
@@ -2196,6 +2453,14 @@ class DocEmployeeFilesService(models.AbstractModel):
             return " ".join(text.split())
 
         activity_log = []
+        change_logs = (
+            env["doc.employee.file.change.log"]
+            .sudo()
+            .search([("employee_file_id", "=", employee_file.id)], limit=limit)
+        )
+        for entry in change_logs:
+            activity_log.append(entry.serialize_for_activity())
+
         message_domain = [
             ("message_type", "in", ["comment", "notification"]),
             "|",

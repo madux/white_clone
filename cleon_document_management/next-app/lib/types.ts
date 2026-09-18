@@ -1,3 +1,27 @@
+export interface EmployeeFilesPermissions {
+  can_access_ef_home: boolean;
+  is_platform_admin: boolean;
+  has_legacy_manager: boolean;
+  assigned_role_ids: number[];
+  assigned_role_names: string[];
+  employee_scopes: Array<"own_team" | "department" | "all">;
+  actions_any_category: Partial<
+    Record<
+      | "view"
+      | "upload"
+      | "approve"
+      | "download"
+      | "archive"
+      | "delete"
+      | "export"
+      | "manage_settings",
+      boolean
+    >
+  >;
+  can_approve: boolean;
+  can_manage_ef_settings: boolean;
+}
+
 export interface User {
   id: number;
   name: string;
@@ -8,11 +32,66 @@ export interface User {
   is_admin?: boolean;
   is_document_manager?: boolean;
   is_document_admin?: boolean;
+  employee_files_permissions?: EmployeeFilesPermissions;
+}
+
+export interface EmployeeFilesRoleLine {
+  id?: number;
+  sequence?: number;
+  applies_all_categories: boolean;
+  document_type_id?: number | false;
+  document_type_name?: string;
+  category_group?: string;
+  actions: {
+    view: boolean;
+    upload: boolean;
+    approve: boolean;
+    download: boolean;
+    archive: boolean;
+    delete: boolean;
+    export: boolean;
+    manage_settings: boolean;
+  };
+}
+
+export interface EmployeeFilesRole {
+  id?: number;
+  name: string;
+  description?: string;
+  active?: boolean;
+  company_id?: number;
+  employee_scope: "own_team" | "department" | "all";
+  is_migration_seed?: boolean;
+  lines: EmployeeFilesRoleLine[];
+  assigned_user_ids?: number[];
+}
+
+export interface EmployeeFilesRoleMember {
+  employee_id: number;
+  employee_name: string;
+  department: string;
+  job_title: string;
+  user_id: number | false;
+  user_name: string;
+  user_login: string;
+  has_login: boolean;
+  employee_files_role_ids: number[];
+}
+
+export interface EmployeeFilesRoleMembersPayload {
+  roles: EmployeeFilesRole[];
+  members: EmployeeFilesRoleMember[];
+}
+
+export interface EmployeeFilesDocumentTypeOption {
+  id: number;
+  name: string;
+  category_group: string;
 }
 
 export interface ModuleRoleDefinition {
   id: number;
-  role_key: "user" | "manager" | "admin";
+  role_key: "user" | "admin";
   label: string;
   description: string;
   capabilities: string;
@@ -29,11 +108,11 @@ export interface ModuleRoleMember {
   user_name: string;
   user_login: string;
   has_login: boolean;
-  roles: Partial<Record<"user" | "manager" | "admin", boolean>>;
+  roles: Partial<Record<"user" | "admin", boolean>>;
 }
 
 export interface ModuleRoleAssignment {
-  role_key: "manager" | "admin";
+  role_key: "admin";
   enabled: boolean;
 }
 
@@ -109,6 +188,24 @@ export interface DocDocument {
   current_version_number?: number;
   document_category?: string;
   document_category_label?: string;
+}
+
+export type DocumentRelationType =
+  | "amendment"
+  | "renewal"
+  | "supporting"
+  | "related";
+
+export interface DocDocumentRelation {
+  id: number;
+  relation_type: DocumentRelationType;
+  relation_type_label: string;
+  direction: "outgoing" | "incoming";
+  related_document_id: number;
+  related_document_name: string;
+  related_employee_id: number | false;
+  related_employee_name: string;
+  related_document_type?: string;
 }
 
 export interface ExpiringDocument {
@@ -675,6 +772,7 @@ export interface EmployeeFileSummary {
   id: number;
   employee_id: number;
   employee_name: string;
+  employee_identification?: string;
   department_id: number | false;
   department_name: string;
   job_title: string;

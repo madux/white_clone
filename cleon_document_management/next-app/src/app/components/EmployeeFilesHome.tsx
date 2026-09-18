@@ -1,27 +1,92 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useEmployeeFileGroups,
   useEmployeeFilesConfig,
+  useEmployeeFilesDocumentSearch,
   useEmployeeFilesHomeStats,
+  useEmployeeFileSummaries,
 } from "../../../hooks/useEmployeeFiles";
+import {
+  useApprovalInbox,
+  useDocumentTypes,
+  usePendingEmployeeUploads,
+} from "../../../hooks/useDocuments";
 import SectionTabs from "./SectionTabs";
-import { api } from "../../../lib/api";
 import EmployeeFilesGroupExplorer from "./EmployeeFilesGroupExplorer";
+import EmployeeFilesGroupCardGrid from "./EmployeeFilesGroupCardGrid";
+import EmployeeFilesBrowseToolbar from "./EmployeeFilesBrowseToolbar";
+import EmployeeFilesDocumentResults from "./EmployeeFilesDocumentResults";
+import EmployeeFilesEmployeeResults from "./EmployeeFilesEmployeeResults";
 import { employeeFileDimensionLabel } from "../../../lib/employeeFileDimensions";
 import type { EmployeeFileGroup } from "../../../lib/types";
+import EmployeeFilesIssuesPage from "./EmployeeFilesIssuesPage";
+import EmployeeFilesPendingApprovalsPanel from "./EmployeeFilesPendingApprovalsPanel";
+import { EMPLOYEE_FILE_LIST_PAGE_SIZE } from "../../../lib/employeeFileListPageSize";
+import {
+  DEFAULT_EMPLOYEE_FILES_BROWSE_FILTERS,
+  loadEmployeeFilesBrowsePreferences,
+  saveEmployeeFilesBrowsePreferences,
+  type EmployeeFilesBrowseFilters,
+} from "../../../lib/employeeFilesBrowsePreferences";
 
 type HomeView = "groups" | "employees" | "documents";
+type WorkspaceTab = "browse" | "pending-approvals" | "issues";
+
+const DOCUMENT_PAGE_SIZE = 25;
+
+function workspaceTabFromParam(value: string | null): WorkspaceTab {
+  if (value === "issues") return "issues";
+  if (value === "pending-approvals" || value === "pending") return "pending-approvals";
+  return "browse";
+}
+
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [value, delayMs]);
+  return debounced;
+}
 
 export default function EmployeeFilesHome() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const workspaceTab = workspaceTabFromParam(searchParams.get("tab"));
   const config = useEmployeeFilesConfig();
   const stats = useEmployeeFilesHomeStats();
+  const documentTypes = useDocumentTypes();
+  const pendingUploads = usePendingEmployeeUploads(true);
+  const approvalInbox = useApprovalInbox(true);
+
+  const [browsePrefs, setBrowsePrefs] = useState(() =>
+    loadEmployeeFilesBrowsePreferences(),
+  );
   const [view, setView] = useState<HomeView>("groups");
   const [search, setSearch] = useState("");
   const [dimension, setDimension] = useState("");
-  const [globalDocs, setGlobalDocs] = useState<any[]>([]);
+  const [documentFilters, setDocumentFilters] = useState<EmployeeFilesBrowseFilters>(
+    DEFAULT_EMPLOYEE_FILES_BROWSE_FILTERS,
+  );
+  const [employeeDepartmentId, setEmployeeDepartmentId] = useState("all");
+  const [employeePage, setEmployeePage] = useState(1);
+  const [documentPage, setDocumentPage] = useState(1);
+
+  const debouncedSearch = useDebouncedValue(search, 350);
+
+  const persistPrefs = useCallback(
+    (patch: Partial<typeof browsePrefs>) => {
+      setBrowsePrefs((prev) => {
+        const next = { ...prev, ...patch };
+        saveEmployeeFilesBrowsePreferences(next);
+        return next;
+      });
+    },
+    [],
+  );
 
   const primaryDimension =
     dimension ||
@@ -32,31 +97,60 @@ export default function EmployeeFilesHome() {
   const homeGroups = useEmployeeFileGroups({
     for_home: true,
     dimension: primaryDimension,
-    search: view === "groups" ? search : undefined,
+    search: view === "groups" ? debouncedSearch : undefined,
   });
 
-  const allEmployeesTreeGroup = useMemo((): EmployeeFileGroup | null => {
-    if (view !== "employees" || !stats.data?.employee_files_initialized) {
-      return null;
-    }
-    return {
-      id: 0,
-      name: "All employees",
-      description: "",
-      icon: "",
-      group_kind: "system_managed",
-      organizing_dimension: "",
-      dimension_value_key: "",
-      parent_group_id: false,
-      employee_count: stats.data.employee_files_initialized,
-      document_count: 0,
-      attention_count: 0,
-      read_only_membership: true,
-      member_employee_ids: [],
-    };
-  }, [stats.data?.employee_files_initialized, view]);
+  const departmentGroups = useEmployeeFileGroups({
+    for_home: false,
+    dimension: "department",
+  });
+
+  const departments = useMemo(() => {
+    const names = new Set<string>();
+    (departmentGroups.data ?? []).forEach((group) => {
+      if (group.name?.trim()) names.add(group.name.trim());
+    });
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [departmentGroups.data]);
+
+  const employeeList = useEmployeeFileSummaries({
+    search: debouncedSearch.trim() || undefined,
+    page: employeePage,
+    pageSize: EMPLOYEE_FILE_LIST_PAGE_SIZE,
+    departmentId: employeeDepartmentId,
+    order: browsePrefs.employeeSort,
+    enabled: view === "employees" && !!stats.data?.employee_files_initialized,
+  });
+
+  const documentSearch = useEmployeeFilesDocumentSearch({
+    query: debouncedSearch.trim() || undefined,
+    category: documentFilters.category,
+    documentTypeId: documentFilters.documentTypeId,
+    departmentId: documentFilters.departmentId,
+    source: documentFilters.source,
+    status: documentFilters.status,
+    page: documentPage,
+    pageSize: DOCUMENT_PAGE_SIZE,
+    order: browsePrefs.documentSort,
+    enabled: view === "documents",
+  });
 
   const attention = stats.data?.needs_attention ?? 0;
+  const pendingApprovalCount = useMemo(() => {
+    const uploadItems = pendingUploads.data?.items ?? [];
+    const inboxDocumentIds = new Set(
+      (approvalInbox.data?.items ?? []).map((item) => item.document_id),
+    );
+    const rows = uploadItems.filter(
+      (item) =>
+        !inboxDocumentIds.has(item.id) || item.status !== "pending_review",
+    );
+    return rows.length + (approvalInbox.data?.count ?? 0);
+  }, [
+    pendingUploads.data?.items,
+    approvalInbox.data?.items,
+    approvalInbox.data?.count,
+  ]);
 
   const dimensionTabs = useMemo(
     () =>
@@ -67,123 +161,191 @@ export default function EmployeeFilesHome() {
     [config.data?.organizing_dimensions],
   );
 
-  const runDocumentSearch = async () => {
-    if (!search.trim()) {
-      setGlobalDocs([]);
+  const setWorkspaceTab = (tab: WorkspaceTab) => {
+    if (tab === "browse") {
+      router.push("/pages/employee");
       return;
     }
-    const result = await api.employeeFilesGlobalSearch(search, "documents");
-    setGlobalDocs(result.documents);
+    router.push(`/pages/employee?tab=${tab}`);
   };
+
+  useEffect(() => {
+    setEmployeePage(1);
+    setDocumentPage(1);
+  }, [
+    debouncedSearch,
+    employeeDepartmentId,
+    documentFilters,
+    view,
+  ]);
+
+  const searchPlaceholder =
+    view === "documents"
+      ? "Search by document name, employee, or employee ID…"
+      : view === "employees"
+        ? "Search by employee name, ID, or department…"
+        : "Search groups…";
+
+  const typeOptions = useMemo(
+    () =>
+      (documentTypes.data ?? []).map((type) => ({
+        id: type.id,
+        name: type.name,
+      })),
+    [documentTypes.data],
+  );
 
   return (
     <div className="min-h-full mx-auto w-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <div className="flex flex-wrap items-center justify-end gap-4">
-        {attention > 0 ? (
-          <Link
-            href="/pages/employee/issues"
-            className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900"
-          >
-            View Issues ({attention})
-          </Link>
-        ) : null}
-      </div>
-
-      {stats.data ? (
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <MiniStat label="EMS employees" value={stats.data.ems_employees} />
-          <MiniStat label="Expected files" value={stats.data.expected_employee_files} />
-          <MiniStat label="Initialized" value={stats.data.employee_files_initialized} />
-          <MiniStat label="Synced" value={stats.data.successfully_synced} />
-          <MiniStat label="Needs attention" value={stats.data.needs_attention} />
-          <MiniStat label="Excluded" value={stats.data.excluded} />
-        </div>
-      ) : null}
-
       <SectionTabs
-        ariaLabel="Employee Files views"
-        value={view}
-        onChange={(value) => setView(value as HomeView)}
+        ariaLabel="Employee Files sections"
+        value={workspaceTab}
+        onChange={(value) => setWorkspaceTab(value as WorkspaceTab)}
         items={[
-          { id: "groups", label: "Employee files" },
-          { id: "employees", label: "Employees" },
-          { id: "documents", label: "Documents" },
+          { id: "browse", label: "Browse" },
+          {
+            id: "pending-approvals",
+            label: "Pending approvals",
+            count: pendingApprovalCount || undefined,
+          },
+          {
+            id: "issues",
+            label: "Issues",
+            count: attention > 0 ? attention : undefined,
+          },
         ]}
       />
 
-      <div className="flex flex-wrap gap-3">
-        <input
-          className="min-w-[220px] flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm"
-          placeholder="Search…"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && view === "documents") runDocumentSearch();
-          }}
-        />
-        {view === "documents" ? (
-          <button
-            type="button"
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-            onClick={runDocumentSearch}
-          >
-            Search documents
-          </button>
-        ) : null}
-      </div>
+      {workspaceTab === "issues" ? (
+        <EmployeeFilesIssuesPage embedded />
+      ) : null}
 
-      {view === "groups" ? (
-        <div className="space-y-4">
-          {dimensionTabs.length > 1 ? (
-            <SectionTabs
-              ariaLabel="Organizing dimension"
-              value={primaryDimension}
-              onChange={setDimension}
-              items={dimensionTabs}
+      {workspaceTab === "pending-approvals" ? (
+        <EmployeeFilesPendingApprovalsPanel />
+      ) : null}
+
+      {workspaceTab === "browse" ? (
+        <>
+          {stats.data ? (
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <MiniStat label="EMS employees" value={stats.data.ems_employees} />
+              <MiniStat label="Expected files" value={stats.data.expected_employee_files} />
+              <MiniStat label="Initialized" value={stats.data.employee_files_initialized} />
+              <MiniStat label="Synced" value={stats.data.successfully_synced} />
+              <MiniStat label="Needs attention" value={stats.data.needs_attention} />
+              <MiniStat label="Excluded" value={stats.data.excluded} />
+            </div>
+          ) : null}
+
+          <SectionTabs
+            ariaLabel="Employee Files views"
+            value={view}
+            onChange={(value) => setView(value as HomeView)}
+            items={[
+              { id: "groups", label: "Employee files" },
+              { id: "employees", label: "Employees" },
+              { id: "documents", label: "Documents" },
+            ]}
+          />
+
+          <EmployeeFilesBrowseToolbar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder={searchPlaceholder}
+            layoutMode={browsePrefs.layoutMode}
+            onLayoutModeChange={(mode) => persistPrefs({ layoutMode: mode })}
+            showDocumentFilters={view === "documents"}
+            showEmployeeFilters={view === "employees"}
+            documentFilters={documentFilters}
+            onDocumentFiltersChange={setDocumentFilters}
+            employeeDepartmentId={employeeDepartmentId}
+            onEmployeeDepartmentChange={setEmployeeDepartmentId}
+            documentTypes={typeOptions}
+            departments={departments}
+            documentColumns={browsePrefs.documentColumns}
+            onDocumentColumnsChange={(cols) =>
+              persistPrefs({ documentColumns: cols })
+            }
+            employeeColumns={browsePrefs.employeeColumns}
+            onEmployeeColumnsChange={(cols) =>
+              persistPrefs({ employeeColumns: cols })
+            }
+            resultCount={
+              view === "documents"
+                ? documentSearch.data?.items.length
+                : view === "employees"
+                  ? employeeList.data?.items.length
+                  : undefined
+            }
+            totalCount={
+              view === "documents"
+                ? documentSearch.data?.total
+                : view === "employees"
+                  ? employeeList.data?.total
+                  : undefined
+            }
+          />
+
+          {view === "groups" ? (
+            <div className="space-y-4">
+              {dimensionTabs.length > 1 ? (
+                <SectionTabs
+                  ariaLabel="Organizing dimension"
+                  value={primaryDimension}
+                  onChange={setDimension}
+                  items={dimensionTabs}
+                />
+              ) : null}
+              {browsePrefs.layoutMode === "card" ? (
+                <EmployeeFilesGroupCardGrid
+                  groups={homeGroups.data ?? []}
+                  search={search}
+                />
+              ) : (
+                <EmployeeFilesGroupExplorer
+                  groups={homeGroups.data ?? []}
+                  search={search}
+                />
+              )}
+            </div>
+          ) : null}
+
+          {view === "employees" ? (
+            stats.data?.employee_files_initialized ? (
+              <EmployeeFilesEmployeeResults
+                items={employeeList.data?.items ?? []}
+                total={employeeList.data?.total ?? 0}
+                page={employeePage}
+                pageSize={EMPLOYEE_FILE_LIST_PAGE_SIZE}
+                onPageChange={setEmployeePage}
+                layoutMode={browsePrefs.layoutMode}
+                visibleColumns={browsePrefs.employeeColumns}
+                sortKey={browsePrefs.employeeSort}
+                onSortChange={(order) => persistPrefs({ employeeSort: order })}
+                isLoading={employeeList.isLoading}
+              />
+            ) : !stats.isLoading ? (
+              <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
+                No employee files have been initialized yet.
+              </p>
+            ) : null
+          ) : null}
+
+          {view === "documents" ? (
+            <EmployeeFilesDocumentResults
+              items={documentSearch.data?.items ?? []}
+              total={documentSearch.data?.total ?? 0}
+              page={documentPage}
+              pageSize={DOCUMENT_PAGE_SIZE}
+              onPageChange={setDocumentPage}
+              layoutMode={browsePrefs.layoutMode}
+              visibleColumns={browsePrefs.documentColumns}
+              sortKey={browsePrefs.documentSort}
+              onSortChange={(order) => persistPrefs({ documentSort: order })}
+              isLoading={documentSearch.isLoading}
             />
           ) : null}
-          <EmployeeFilesGroupExplorer
-            groups={homeGroups.data ?? []}
-            search={search}
-          />
-        </div>
-      ) : null}
-
-      {view === "employees" && allEmployeesTreeGroup ? (
-        <EmployeeFilesGroupExplorer
-          groups={[allEmployeesTreeGroup]}
-          search=""
-          memberSearch={search}
-        />
-      ) : null}
-
-      {view === "employees" && !allEmployeesTreeGroup && !stats.isLoading ? (
-        <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-          No employee files have been initialized yet.
-        </p>
-      ) : null}
-
-      {view === "documents" ? (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-left text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Document</th>
-                <th className="px-4 py-3">Employee</th>
-                <th className="px-4 py-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {globalDocs.map((doc) => (
-                <tr key={doc.id} className="border-t border-slate-100">
-                  <td className="px-4 py-3">{doc.name}</td>
-                  <td className="px-4 py-3">{doc.employee_name || "—"}</td>
-                  <td className="px-4 py-3">{doc.state}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        </>
       ) : null}
     </div>
   );
