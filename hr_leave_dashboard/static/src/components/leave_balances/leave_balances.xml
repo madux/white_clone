@@ -58,7 +58,7 @@
               <b t-if="activeFilterCount" class="o_lb_filter_badge"><t t-esc="activeFilterCount"/></b>
             </button>
             <!-- Export button -->
-            <button t-on-click="exportRows"><i class="fa fa-download"/> Export</button>
+            <button t-if="state.canExport" t-on-click="exportRows"><i class="fa fa-download"/> Export</button>
             <div class="o_lb_group_wrap" t-on-click.stop="">
               <button t-on-click="toggleMoreOptions"><i class="fa fa-ellipsis-h"/> More</button>
               <div t-if="state.moreOptionsOpen" class="o_lb_group_menu">
@@ -784,7 +784,7 @@
               </div>
 
               <!-- Export button -->
-              <button class="o_lb_hist_export_btn" t-on-click="exportHistory">
+              <button t-if="state.canExport" class="o_lb_hist_export_btn" t-on-click="exportHistory">
                 <i class="fa fa-download"/> Export
               </button>
             </div>

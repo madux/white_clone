@@ -47,6 +47,7 @@ export class LeaveTypesPage extends Component {
             editingLeaveType: null,
 
             exportDropdownOpen: false,
+            canExport: false,
             importDropdownOpen: false,
             loadError: "",
             draggedLeaveTypeId: null,
@@ -57,7 +58,11 @@ export class LeaveTypesPage extends Component {
             tourStep: 1,
         });
 
-        onWillStart(() => this.loadData());
+        onWillStart(async () => {
+            const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
+            this.state.canExport = Boolean(access.can_export);
+            await this.loadData();
+        });
     }
 
     async safeSearchRead(model, domain = [], fields = ["id", "name"]) {

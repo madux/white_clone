@@ -40,6 +40,7 @@ export class LeaveCalendarPage extends Component {
             canBook: false,
             canRequest: false,
             canViewCoverage: false,
+            canExport: false,
 
             leaves: [],
             holidays: [],
@@ -94,6 +95,7 @@ export class LeaveCalendarPage extends Component {
             this.state.canBook = access.can_operate;
             this.state.canRequest = access.has_personal_scope;
             this.state.canViewCoverage = access.has_team_scope || access.can_operate || access.can_view_audit;
+            this.state.canExport = Boolean(access.can_export);
             this.state.canViewAiSummary = Boolean(access.ai_capabilities?.calendar_summary);
             this.state.canDateRec = Boolean(access.ai_capabilities?.date_recommendations);
             this.state.canUsePersonal = access.has_personal_scope;

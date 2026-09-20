@@ -52,6 +52,7 @@ export class LeaveRequestsPage extends Component {
             selectedIds: [],
             sidebarCollapsed: false,
             canCreate: false,
+            canExport: false,
 
             // ── Review Detail Modal ──
             showReviewModal: false,
@@ -89,6 +90,7 @@ export class LeaveRequestsPage extends Component {
         onWillStart(async () => {
             const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
             this.state.canCreate = access.can_operate;
+            this.state.canExport = Boolean(access.can_export);
             await this.loadRequests();
         });
     }

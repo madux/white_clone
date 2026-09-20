@@ -32,6 +32,7 @@ export class LeaveReportsPage extends Component {
         this.loadSequence = 0;
         this.state = useState({
             loading: true, exporting: false, data: EMPTY_DATA, activeReport: "request_volume",
+            canExport: false,
             frequencyDimension: "department", filtersOpen: false, exportOpen: false,
             revision: 0, lastRefreshed: "", drilldown: null, riskSettingsOpen: false,
             riskForm: { enabled: true, window_weeks: 52, minimum_spell_days: 1, thresholds: { caution: 51, concern: 101, serious: 201, critical: 401 } },
@@ -44,7 +45,14 @@ export class LeaveReportsPage extends Component {
                 department_ids: [], location_ids: [], unit_ids: [], leave_type_ids: [], employee_ids: [],
             },
         });
-        onWillStart(async () => { await loadBundle("web.chartjs_lib"); await this.refresh(); });
+        onWillStart(async () => {
+            const [, access] = await Promise.all([
+                loadBundle("web.chartjs_lib"),
+                this.orm.call("hr.leave", "get_leave_access_profile", []),
+            ]);
+            this.state.canExport = Boolean(access.can_export);
+            await this.refresh();
+        });
         useEffect(() => { if (!this.state.loading) this.renderChart(); return () => this.destroyChart(); }, () => [this.state.revision, this.state.activeReport, this.state.frequencyDimension]);
         onWillUnmount(() => this.destroyChart());
     }

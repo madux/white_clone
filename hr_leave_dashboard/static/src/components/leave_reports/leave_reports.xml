@@ -47,7 +47,7 @@
               <footer><button t-on-click="() => this.state.filtersOpen = false">Cancel</button><button class="primary" t-on-click="applyFilters">Apply filters</button></footer>
             </div>
           </div>
-          <div class="o_lra_export">
+          <div t-if="state.canExport" class="o_lra_export">
             <button class="o_lra_export_button" t-on-click="() => this.state.exportOpen = !this.state.exportOpen" t-att-disabled="state.exporting">
               <i t-att-class="state.exporting ? 'fa fa-spinner fa-spin' : 'fa fa-download'"/> Export <i class="fa fa-caret-down"/>
             </button>
@@ -266,7 +266,7 @@
                   <h3 t-esc="(state.data.reports.executive_brief.period_title || state.briefMonth) + ' Workforce Summary'"/>
                   <p>Consolidated workforce leave health, approval SLAs, department concentration, and proactive staffing recommendations.</p>
                 </div>
-                <div class="o_eb_export_btns">
+                <div t-if="state.canExport" class="o_eb_export_btns">
                   <button class="o_eb_btn_dl" t-on-click="() => this.exportReport('pdf')">
                     <i class="fa fa-file-pdf-o"/> Download PDF
                   </button>

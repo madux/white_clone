@@ -15,11 +15,16 @@ export class LeaveAuditPage extends Component {
             loading: true, rows: [], total: 0, summary: {}, actions: [], departments: [], roles: [],
             page: 1, perPage: 10, sort: { field: "occurred_at", direction: "desc" }, expandedId: null,
             filtersOpen: false, columnsOpen: false, live: true, initialLoaded: false,
+            canExport: false,
             filters: { search: "", action: "", module_area: "", entity_type: "", event_status: "", source: "", date_from: "", date_to: "", department_id: "", actor_role: "" },
             columns: { timestamp: true, action: true, module: true, entity: true, actor: true, employee: true, department: true, diff: true, ip: true, device: true, source: true, status: true },
         });
         for (const name of ["sortBy", "toggleExpanded", "goToPage", "toggleColumn"]) this[name] = this[name].bind(this);
-        onWillStart(() => this.refresh());
+        onWillStart(async () => {
+            const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
+            this.state.canExport = Boolean(access.can_export);
+            await this.refresh();
+        });
         this.timer = setInterval(() => { if (this.state.live && !document.hidden) this.refresh(true); }, 15000);
         onWillUnmount(() => clearInterval(this.timer));
     }

@@ -87,7 +87,7 @@
                             <!-- Download Dropdown Button -->
                             <button t-if="state.canRequest and state.employeeView" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="openEmployeeRequest"><i class="fa fa-plus"/> Request Leave</button>
                             <button t-if="state.canRequest and state.calendarScope === 'organisation'" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="openEmployeeRequest"><i class="fa fa-plus"/> Book Time Off</button>
-                            <div class="dropdown d-inline-block">
+                            <div t-if="state.canExport" class="dropdown d-inline-block">
                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleDownloadDropdown">
                                     <i class="fa fa-download me-1"/> Download
                                 </button>

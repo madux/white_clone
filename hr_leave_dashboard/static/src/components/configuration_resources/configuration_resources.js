@@ -10,8 +10,12 @@ const blackoutForm = () => ({ id: false, name: "", date_from: "", date_to: "", a
 class ResourcePage extends Component {
     setup() {
         this.orm = useService("orm"); this.notification = useService("notification");
-        this.state = useState({ loading: true, rows: [], options: [], catalog: {}, form: null, search: "", actionMenu: false });
-        onWillStart(() => this.load());
+        this.state = useState({ loading: true, rows: [], options: [], catalog: {}, form: null, search: "", actionMenu: false, canExport: false });
+        onWillStart(async () => {
+            const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
+            this.state.canExport = Boolean(access.can_export);
+            await this.load();
+        });
     }
     get visibleRows() { const q = this.state.search.toLowerCase(); return this.state.rows.filter(row => !q || `${row.name} ${row.reason || row.description || ""}`.toLowerCase().includes(q)); }
     get resourceLabel() { return this.model === "hr.leave.official.holiday" ? "Holiday" : "Blackout Window"; }

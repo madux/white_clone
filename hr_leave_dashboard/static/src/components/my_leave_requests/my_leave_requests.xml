@@ -57,7 +57,7 @@
                     <button class="o_mlr_icon_btn" t-att-class="state.showFilters ? 'active' : ''" t-on-click="() => this.toggleFilters()" title="Filters">
                         <i class="fa fa-filter"/> Filters
                     </button>
-                    <button class="o_mlr_icon_btn" t-on-click="() => this.exportCsv()" title="Export">
+                    <button t-if="state.access.can_export" class="o_mlr_icon_btn" t-on-click="() => this.exportCsv()" title="Export">
                         <i class="fa fa-download"/> Export
                     </button>
                     <button class="o_mlr_icon_btn" t-on-click="() => this.load()" title="Refresh">
@@ -220,7 +220,7 @@
                     <button class="o_mlr_icon_btn" t-on-click="() => this.toggleFilters()" title="Filters">
                         <i class="fa fa-filter"/> Filters
                     </button>
-                    <button class="o_mlr_icon_btn" t-on-click="() => this.exportCsv()" title="Export matching approvals">
+                    <button t-if="state.access.can_export" class="o_mlr_icon_btn" t-on-click="() => this.exportCsv()" title="Export matching approvals">
                         <i class="fa fa-download"/> Export
                     </button>
                     <button class="o_mlr_icon_btn" t-on-click="() => this.load()" title="Refresh">

@@ -1004,6 +1004,8 @@ class HrLeaveReportService(models.AbstractModel):
 
     @api.model
     def export_report(self, report_key, filters=None, file_format="csv"):
+        if not (self.env.is_admin() or self.env.user.has_group("base.group_allow_export")):
+            raise AccessError(_("You do not have permission to export data."))
         if report_key not in self.REPORT_KEYS or file_format not in ("csv", "xlsx", "pdf"):
             raise ValidationError(_("Unsupported report export."))
         payload = self.get_report_data(filters or {}, report_key)

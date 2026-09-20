@@ -982,6 +982,7 @@ class HrLeave(models.Model):
             "can_view_operational_reports": can_operational_reports,
             "can_view_strategic_reports": can_strategic_reports,
             "can_view_reports": can_operational_reports or can_strategic_reports or has_team_scope,
+            "can_export": is_system or self._leave_has_group("base.group_allow_export", user),
             "show_organisation_dashboard": has_team_scope or is_officer or is_admin or can_audit,
             "is_system": is_system,
             "ai_capabilities": {

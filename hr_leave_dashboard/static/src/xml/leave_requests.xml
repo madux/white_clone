@@ -82,7 +82,7 @@
                         </t>
                     </select>
 
-                    <button type="button" class="request-export-btn" t-on-click="exportRequests">
+                    <button t-if="state.canExport" type="button" class="request-export-btn" t-on-click="exportRequests">
                         <i class="fa fa-download me-1"/> Export
                     </button>
                     <button type="button" class="request-export-btn" t-on-click="toggleFilters">

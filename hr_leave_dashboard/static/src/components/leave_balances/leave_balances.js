@@ -52,12 +52,17 @@ export class LeaveBalancesPage extends Component {
             ltQuickFilter: null,   // leave_type_id of the active quick-filter (null = all)
             groupBy: "employee",   // "employee" (default), "leave_type", or "none"
             groupByOpen: false,
+            canExport: false,
             expandedGroupKeys: [], // collapsed by default
             pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 1, itemLabel: "groups" },
         });
         this.searchTimer = null;
         this.loadSequence = 0;
-        onWillStart(() => this.refreshPage());
+        onWillStart(async () => {
+            const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
+            this.state.canExport = Boolean(access.can_export);
+            await this.refreshPage();
+        });
         onWillUnmount(() => clearTimeout(this.searchTimer));
     }
 

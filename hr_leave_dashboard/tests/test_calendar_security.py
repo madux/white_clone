@@ -100,11 +100,28 @@ class TestLeaveCalendarSecurity(TransactionCase):
         self.assertTrue(self.auditor_user.has_group("hr_leave_dashboard.group_leave_employee"))
         self.assertTrue(profile["can_view_audit"])
         self.assertTrue(profile["can_view_reports"])
+        self.assertTrue(profile["can_export"])
+        self.assertTrue(self.auditor_user.has_group("base.group_allow_export"))
         self.assertTrue(profile["show_organisation_dashboard"])
         self.assertFalse(profile["can_approve"])
         self.assertFalse(profile["can_operate"])
         self.assertFalse(profile["can_configure"])
         self.assertIn("kpis", Leave.get_dashboard_data())
+
+    def test_leave_roles_map_to_native_time_off_and_export_groups(self):
+        officer = self.env.ref("hr_leave_dashboard.group_leave_hr_officer")
+        administrator = self.env.ref("hr_leave_dashboard.group_leave_administrator")
+        self.assertIn(self.env.ref("hr_holidays.group_hr_holidays_user"), officer.implied_ids)
+        self.assertIn(self.env.ref("hr_holidays.group_hr_holidays_manager"), administrator.implied_ids)
+        self.assertIn(self.env.ref("base.group_allow_export"), administrator.implied_ids)
+
+    def test_report_export_requires_standard_odoo_export_permission(self):
+        profile = self.env["hr.leave"].with_user(self.member_user).get_leave_access_profile()
+        self.assertFalse(profile["can_export"])
+        with self.assertRaises(AccessError):
+            self.env["hr.leave.report.service"].with_user(self.member_user).export_report(
+                "request_volume", {}, "csv",
+            )
 
     def test_operations_authorizes_booking_options(self):
         result = self.env["hr.leave"].with_user(self.operator_user).get_admin_create_options()

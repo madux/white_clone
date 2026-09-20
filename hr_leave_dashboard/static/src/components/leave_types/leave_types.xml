@@ -51,7 +51,7 @@
                                 </ul>
                             </div>
 
-                            <div class="dropdown d-inline-block">
+                            <div t-if="state.canExport" class="dropdown d-inline-block">
                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleExportDropdown">
                                     <i class="fa fa-download me-1"/> Export
                                 </button>
