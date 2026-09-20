@@ -982,7 +982,7 @@ class HrLeave(models.Model):
             "can_view_operational_reports": can_operational_reports,
             "can_view_strategic_reports": can_strategic_reports,
             "can_view_reports": can_operational_reports or can_strategic_reports or has_team_scope,
-            "show_organisation_dashboard": has_team_scope or is_officer or is_admin,
+            "show_organisation_dashboard": has_team_scope or is_officer or is_admin or can_audit,
             "is_system": is_system,
             "ai_capabilities": {
                 "assistant": self.is_ai_capability_enabled("assistant"),
@@ -1037,7 +1037,11 @@ class HrLeave(models.Model):
         """Resolve the widest authorised scope without leaking organisation data."""
         user = self.env.user
         base_domain = [("active", "=", True), ("company_id", "in", user.company_ids.ids)]
-        if self._leave_is_officer(user) or self._leave_is_administrator(user):
+        if (
+            self._leave_is_officer(user)
+            or self._leave_is_administrator(user)
+            or self._leave_has_group("hr_leave_dashboard.group_leave_permission_audit", user)
+        ):
             return self.env["hr.employee"].search(base_domain).ids
         if self._leave_has_group("hr_leave_dashboard.group_leave_permission_team", user):
             return self.env["hr.employee"].search(base_domain + [
@@ -1059,16 +1063,20 @@ class HrLeave(models.Model):
 
         months = int(months) if months in (6, 12) else 6
         emp_ids = self._get_dashboard_employee_ids()
-        coverage = self._get_department_coverage(emp_ids)
+        # Scope is resolved above as the signed-in user.  Dashboard helpers
+        # may read private employee fields, so aggregate only those already-
+        # authorised ids with elevation (the same pattern used by Calendar).
+        Dashboard = self.sudo()
+        coverage = Dashboard._get_department_coverage(emp_ids)
 
         return {
-            "kpis": self._get_kpis(emp_ids, coverage_alerts=coverage["alert_count"]),
-            "trends": self._get_leave_trends(emp_ids, months),
-            "by_type": self._get_leave_type_distribution(emp_ids),
-            "balance": self._get_leave_balance_by_type(emp_ids),
-            "approval_overview": self._get_approval_overview(emp_ids),
+            "kpis": Dashboard._get_kpis(emp_ids, coverage_alerts=coverage["alert_count"]),
+            "trends": Dashboard._get_leave_trends(emp_ids, months),
+            "by_type": Dashboard._get_leave_type_distribution(emp_ids),
+            "balance": Dashboard._get_leave_balance_by_type(emp_ids),
+            "approval_overview": Dashboard._get_approval_overview(emp_ids),
             "department_coverage": coverage["rows"],
-            "recent_requests": self._get_recent_requests(emp_ids),
+            "recent_requests": Dashboard._get_recent_requests(emp_ids),
         }
 
     @api.model

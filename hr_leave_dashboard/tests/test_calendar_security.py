@@ -20,6 +20,7 @@ class TestLeaveCalendarSecurity(TransactionCase):
         operations = cls.env.ref("hr_leave_dashboard.group_leave_permission_operations")
         configuration = cls.env.ref("hr_leave_dashboard.group_leave_permission_configuration")
         approve = cls.env.ref("hr_leave_dashboard.group_leave_permission_approve")
+        auditor = cls.env.ref("hr_leave_dashboard.group_leave_auditor")
 
         def make_user(login, groups):
             return cls.env["res.users"].with_context(no_reset_password=True).create({
@@ -36,6 +37,7 @@ class TestLeaveCalendarSecurity(TransactionCase):
         cls.manager_user = make_user("calendar.manager", [personal, team, approve])
         cls.team_viewer_user = make_user("calendar.team.viewer", [personal, team])
         cls.member_user = make_user("calendar.member", [personal])
+        cls.auditor_user = make_user("calendar.auditor", [auditor])
         cls.manager_employee = cls.env["hr.employee"].create({
             "name": "Calendar Manager", "user_id": cls.manager_user.id,
             "company_id": cls.env.company.id,
@@ -91,6 +93,18 @@ class TestLeaveCalendarSecurity(TransactionCase):
         self.assertFalse(profile["can_view_audit"])
         with self.assertRaises(AccessError):
             self.env["hr.leave"].with_user(self.member_user).get_dashboard_data()
+
+    def test_auditor_role_opens_read_only_organisation_dashboard(self):
+        Leave = self.env["hr.leave"].with_user(self.auditor_user)
+        profile = Leave.get_leave_access_profile()
+        self.assertTrue(self.auditor_user.has_group("hr_leave_dashboard.group_leave_employee"))
+        self.assertTrue(profile["can_view_audit"])
+        self.assertTrue(profile["can_view_reports"])
+        self.assertTrue(profile["show_organisation_dashboard"])
+        self.assertFalse(profile["can_approve"])
+        self.assertFalse(profile["can_operate"])
+        self.assertFalse(profile["can_configure"])
+        self.assertIn("kpis", Leave.get_dashboard_data())
 
     def test_operations_authorizes_booking_options(self):
         result = self.env["hr.leave"].with_user(self.operator_user).get_admin_create_options()

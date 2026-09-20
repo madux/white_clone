@@ -6,8 +6,7 @@
         name="Leave Management"
         action="hr_leave_dashboard.action_hr_leave_dashboard"
         sequence="60"
-        parent="hr_administration.hr_administration_dashboard"
-        groups="hr_holidays.group_hr_holidays_manager,base.group_system"
+        groups="hr_leave_dashboard.group_leave_employee,hr_leave_dashboard.group_leave_permission_team,hr_leave_dashboard.group_leave_permission_approve,hr_leave_dashboard.group_leave_permission_operations,hr_leave_dashboard.group_leave_permission_configuration,hr_leave_dashboard.group_leave_permission_operational_reports,hr_leave_dashboard.group_leave_permission_strategic_reports,hr_leave_dashboard.group_leave_permission_audit,base.group_system"
     />
 
     <record id="hr_leave_dashboard.hr_admin_leave_management" model="ir.ui.menu">
