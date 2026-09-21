@@ -424,6 +424,93 @@
     margin-bottom: 16px;
 }
 
+/* Organisation overview: compact previews; expanded cards retain every row. */
+.o_leave_dashboard .dashboard-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+.dashboard-overview-grid .dashboard-card {
+    position: relative;
+    min-width: 0;
+    min-height: 310px;
+    padding: 14px 14px 42px;
+}
+.dashboard-overview-grid .dashboard-card-balance { order: 1; }
+.dashboard-overview-grid .dashboard-card-recent { order: 2; }
+.dashboard-overview-grid .dashboard-card-approval { order: 3; }
+.dashboard-overview-grid .dashboard-card-trends { order: 4; }
+.dashboard-overview-grid .dashboard-card-types { order: 5; }
+.dashboard-overview-grid .dashboard-card-coverage { order: 6; }
+.dashboard-overview-grid .dashboard-card.is-expanded { grid-column: 1 / -1; }
+.dashboard-overview-grid .panel-head { gap: 8px; margin-bottom: 12px; }
+.dashboard-overview-grid .panel-head h5 { font-size: 14px; }
+.dashboard-overview-grid .panel-head small { font-size: 11px; }
+.dashboard-overview-grid .dashboard-card-expand {
+    position: absolute;
+    bottom: 12px;
+    right: 14px;
+    border: 0;
+    background: transparent;
+    color: #d60069;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px;
+}
+.dashboard-overview-grid .dashboard-card-expand:focus-visible {
+    outline: 2px solid #d60069;
+    outline-offset: 2px;
+}
+.dashboard-overview-grid .dashboard-card:not(.is-expanded) .balance-row:nth-child(n+5),
+.dashboard-overview-grid .dashboard-card:not(.is-expanded) .recent-request-row:nth-child(n+5),
+.dashboard-overview-grid .dashboard-card:not(.is-expanded) .legend-row:nth-child(n+5),
+.dashboard-overview-grid .dashboard-card:not(.is-expanded) .coverage-table tbody tr:nth-child(n+5) {
+    display: none;
+}
+.dashboard-overview-grid .balance-row { margin-bottom: 14px; }
+.dashboard-overview-grid .balance-header { flex-wrap: wrap; gap: 4px; }
+.dashboard-overview-grid .balance-figures { font-size: 11px; }
+.dashboard-overview-grid .recent-request-row { padding: 7px; gap: 8px; }
+.dashboard-overview-grid .recent-request-date { display: none; }
+.dashboard-overview-grid .is-expanded .recent-request-date { display: inline; }
+.dashboard-overview-grid .recent-request-list { gap: 6px; }
+.dashboard-overview-grid .stat-row { gap: 4px; margin-bottom: 8px; }
+.dashboard-overview-grid .stat-box { padding: 5px; }
+.dashboard-overview-grid .stat-value { font-size: 16px; }
+.dashboard-overview-grid .range-toggle { flex-shrink: 0; }
+.dashboard-overview-grid .range-btn { padding: 4px 7px; font-size: 10px; }
+.dashboard-overview-grid .dashboard-trends-canvas { position: relative; height: 165px; }
+.dashboard-overview-grid .is-expanded .dashboard-trends-canvas { height: 340px; }
+.dashboard-overview-grid .donut-wrap { position: relative; width: 112px; height: 112px; margin: 0 auto 10px; }
+.dashboard-overview-grid .approval-chart-box { width: 100px; height: 100px; }
+.dashboard-overview-grid .is-expanded .donut-wrap { width: 180px; height: 180px; }
+.dashboard-overview-grid .is-expanded .approval-chart-box { width: 140px; height: 140px; }
+.dashboard-overview-grid .approval-wrap { margin-bottom: 8px; }
+.dashboard-overview-grid .approval-row { padding: 4px 10px; }
+.dashboard-overview-grid .approval-rows { gap: 4px; }
+.dashboard-overview-grid .panel-footer-btn-wrap { margin-top: 8px; }
+.dashboard-overview-grid .cleon-btn-review-all { padding: 6px; }
+.dashboard-overview-grid .coverage-table { font-size: 10px; }
+.dashboard-overview-grid .coverage-table th,
+.dashboard-overview-grid .coverage-table td { padding: 6px 3px; }
+.dashboard-overview-grid .coverage-cell { padding: 3px; min-width: 28px; }
+.dashboard-overview-grid .coverage-legend { gap: 6px; font-size: 10px; margin-top: 10px; flex-wrap: wrap; }
+.o_leave_admin_embedded .kpi-card { padding: 10px 12px; }
+.o_leave_admin_embedded .kpi-value { font-size: 23px; }
+.o_leave_admin_embedded .kpi-top { margin-bottom: 4px; }
+.o_leave_unified_dashboard .o_leave_admin_quick_actions { padding: 12px; margin-bottom: 12px; }
+.o_leave_unified_dashboard .o_leave_admin_quick_actions .o_laq_heading { margin-bottom: 8px; }
+.o_leave_unified_dashboard .o_leave_admin_quick_actions .admin-actions > button { min-height: 56px; padding: 8px 10px; }
+@media (max-width: 1200px) {
+    .o_leave_dashboard .dashboard-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .o_leave_admin_embedded .kpi-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+    .o_leave_dashboard .dashboard-overview-grid { grid-template-columns: minmax(0, 1fr); }
+    .o_leave_admin_embedded .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 .panel {
     background: #fff;
     border-radius: 10px;

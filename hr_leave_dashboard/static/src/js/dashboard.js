@@ -27,6 +27,7 @@ export class HrLeaveDashboard extends Component {
         this.approvalChart = useRef("approvalChart");
 
         this.state = useState({
+            expandedCards: {},
             months: 6,
             kpis: {
                 total_employees: 0,
@@ -113,6 +114,15 @@ export class HrLeaveDashboard extends Component {
 
         useEffect(
             () => {
+                this.renderTrends(this.state.trends);
+                this.renderByType(this.state.byType);
+                this.renderApproval(this.state.approval);
+            },
+            () => [this.state.trends, this.state.byType, this.state.approval, this.byTypeChart.el]
+        );
+
+        useEffect(
+            () => {
                 this.fetchAndRender(this.state.months);
                 return () => {
                     if (this.charts.trends) this.charts.trends.destroy();
@@ -132,7 +142,14 @@ export class HrLeaveDashboard extends Component {
     setTrendMonths(months) {
         if (months !== 6 && months !== 12 || months === this.state.months) return;
         this.state.months = months;
-        this.fetchAndRender(months);
+    }
+
+    toggleCard(name) {
+        this.state.expandedCards[name] = !this.state.expandedCards[name];
+    }
+
+    cardClass(name) {
+        return `panel dashboard-card dashboard-card-${name}${this.state.expandedCards[name] ? ' is-expanded' : ''}`;
     }
 
     toggleLeaveSidebar() {
@@ -352,9 +369,6 @@ export class HrLeaveDashboard extends Component {
             this.state.recentRequests = data.recent_requests || [];
             this.state.loading = false;
 
-            if (data.trends) this.renderTrends(data.trends);
-            if (data.by_type) this.renderByType(data.by_type);
-            if (data.approval_overview) this.renderApproval(data.approval_overview);
 
             window.dispatchEvent(new CustomEvent("cleon-ai-context", {
                 detail: { screen: "leave.dashboard", title: "Leave Dashboard" },
@@ -381,7 +395,7 @@ export class HrLeaveDashboard extends Component {
                     { label: "Rejected", data: d.rejected, borderColor: "#dc3545", tension: 0.4 },
                 ],
             },
-            options: { responsive: true, plugins: { legend: { position: "bottom" } }, scales: { y: { beginAtZero: true } } },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } }, scales: { y: { beginAtZero: true } } },
         });
 
         $(this.el).find("[data-summary='total']").text(d.summary.total);

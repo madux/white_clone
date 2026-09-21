@@ -199,8 +199,9 @@
                 </div>
 
                 <!-- TRENDS (FR-061 to FR-063) + BY TYPE (FR-064) -->
-                <div class="grid-2">
-                    <div class="panel">
+                <div class="dashboard-overview-grid">
+                    <div t-att-class="cardClass('trends')">
+                        <t t-set="cardKey" t-value="'trends'"/><t t-call="hr_leave_dashboard.CardExpansion"/>
                         <div class="panel-head">
                             <div>
                                 <h5>Leave Trends</h5>
@@ -237,11 +238,12 @@
                                 <div class="stat-label">Rejected</div>
                             </div>
                         </div>
-                        <canvas t-ref="trendsChart" height="90"/>
+                        <div class="dashboard-trends-canvas"><canvas t-ref="trendsChart"/></div>
                     </div>
 
                     <!-- By Leave Type donut with empty state handling -->
-                    <div class="panel">
+                    <div t-att-class="cardClass('types')">
+                        <t t-set="cardKey" t-value="'types'"/><t t-call="hr_leave_dashboard.CardExpansion"/>
                         <div class="panel-head">
                             <div><h5>By Leave Type</h5><small>All-time request distribution</small></div>
                         </div>
@@ -265,12 +267,10 @@
                             </div>
                         </t>
                     </div>
-                </div>
-
                 <!-- BALANCE  + APPROVAL -->
-                <div class="grid-2">
                     <!-- Balance by type with empty state handling -->
-                    <div class="panel">
+                    <div t-att-class="cardClass('balance')">
+                        <t t-set="cardKey" t-value="'balance'"/><t t-call="hr_leave_dashboard.CardExpansion"/>
                         <div class="panel-head">
                             <div>
                                 <h5>Leave Balance by Type</h5>
@@ -304,7 +304,8 @@
                     </div>
 
                     <!-- Approval Overview -->
-                    <div class="panel">
+                    <div t-att-class="cardClass('approval')">
+                        <t t-set="cardKey" t-value="'approval'"/><t t-call="hr_leave_dashboard.CardExpansion"/>
                         <div class="panel-head">
                             <div><h5>Approval Overview</h5><small>Request resolution summary</small></div>
                         </div>
@@ -328,12 +329,10 @@
                             </button>
                         </div>
                     </div>
-                </div>
-
                 <!-- DEPARTMENT COVERAGE  + RECENT REQUESTS -->
-                <div class="grid-2 dashboard-lower-row">
                     <!-- Department Coverage Heatmap -->
-                    <div class="panel">
+                    <div t-att-class="cardClass('coverage')">
+                        <t t-set="cardKey" t-value="'coverage'"/><t t-call="hr_leave_dashboard.CardExpansion"/>
                         <div class="panel-head">
                             <div>
                                 <h5>Department Coverage</h5>
@@ -389,14 +388,15 @@
                     </div>
 
                     <!-- Recent Requests List -->
-                    <div class="panel">
+                    <div t-att-class="cardClass('recent')">
+                        <t t-set="cardKey" t-value="'recent'"/><t t-call="hr_leave_dashboard.CardExpansion"/>
                         <div class="panel-head">
                             <div>
                                 <h5>Recent Requests</h5>
                                 <small>Latest leave submissions</small>
                             </div>
                             <button type="button" class="panel-link-btn" t-on-click="openLeaveRequests">
-                                View all ›
+                                All requests ›
                             </button>
                         </div>
 
@@ -469,5 +469,14 @@
 
             </div>
         </div>
+    </t>
+    <t t-name="hr_leave_dashboard.CardExpansion">
+        <button type="button" class="dashboard-card-expand"
+                t-att-aria-expanded="state.expandedCards[cardKey] ? 'true' : 'false'"
+                t-att-aria-label="(state.expandedCards[cardKey] ? 'Show less: ' : 'View all: ') + cardKey"
+                t-on-click="() => this.toggleCard(cardKey)">
+            <t t-if="state.expandedCards[cardKey]">Show less <i class="fa fa-compress"/></t>
+            <t t-else="">View all <i class="fa fa-expand"/></t>
+        </button>
     </t>
 </templates>
