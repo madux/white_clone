@@ -223,6 +223,22 @@
     letter-spacing: .01em;
 }
 
+.o_lp_assignee_cell { position:relative; }
+.o_lp_assigned_stack { display:inline-flex; align-items:center; padding-left:5px; white-space:nowrap; border:0; background:transparent; cursor:pointer; }
+.o_lp_assigned_stack:focus-visible { outline:2px solid #e91e78; outline-offset:3px; }
+.o_lp_assigned_stack img { width:25px; height:25px; border-radius:50%; object-fit:cover; border:2px solid #fff; margin-left:-5px; background:#edf2f7; }
+.o_lp_assigned_more { display:inline-flex; align-items:center; justify-content:center; min-width:25px; height:25px; border-radius:50%; margin-left:-5px; border:2px solid #fff; background:#e9eef7; color:#475569; font-size:10px; font-weight:700; }
+.o_lp_assignee_popover { position:absolute; top:calc(100% - 3px); right:0; z-index:110; width:310px; padding:12px; border:1px solid #dce2ec; border-radius:10px; background:#fff; box-shadow:0 12px 30px rgba(15,23,42,.16); text-align:left; }
+.o_lp_assignee_popover_title { display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; }
+.o_lp_assignee_popover_title span { color:#64748b; font-size:11px; }
+.o_lp_assignee_popover input { width:100%; padding:7px 9px; border:1px solid #dce2ec; border-radius:6px; font-size:12px; }
+.o_lp_assignee_popover_list { max-height:260px; overflow:auto; margin-top:8px; }
+.o_lp_assignee_person { display:flex; align-items:center; gap:8px; padding:6px 2px; border-bottom:1px solid #f1f5f9; }
+.o_lp_assignee_person img { width:28px; height:28px; border-radius:50%; object-fit:cover; background:#edf2f7; }
+.o_lp_assignee_person span { display:flex; flex-direction:column; min-width:0; }
+.o_lp_assignee_person b { font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.o_lp_assignee_person small { color:#64748b; font-size:10px; }
+
 .o_lp_table tr:last-child td {
     border-bottom: 0;
 }
@@ -1069,31 +1085,6 @@
     padding: 16px 24px;
     background: #fff;
     border-top: 1px solid #e2e8f0;
-}
-
-/* ── Assign List ── */
-.o_lp_select_list {
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    max-height: 320px;
-    overflow-y: auto;
-    padding: 10px;
-    background: #fff;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.o_lp_emp_check {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.o_lp_emp_check input[type="checkbox"] {
-    accent-color: #e91e78;
 }
 
 @media (max-width: 900px) {

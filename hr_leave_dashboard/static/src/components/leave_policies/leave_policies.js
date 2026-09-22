@@ -4,12 +4,13 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { SettingsPanel, TagsPicker } from "../policy_controls";
 import { ListPager } from "../list_pager/list_pager";
+import { EmployeeSelectList } from "../employee_select_list/employee_select_list";
 import { newLine, newForm, hasAdvancedOverrides } from "./leave_policy_state";
 
 export { newLine, newForm, hasAdvancedOverrides };
 
 export class LeavePoliciesPage extends Component {
-    static components = { SettingsPanel, TagsPicker, ListPager };
+    static components = { SettingsPanel, TagsPicker, ListPager, EmployeeSelectList };
     static template = "hr_leave_dashboard.LeavePoliciesPage";
     static props = { embedded: { type: Boolean, optional: true } };
 
@@ -27,6 +28,10 @@ export class LeavePoliciesPage extends Component {
             page: 1,
             pageSize: 6,
             menuId: false,
+            assigneePopoverId: false,
+            assigneeRows: [],
+            assigneeSearch: "",
+            assigneeLoading: false,
             wizard: false,
             step: 1,
             form: newForm("simple"),
@@ -34,6 +39,8 @@ export class LeavePoliciesPage extends Component {
             conflicts: [],
             assign: false,
             assignEmployeeIds: [],
+            assignCandidates: [],
+            assignLoading: false,
             assignDate: new Date().toISOString().slice(0, 10),
             assignResolution: "review",
             activateConflict: null,
@@ -401,7 +408,40 @@ export class LeavePoliciesPage extends Component {
 
     getLeaveTypeName(typeId) {
         const found = (this.state.options.leave_types || []).find(t => t.id === Number(typeId));
-        return found ? found.name : `Leave Type #${typeId}`;
+        const existing = (this.state.form.lines || []).find(line => Number(line.leave_type_id) === Number(typeId));
+        return found?.name || existing?.leave_type || `Leave Type #${typeId}`;
+    }
+
+    closeTransientMenus() {
+        this.state.menuId = false;
+        this.state.assigneePopoverId = false;
+    }
+
+    async toggleAssignees(row) {
+        this.state.menuId = false;
+        if (this.state.assigneePopoverId === row.id) {
+            this.state.assigneePopoverId = false;
+            return;
+        }
+        this.state.assigneePopoverId = row.id;
+        this.state.assigneeRows = [];
+        this.state.assigneeSearch = "";
+        this.state.assigneeLoading = true;
+        try {
+            this.state.assigneeRows = await this.orm.call("hr.leave.policy", "get_policy_assignees", [row.id]);
+        } catch (error) {
+            this.state.assigneePopoverId = false;
+            this.notification.add(error.data?.message || error.message, { type: "danger", sticky: true });
+        } finally {
+            this.state.assigneeLoading = false;
+        }
+    }
+
+    get visibleAssignees() {
+        const search = this.state.assigneeSearch.trim().toLowerCase();
+        return search ? this.state.assigneeRows.filter(employee =>
+            [employee.name, employee.code, employee.department].join(" ").toLowerCase().includes(search)
+        ) : this.state.assigneeRows;
     }
 
     get selectedTypeOptions() {
@@ -616,17 +656,43 @@ export class LeavePoliciesPage extends Component {
         await this.load();
     }
 
-    openAssign(row) {
+    async openAssign(row) {
         this.state.menuId = false;
         this.state.assign = row;
         this.state.assignEmployeeIds = [];
         this.state.assignResolution = "review";
+        await this.loadAssignCandidates();
+    }
+
+    async loadAssignCandidates(event) {
+        if (!this.state.assign) return;
+        if (event?.target?.value) this.state.assignDate = event.target.value;
+        this.state.assignLoading = true;
+        try {
+            const candidates = await this.orm.call("hr.leave.policy", "get_assignable_employees", [
+                this.state.assign.id, this.state.assignDate,
+            ]);
+            this.state.assignCandidates = candidates;
+            const allowed = new Set(candidates.map(employee => employee.id));
+            this.state.assignEmployeeIds = this.state.assignEmployeeIds.filter(id => allowed.has(id));
+        } catch (error) {
+            this.state.assignCandidates = [];
+            this.notification.add(error.data?.message || error.message, { type: "danger", sticky: true });
+        } finally {
+            this.state.assignLoading = false;
+        }
     }
 
     toggleAssignEmployee(id) {
         const number = Number(id);
         const index = this.state.assignEmployeeIds.indexOf(number);
         index >= 0 ? this.state.assignEmployeeIds.splice(index, 1) : this.state.assignEmployeeIds.push(number);
+    }
+
+    selectAssignEmployees(ids, selected) {
+        const values = new Set(this.state.assignEmployeeIds);
+        for (const id of ids) selected ? values.add(Number(id)) : values.delete(Number(id));
+        this.state.assignEmployeeIds = [...values];
     }
 
     async assignPolicy() {

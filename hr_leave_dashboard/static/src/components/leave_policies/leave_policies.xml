@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
   <t t-name="hr_leave_dashboard.LeavePoliciesPage" owl="1">
-    <section class="o_lp_page" t-on-click.self="() => state.menuId=false">
+    <section class="o_lp_page" t-on-click="closeTransientMenus">
       <!-- Top Toolbar -->
       <header class="o_lp_toolbar">
         <div>
@@ -116,16 +116,30 @@
               <td>
                 <span t-att-class="'o_lp_status ' + this.displayStatus(row)" t-esc="this.displayStatus(row)"/>
               </td>
-              <td>
-                <span class="o_lp_avatar">
-                  <i class="fa fa-users text-muted me-1"/> <t t-esc="row.employee_count"/>
-                </span>
+              <td class="o_lp_assignee_cell">
+                <button type="button" class="o_lp_assigned_stack" t-att-title="'View ' + row.employee_count + ' assigned employees'" t-att-aria-expanded="state.assigneePopoverId === row.id" t-on-click.stop="() => this.toggleAssignees(row)">
+                  <img t-foreach="row.assigned_employees || []" t-as="employee" t-key="employee.id" t-att-src="employee.avatar_url" t-att-alt="employee.name" t-att-title="employee.name"/>
+                  <span t-if="row.employee_count &gt; 4" class="o_lp_assigned_more">+<t t-esc="row.employee_count - 4"/></span>
+                  <span t-if="!row.employee_count" class="text-muted">0 assigned</span>
+                </button>
+                <div t-if="state.assigneePopoverId === row.id" class="o_lp_assignee_popover" t-on-click.stop="() => {}">
+                  <div class="o_lp_assignee_popover_title"><b>Assigned employees</b><span><t t-esc="row.employee_count"/> total</span></div>
+                  <input type="search" t-model="state.assigneeSearch" placeholder="Search assignees…" aria-label="Search assigned employees"/>
+                  <div class="o_lp_assignee_popover_list">
+                    <p t-if="state.assigneeLoading" class="text-muted">Loading…</p>
+                    <div t-foreach="visibleAssignees" t-as="employee" t-key="employee.id" class="o_lp_assignee_person">
+                      <img t-att-src="employee.avatar_url" alt=""/>
+                      <span><b t-esc="employee.name"/><small><t t-esc="employee.code"/><t t-if="employee.department"> · <t t-esc="employee.department"/></t></small></span>
+                    </div>
+                    <p t-if="!state.assigneeLoading and !visibleAssignees.length" class="text-muted">No assigned employees match.</p>
+                  </div>
+                </div>
               </td>
               <td class="o_lp_actions">
                 <button type="button" class="o_lp_menu_btn" t-on-click.stop="() => state.menuId = state.menuId === row.id ? false : row.id" title="Actions">
                   <i class="fa fa-ellipsis-v"/>
                 </button>
-                <div t-if="state.menuId === row.id" class="o_lp_menu">
+                <div t-if="state.menuId === row.id" class="o_lp_menu" t-on-click.stop="() => {}">
                   <button t-on-click="() => this.view(row)"><i class="fa fa-eye"/> View Details</button>
                   <button t-if="row.active" t-on-click="() => this.edit(row)"><i class="fa fa-pencil"/> Edit Policy</button>
                   <button t-on-click="() => this.duplicate(row)"><i class="fa fa-copy"/> Duplicate Policy</button>
@@ -972,7 +986,7 @@
           <div class="o_lp_form">
             <label class="mb-3 d-block">
               <span class="o_lp_label">Effective Date</span>
-              <input type="date" class="form-control form-control-sm" t-model="state.assignDate"/>
+              <input type="date" class="form-control form-control-sm" t-model="state.assignDate" t-on-change="loadAssignCandidates"/>
             </label>
             <label class="mb-3 d-block">
               <span class="o_lp_label">Conflict Resolution Action</span>
@@ -983,16 +997,12 @@
               </select>
             </label>
             <span class="o_lp_label d-block mb-2">Select Employees</span>
-            <div class="o_lp_select_list">
-              <label t-foreach="state.options.employees || []" t-as="employee" t-key="employee.id" class="o_lp_emp_check">
-                <input type="checkbox" t-att-checked="state.assignEmployeeIds.includes(employee.id)" t-on-change="() => this.toggleAssignEmployee(employee.id)"/>
-                <span><b t-esc="employee.name"/> <small class="text-muted" t-if="employee.department">(<t t-esc="employee.department"/>)</small></span>
-              </label>
-            </div>
+            <p t-if="state.assignLoading" class="text-muted">Loading eligible employees…</p>
+            <EmployeeSelectList t-else="" employees="state.assignCandidates" selectedIds="state.assignEmployeeIds" onToggle.bind="toggleAssignEmployee" onSelectMany.bind="selectAssignEmployees" emptyMessage="'All eligible employees are already assigned, or none match this policy.'"/>
           </div>
           <t t-set-slot="footer">
             <button class="btn btn-outline-secondary" t-on-click="() => state.assign=false">Cancel</button>
-            <button class="btn btn-primary o_lp_primary" t-on-click="assignPolicy">Assign Policy</button>
+            <button class="btn btn-primary o_lp_primary" t-att-disabled="state.assignLoading || !state.assignEmployeeIds.length" t-on-click="assignPolicy">Assign Policy</button>
           </t>
       </SettingsPanel>
 

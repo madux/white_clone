@@ -1,0 +1,14 @@
+.o_leave_employee_picker { border:1px solid #dce2ec; border-radius:10px; overflow:hidden; }
+.o_leave_employee_picker_toolbar { display:flex; align-items:center; gap:10px; padding:10px; flex-wrap:wrap; }
+.o_leave_employee_picker_toolbar input { flex:1 1 180px; min-width:0; padding:7px 10px; border:1px solid #dce2ec; border-radius:6px; }
+.o_leave_employee_picker_toolbar span { color:#64748b; font-size:12px; white-space:nowrap; }
+.o_leave_employee_picker_toolbar button { border:0; background:none; color:#d8156a; font-size:12px; cursor:pointer; }
+.o_leave_employee_picker_toolbar button:disabled { color:#94a3b8; cursor:default; }
+.o_leave_employee_picker_scroll { max-height:350px; overflow:auto; }
+.o_leave_employee_picker table { width:100%; border-collapse:collapse; font-size:12px; }
+.o_leave_employee_picker th, .o_leave_employee_picker td { padding:8px 10px; border-top:1px solid #e5ebf3; text-align:left; }
+.o_leave_employee_picker th { position:sticky; top:0; background:#f8fafc; color:#64748b; font-size:11px; text-transform:uppercase; }
+.o_leave_employee_picker th:first-child, .o_leave_employee_picker td:first-child { width:32px; }
+.o_leave_employee_picker_person { display:flex; align-items:center; gap:8px; font-weight:600; }
+.o_leave_employee_picker_person img { width:28px; height:28px; border-radius:50%; object-fit:cover; background:#e9edf5; }
+.o_leave_employee_picker_empty { color:#64748b; text-align:center!important; padding:20px!important; }

@@ -300,6 +300,32 @@ class HrLeavePolicy(models.Model):
         eligible = set.intersection(*tests) if self.apply_to == "conditions" and self.condition_match == "all" else set.union(*tests)
         return employees.filtered(lambda e: e.id in eligible)
 
+    def _assignment_candidates(self):
+        """Employees this action may add without violating fixed policy rules."""
+        self.ensure_one()
+        if self.apply_to == "conditions":
+            return self._eligible_employees()
+        employees = self.env["hr.employee"].sudo().search([
+            ("company_id", "=", self.company_id.id), ("active", "=", True),
+        ])
+        if self.applicable_gender != "all":
+            employees = employees.filtered(lambda employee: employee.gender == self.applicable_gender)
+        return employees
+
+    def _close_ineligible_assignments(self, effective_date=None):
+        """Keep historical assignments, but retire those outside the edited scope."""
+        self.ensure_one()
+        eligible_ids = set(self._eligible_employees().ids)
+        effective = fields.Date.to_date(effective_date) if effective_date else fields.Date.context_today(self)
+        for assignment in self.assignment_ids.filtered(
+            lambda item: not item.superseded and item.employee_id.id not in eligible_ids
+            and (not item.date_to or item.date_to >= effective)
+        ):
+            if effective <= assignment.date_from:
+                assignment.write({"superseded": True})
+            else:
+                assignment.write({"date_to": effective - timedelta(days=1)})
+
     def _audit(self, note, before=None, after=None, employee=False, leave_type=False):
         self.ensure_one()
         self.env["hr.leave.audit.log"].sudo().create({
@@ -317,6 +343,13 @@ class HrLeavePolicy(models.Model):
         company = self.env.company
         def rows(records):
             return [{"id": item.id, "name": item.name} for item in records]
+        baseline_codes = ("VACATION", "MEDICAL", "MATERNITY", "PATERNITY", "COMPASS", "STUDY", "UNPAIDNEW")
+        baseline_types = self.sudo().with_context(active_test=False).search([
+            ("company_id", "=", company.id), ("code", "in", baseline_codes),
+        ]).line_ids.leave_type_id
+        selectable_types = baseline_types if baseline_types else self.env["hr.leave.type"].sudo().search([
+            ("company_id", "in", [False] + self.env.companies.ids),
+        ], order="name")
         return {
             "policy_defaults": {
                 "unit": company.leave_default_unit or "days",
@@ -330,7 +363,7 @@ class HrLeavePolicy(models.Model):
                 "team_overlap_percent": company.leave_default_team_overlap_percent,
                 "block_overlap_threshold": company.leave_default_block_overlap_threshold,
             },
-            "leave_types": [{"id": item.id, "name": item.name, "classification": item.policy_classification, "color": item.cleon_color_hex or "#3B82F6"} for item in self.env["hr.leave.type"].sudo().with_context(active_test=False).search([("company_id", "in", [False] + self.env.companies.ids)], order="name")],
+            "leave_types": [{"id": item.id, "name": item.name, "classification": item.policy_classification, "color": item.cleon_color_hex or "#3B82F6"} for item in selectable_types.sorted("name")],
             "employees": rows(employees), "departments": rows(employees.mapped("department_id").sorted("name")),
             "units": rows(employees.mapped("unit_id").sorted("name")), "grades": rows(employees.mapped("grade_id").sorted("name")),
             "locations": rows(employees.mapped("work_location_id").sorted("name")), "employee_types": rows(employees.mapped("employee_type_id").sorted("name")),
@@ -350,7 +383,7 @@ class HrLeavePolicy(models.Model):
     def _row(self):
         self.ensure_one()
         eligible = self._eligible_employees()
-        assigned = self.assignment_ids.filtered(lambda a: a.active_on(fields.Date.context_today(self))).mapped("employee_id")
+        assigned = self.assignment_ids.filtered(lambda a: a.active_on(fields.Date.context_today(self))).mapped("employee_id") if self.state == "active" and self.active else self.env["hr.employee"]
         lines = self.line_ids.filtered("active")
         line = lines[:1]
         return {
@@ -361,7 +394,9 @@ class HrLeavePolicy(models.Model):
             "state": self.state, "active": self.active, "display_status": "archived" if not self.active else self.state, "ai_enabled": self.ai_enabled,
             "leave_types": [{"id": value.leave_type_id.id, "name": value.leave_type_id.name, "entitlement": value.accrual_amount, "unit": value.unit, "compensation": value.compensation} for value in lines],
             "applicability": (_("Female Employees") if self.applicable_gender == "female" else _("Male Employees") if self.applicable_gender == "male" else _("All Employees")) if self.apply_to == "all" else _("%d eligible employee(s)") % len(eligible),
-            "employee_count": len(assigned or eligible), "employee_ids": (assigned or eligible).ids,
+            "employee_count": len(assigned), "employee_ids": assigned.ids,
+            "eligible_count": len(eligible),
+            "assigned_employees": [{"id": employee.id, "name": employee.name, "avatar_url": "/web/image/hr.employee/%s/avatar_128" % employee.id} for employee in assigned[:4]],
             "default_entitlement": line.accrual_amount if len(lines) == 1 else False,
             "default_unit": line.unit if len(lines) == 1 else "",
         }
@@ -394,6 +429,22 @@ class HrLeavePolicy(models.Model):
             "lines": [line._payload() for line in policy.line_ids.filtered("active")],
         })
         return data
+
+    @api.model
+    def get_policy_assignees(self, policy_id):
+        self._check_configure()
+        policy = self.with_context(active_test=False).browse(int(policy_id)).exists()
+        if not policy or policy.company_id not in self.env.companies:
+            raise AccessError(_("Policy not found or unavailable for this company."))
+        assigned = policy.assignment_ids.filtered(
+            lambda assignment: assignment.active_on(fields.Date.context_today(self))
+        ).mapped("employee_id").sorted("name") if policy.active and policy.state == "active" else self.env["hr.employee"]
+        return [{
+            "id": employee.id, "name": employee.name,
+            "code": employee.employee_number or "",
+            "department": employee.department_id.name or "",
+            "avatar_url": "/web/image/hr.employee/%s/avatar_128" % employee.id,
+        } for employee in assigned]
 
     @api.model
     def _code_for_name(self, name):
@@ -475,6 +526,14 @@ class HrLeavePolicy(models.Model):
             raise ValidationError(_("Select an active Leave Workflow Type."))
         for key in ("employee_ids", "department_ids", "unit_ids", "grade_ids", "location_ids", "employee_type_ids", "job_ids"):
             vals[key] = [(6, 0, [int(value) for value in selected.get(key, [])])]
+        if vals["apply_to"] == "all":
+            for key in ("employee_ids", "department_ids", "unit_ids", "grade_ids", "location_ids", "employee_type_ids", "job_ids"):
+                vals[key] = [(6, 0, [])]
+        elif vals["apply_to"] == "selected" and not any(selected.get(key) for key in (
+            "employee_ids", "department_ids", "unit_ids", "grade_ids", "location_ids", "employee_type_ids", "job_ids",
+        )):
+            # The form's documented blank-audience behavior is All Employees.
+            vals["apply_to"] = "all"
         before = policy._row() if policy else {}
         previous_leave_types = policy.line_ids.leave_type_id if policy else self.env["hr.leave.type"]
         if policy:
@@ -514,6 +573,7 @@ class HrLeavePolicy(models.Model):
             policy._write_lifecycle({"state": "active"})
             policy._sync_assignments(payload.get("conflict_resolution") or "review")
         elif policy.state == "active":
+            policy._close_ineligible_assignments()
             policy._sync_assignments(payload.get("conflict_resolution") or "review")
         (previous_leave_types | policy.line_ids.leave_type_id)._sync_native_validation_from_policies()
         policy._audit(_("%s policy '%s'.") % (_("Updated") if record_id else _("Created"), policy.name), before, policy._row())
@@ -618,12 +678,53 @@ class HrLeavePolicy(models.Model):
         policy = self.with_context(active_test=False).browse(int(policy_id)).exists()
         if not policy:
             raise UserError(_("Policy not found."))
+        if policy.company_id not in self.env.companies:
+            raise AccessError(_("You cannot assign another company's policy."))
         if not policy.active:
             raise UserError(_("Cannot assign an archived policy. Restore the policy first."))
+        if policy.state != "active":
+            raise UserError(_("Only active policies can be assigned."))
         employees = self.env["hr.employee"].browse([int(value) for value in employee_ids]).exists()
+        if not employees or len(employees) != len(set(int(value) for value in employee_ids)):
+            raise ValidationError(_("Select one or more valid employees."))
+        eligible_ids = set(policy._assignment_candidates().ids)
+        if any(employee.id not in eligible_ids for employee in employees):
+            raise ValidationError(_("One or more selected employees do not meet this policy's eligibility rules."))
+        effective = fields.Date.to_date(effective_date) if effective_date else fields.Date.context_today(self)
+        if effective < fields.Date.context_today(self):
+            raise ValidationError(_("Assignments cannot be backdated."))
+        already_assigned = policy.assignment_ids.filtered(
+            lambda item: not item.superseded and item.employee_id in employees
+            and (not item.date_to or item.date_to >= effective)
+        )
+        if already_assigned:
+            raise ValidationError(_("One or more selected employees are already assigned to this policy."))
+        if policy.apply_to == "selected":
+            policy.write({"employee_ids": [(4, employee.id) for employee in employees]})
         result = policy._sync_assignments(resolution, employees, effective_date)
         policy._audit(_("Assigned policy to %d employee(s); %d conflict(s) retained.") % (result["assigned"], result["conflicts"]))
         return result
+
+    @api.model
+    def get_assignable_employees(self, policy_id, effective_date=None):
+        """Return only eligible employees with no overlapping assignment here."""
+        self._check_configure()
+        policy = self.with_context(active_test=False).browse(int(policy_id)).exists()
+        if not policy or policy.company_id not in self.env.companies:
+            raise AccessError(_("Policy not found or unavailable for this company."))
+        if not policy.active or policy.state != "active":
+            return []
+        effective = fields.Date.to_date(effective_date) if effective_date else fields.Date.context_today(self)
+        occupied = set(policy.assignment_ids.filtered(
+            lambda item: not item.superseded and (not item.date_to or item.date_to >= effective)
+        ).mapped("employee_id").ids)
+        return [{
+            "id": employee.id,
+            "name": employee.name,
+            "code": employee.employee_number or "",
+            "department": employee.department_id.name or "",
+            "avatar_url": "/web/image/hr.employee/%s/avatar_128" % employee.id,
+        } for employee in policy._assignment_candidates().sorted("name") if employee.id not in occupied]
 
     @api.model
     def duplicate_policy(self, policy_id):
