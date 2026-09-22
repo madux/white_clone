@@ -134,9 +134,9 @@
                         <div class="d-flex align-items-center gap-2">
                             <span class="badge bg-primary rounded-circle px-2 py-1"><t t-esc="state.tourStep"/>/4</span>
                             <span class="small font-weight-bold">
-                                <t t-if="state.tourStep === 1">Step 1: Use the "+ Add Leave Type" button to create new leave policies with entitlements and accruals.</t>
+                                <t t-if="state.tourStep === 1">Step 1: Use the "+ Add Leave Type" button to register new leave type classifications.</t>
                                 <t t-elif="state.tourStep === 2">Step 2: Drag and drop rows using the ⠿ handle to reorder leave types in priority sequence.</t>
-                                <t t-elif="state.tourStep === 3">Step 3: Click any leave type name or the eye icon to view detailed policy drawer and audit history.</t>
+                                <t t-elif="state.tourStep === 3">Step 3: Click any leave type name or the eye icon to view details, governing policies, and employee allocations.</t>
                                 <t t-else="">Step 4: Use the Admin/Employee toggle switch in the header to preview employee view.</t>
                             </span>
                         </div>
@@ -175,9 +175,7 @@
                                     <th>Leave Type</th>
                                     <th>Code</th>
                                     <th>Type Category</th>
-                                    <th>Color</th>
-                                    <th>Max Entitlement</th>
-                                    <th>Carryover</th>
+                                    <th>Colour</th>
                                     <th>Assigned</th>
                                     <th>Total Days</th>
                                     <t t-if="state.viewMode === 'admin'">
@@ -189,7 +187,7 @@
                             <tbody>
                                 <t t-if="this.paginatedLeaveTypes.length === 0">
                                     <tr>
-                                        <td t-att-colspan="state.viewMode === 'admin' ? 11 : 8" class="text-center py-5 text-muted">
+                                        <td t-att-colspan="state.viewMode === 'admin' ? 9 : 7" class="text-center py-5 text-muted">
                                             <i class="fa fa-info-circle fa-2x mb-2 text-primary"/>
                                             <p class="mb-2 font-weight-bold"><t t-esc="this.hasActiveFilters ? 'No results match your filters.' : 'No leave types have been configured yet.'"/></p>
                                             <button t-if="this.hasActiveFilters" type="button" class="btn btn-sm btn-outline-primary" t-on-click="clearFilters">Clear filters</button>
@@ -249,26 +247,6 @@
                                                 </div>
                                             </td>
 
-                                            <!-- Max Entitlement -->
-                                            <td class="small">
-                                                <t t-if="leaveTypeItem.unlimited_entitlement">
-                                                    <span class="font-weight-bold text-success">Unlimited</span>
-                                                </t>
-                                                <t t-else="">
-                                                    <t t-esc="leaveTypeItem.max_entitlement"/> days/yr
-                                                </t>
-                                            </td>
-
-                                            <!-- Carryover Column -->
-                                            <td>
-                                                <t t-if="leaveTypeItem.allow_carryover">
-                                                    <span class="text-success small font-weight-bold"><i class="fa fa-check-circle me-1"/> Yes</span>
-                                                </t>
-                                                <t t-else="">
-                                                    <span class="text-muted small"><i class="fa fa-times-circle me-1"/> No</span>
-                                                </t>
-                                            </td>
-
                                             <!-- Assigned Employee Count -->
                                             <td class="small font-weight-bold"><t t-esc="leaveTypeItem.assigned_count"/> emps</td>
 
@@ -300,7 +278,7 @@
                                                             <i class="fa fa-eye text-primary"/>
                                                         </button>
                                                         <!-- Edit Pencil Icon -->
-                                                        <button type="button" class="btn btn-light border btn-sm" title="Edit Policy" t-on-click="() => this.openEditModal(leaveTypeItem)">
+                                                        <button type="button" class="btn btn-light border btn-sm" title="Edit Leave Type" t-on-click="() => this.openEditModal(leaveTypeItem)">
                                                             <i class="fa fa-pencil text-dark"/>
                                                         </button>
                                                         <!-- Duplicate Copy Icon -->
@@ -482,7 +460,7 @@
                 <!-- Drawer Action Buttons -->
                 <div class="p-3 border-bottom d-flex gap-2 bg-white">
                     <button type="button" class="btn btn-sm btn-pink-active font-weight-bold" t-on-click="() => props.onEdit(props.leaveType)">
-                        <i class="fa fa-pencil me-1"/> Edit Policy
+                        <i class="fa fa-pencil me-1"/> Edit Leave Type
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" t-on-click="() => props.onDuplicate(props.leaveType)">
                         <i class="fa fa-files-o me-1"/> Duplicate
@@ -516,98 +494,118 @@
 
                     <!-- OVERVIEW TAB -->
                     <t t-if="state.activeTab === 'overview'">
-                        <!-- Summary Metric Cards -->
+                        <!-- Summary Metric Cards — identity + usage only -->
                         <div class="row g-2 mb-4">
-                            <div class="col-3">
+                            <div class="col-4">
                                 <div class="p-2 border rounded bg-light text-center">
                                     <span class="micro-label text-muted d-block mb-1">Category</span>
                                     <strong class="small text-uppercase text-primary"><t t-esc="props.leaveType.category"/></strong>
                                 </div>
                             </div>
-                            <div class="col-3">
+                            <div class="col-4">
                                 <div class="p-2 border rounded bg-light text-center">
-                                    <span class="micro-label text-muted d-block mb-1">Entitlement</span>
-                                    <strong class="small text-dark"><t t-esc="props.leaveType.max_entitlement"/> d/yr</strong>
+                                    <span class="micro-label text-muted d-block mb-1">Assigned</span>
+                                    <strong class="small text-dark"><t t-esc="props.leaveType.assigned_count"/> employees</strong>
                                 </div>
                             </div>
-                            <div class="col-3">
+                            <div class="col-4">
                                 <div class="p-2 border rounded bg-light text-center">
-                                    <span class="micro-label text-muted d-block mb-1">Carryover</span>
-                                    <strong class="small text-success"><t t-if="props.leaveType.allow_carryover">Allowed</t><t t-else="">No</t></strong>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="p-2 border rounded bg-light text-center">
-                                    <span class="micro-label text-muted d-block mb-1">Approval</span>
-                                    <strong class="small text-dark"><t t-esc="props.leaveType.approval_workflow"/></strong>
+                                    <span class="micro-label text-muted d-block mb-1">Visible to Employees</span>
+                                    <strong class="small">
+                                        <t t-if="props.leaveType.visible_to_employees">
+                                            <i class="fa fa-check text-success"/> Yes
+                                        </t>
+                                        <t t-else="">
+                                            <i class="fa fa-times text-muted"/> Hidden
+                                        </t>
+                                    </strong>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Configuration Details List -->
-                        <h4 class="h6 font-weight-bold mb-3 text-uppercase text-muted micro-text">Configuration Details</h4>
+                        <!-- Identity Details -->
+                        <h4 class="h6 font-weight-bold mb-3 text-uppercase text-muted micro-text">Leave Type Details</h4>
                         <div class="detail-label-value-list border rounded p-3 bg-light d-flex flex-column gap-2 small">
                             <div class="d-flex justify-content-between border-bottom pb-1">
                                 <span class="text-muted">Code</span>
                                 <strong class="text-dark"><t t-esc="props.leaveType.code"/></strong>
                             </div>
                             <div class="d-flex justify-content-between border-bottom pb-1">
-                                <span class="text-muted">Applicable Gender</span>
-                                <span class="text-dark font-weight-bold text-capitalize"><t t-esc="props.leaveType.applicable_gender"/></span>
+                                <span class="text-muted">Colour</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="rounded" t-att-style="'width:16px;height:16px;display:inline-block;background:' + props.leaveType.color_hex"/>
+                                    <code class="small text-muted"><t t-esc="props.leaveType.color_hex"/></code>
+                                </div>
                             </div>
                             <div class="d-flex justify-content-between border-bottom pb-1">
-                                <span class="text-muted">Eligibility Scope</span>
-                                <span class="text-dark font-weight-bold text-capitalize"><t t-esc="props.leaveType.eligibility_scope"/></span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom pb-1">
-                                <span class="text-muted">Min. Service Period</span>
-                                <span class="text-dark"><t t-esc="props.leaveType.minimum_service_months"/> months</span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom pb-1">
-                                <span class="text-muted">Notice Period</span>
-                                <span class="text-dark"><t t-esc="props.leaveType.minimum_notice_days"/> days</span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom pb-1">
-                                <span class="text-muted">Max Consecutive Days</span>
-                                <span class="text-dark"><t t-if="props.leaveType.max_consecutive_days"><t t-esc="props.leaveType.max_consecutive_days"/> days</t><t t-else="">Unlimited</t></span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom pb-1">
-                                <span class="text-muted">Attachment Required</span>
-                                <span><t t-if="props.leaveType.supporting_document_policy !== 'never'"><i class="fa fa-check text-success"/></t><t t-else=""><i class="fa fa-times text-muted"/></t></span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom pb-1">
-                                <span class="text-muted">Half-Day Allowed</span>
-                                <span><t t-if="props.leaveType.allow_half_day"><i class="fa fa-check text-success"/></t><t t-else=""><i class="fa fa-times text-muted"/></t></span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom pb-1">
-                                <span class="text-muted">Negative Balance</span>
-                                <span><t t-if="props.leaveType.allow_negative_balance"><i class="fa fa-check text-success"/></t><t t-else=""><i class="fa fa-times text-muted"/></t></span>
+                                <span class="text-muted">Total Days Used</span>
+                                <span class="text-dark font-weight-bold">
+                                    <t t-if="props.leaveType.total_days_allocated > 0">
+                                        <t t-esc="props.leaveType.total_days_allocated"/> days
+                                    </t>
+                                    <t t-else="">—</t>
+                                </span>
                             </div>
                             <div class="d-flex justify-content-between">
                                 <span class="text-muted">Visible to Employees</span>
                                 <span><t t-if="props.leaveType.visible_to_employees"><i class="fa fa-check text-success"/></t><t t-else=""><i class="fa fa-times text-muted"/></t></span>
                             </div>
                         </div>
+
+                        <div class="alert alert-info d-flex gap-2 align-items-start mt-3 py-2 px-3" style="font-size:12px">
+                            <i class="fa fa-info-circle mt-1 text-info"/>
+                            <span>Entitlement, carryover, approval, accrual, notice period and eligibility rules are configured on each <strong>Leave Policy</strong> that references this type. A single type can have different rules in different policies.</span>
+                        </div>
                     </t>
 
-                    <!-- POLICIES TAB -->
+                    <!-- POLICIES TAB: Real Governing Policies for this Leave Type -->
                     <t t-if="state.activeTab === 'policies'">
-                        <div class="small d-flex flex-column gap-3">
-                            <div class="p-3 border rounded bg-light">
-                                <strong class="d-block mb-1 text-primary"><i class="fa fa-calendar-check-o me-1"/> Accrual Method</strong>
-                                <span><t t-esc="props.leaveType.accrual_method"/></span>
-                            </div>
-                            <div class="p-3 border rounded bg-light">
-                                <strong class="d-block mb-1 text-primary"><i class="fa fa-refresh me-1"/> Carryover &amp; Encashment</strong>
-                                <div>Carryforward: <strong class="text-dark"><t t-esc="props.leaveType.allow_carry_forward ? 'Allowed' : 'Disabled'"/></strong></div>
-                                <div>Encashment: <strong class="text-dark"><t t-esc="props.leaveType.allow_encashment ? 'Allowed' : 'Disabled'"/></strong></div>
-                                <div>Max Balance Cap: <strong class="text-dark"><t t-esc="props.leaveType.max_balance_cap || 'No Cap'"/></strong></div>
-                            </div>
-                            <div class="p-3 border rounded bg-light">
-                                <strong class="d-block mb-1 text-primary"><i class="fa fa-shield me-1"/> Team Overlap Restriction</strong>
-                                <span>Max %: <strong class="text-dark"><t t-esc="props.leaveType.team_overlap_percent"/>%</strong> | Action: <strong class="text-dark"><t t-esc="props.leaveType.block_overlap_threshold ? 'Block request' : 'Warning only'"/></strong></span>
-                            </div>
+                        <div t-if="state.loadingPolicies" class="text-center py-4 text-muted">
+                            <i class="fa fa-spin fa-circle-o-notch me-1"/> Loading governing policies…
                         </div>
+                        <t t-elif="state.policies.length === 0">
+                            <div class="text-center py-4 text-muted">
+                                <i class="fa fa-file-text-o fa-2x mb-2 text-muted"/>
+                                <p class="mb-1 font-weight-bold">No Leave Policies Assigned</p>
+                                <p class="small text-muted mb-0">This leave type is not currently included in any Leave Policy. Add it to a policy under <strong>Leave Policies</strong> to set entitlement, accrual rules, and employee assignments.</p>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div class="d-flex flex-column gap-3">
+                                <div class="alert alert-info py-2 px-3 small mb-0 d-flex gap-2 align-items-center">
+                                    <i class="fa fa-info-circle text-info"/>
+                                    <span>Rules, entitlement amounts, and carryover are determined by each policy below:</span>
+                                </div>
+                                <div t-foreach="state.policies" t-as="policy" t-key="policy.id" class="p-3 border rounded bg-light">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <strong class="text-dark"><t t-esc="policy.name"/></strong>
+                                            <span class="badge bg-secondary ms-2 micro-badge"><t t-esc="policy.code"/></span>
+                                        </div>
+                                        <span t-att-class="'badge ' + (policy.state === 'active' ? 'bg-success' : 'bg-warning text-dark')">
+                                            <t t-esc="policy.state"/>
+                                        </span>
+                                    </div>
+                                    <div class="row g-2 micro-text text-muted">
+                                        <div class="col-6">
+                                            <span>Entitlement:</span> <strong class="text-dark"><t t-esc="policy.entitlement"/> / <t t-esc="policy.accrual_period"/></strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <span>Compensation:</span> <strong class="text-dark"><t t-esc="policy.compensation"/></strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <span>Notice Days:</span> <strong class="text-dark"><t t-esc="policy.minimum_notice_days"/> days</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <span>Carry Forward:</span> <strong class="text-dark"><t t-esc="policy.allow_carry_forward ? (policy.maximum_carry_forward ? policy.maximum_carry_forward + ' days' : 'Allowed') : 'Disabled'"/></strong>
+                                        </div>
+                                        <div class="col-12 mt-1">
+                                            <span>Assigned:</span> <strong class="text-dark"><t t-esc="policy.assigned_count"/> employees</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
                     </t>
 
                     <!-- EMPLOYEES TAB : Real Eligible Employees with Balances) -->

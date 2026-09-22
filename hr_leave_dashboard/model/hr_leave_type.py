@@ -851,6 +851,42 @@ class HrLeaveType(models.Model):
         return res
 
     @api.model
+    def get_leave_type_policies_data(self, leave_type_id):
+        self.env["hr.leave"]._check_leave_dashboard_access()
+        lt = self.browse(int(leave_type_id))
+        if not lt.exists():
+            return []
+
+        lines = self.env["hr.leave.policy.line"].search([
+            ("leave_type_id", "=", lt.id),
+            ("active", "=", True),
+            ("policy_id.active", "=", True),
+        ])
+        res = []
+        for line in lines:
+            policy = line.policy_id
+            compensation_label = dict(line._fields["compensation"].selection).get(line.compensation, line.compensation)
+            unit_label = dict(line._fields["unit"].selection).get(line.unit, line.unit)
+            period_label = dict(line._fields["accrual_period"].selection).get(line.accrual_period, line.accrual_period)
+            entitlement_str = f"{line.accrual_amount:g} {line.unit}" if line.accrual_amount else "0"
+            res.append({
+                "id": policy.id,
+                "name": policy.name,
+                "code": policy.code,
+                "state": policy.state,
+                "compensation": compensation_label,
+                "unit": unit_label,
+                "entitlement": entitlement_str,
+                "accrual_period": period_label,
+                "minimum_notice_days": line.minimum_notice_days,
+                "document_policy": dict(line._fields["document_policy"].selection).get(line.document_policy, line.document_policy),
+                "allow_carry_forward": policy.allow_carry_forward,
+                "maximum_carry_forward": policy.maximum_carry_forward,
+                "assigned_count": len(policy._eligible_employees()),
+            })
+        return res
+
+    @api.model
     def update_leave_types_sequence(self, reordered_ids):
         self.env["hr.leave"]._check_leave_dashboard_access()
         for index, type_id in enumerate(reordered_ids, start=1):

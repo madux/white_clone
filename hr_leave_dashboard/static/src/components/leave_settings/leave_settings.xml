@@ -19,7 +19,7 @@
             <div><h2>Leave Management Settings</h2><p>These preferences apply to <strong t-esc="state.data.company.name"/>. Leave-category rules remain attached to each Leave Type.</p></div>
           </section>
           <nav class="o_ls_settings_tabs" aria-label="Leave Management settings">
-            <button t-foreach="[['general','General Settings'],['rules','Rules &amp; Permissions'],['calendar','Calendar &amp; Visibility'],['notifications','Notifications &amp; Alerts'],['lifecycle','Return, Extension &amp; Handover'],['integrations','Integrations &amp; AI']]" t-as="tab" t-key="tab[0]" t-att-class="state.activeTab === tab[0] ? 'active' : ''" t-on-click="() => this.setTab(tab[0])" t-esc="tab[1]"/>
+            <button t-foreach="[['general','General Settings'],['rules','Rules &amp; Permissions'],['calendar','Calendar &amp; Visibility'],['notifications','Notifications &amp; Alerts'],['lifecycle','Return, Extension &amp; Handover'],['integrations','Integrations &amp; AI'],['leave_types','Leave Types']]" t-as="tab" t-key="tab[0]" t-att-class="state.activeTab === tab[0] ? 'active' : ''" t-on-click="() => this.setTab(tab[0])" t-esc="tab[1]"/>
           </nav>
 
           <section t-if="state.activeTab === 'general'" class="o_ls_card">
@@ -154,7 +154,12 @@
             </div>
           </section>
 
-          <footer class="o_ls_footer">
+          <!-- Leave Types sub-tab — embedded within General Settings -->
+          <t t-if="state.activeTab === 'leave_types'">
+            <LeaveTypesPage embedded="true"/>
+          </t>
+
+          <footer t-if="state.activeTab !== 'leave_types'" class="o_ls_footer">
             <button class="o_ls_reset" t-on-click="resetDefaults" t-att-disabled="state.saving"><i class="fa fa-undo"/> Reset policy defaults</button>
             <div><button t-if="dirty" class="o_ls_discard" t-on-click="discard" t-att-disabled="state.saving">Discard</button><button class="o_ls_save" t-on-click="save" t-att-disabled="!dirty || state.saving"><i t-att-class="state.saving ? 'fa fa-spinner fa-spin' : 'fa fa-save'"/> Save Changes</button></div>
           </footer>

@@ -391,13 +391,10 @@ export class LeaveTypesPage extends Component {
         const locMap = Object.fromEntries(this.state.locations.map(l => [l.id, l.name]));
 
         let csvContent = "\uFEFF"; // UTF-8 BOM for Excel compatibility
-        csvContent += "Leave Type,Code,Category,Color,Entitlement,Unlimited,Gender,Eligibility Scope,Selected Departments,Selected Locations,Min Service (m),Accrual Method,Tenure Scaling,Carryover,Encashment,Max Cap,Approval Workflow,Doc Policy,Notice Days,Half Day,Max Consecutive,Negative Balance,Team Overlap %,Block Overlap,Active,Visible\n";
+        csvContent += "Leave Type,Code,Category,Color,Assigned Employees,Total Days Allocated,Active,Visible\n";
 
         for (const item of data) {
-            const deptsText = (item.department_ids || []).map(id => deptMap[id] || id).join("; ");
-            const locsText = (item.location_ids || []).map(id => locMap[id] || id).join("; ");
-
-            csvContent += `"${item.name}","${item.code}","${item.category}","${item.color_hex}","${item.max_entitlement}","${item.unlimited_entitlement ? "Yes" : "No"}","${item.applicable_gender}","${item.eligibility_scope}","${deptsText}","${locsText}",${item.minimum_service_months},"${item.accrual_method}","${item.tenure_based_accrual ? "Yes" : "No"}","${item.allow_carryover ? "Yes" : "No"}","${item.allow_encashment ? "Yes" : "No"}",${item.max_balance_cap},"${item.approval_workflow}","${item.supporting_document_policy}",${item.minimum_notice_days},"${item.allow_half_day ? "Yes" : "No"}",${item.max_consecutive_days},"${item.allow_negative_balance ? "Yes" : "No"}",${item.team_overlap_percent},"${item.block_overlap_threshold ? "Yes" : "No"}","${item.active ? "Active" : "Inactive"}","${item.visible_to_employees ? "Yes" : "No"}"\n`;
+            csvContent += `"${item.name}","${item.code}","${item.category}","${item.color_hex}",${item.assigned_count || 0},${item.total_days_allocated || 0},"${item.active ? "Active" : "Inactive"}","${item.visible_to_employees ? "Yes" : "No"}"\n`;
         }
 
         const ext = format === "excel" ? "csv" : "csv";
@@ -405,11 +402,11 @@ export class LeaveTypesPage extends Component {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `leave_types_full_policy_config.${ext}`);
+        link.setAttribute("download", `leave_types.${ext}`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        this.notification.add(`Full leave types policy configuration exported (${format === 'excel' ? 'Excel-CSV' : 'CSV'}).`, { type: "success" });
+        this.notification.add(`Leave types exported (${format === 'excel' ? 'Excel-CSV' : 'CSV'}).`, { type: "success" });
     }
 }
 

@@ -4,15 +4,16 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { CalendarSidebar } from "../calendar_sidebar";
+import { LeaveTypesPage } from "../leave_types/leave_types_page";
 
 const SETTINGS_TAB_STORAGE_KEY = "hr_leave_dashboard.leave_settings.active_tab";
 const SETTINGS_TABS = new Set([
-    "general", "rules", "calendar", "notifications", "lifecycle", "integrations",
+    "general", "rules", "calendar", "notifications", "lifecycle", "integrations", "leave_types",
 ]);
 
 export class LeaveSettingsPage extends Component {
     static template = "hr_leave_dashboard.LeaveSettingsPage";
-    static components = { CalendarSidebar };
+    static components = { CalendarSidebar, LeaveTypesPage };
     static props = { embedded: { type: Boolean, optional: true }, onOpenLeaveTypes: { type: Function, optional: true }, "*": true };
 
     setup() {
@@ -120,10 +121,7 @@ export class LeaveSettingsPage extends Component {
     }
 
     openLeaveTypes() {
-        if (this.props.onOpenLeaveTypes) return this.props.onOpenLeaveTypes();
-        return this.action.doAction("hr_leave_dashboard.action_hr_leave_configuration", {
-            additionalContext: { configuration_tab: "policies" },
-        });
+        this.setTab("leave_types");
     }
 
     openPublicHolidays() {
