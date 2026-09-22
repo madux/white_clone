@@ -7,7 +7,13 @@ import { SmartDateRecommendationsModal } from "../smart_date_modal/smart_date_mo
 export class EmployeeRequestModal extends Component {
     static template = "hr_leave_dashboard.EmployeeRequestModal";
     static components = { SmartDateRecommendationsModal };
-    static props = { close: Function, submitted: { type: Function, optional: true }, initial: { type: Object, optional: true }, existingRequestId: { type: Number, optional: true } };
+    static props = {
+        close: Function,
+        submitted: { type: Function, optional: true },
+        initial: { type: [Object, { value: null }], optional: true },
+        existingRequestId: { type: [Number, { value: null }], optional: true },
+    };
+
     setup() {
         this.orm = useService("orm"); this.notification = useService("notification"); this.action = useService("action");
         this.state = useState({

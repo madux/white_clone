@@ -12,9 +12,6 @@
                 <h2>Leave Requests</h2>
                 <p>View, track and manage employee leave requests.</p>
             </div>
-            <button class="o_mlr_btn_primary" t-on-click="() => this.openNew()">
-                <i class="fa fa-plus"/> Request Leave
-            </button>
         </header>
 
         <!-- ═══════════════════════════════════════════════

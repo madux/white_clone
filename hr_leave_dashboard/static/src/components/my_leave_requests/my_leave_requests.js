@@ -311,7 +311,7 @@ export class MyLeaveRequestsPage extends Component {
     // ═══════════════════════════════════════════════════════════
 
     openNew() { this.state.initial = null; this.state.existingRequestId = null; this.state.requestOpen = true; }
-    closeNew() { this.state.requestOpen = false; this.state.existingRequestId = null; }
+    closeNew() { this.state.requestOpen = false; this.state.initial = null; this.state.existingRequestId = null; }
     view(id) { this.state.detailReadOnly = true; this.state.detailId = id; }
     viewApproval(id) { this.state.detailReadOnly = false; this.state.detailId = id; }
     closeDetail() { this.state.detailId = null; }

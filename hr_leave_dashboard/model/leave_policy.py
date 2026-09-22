@@ -921,6 +921,8 @@ class HrLeavePolicyLine(models.Model):
         dates = set()
         for assignment in assignments:
             line = assignment.policy_line_id
+            if not line or line.accrual_amount <= 0:
+                continue
             run_prefix = "policy:%s:" % assignment.id
             existing_keys = set(self.env["hr.leave.accrual.run"].sudo().search([
                 ("employee_id", "=", assignment.employee_id.id),
@@ -1011,6 +1013,8 @@ class HrLeavePolicyLine(models.Model):
             if Run.search_count([("employee_id", "=", assignment.employee_id.id), ("leave_type_id", "=", line.leave_type_id.id), ("period_key", "=", period_key)]):
                 continue
             amount = round(line.accrual_amount, 2)
+            if amount <= 0:
+                continue
             expiry = effective + relativedelta(years=1, days=-1)
             allocation = self.env["hr.leave.allocation"].sudo().with_context(
                 tracking_disable=True, mail_create_nosubscribe=True, mail_notify_force_send=False,

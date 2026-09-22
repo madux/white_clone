@@ -92,11 +92,6 @@
           </t>
         </section>
 
-        <div t-if="state.selectedKeys.length" class="o_lb_selected">
-          <b><t t-esc="state.selectedKeys.length"/> selected</b>
-          <span>Use the row menu to view, adjust, or inspect history.</span>
-          <button t-on-click="() => state.selectedKeys = []">Clear</button>
-        </div>
 
         <!-- Main data table -->
         <section class="o_lb_table_wrap">

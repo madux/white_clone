@@ -15,7 +15,7 @@ export class LeaveTypeFormModal extends Component {
     static template = "hr_leave_dashboard.LeaveTypeFormModal";
     static props = {
         mode: String,                              // "create" | "edit"
-        leaveTypeData: { type: Object, optional: true },
+        leaveTypeData: { type: [Object, { value: null }], optional: true },
         departments: Array,
         units: Array,
         grades: Array,
