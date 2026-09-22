@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- <record id="view_cleon_hr_grade_form" model="ir.ui.view">
+        <field name="name">hr.grade.form</field>
+        <field name="model">hr.grade</field>
+        <field name="arch" type="xml">
+            <form string="Grade grade" class="o_qms_form">
+                <header> 
+                </header>
+                <sheet>
+                    <div class="qms-card">
+                        <div class="qms-card-header">
+                            <div class="qms-card-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M4 4h16v16H4z"/>
+                                </svg>
+                            </div>
+                            <span class="qms-card-title">
+                                Grades &amp; Configuration
+                            </span>
+                        </div> 
+
+                        <div class="qms-card-header"> 
+                            <group>
+                                <group>
+                                    <field name="name"/>
+                                    <field name="min_salary_band"/>
+                                    <field name="max_salary_band"/>
+                                    <field name="salary_band"/>
+                                    
+                                </group>
+                                <group>
+                                    <field name="leave_duration"/>
+                                    <field name="employee_count"/>
+                                    <field name="cash_advance_limit"/>
+                                    <field name="active"
+                                        widget="boolean_toggle"/>
+                                </group>
+                            </group>
+                        </div> 
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_grade_list" model="ir.ui.view">
+        <field name="name">hr.grade.list</field>
+        <field name="model">hr.grade</field>
+        <field name="arch" type="xml">
+            <tree string="Grade">
+                <field name="name"/>
+                <field name="min_salary_band"/>
+                <field name="max_salary_band"/> 
+                <field name="salary_band"/> 
+                 <field name="leave_duration"/>
+                <field name="cash_advance_limit"/>
+                <field name="employee_count"/>
+            </tree>
+        </field>
+    </record> -->
+    <record id="view_payrollgrade_kanban_pink" model="ir.ui.view">
+        <field name="name">hr.grade.kanban.pink</field>
+        <field name="model">hr.grade</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" js_class="payroll_kanban_sidebar">
+                <field name="name"/>
+                <field name="min_salary_band"/>
+                <field name="max_salary_band"/>
+                <field name="salary_band"/>
+                <field name="employee_count"/>
+                <!-- <field name="cash_advance_limit"/> -->
+                <field name="active"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click p-0 border-0 rounded-3 shadow-sm overflow-hidden position-relative" 
+                            style="background: linear-gradient(135deg, #FFF5F7 0%, #FCE4EC 50%, #F8BBD0 100%); max-width: 380px; font-family: 'Inter', sans-serif;">
+                            
+                            <!-- Background Accent Pattern -->
+                            <div style="position: absolute; right: -20px; top: -20px; width: 100px; height: 100px; background: rgba(233, 30, 99, 0.05); border-radius: 50%; pointer-events: none;"/>
+                            
+                            <!-- Top Header Section -->
+                            <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="fw-bold fs-6 text-uppercase" style="color: #AD1457; letter-spacing: 0.5px;">
+                                        <i class="fa fa-building me-1"/> <field name="name"/> 
+                                    </span>
+                                </div>
+                                <i class="fa fa-circle text-success fs-6" title="Active Status"/>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="row g-0 px-3 py-2 align-items-center">
+                                <!-- Left: Employee Avatar -->
+                                <div class="col-4 text-center">
+                                    <div class="position-relative d-inline-block">
+
+                                    </div>
+                                </div>
+
+                                <!-- Right: Employee Details -->
+                                <div class="col-8 ps-3">
+                                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem;">
+                                        <field name="name"/>
+                                    </h5>
+                                    <p class="text-muted mb-2 fw-semibold" style="font-size: 0.85rem; color: #880E4F !important;">
+                                        <field name="active" widget="badge"/>
+                                    </p>
+                                    
+                                    <div class="lh-sm" style="font-size: 0.78rem; color: #16090d;">
+                                        <div class="mb-1">
+                                            <span class="fw-bold">Min Salary Band:</span> 
+                                            <span class="color-darkred"><field name="min_salary_band"/></span>
+                                        </div>
+                                        <div class="mb-1 text-truncate">
+                                            <span class="fw-bold">Max Salary band:</span> 
+                                            <span class="color-darkred"><field name="max_salary_band"/></span>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <span class="fw-bold">Salary band:</span> 
+                                            <span class="color-darkred"><field name="salary_band"/></span>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <span class="fw-bold">No of Employees:</span> 
+                                            <span class="color-darkred"><field name="employee_count"/></span>
+                                        </div>
+                                         
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Footer Badge -->
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 mt-1" 
+                                style="background: rgba(255, 255, 255, 0.6); border-top: 1px solid rgba(244, 143, 177, 0.3);">
+                                <span class="badge rounded-pill px-2 py-1" style="background-color: #F8BBD0; color: #880E4F; font-weight: 500;">
+                                    <i class="fa fa-check-circle me-1"/> Active
+                                </span>
+                                <small style="color: #AD1457; font-weight: 500; font-size: 0.75rem;">
+                                    Create Date: <t t-esc="record.create_date.value || '2026'"/>
+                                </small>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_cleon_grade_cycle" model="ir.actions.act_window">
+        <field name="name">Grade</field>
+        <field name="res_model">hr.grade</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="target">current</field>
+        <!-- <field name="view_id" ref="cleon_payroll.view_cleon_grade_list"/> -->
+        <!-- <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'tree',
+                'view_id': ref('cleon_payroll.view_cleon_grade_list'),
+            }),
+            (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('cleon_payroll.view_cleon_hr_grade_form'),
+            }),
+        ]"/> -->
+    </record>
+
+</odoo>

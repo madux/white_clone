@@ -29,7 +29,7 @@ class IntelligenceProfile(models.Model):
     document_type_id = fields.Many2one(
         "doc.document.type",
         required=True,
-        ondelete="restrict",
+        ondelete="cascade",
     )
     is_system = fields.Boolean(default=False)
     active = fields.Boolean(default=True)
@@ -107,90 +107,8 @@ class IntelligenceProfile(models.Model):
 
     @api.model
     def _seed_default_profiles(self):
-        type_model = self.env["doc.document.type"]
-        contract = self.env.ref(
-            "cleon_document_management.type_employment_contract",
-            raise_if_not_found=False,
-        ) or type_model.search([("name", "=", "Employment Contract")], limit=1)
-        if not contract:
-            contract = type_model.create(
-                {
-                    "name": "Employment Contract",
-                    "category": "employment",
-                    "intelligence_scope": "employee",
-                    "classification_labels": "employment contract, contract of employment",
-                }
-            )
-        existing = self.with_context(active_test=False).search(
-            [("document_type_id", "=", contract.id), ("is_system", "=", True)],
-            limit=1,
-        )
-        if existing:
-            if not contract.default_profile_id:
-                contract.default_profile_id = existing.id
-            return
-        profile = self.create(
-            {
-                "name": "Employment Contract",
-                "document_type_id": contract.id,
-                "is_system": True,
-            }
-        )
-        version = profile.current_version_id
-        version.write(
-            {
-                "extraction_instructions": (
-                    "Extract the employee name, start date, end date, and "
-                    "notice period from the employment contract."
-                ),
-                "examples": "Start date: 1 January 2026",
-            }
-        )
-        Field = self.env["doc.intelligence.field"]
-        Field.create(
-            [
-                {
-                    "version_id": version.id,
-                    "sequence": 10,
-                    "name": "Employee name",
-                    "key": "employee_name",
-                    "field_type": "employee_reference",
-                    "required": True,
-                    "description": "Legal name of the employee on the contract.",
-                    "example": "Ada Lovelace",
-                },
-                {
-                    "version_id": version.id,
-                    "sequence": 20,
-                    "name": "Start date",
-                    "key": "start_date",
-                    "field_type": "date",
-                    "required": True,
-                    "description": "Employment start date.",
-                    "example": "2026-01-01",
-                },
-                {
-                    "version_id": version.id,
-                    "sequence": 30,
-                    "name": "End date",
-                    "key": "end_date",
-                    "field_type": "date",
-                    "required": False,
-                    "description": "Contract end date if fixed-term.",
-                },
-                {
-                    "version_id": version.id,
-                    "sequence": 40,
-                    "name": "Notice period",
-                    "key": "notice_period",
-                    "field_type": "text",
-                    "required": False,
-                    "description": "Notice period stated in the contract.",
-                    "example": "30 days",
-                },
-            ]
-        )
-        contract.default_profile_id = profile.id
+        """No-op: document types and intelligence profiles are created in Settings."""
+        return
 
     def action_new_version(self):
         self.ensure_one()

@@ -1,6 +1,8 @@
 import uuid
 
-from odoo import fields, models
+from odoo import api, fields, models
+
+from .gallery_share_security import hash_share_password, verify_share_password
 
 
 class SocialGalleryShareLink(models.Model):
@@ -24,3 +26,27 @@ class SocialGalleryShareLink(models.Model):
     recipient_user_ids = fields.Many2many(
         "res.users", "social_gallery_share_recipient_rel", "link_id", "user_id"
     )
+
+    @api.model
+    def _prepare_password(self, password):
+        return hash_share_password(password)
+
+    def check_password(self, password):
+        self.ensure_one()
+        return verify_share_password(password, self.password)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        prepared = []
+        for vals in vals_list:
+            row = dict(vals)
+            if row.get("password"):
+                row["password"] = self._prepare_password(row["password"])
+            prepared.append(row)
+        return super().create(prepared)
+
+    def write(self, vals):
+        if vals.get("password"):
+            vals = dict(vals)
+            vals["password"] = self._prepare_password(vals["password"])
+        return super().write(vals)

@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ══════════════════════════════════════════════════
+         TREE / LIST VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hr_experience_video_tree" model="ir.ui.view">
+        <field name="name">hr.experience.video.tree</field>
+        <field name="model">hr.experience.video</field>
+        <field name="arch" type="xml">
+            <tree
+                string="List"
+                class="o_exp_list">
+
+                <field name="name" readonly="0"/>
+                <!-- <field name="description" readonly="0"/> -->
+                <field name="video_url" readonly="0"/>
+                <field name="video_file" readonly="0"/>
+                <field name="thumbnail" readonly="0"/>
+                <field name="sequence" readonly="0"/>
+                <field name="active" readonly="0"/>
+                <field name="published" readonly="1"/> 
+                <field name="duration" readonly="1"/> 
+                <field name="category" readonly="1"/> 
+                <field name="total_watches" readonly="1"/> 
+                <!-- <field name="watch_ids" readonly="1"/>  -->
+                <!-- <field name="state" readonly="1"/> -->
+                <!-- <field name="state" widget="badge"
+                    decoration-warning="state == 'pending'" 
+                    decoration-success="state == 'approved'"
+                    decoration-danger="state == 'rejected'" 
+                    /> -->
+            </tree>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         SEARCH VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hr_experience_video_search" model="ir.ui.view">
+        <field name="name">hr.experience.video.search</field>
+        <field name="model">hr.experience.video</field>
+        <field name="arch" type="xml">
+            <search string="Search">
+                <field name="name" readonly="0"/>
+                <!-- <field name="description" readonly="0"/> -->
+                <field name="video_url" readonly="0"/>
+                <field name="video_file" readonly="0"/>
+                <field name="thumbnail" readonly="0"/>
+                <field name="sequence" readonly="0"/>
+                <field name="active" readonly="0"/>
+                <field name="published" readonly="1"/> 
+                <field name="duration" readonly="1"/> 
+                <field name="category" readonly="1"/> 
+                <field name="total_watches" readonly="1"/> 
+                <!-- <field name="watch_ids" readonly="1"/>  --> 
+                <separator/>
+                <group>
+                    <filter string="Category" name="group_category" context="{'group_by':'category'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         FORM VIEW  — Modern Card-based UI
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hr_experience_video_form" model="ir.ui.view">
+        <field name="name">hr.experience.video.form</field>
+        <field name="model">hr.experience.video</field>
+        <field name="arch" type="xml">
+            <form string="Form" class="o_exp_form">
+                <!-- ══ STATUS BAR ══ -->
+                <header>
+                    <!-- <button name="action_approve" string="✓ Confirm &amp; Approve"
+                            type="object" class="btn btn-success"
+                            confirm="Are you sure you want to approve and create database?"
+                            invisible="state not in ('pending')"/>
+
+                    <button name="action_reject" string="Reject"
+                            type="object" class="btn btn-success"
+                            confirm="Are you sure you want to reject"
+                            invisible="state in ('approved')"/>
+					<field name="state" widget="statusbar" force_save="1" readonly="1"/> -->
+                </header>
+                <sheet>
+                    <!-- ══ HERO HEADER BANNER ══ -->
+                    <div class="exp-header-hero">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="exp-hero-ref">
+                                    <field name="name" readonly="0" class="d-inline"/>
+                                </div>
+                                <div class="exp-hero-sub">Progress</div>
+                                <div class="exp-badge-row">
+                                    <field name="category" widget="badge"/>
+                                </div>
+                            </div>
+                            <div class="text-end" style="color:rgba(255,255,255,.7); font-size:12px;">
+                                <div>
+                                     
+                                </div>
+                                <div style="margin-top:4px;">
+                                     
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+ 
+
+                    <!-- ══ CARD: IDENTIFICATION ══ -->
+                    <div class="exp-card">
+                        <div class="exp-card-header">
+                            <div class="exp-card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <span class="exp-card-title">videos</span>
+                        </div>
+                        <div class="exp-card-body">
+                            <group col="4">
+                                <group col="4">
+                                     <field name="name" readonly="0"/>
+                                    <field name="video_url" readonly="0"/>
+                                    <field name="video_file" readonly="0"/>
+                                    <field name="thumbnail" readonly="0"/>
+                                    <field name="sequence" readonly="0"/>
+                                    <field name="active" readonly="0"/>
+                                </group>
+                                <div class="exp-divider"/>
+                                <group col="4">
+                                    <field name="published" readonly="1" widget="boolean_toggle"/> 
+                                    <field name="duration" readonly="1"/> 
+                                    <field name="category" readonly="1"/> 
+                                    <field name="total_watches" readonly="1"/> 
+                                    <field name="watch_ids" readonly="1" widget="many2many_tags"/>  
+                                    <field name="description" readonly="0"/>
+
+                                </group>
+                            </group>
+                        </div>
+                    </div> 
+                </sheet> 
+                <!-- <chatter/> --> 
+            </form>
+        </field>
+    </record> 
+    <!-- ══════════════════════════════════════════════════
+         ACTION
+    ══════════════════════════════════════════════════ -->
+    
+
+    <!-- ══════════════════════════════════════════════════
+         TREE / LIST VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hr_experience_video_watch_tree" model="ir.ui.view">
+        <field name="name">hr.experience.video.watch.tree</field>
+        <field name="model">hr.experience.video.watch</field>
+        <field name="arch" type="xml">
+            <tree
+                string="List"
+                class="o_exp_list">
+
+                <field name="video_id" readonly="0"/>
+                <field name="employee_id" readonly="0"/>
+                <field name="watched" readonly="0"/>
+                <field name="watched_at" readonly="0"/>
+                <field name="progress" readonly="0"/>
+                <field name="duration_watched" readonly="1"/> 
+                <!-- <field name="state" readonly="1"/> -->
+                <!-- <field name="state" widget="badge"
+                    decoration-warning="state == 'pending'" 
+                    decoration-success="state == 'approved'"
+                    decoration-danger="state == 'rejected'" 
+                    /> -->
+            </tree>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         SEARCH VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hr_experience_video_watch_search" model="ir.ui.view">
+        <field name="name">hr.experience.video.watch.search</field>
+        <field name="model">hr.experience.video.watch</field>
+        <field name="arch" type="xml">
+            <search string="Search">
+                <field name="video_id" readonly="0"/>
+                <field name="employee_id" readonly="0"/>
+                <field name="watched" readonly="0"/>
+                <field name="watched_at" readonly="0"/>
+                <field name="progress" readonly="0"/>
+                <field name="duration_watched" readonly="1"/> 
+                <separator/>
+                <!-- <group>
+                    <filter string="State" name="group_state" context="{'group_by':'state'}"/>
+                </group> -->
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         FORM VIEW  — Modern Card-based UI
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hr_experience_video_watch_form" model="ir.ui.view">
+        <field name="name">hr.experience.video.watch.form</field>
+        <field name="model">hr.experience.video.watch</field>
+        <field name="arch" type="xml">
+            <form string="Form" class="o_exp_form">
+                <!-- ══ STATUS BAR ══ -->
+                <header>
+                    <!-- <button name="action_approve" string="✓ Confirm &amp; Approve"
+                            type="object" class="btn btn-success"
+                            confirm="Are you sure you want to approve and create database?"
+                            invisible="state not in ('pending')"/>
+
+                    <button name="action_reject" string="Reject"
+                            type="object" class="btn btn-success"
+                            confirm="Are you sure you want to reject"
+                            invisible="state in ('approved')"/>
+					<field name="state" widget="statusbar" force_save="1" readonly="1"/> -->
+                </header>
+                <sheet>
+                    <!-- ══ HERO HEADER BANNER ══ -->
+                    <div class="exp-header-hero">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="exp-hero-ref">
+                                    <field name="video_id" readonly="0" class="d-inline"/>
+                                </div>
+                                <div class="exp-hero-sub">Progress</div>
+                                <div class="exp-badge-row">
+                                    <field name="progress" widget="badge"/>
+                                </div>
+                            </div>
+                            <div class="text-end" style="color:rgba(255,255,255,.7); font-size:12px;">
+                                <div>
+                                     
+                                </div>
+                                <div style="margin-top:4px;">
+                                     
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+ 
+
+                    <!-- ══ CARD: IDENTIFICATION ══ -->
+                    <div class="exp-card">
+                        <div class="exp-card-header">
+                            <div class="exp-card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <span class="exp-card-title">Watched video</span>
+                        </div>
+                        <div class="exp-card-body">
+                            <group col="4">
+                                <group col="4">
+                                    <field name="video_id" readonly="0"/>
+                                    <field name="employee_id" readonly="0"/>
+                                    <field name="watched" readonly="0"/> 
+                                </group>
+                                <div class="exp-divider"/>
+                                <group col="4">
+                                    <field name="watched_at" readonly="0"/>
+                                    <field name="progress" readonly="0"/>
+                                    <field name="duration_watched" readonly="0"/> 
+                                </group>
+                            </group>
+                        </div>
+                    </div> 
+                </sheet> 
+                <!-- <chatter/> --> 
+            </form>
+        </field>
+    </record> 
+    <!-- ══════════════════════════════════════════════════
+         ACTION
+    ══════════════════════════════════════════════════ -->
+    
+
+    <!-- ══════════════════════════════════════════════════
+         MENU
+    ══════════════════════════════════════════════════ -->
+     
+    <!-- Sub-menu: -->
+    <menuitem
+        id="menu_hr_experience_video_watch"
+        name="🔍 Watched Video"
+        parent="hr_employee_experience.menu_employee_experience"
+        action="action_hr_experience_video_watch"
+        sequence="30"/>
+
+    <menuitem
+        id="menu_hr_experience_video"
+        name="📹 Videos"
+        parent="hr_employee_experience.menu_employee_experience"
+        action="action_hr_experience_video"
+        sequence="20"/>
+
+         <!-- <record id="cleon_license.menu_hr_experience_video_watch" model="ir.ui.menu">
+            <field name="icon_class">fa fa-credit-card</field>
+            <field name="category_name">CleonHR-License</field>
+        </record> -->
+</odoo>

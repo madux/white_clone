@@ -27,9 +27,7 @@ import MoveDocumentsDialog from "./MoveDocumentsDialog";
 import ModalDialog from "./ModalDialog";
 import BackButton from "./BackButton";
 import DocumentViewerDialog from "./DocumentViewerDialog";
-import UploadDuplicateDialog from "./UploadDuplicateDialog";
-import { findFolderUploadDuplicates } from "../../../lib/uploadDuplicates";
-import type { UploadDuplicateMatch } from "../../../lib/types";
+import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 
 import DocumentFilterBar, {
   FilterState,
@@ -60,10 +58,6 @@ export default function OrganizationFolderPage() {
   const [selected, setSelected] = useState<number[]>([]);
   const [movingIds, setMovingIds] = useState<number[] | null>(null);
   const [folderExpanded, setFolderExpanded] = useState(true);
-  const [duplicateWarning, setDuplicateWarning] = useState<{
-    matches: UploadDuplicateMatch[];
-    proceed: () => Promise<void>;
-  } | null>(null);
   const folder = folders.data?.find((item) => item.id === folderId);
   const visibleDocuments = useMemo(
     () => applyDocumentFilters(documents.data ?? [], filters),
@@ -124,7 +118,6 @@ export default function OrganizationFolderPage() {
     setExpiryDates([]);
     setBulkTypeId("");
     setShowUpload(false);
-    setDuplicateWarning(null);
   };
 
   const submitUpload = async (event: React.FormEvent) => {
@@ -137,15 +130,6 @@ export default function OrganizationFolderPage() {
       missingExpiryDates(typeIds, expiryDates, types.data ?? [])
     )
       return;
-    const matches = findFolderUploadDuplicates(
-      files,
-      typeIds,
-      documents.data ?? [],
-    );
-    if (matches.length) {
-      setDuplicateWarning({ matches, proceed: performUpload });
-      return;
-    }
     await performUpload();
   };
   return (
@@ -301,7 +285,7 @@ export default function OrganizationFolderPage() {
                                 {document.created_at?.slice(0, 10) || "Unknown"}
                               </td>
                               <td className="px-5 py-4 text-sm text-slate-500">
-                                {document.write_date.slice(0, 10)}
+                                {formatDocumentDateShort(document.write_date)}
                               </td>
                               <td className="px-5 py-4 text-right">
                                 <DocumentActions
@@ -410,35 +394,37 @@ export default function OrganizationFolderPage() {
                     )}
                   </div>
                 ))}
-                <details className="rounded-xl border border-slate-200 bg-white p-3">
-                  <summary className="cursor-pointer text-xs font-bold text-slate-700">
-                    Advanced configuration
-                  </summary>
-                  <div className="mt-3 flex items-end gap-2">
-                    <label className="min-w-0 flex-1">
-                      <span className="label">
-                        Use one document type for all files
-                      </span>
-                      <ThemedSelect
-                        value={bulkTypeId}
-                        onChange={setBulkTypeId}
-                        placeholder="Select a type"
-                        options={(types.data ?? []).map((type: any) => ({
-                          value: String(type.id),
-                          label: type.name,
-                        }))}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      disabled={!bulkTypeId}
-                      onClick={() => setTypeIds(files.map(() => bulkTypeId))}
-                      className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50"
-                    >
-                      Apply to all
-                    </button>
-                  </div>
-                </details>
+                {files.length > 1 ? (
+                  <details className="rounded-xl border border-slate-200 bg-white p-3">
+                    <summary className="cursor-pointer text-xs font-bold text-slate-700">
+                      Advanced configuration
+                    </summary>
+                    <div className="mt-3 flex items-end gap-2">
+                      <label className="min-w-0 flex-1">
+                        <span className="label">
+                          Use one document type for all files
+                        </span>
+                        <ThemedSelect
+                          value={bulkTypeId}
+                          onChange={setBulkTypeId}
+                          placeholder="Select a type"
+                          options={(types.data ?? []).map((type: any) => ({
+                            value: String(type.id),
+                            label: type.name,
+                          }))}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={!bulkTypeId}
+                        onClick={() => setTypeIds(files.map(() => bulkTypeId))}
+                        className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50"
+                      >
+                        Apply to all
+                      </button>
+                    </div>
+                  </details>
+                ) : null}
               </div>
             )}
             <div className="mt-6 flex justify-end gap-2">
@@ -497,17 +483,6 @@ export default function OrganizationFolderPage() {
               </button>
             </>
           }
-        />
-      )}
-      {duplicateWarning && (
-        <UploadDuplicateDialog
-          matches={duplicateWarning.matches}
-          typeLabels={Object.fromEntries(
-            (types.data ?? []).map((type) => [type.id, type.name]),
-          )}
-          onCancel={() => setDuplicateWarning(null)}
-          onUploadAnyway={() => void duplicateWarning.proceed()}
-          pending={upload.isPending}
         />
       )}
       {movingIds && (

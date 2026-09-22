@@ -1,8 +1,12 @@
 "use client";
 
 import { Download } from "lucide-react";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { api } from "../../../lib/api";
+import {
+  documentPreviewUrl,
+  documentVersionPreviewUrl,
+} from "../../../lib/documentPreviewUrls";
 import DocumentVersionsFooter from "./DocumentVersionsFooter";
 import ModalDialog from "./ModalDialog";
 
@@ -13,6 +17,8 @@ type DocumentViewerDialogProps = {
   onClose: () => void;
   previewUrl?: string;
   documentId?: number;
+  currentVersionNumber?: number;
+  initialVersionId?: number | null;
   placeholder?: ReactNode;
   footer?: ReactNode;
   headerActions?: ReactNode;
@@ -28,6 +34,8 @@ export default function DocumentViewerDialog({
   onClose,
   previewUrl,
   documentId,
+  currentVersionNumber,
+  initialVersionId = null,
   placeholder,
   footer,
   headerActions,
@@ -35,11 +43,42 @@ export default function DocumentViewerDialog({
   backdropClassName = "bg-slate-950/60",
   iframeMinHeight = "min-h-[62vh]",
 }: DocumentViewerDialogProps) {
-  const showPreview = previewUrl && !placeholder;
+  const defaultPreview = useMemo(() => {
+    if (previewUrl) return previewUrl;
+    if (documentId != null && documentId > 0) {
+      return documentPreviewUrl(documentId, { variant: "current" });
+    }
+    return undefined;
+  }, [documentId, previewUrl]);
+
+  const [activeVersionId, setActiveVersionId] = useState<number | null>(
+    initialVersionId,
+  );
+
+  useEffect(() => {
+    setActiveVersionId(initialVersionId);
+  }, [initialVersionId, documentId]);
+
+  const activePreviewUrl =
+    activeVersionId != null
+      ? documentVersionPreviewUrl(activeVersionId)
+      : defaultPreview;
+
+  const showPreview = activePreviewUrl && !placeholder;
+  const viewingLabel =
+    activeVersionId != null ? "Out-of-date version" : "Current file";
+
   const versionFooter =
     documentId != null && documentId > 0 ? (
-      <DocumentVersionsFooter documentId={documentId} />
+      <DocumentVersionsFooter
+        documentId={documentId}
+        currentVersionNumber={currentVersionNumber}
+        activeVersionId={activeVersionId}
+        onViewVersion={(versionId) => setActiveVersionId(versionId)}
+        onViewCurrent={() => setActiveVersionId(null)}
+      />
     ) : null;
+
   const resolvedFooter =
     footer || versionFooter ? (
       <>
@@ -61,7 +100,7 @@ export default function DocumentViewerDialog({
       headerActions={
         <>
           {headerActions}
-          {documentId != null && documentId > 0 && (
+          {documentId != null && documentId > 0 && activeVersionId == null && (
             <button
               type="button"
               onClick={() => api.downloadDocument(documentId)}
@@ -74,11 +113,14 @@ export default function DocumentViewerDialog({
         </>
       }
     >
+      {showPreview ? (
+        <p className="mb-2 text-xs font-semibold text-slate-500">{viewingLabel}</p>
+      ) : null}
       <div className="-mx-1 -mt-1 min-h-0 flex-1 overflow-hidden rounded-2xl bg-slate-100 p-1">
         {showPreview ? (
           <iframe
             title={title}
-            src={previewUrl}
+            src={activePreviewUrl}
             className={`block h-full w-full pointer-events-auto rounded-2xl border border-slate-200 bg-white ${iframeMinHeight}`}
           />
         ) : (

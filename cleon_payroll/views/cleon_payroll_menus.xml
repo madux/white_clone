@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_cleon_payroll_root" name="Cleon Payroll" sequence="20"/>
+
+    <!-- Payroll Processing --> 
+    <menuitem id="menu_cleon_payroll_processing" name="Payroll"
+              parent="menu_cleon_payroll_root" sequence="10"/>
+    <menuitem id="menu_cleon_payslip_run" name="Payroll Runs"
+              parent="menu_cleon_payroll_processing" action="action_cleon_payslip_run" sequence="10"/>
+    <menuitem id="menu_cleon_payslip" name="Payslips" 
+              parent="menu_cleon_payroll_processing" action="action_cleon_payslip" sequence="20"/>
+
+    <record id="cleon_payroll.menu_cleon_payslip_run" model="ir.ui.menu">
+        <field name="icon_class">fa fa-money</field>
+        <field name="category_name">CleonHR-FINANCE</field>
+    </record>
+
+    <!-- Employees (reuse hr.employee) -->
+    <menuitem id="menu_cleon_employees" name="Employees"
+              parent="menu_cleon_payroll_root" sequence="20"
+              action="cleon_payroll.action_hr_employee_pink_kanban"/>
+
+    <menuitem id="menu_cleon_contract" name="Contract"
+              parent="menu_cleon_payroll_root" sequence="30"
+              action="hr_contract.action_hr_contract"/>
+    <menuitem id="menu_cleon_paycycle" name="Pay Cycle"
+              parent="menu_cleon_payroll_root" action="action_cleon_payroll_cycle" sequence="60"/>
+    <menuitem id="menu_cleon_paysetup" name="Payroll Setup"
+              parent="menu_cleon_payroll_root" action="action_cleon_payroll_setup" sequence="70"/>
+    <!-- Configuration -->
+    <menuitem id="menu_cleon_payroll_config" name="Configuration"
+              parent="menu_cleon_payroll_root" sequence="90"/>
+    <menuitem id="menu_cleon_payroll_structure" name="Payroll Structures"
+              parent="menu_cleon_payroll_config" action="action_cleon_payroll_structure" sequence="10"/>
+    <menuitem id="menu_cleon_payroll_rule" name="Payroll Rules"
+              parent="menu_cleon_payroll_config" action="action_cleon_payroll_rule" sequence="20"/>
+    <menuitem id="menu_cleon_payroll_category" name="Rule Categories"
+              parent="menu_cleon_payroll_config" action="action_cleon_payroll_category" sequence="30"/>
+    <menuitem id="menu_cleon_payroll_input_type" name="Input Types"
+              parent="menu_cleon_payroll_config" action="action_cleon_payroll_input_type" sequence="40"/>
+    
+    <menuitem id="menu_cleon_payroll_grade" name="Grade"
+              parent="menu_cleon_payroll_config" action="hr_employee.action_core_grade" sequence="60"/>
+    
+    <!-- <menuitem id="menu_cleon_location" name="Locations"
+              parent="menu_cleon_payroll_config" action="action_cleon_location" sequence="50"/> -->
+
+</odoo>

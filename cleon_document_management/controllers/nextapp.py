@@ -7,7 +7,13 @@ from odoo import http, fields
 from odoo.http import request
 from odoo.tools.misc import file_path
 
+from .access import (
+    user_employee_files_permissions,
+    user_is_document_admin,
+    user_is_document_manager,
+)
 from .main import _expiring_documents_domain, _serialize_expiring_document
+from .onboarding_state import ONBOARDING_STEPS, serialize_for_api, update_state
 
 _logger = logging.getLogger(__name__)
 
@@ -25,21 +31,6 @@ NEXTAPP_ASSET_EXT = {
     ".woff2",
     ".ttf",
 }
-ONBOARDING_STEPS = {
-    "workspace",
-    "upload",
-    "approval",
-    "shared",
-    "search",
-    "document-types",
-    "approval-workflow",
-    "folders",
-    "sharing",
-    "organizational-upload",
-    "approval-inbox",
-}
-
-
 class NextAppController(http.Controller):
     """
     Serves Next.js frontend mounted at /document-management.
@@ -95,8 +86,10 @@ class NextAppController(http.Controller):
                 "company_name": user.company_id.name,
                 "tz": user.tz or "",
                 "is_admin": user.has_group("base.group_system"),
-                "is_document_manager": user.has_group(
-                    "cleon_document_management.group_document_manager"
+                "is_document_manager": user_is_document_manager(user, request.env),
+                "is_document_admin": user_is_document_admin(user),
+                "employee_files_permissions": user_employee_files_permissions(
+                    user, request.env
                 ),
             }
         )
@@ -166,8 +159,10 @@ class NextAppController(http.Controller):
                     "company_name": user.company_id.name if user.company_id else "",
                     "tz": user.tz or "",
                     "is_admin": user.has_group("base.group_system"),
-                    "is_document_manager": user.has_group(
-                        "cleon_document_management.group_document_manager"
+                    "is_document_manager": user_is_document_manager(user, request.env),
+                    "is_document_admin": user_is_document_admin(user),
+                    "employee_files_permissions": user_employee_files_permissions(
+                        user, request.env
                     ),
                     "groups": user.groups_id.mapped("name"),
                 },
@@ -180,7 +175,7 @@ class NextAppController(http.Controller):
     def api_admin_attention(self, **kwargs):
         """In-app attention items for managers; separate from Odoo's chatter UI."""
         user = request.env.user
-        if not user.has_group("cleon_document_management.group_document_manager"):
+        if not user_is_document_manager(user, request.env):
             return {"success": True, "data": {"count": 0, "notifications": []}}
         approvals = request.env["doc.document.approval"].search(
             [
@@ -211,7 +206,7 @@ class NextAppController(http.Controller):
     def api_admin_approval_inbox(self, **kwargs):
         """Return approval tasks that are ready for the current manager's decision."""
         user = request.env.user
-        if not user.has_group("cleon_document_management.group_document_manager"):
+        if not user_is_document_manager(user, request.env):
             return {"success": True, "data": {"count": 0, "items": []}}
 
         approvals = request.env["doc.document.approval"].search(
@@ -257,7 +252,7 @@ class NextAppController(http.Controller):
     )
     def api_pending_employee_uploads(self, **kwargs):
         user = request.env.user
-        if not user.has_group("cleon_document_management.group_document_manager"):
+        if not user_is_document_manager(user, request.env):
             return {"success": True, "data": {"count": 0, "items": []}}
 
         request.env["doc.folder"].backfill_recycle_origin_links()
@@ -267,17 +262,9 @@ class NextAppController(http.Controller):
         )
         if not pending_folders:
             pending_folders = request.env["doc.folder"].get_pending_upload_folder()
-        documents = request.env["doc.document"].search(
-            [
-                ("folder_id", "in", pending_folders.ids),
-                ("employee_id", "!=", False),
-                ("active", "=", True),
-                ("deleted_at", "=", False),
-            ],
-            order="create_date desc",
-        )
-        items = []
-        for document in documents:
+        Document = request.env["doc.document"]
+
+        def pending_upload_item(document):
             employee = document.employee_id
             if document.approval_state == "pending":
                 status = "pending_review"
@@ -287,43 +274,68 @@ class NextAppController(http.Controller):
                 status = "awaiting_folder"
             else:
                 status = "awaiting_folder"
-            items.append(
-                {
-                    "id": document.id,
-                    "name": document.name,
-                    "document_type": document.document_type_id.name,
-                    "employee_id": employee.id,
-                    "employee_name": employee.name,
-                    "department": employee.department_id.name or "",
-                    "department_id": employee.department_id.id or False,
-                    "approval_state": document.approval_state,
-                    "state": document.state,
-                    "status": status,
-                    "origin_folder_id": document.recycle_origin_folder_id.id or False,
-                    "origin_folder_name": document.recycle_origin_folder_id.folder_name or "",
-                    "created_at": document.create_date,
-                }
-            )
+            return {
+                "id": document.id,
+                "name": document.name,
+                "document_type": document.document_type_id.name,
+                "employee_id": employee.id,
+                "employee_name": employee.name,
+                "department": employee.department_id.name or "",
+                "department_id": employee.department_id.id or False,
+                "approval_state": document.approval_state,
+                "state": document.state,
+                "status": status,
+                "status_label": dict(
+                    pending_review="Pending review",
+                    awaiting_folder="Awaiting folder",
+                    awaiting_folder_restore="Restore folder to reassign",
+                ).get(status, status),
+                "origin_folder_id": document.recycle_origin_folder_id.id or False,
+                "origin_folder_name": document.recycle_origin_folder_id.folder_name or "",
+                "created_at": document.create_date,
+            }
+
+        documents = Document.search(
+            [
+                ("folder_id", "in", pending_folders.ids),
+                ("employee_id", "!=", False),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ],
+            order="create_date desc",
+        )
+        items = []
+        seen_document_ids = set()
+        for document in documents:
+            items.append(pending_upload_item(document))
+            seen_document_ids.add(document.id)
+
+        approval_pending = Document.search(
+            [
+                ("employee_id", "!=", False),
+                ("approval_state", "=", "pending"),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+                ("id", "not in", list(seen_document_ids) or [0]),
+            ],
+            order="create_date desc",
+        )
+        for document in approval_pending:
+            items.append(pending_upload_item(document))
+            seen_document_ids.add(document.id)
+
         return {"success": True, "data": {"count": len(items), "items": items}}
 
     @http.route("/api/onboarding", type="json", auth="user", methods=["POST"], csrf=False)
     def api_onboarding(self, **kwargs):
         user = request.env.user.sudo()
-        state = user.document_onboarding_state or {}
-        completed_steps = [
-            step for step in state.get("completed_steps", []) if step in ONBOARDING_STEPS
-        ]
         return {
             "success": True,
-            "data": {
-                "show": not state.get("dismissed") and not state.get("completed"),
-                "dismissed": bool(state.get("dismissed")),
-                "completed": bool(state.get("completed")),
-                "completed_steps": completed_steps,
-                "is_admin": user.has_group(
-                    "cleon_document_management.group_document_manager"
-                ),
-            },
+            "data": serialize_for_api(
+                user.document_onboarding_state,
+                user_is_document_manager(user, request.env),
+                env=request.env,
+            ),
         }
 
     @http.route(
@@ -333,38 +345,27 @@ class NextAppController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def api_update_onboarding(self, action=None, step_id=None, **kwargs):
+    def api_update_onboarding(self, action=None, step_id=None, module=None, **kwargs):
         user = request.env.user.sudo()
-        state = dict(user.document_onboarding_state or {})
-        completed_steps = [
-            step for step in state.get("completed_steps", []) if step in ONBOARDING_STEPS
-        ]
-
-        if action == "complete_step" and step_id in ONBOARDING_STEPS:
-            if step_id not in completed_steps:
-                completed_steps.append(step_id)
-            state.update({"completed_steps": completed_steps, "dismissed": False})
-        elif action == "complete":
-            state.update({"completed_steps": completed_steps, "completed": True})
-        elif action == "dismiss":
-            state.update({"completed_steps": completed_steps, "dismissed": True})
-        elif action == "reset":
-            state = {"completed_steps": [], "dismissed": False, "completed": False}
-        else:
+        module_id = module or kwargs.get("module_id")
+        if action not in ("complete_step", "complete", "dismiss", "reset", "arm"):
             return {"success": False, "message": "Unsupported onboarding action."}
+        if action == "complete_step" and step_id not in ONBOARDING_STEPS:
+            return {"success": False, "message": "Unknown onboarding step."}
 
+        state = update_state(
+            user.document_onboarding_state,
+            action,
+            module_id=module_id,
+            step_id=step_id,
+            env=request.env,
+        )
         user.document_onboarding_state = state
         return {
             "success": True,
-            "data": {
-                "show": not state.get("dismissed") and not state.get("completed"),
-                "dismissed": bool(state.get("dismissed")),
-                "completed": bool(state.get("completed")),
-                "completed_steps": state.get("completed_steps", []),
-                "is_admin": user.has_group(
-                    "cleon_document_management.group_document_manager"
-                ),
-            },
+            "data": serialize_for_api(
+                state, user_is_document_manager(user, request.env), env=request.env
+            ),
         }
 
     @http.route(
@@ -410,7 +411,7 @@ class NextAppController(http.Controller):
     )
     def api_workspace_activity(self, **kwargs):
         user = request.env.user
-        if not user.has_group("cleon_document_management.group_document_manager"):
+        if not user_is_document_manager(user, request.env):
             return {
                 "success": False,
                 "message": "Document manager access is required.",
@@ -510,7 +511,6 @@ class NextAppController(http.Controller):
             for acknowledgement in Ack.search([], order="acknowledged_at desc", limit=30)
         ]
 
-        pending_acknowledgements = []
         org_documents = Document.search(
             [
                 ("folder_id.folder_type", "=", "organizational"),
@@ -521,8 +521,11 @@ class NextAppController(http.Controller):
                 ("deleted_at", "=", False),
                 ("state", "=", "approved"),
             ],
-            order="write_date desc",
+            order="folder_id, write_date desc",
         )
+
+        folder_map = {}
+        pending_acknowledgements = []
         for document in org_documents:
             folder = document.folder_id
             audience = folder._get_acknowledgement_audience_users()
@@ -532,28 +535,78 @@ class NextAppController(http.Controller):
             pending_users = audience.filtered(
                 lambda item: item.id not in acknowledged_ids
             )
-            if not pending_users:
-                continue
-            pending_acknowledgements.append(
+            audience_count = len(audience)
+            acknowledged_count = audience_count - len(pending_users)
+            pending_count = len(pending_users)
+            acknowledgement_percent = (
+                round(acknowledged_count * 100 / audience_count)
+                if audience_count
+                else 0
+            )
+            doc_payload = {
+                "document_id": document.id,
+                "document_name": document.name,
+                "document_type": document.document_type_id.name,
+                "folder_id": folder.id,
+                "folder_name": folder.folder_name,
+                "audience_count": audience_count,
+                "acknowledged_count": acknowledged_count,
+                "acknowledgement_percent": acknowledgement_percent,
+                "pending_count": pending_count,
+            }
+            bucket = folder_map.setdefault(
+                folder.id,
                 {
-                    "document_id": document.id,
-                    "document_name": document.name,
-                    "document_type": document.document_type_id.name,
                     "folder_id": folder.id,
                     "folder_name": folder.folder_name,
-                    "audience_count": len(audience),
-                    "acknowledged_count": len(audience) - len(pending_users),
-                    "pending_employees": [
-                        {
-                            "id": user.employee_id.id,
-                            "name": user.employee_id.name or user.name,
-                            "user_id": user.id,
-                        }
-                        for user in pending_users
-                        if user.employee_id
-                    ],
-                }
+                    "audience_count": 0,
+                    "acknowledged_count": 0,
+                    "documents": [],
+                },
             )
+            bucket["audience_count"] += audience_count
+            bucket["acknowledged_count"] += acknowledged_count
+            bucket["documents"].append(doc_payload)
+            if pending_count:
+                pending_acknowledgements.append(
+                    {
+                        **doc_payload,
+                        "pending_employees": [
+                            {
+                                "id": user.employee_id.id,
+                                "name": user.employee_id.name or user.name,
+                                "user_id": user.id,
+                            }
+                            for user in pending_users
+                            if user.employee_id
+                        ],
+                    }
+                )
+
+        pending_acknowledgements_by_folder = []
+        for bucket in folder_map.values():
+            audience_count = bucket["audience_count"]
+            acknowledged_count = bucket["acknowledged_count"]
+            bucket["acknowledgement_percent"] = (
+                round(acknowledged_count * 100 / audience_count)
+                if audience_count
+                else 0
+            )
+            bucket["documents"].sort(
+                key=lambda item: (
+                    item["pending_count"] > 0,
+                    item["acknowledgement_percent"],
+                    item["document_name"],
+                ),
+                reverse=True,
+            )
+            pending_acknowledgements_by_folder.append(bucket)
+        pending_acknowledgements_by_folder.sort(
+            key=lambda item: (
+                item["acknowledgement_percent"],
+                item["folder_name"],
+            )
+        )
 
         return {
             "success": True,
@@ -561,10 +614,134 @@ class NextAppController(http.Controller):
                 "activity_log": activity_log,
                 "recent_acknowledgements": recent_acknowledgements,
                 "pending_acknowledgements": pending_acknowledgements,
+                "pending_acknowledgements_by_folder": pending_acknowledgements_by_folder,
                 "summary": {
                     "activity_count": len(activity_log),
                     "pending_acknowledgement_count": len(pending_acknowledgements),
                     "recent_acknowledgement_count": len(recent_acknowledgements),
                 },
+            },
+        }
+
+    @http.route(
+        "/api/acknowledgements/document-audience",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def api_document_acknowledgement_audience(
+        self,
+        document_id=None,
+        page=1,
+        limit=10,
+        search="",
+        status="all",
+        **kwargs,
+    ):
+        user = request.env.user
+        if not user_is_document_manager(user, request.env):
+            return {
+                "success": False,
+                "message": "Document manager access is required.",
+            }
+
+        doc_id = int(document_id or kwargs.get("document_id") or 0)
+        document = request.env["doc.document"].browse(doc_id).exists()
+        if (
+            not document
+            or not document.active
+            or document.deleted_at
+            or document.folder_id.folder_type != "organizational"
+        ):
+            return {"success": False, "message": "Document not found."}
+
+        folder = document.folder_id
+        audience = folder._get_acknowledgement_audience_users()
+        if not audience:
+            return {
+                "success": True,
+                "data": {
+                    "document_id": document.id,
+                    "document_name": document.name,
+                    "folder_name": folder.folder_name,
+                    "audience_count": 0,
+                    "acknowledged_count": 0,
+                    "acknowledgement_percent": 0,
+                    "page": 1,
+                    "limit": int(limit or 10),
+                    "total": 0,
+                    "employees": [],
+                },
+            }
+
+        acknowledgement_by_user = {
+            item.user_id.id: item for item in document.acknowledgement_ids
+        }
+        rows = []
+        for user_record in audience:
+            employee = user_record.employee_id
+            acknowledgement = acknowledgement_by_user.get(user_record.id)
+            rows.append(
+                {
+                    "employee_id": employee.id if employee else False,
+                    "employee_name": (employee.name if employee else user_record.name),
+                    "department": employee.department_id.name if employee else "",
+                    "acknowledged": bool(acknowledgement),
+                    "acknowledged_at": (
+                        fields.Datetime.to_string(acknowledgement.acknowledged_at)
+                        if acknowledgement
+                        else False
+                    ),
+                }
+            )
+
+        term = (search or "").strip().lower()
+        if term:
+            rows = [
+                row
+                for row in rows
+                if term in row["employee_name"].lower()
+                or term in (row["department"] or "").lower()
+            ]
+
+        normalized_status = (status or "all").lower()
+        if normalized_status == "acknowledged":
+            rows = [row for row in rows if row["acknowledged"]]
+        elif normalized_status == "pending":
+            rows = [row for row in rows if not row["acknowledged"]]
+
+        rows.sort(
+            key=lambda row: (
+                row["acknowledged"],
+                row["employee_name"].lower(),
+            )
+        )
+
+        page_number = max(int(page or 1), 1)
+        page_limit = max(min(int(limit or 10), 50), 1)
+        total = len(rows)
+        offset = (page_number - 1) * page_limit
+        page_rows = rows[offset : offset + page_limit]
+        audience_count = len(audience)
+        acknowledged_count = len(acknowledgement_by_user)
+
+        return {
+            "success": True,
+            "data": {
+                "document_id": document.id,
+                "document_name": document.name,
+                "folder_name": folder.folder_name,
+                "audience_count": audience_count,
+                "acknowledged_count": acknowledged_count,
+                "acknowledgement_percent": (
+                    round(acknowledged_count * 100 / audience_count)
+                    if audience_count
+                    else 0
+                ),
+                "page": page_number,
+                "limit": page_limit,
+                "total": total,
+                "employees": page_rows,
             },
         }

@@ -31,31 +31,65 @@ export function FeaturedFolder({
   tint,
   onClick,
   onPin,
+  onFavorite,
+  onEdit,
+  onDelete,
   canManage,
 }: {
   folder: DocumentaryFolder;
   tint: number;
   onClick: () => void;
   onPin?: () => void;
+  onFavorite?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
   canManage?: boolean;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <button className={`featured-card tint-${tint}`} onClick={onClick}>
-      <div className="featured-card-top">
-        <span className="pin-dot"><Star size={14} fill="currentColor" /></span>
-        {canManage && onPin && (
-          <button className="icon-button compact" onClick={(e) => { e.stopPropagation(); onPin(); }} aria-label="Pin folder">
-            <Pin size={16} fill={folder.is_pinned ? "currentColor" : "none"} />
-          </button>
-        )}
-      </div>
-      <div className="featured-illustration"><FolderOpen size={42} strokeWidth={1.3} /></div>
-      <div className="featured-card-copy">
-        <span>{folder.media_count} videos</span>
-        <strong>{folder.name}</strong>
-        <small>{scopeLabel(folder.access_scope)}</small>
-      </div>
-    </button>
+    <div className={`featured-card-wrap tint-${tint}${menuOpen ? " is-menu-open" : ""}`}>
+      <button className={`featured-card tint-${tint}`} onClick={onClick}>
+        <div className="featured-card-top">
+          <span className="pin-dot"><Star size={14} fill="currentColor" /></span>
+          {canManage && folder.can_edit && (
+            <button
+              className="icon-button compact featured-menu-btn"
+              onClick={(e) => { e.stopPropagation(); setMenuOpen((value) => !value); }}
+              aria-label={`Manage ${folder.name}`}
+            >
+              <MoreVertical size={16} />
+            </button>
+          )}
+        </div>
+        <div className="featured-illustration"><FolderOpen size={42} strokeWidth={1.3} /></div>
+        <div className="featured-card-copy">
+          <span>{folder.media_count} videos</span>
+          <strong>{folder.name}</strong>
+          <small>{scopeLabel(folder.access_scope)}</small>
+        </div>
+      </button>
+      {menuOpen && canManage && folder.can_edit && (
+        <div className="context-menu context-menu--above">
+          <button onClick={() => { setMenuOpen(false); onEdit?.(); }}>✎ Edit folder</button>
+          {onFavorite && (
+            <button onClick={() => { setMenuOpen(false); onFavorite(); }}>
+              <Star size={14} fill={folder.favorite ? "currentColor" : "none"} />
+              {folder.favorite ? "Unfavorite" : "Favorite"}
+            </button>
+          )}
+          {onPin && (
+            <button onClick={() => { setMenuOpen(false); onPin(); }}>
+              <Pin size={14} /> {folder.is_pinned ? "Unpin" : "Pin folder"}
+            </button>
+          )}
+          {onDelete && (
+            <button className="danger" onClick={() => { setMenuOpen(false); onDelete(); }}>
+              <Trash2 size={14} /> Move to recycle bin
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -66,6 +100,7 @@ export function FolderCard({
   onAction,
   onEdit,
   onPin,
+  onFavorite,
 }: {
   folder: DocumentaryFolder;
   canManage: boolean;
@@ -73,10 +108,11 @@ export function FolderCard({
   onAction: (id: number, action: "archive" | "delete") => void;
   onEdit: () => void;
   onPin?: () => void;
+  onFavorite?: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <div className="folder-card" style={{ position: "relative" }}>
+    <div className={`folder-card${menuOpen ? " is-menu-open" : ""}`} style={{ position: "relative" }}>
       <button className="folder-card-main" onClick={onOpen}>
         <span className="folder-icon"><Folder size={19} /></span>
         <span className="folder-card-copy">
@@ -84,21 +120,31 @@ export function FolderCard({
           <small>{folder.media_count} videos · {scopeLabel(folder.access_scope)}</small>
         </span>
       </button>
-      {canManage && folder.can_edit && (
+      {(onFavorite || (canManage && folder.can_edit)) && (
         <button className="icon-button" onClick={() => setMenuOpen((value) => !value)} aria-label={`Manage ${folder.name}`}>
           <MoreVertical size={18} />
         </button>
       )}
-      {menuOpen && canManage && folder.can_edit && (
-        <div className="context-menu">
-          <button onClick={() => { setMenuOpen(false); onEdit(); }}>✎ Edit folder</button>
-          {onPin && (
-            <button onClick={() => { setMenuOpen(false); onPin(); }}>
-              <Pin size={14} /> {folder.is_pinned ? "Unpin" : "Pin folder"}
+      {menuOpen && (
+        <div className="context-menu context-menu--above">
+          {onFavorite && (
+            <button onClick={() => { setMenuOpen(false); onFavorite(); }}>
+              <Star size={14} fill={folder.favorite ? "currentColor" : "none"} />
+              {folder.favorite ? "Unfavorite" : "Favorite"}
             </button>
           )}
-          <button onClick={() => { setMenuOpen(false); onAction(folder.id, "archive"); }}><Archive size={14} /> Archive</button>
-          <button className="danger" onClick={() => { setMenuOpen(false); onAction(folder.id, "delete"); }}><Trash2 size={14} /> Move to recycle bin</button>
+          {canManage && folder.can_edit && (
+            <>
+              <button onClick={() => { setMenuOpen(false); onEdit(); }}>✎ Edit folder</button>
+              {onPin && (
+                <button onClick={() => { setMenuOpen(false); onPin(); }}>
+                  <Pin size={14} /> {folder.is_pinned ? "Unpin" : "Pin folder"}
+                </button>
+              )}
+              <button onClick={() => { setMenuOpen(false); onAction(folder.id, "archive"); }}><Archive size={14} /> Archive</button>
+              <button className="danger" onClick={() => { setMenuOpen(false); onAction(folder.id, "delete"); }}><Trash2 size={14} /> Move to recycle bin</button>
+            </>
+          )}
         </div>
       )}
     </div>

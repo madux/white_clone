@@ -2,6 +2,14 @@ from odoo import fields, http
 from odoo.http import request
 
 
+def _user_can_ef_approve(document):
+    perm = request.env["doc.employee.files.permission"]
+    user = request.env.user
+    if document.employee_id and document.folder_id.folder_type == "employee":
+        return perm.user_can_on_document(user, document, "action_approve")
+    return perm.user_is_platform_admin(user) or perm.user_has_legacy_manager(user)
+
+
 class DocumentActions(http.Controller):
     @http.route(
         "/api/document/acknowledge",
@@ -43,15 +51,13 @@ class DocumentActions(http.Controller):
         "/api/document-review", type="json", auth="user", methods=["POST"], csrf=False
     )
     def review_document(self, id=None, action=None, reason=None, **kwargs):
-        if not request.env.user.has_group(
-            "cleon_document_management.group_document_manager"
-        ):
-            return {"success": False, "message": "Document manager access is required."}
         if action not in ("approve", "reject"):
             return {"success": False, "message": "Unsupported review action."}
         document = request.env["doc.document"].browse(int(id or 0)).exists()
         if not document:
             return {"success": False, "message": "Document not found."}
+        if not _user_can_ef_approve(document):
+            return {"success": False, "message": "You do not have permission to review this document."}
         approval_model = request.env["doc.document.approval"]
         flow = document._get_effective_approval_flow()
         approval = approval_model.search(
@@ -63,13 +69,7 @@ class DocumentActions(http.Controller):
             limit=1,
         )
         manager_override = False
-        if (
-            not approval
-            and flow != "sequential"
-            and request.env.user.has_group(
-                "cleon_document_management.group_document_manager"
-            )
-        ):
+        if not approval and flow != "sequential" and _user_can_ef_approve(document):
             approval = approval_model.search(
                 [
                     ("document_id", "=", document.id),
@@ -81,6 +81,11 @@ class DocumentActions(http.Controller):
             manager_override = bool(
                 approval and approval.approver_id != request.env.user
             )
+        if action == "reject" and not (reason or "").strip():
+            return {
+                "success": False,
+                "message": "A rejection reason is required.",
+            }
         if not approval:
             waiting = approval_model.search(
                 [
@@ -122,7 +127,105 @@ class DocumentActions(http.Controller):
                 "id": document.id,
                 "state": document.state,
                 "approval_state": document.approval_state,
+                "rejection_reason": document.rejection_reason or "",
+                "review_decision_unread": bool(document.review_decision_unread),
+                "last_review_decision": document.last_review_decision or None,
             },
+        }
+
+    def _user_owns_document_upload(self, document, user):
+        if document.uploaded_by.id == user.id or document.owner_id.id == user.id:
+            return True
+        employee = user.employee_id
+        return bool(employee and document.employee_id.id == employee.id)
+
+    @http.route(
+        "/api/my-review-alerts",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def my_review_alerts(self, **kwargs):
+        user = request.env.user
+        Document = request.env["doc.document"]
+        documents = Document.search(
+            [
+                ("review_decision_unread", "=", True),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+                "|",
+                ("uploaded_by", "=", user.id),
+                ("owner_id", "=", user.id),
+            ],
+            order="write_date desc",
+            limit=30,
+        )
+        if user.employee_id:
+            documents |= Document.search(
+                [
+                    ("review_decision_unread", "=", True),
+                    ("active", "=", True),
+                    ("deleted_at", "=", False),
+                    ("employee_id", "=", user.employee_id.id),
+                ],
+                order="write_date desc",
+                limit=30,
+            )
+        items = []
+        seen = set()
+        for document in documents:
+            if document.id in seen:
+                continue
+            seen.add(document.id)
+            if not self._user_owns_document_upload(document, user):
+                continue
+            if document.last_review_decision == "rejected":
+                message = (
+                    f'"{document.name}" was rejected.'
+                    + (
+                        f" {document.rejection_reason}"
+                        if document.rejection_reason
+                        else ""
+                    )
+                )
+            else:
+                message = f'"{document.name}" was approved.'
+            items.append(
+                {
+                    "id": document.id,
+                    "document_id": document.id,
+                    "document": document.name,
+                    "employee_id": document.employee_id.id or 0,
+                    "message": message,
+                    "rejection_reason": document.rejection_reason or "",
+                    "last_review_decision": document.last_review_decision,
+                    "created_at": document.write_date,
+                }
+            )
+        return {"success": True, "data": {"count": len(items), "items": items}}
+
+    @http.route(
+        "/api/document/acknowledge-review-decision",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def acknowledge_review_decision(self, id=None, **kwargs):
+        document = request.env["doc.document"].browse(int(id or 0)).exists()
+        if not document:
+            return {"success": False, "message": "Document not found."}
+        document.check_access_rule("read")
+        if not self._user_owns_document_upload(document, request.env.user):
+            return {
+                "success": False,
+                "message": "You can only dismiss alerts for your own documents.",
+            }
+        document.sudo().write({"review_decision_unread": False})
+        return {
+            "success": True,
+            "data": {"id": document.id, "review_decision_unread": False},
         }
 
     @http.route(
@@ -197,6 +300,37 @@ class DocumentActions(http.Controller):
             "success": True,
             "message": f"Moved {len(documents)} document(s) to {destination.folder_name}.",
             "data": {"document_ids": documents.ids, "folder_id": destination.id},
+        }
+
+    @http.route(
+        "/api/delete-document-version",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def delete_document_version(self, id=None, version_id=None, **kwargs):
+        version = request.env["doc.document.version"].browse(
+            int(version_id or id or 0)
+        ).exists()
+        if not version:
+            return {"success": False, "message": "Version not found."}
+        document = version.document_id
+        document.check_access_rule("read")
+        document_id = document.id
+        if not version._user_can_manage():
+            return {
+                "success": False,
+                "message": "You do not have permission to delete this version.",
+            }
+        try:
+            version.sudo().unlink()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        return {
+            "success": True,
+            "message": "Version deleted.",
+            "data": {"document_id": document_id},
         }
 
     @http.route(

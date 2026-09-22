@@ -1,3 +1,27 @@
+export interface EmployeeFilesPermissions {
+  can_access_ef_home: boolean;
+  is_platform_admin: boolean;
+  has_legacy_manager: boolean;
+  assigned_role_ids: number[];
+  assigned_role_names: string[];
+  employee_scopes: Array<"own_team" | "department" | "all">;
+  actions_any_category: Partial<
+    Record<
+      | "view"
+      | "upload"
+      | "approve"
+      | "download"
+      | "archive"
+      | "delete"
+      | "export"
+      | "manage_settings",
+      boolean
+    >
+  >;
+  can_approve: boolean;
+  can_manage_ef_settings: boolean;
+}
+
 export interface User {
   id: number;
   name: string;
@@ -7,6 +31,89 @@ export interface User {
   tz: string;
   is_admin?: boolean;
   is_document_manager?: boolean;
+  is_document_admin?: boolean;
+  employee_files_permissions?: EmployeeFilesPermissions;
+}
+
+export interface EmployeeFilesRoleLine {
+  id?: number;
+  sequence?: number;
+  applies_all_categories: boolean;
+  document_type_id?: number | false;
+  document_type_name?: string;
+  category_group?: string;
+  actions: {
+    view: boolean;
+    upload: boolean;
+    approve: boolean;
+    download: boolean;
+    archive: boolean;
+    delete: boolean;
+    export: boolean;
+    manage_settings: boolean;
+  };
+}
+
+export interface EmployeeFilesRole {
+  id?: number;
+  name: string;
+  description?: string;
+  active?: boolean;
+  company_id?: number;
+  employee_scope: "own_team" | "department" | "all";
+  is_migration_seed?: boolean;
+  lines: EmployeeFilesRoleLine[];
+  assigned_user_ids?: number[];
+}
+
+export interface EmployeeFilesRoleMember {
+  employee_id: number;
+  employee_name: string;
+  department: string;
+  job_title: string;
+  user_id: number | false;
+  user_name: string;
+  user_login: string;
+  has_login: boolean;
+  employee_files_role_ids: number[];
+}
+
+export interface EmployeeFilesRoleMembersPayload {
+  roles: EmployeeFilesRole[];
+  members: EmployeeFilesRoleMember[];
+}
+
+export interface EmployeeFilesDocumentTypeOption {
+  id: number;
+  name: string;
+  category_group: string;
+}
+
+export interface ModuleRoleDefinition {
+  id: number;
+  role_key: "user" | "admin";
+  label: string;
+  description: string;
+  capabilities: string;
+  assignable: boolean;
+  group_id: number;
+}
+
+export interface ModuleRoleMember {
+  employee_id: number;
+  employee_name: string;
+  department: string;
+  job_title: string;
+  user_id: number | false;
+  user_name: string;
+  user_login: string;
+  has_login: boolean;
+  roles: Partial<Record<"user" | "admin", boolean>>;
+}
+
+export interface ModuleRoleAssignment {
+  role_key: "admin";
+  enabled: boolean;
 }
 
 export interface DocFolder {
@@ -36,15 +143,6 @@ export interface DocFolder {
   approver_ids?: number[];
 }
 
-export interface UploadDuplicateMatch {
-  filename: string;
-  document_type_id: number;
-  id: number;
-  name: string;
-  version_count?: number;
-  latest_version_number?: number;
-}
-
 export interface DocDocument {
   id: number;
   name: string;
@@ -55,6 +153,7 @@ export interface DocDocument {
   employee_name: string;
   document_type_id: number;
   document_type: string;
+  document_type_enable_versioning?: boolean;
   state: "draft" | "processing" | "approved" | "rejected" | "expired" | "missing";
   approval_state: "not_required" | "pending" | "approved" | "rejected";
   approval_flow?: "sequential" | "random" | "any";
@@ -66,6 +165,11 @@ export interface DocDocument {
   ocr_state: "pending" | "processing" | "completed" | "failed";
   has_expiry: boolean;
   expiry_date: string | null;
+  issue_date?: string | null;
+  has_pending_revision?: boolean;
+  rejection_reason?: string;
+  review_decision_unread?: boolean;
+  last_review_decision?: "approved" | "rejected" | null;
   mime_type: string;
   file_size: number;
   attachment_id: number;
@@ -80,6 +184,28 @@ export interface DocDocument {
   acknowledged_at?: string | false;
   pinned?: boolean;
   distribution_status?: "active" | "archived" | "deactivated";
+  version_count?: number;
+  current_version_number?: number;
+  document_category?: string;
+  document_category_label?: string;
+}
+
+export type DocumentRelationType =
+  | "amendment"
+  | "renewal"
+  | "supporting"
+  | "related";
+
+export interface DocDocumentRelation {
+  id: number;
+  relation_type: DocumentRelationType;
+  relation_type_label: string;
+  direction: "outgoing" | "incoming";
+  related_document_id: number;
+  related_document_name: string;
+  related_employee_id: number | false;
+  related_employee_name: string;
+  related_document_type?: string;
 }
 
 export interface ExpiringDocument {
@@ -127,6 +253,17 @@ export interface ApprovalInbox {
   items: ApprovalInboxItem[];
 }
 
+export interface ReviewAlertItem {
+  id: number;
+  document_id: number;
+  document: string;
+  employee_id: number;
+  message: string;
+  rejection_reason: string;
+  last_review_decision?: "approved" | "rejected" | null;
+  created_at: string;
+}
+
 export interface PendingEmployeeUpload {
   id: number;
   name: string;
@@ -167,8 +304,10 @@ export interface MyPendingUploads {
 
 export interface MyComplianceEvaluation {
   id: number;
+  policy_id: number;
   policy: string;
   policy_active: boolean;
+  allow_waiver?: boolean;
   score: number;
   status: string;
   complete_count: number;
@@ -186,6 +325,7 @@ export interface MyComplianceEvaluation {
 }
 
 export interface MyCompliance {
+  employee_id?: number;
   evaluations: MyComplianceEvaluation[];
   outstanding: Array<{
     policy: string;
@@ -200,15 +340,31 @@ export interface MyCompliance {
   };
 }
 
-export interface OnboardingState {
+export interface OnboardingModuleState {
   show: boolean;
   dismissed: boolean;
   completed: boolean;
   completed_steps: string[];
+  pending_show: boolean;
+}
+
+export interface OnboardingState {
+  modules: Record<string, OnboardingModuleState>;
   is_admin: boolean;
 }
 
 export interface QuickAccess { folders: DocFolder[]; documents: DocDocument[]; }
+
+export interface UploadConflict {
+  document_type_id: number;
+  document_type_name: string;
+  existing_document_id: number;
+  existing_name: string;
+  policy: "warn" | "prevent" | "allow_confirm";
+  enable_versioning: boolean;
+  version_count?: number;
+  latest_version_number?: number;
+}
 
 export interface DocumentType {
   id: number;
@@ -218,6 +374,18 @@ export interface DocumentType {
   is_mandatory_default: boolean;
   default_retention_years: number;
   expiry_applicable?: boolean;
+  require_upload_approval?: boolean;
+  require_issue_date?: boolean;
+  require_description?: boolean;
+  enable_versioning?: boolean;
+  duplicate_detection_mode?:
+    | "inherit"
+    | "warn"
+    | "prevent"
+    | "allow_confirm";
+  approval_flow?: "any" | "sequential" | "random";
+  approver_ids?: number[];
+  approvers?: { id: number; name: string }[];
   active: boolean;
 }
 
@@ -279,21 +447,34 @@ export interface CompliancePolicy {
   assigned_auditor?: string;
 }
 
+export type EmployeeLifecycleStatus =
+  | "active"
+  | "probation"
+  | "on_leave"
+  | "suspended";
+
+export interface ComplianceTargetEmployee {
+  id: number;
+  name: string;
+  job_title: string;
+  department: string;
+  department_id: number | false;
+  grade: string;
+  grade_id: number | false;
+  work_email: string;
+  work_phone: string;
+  location: string;
+  work_location_id?: number | false;
+  work_location?: string;
+  lifecycle_status?: EmployeeLifecycleStatus;
+  has_pending_documents?: boolean;
+}
+
 export interface ComplianceTargets {
-  employees: {
-    id: number;
-    name: string;
-    job_title: string;
-    department: string;
-    department_id: number | false;
-    grade: string;
-    grade_id: number | false;
-    work_email: string;
-    work_phone: string;
-    location: string;
-  }[];
+  employees: ComplianceTargetEmployee[];
   departments: { id: number; name: string }[];
   grades: { id: number; name: string }[];
+  locations?: { id: number; name: string }[];
   users?: { id: number; name: string; email: string }[];
 }
 
@@ -339,14 +520,67 @@ export interface ComplianceEvaluationRun {
   id: number;
   policy_id: number;
   policy: string;
-  run_type: "manual" | "automatic";
+  policy_allow_waiver?: boolean;
+  run_type: "manual" | "automatic" | "audit";
   evaluated_at: string;
   employee_count: number;
   compliant_count: number;
   partial_count: number;
   non_compliant_count: number;
   excepted_count: number;
+  has_snapshots?: boolean;
 }
+
+export interface ComplianceRunResultLine {
+  id: number;
+  requirement_id: number;
+  requirement: string;
+  document_type_id?: number | false;
+  document_type?: string;
+  document_ids: number[];
+  document_names?: string[];
+  expired_document_ids?: number[];
+  expired_document_names?: string[];
+  required_count: number;
+  matched_count: number;
+  status: string;
+}
+
+export interface ComplianceRunEmployee {
+  id: number;
+  employee_id: number;
+  employee: string;
+  job_title?: string;
+  department_id?: number | false;
+  department: string;
+  status: string;
+  score: number;
+  required_count: number;
+  submitted_count: number;
+  missing_count: number;
+  grace_count: number;
+  exception_id?: number | false;
+  lines?: ComplianceRunResultLine[];
+}
+
+export interface ComplianceReportResponse<T = Record<string, unknown>> {
+  success: boolean;
+  total: number;
+  page: number;
+  page_size: number;
+  data: T[];
+  message?: string;
+}
+
+export type ComplianceReportKey =
+  | "summary"
+  | "missing_per_run"
+  | "expired_per_run"
+  | "policy_compliance"
+  | "expiring_soon"
+  | "department_compliance"
+  | "exceptions"
+  | "employee_scores";
 
 export interface WorkspaceActivityEvent {
   id: number;
@@ -381,13 +615,58 @@ export interface WorkspacePendingAcknowledgement {
   folder_name: string;
   audience_count: number;
   acknowledged_count: number;
+  acknowledgement_percent?: number;
+  pending_count?: number;
   pending_employees: { id: number; name: string; user_id: number }[];
+}
+
+export interface AcknowledgementDocumentNode {
+  document_id: number;
+  document_name: string;
+  document_type: string;
+  folder_id: number;
+  folder_name: string;
+  audience_count: number;
+  acknowledged_count: number;
+  acknowledgement_percent: number;
+  pending_count: number;
+}
+
+export interface AcknowledgementFolderNode {
+  folder_id: number;
+  folder_name: string;
+  audience_count: number;
+  acknowledged_count: number;
+  acknowledgement_percent: number;
+  documents: AcknowledgementDocumentNode[];
+}
+
+export interface DocumentAcknowledgementAudienceEmployee {
+  employee_id: number | false;
+  employee_name: string;
+  department: string;
+  acknowledged: boolean;
+  acknowledged_at: string | false;
+}
+
+export interface DocumentAcknowledgementAudience {
+  document_id: number;
+  document_name: string;
+  folder_name: string;
+  audience_count: number;
+  acknowledged_count: number;
+  acknowledgement_percent: number;
+  page: number;
+  limit: number;
+  total: number;
+  employees: DocumentAcknowledgementAudienceEmployee[];
 }
 
 export interface WorkspaceActivity {
   activity_log: WorkspaceActivityEvent[];
   recent_acknowledgements: WorkspaceAcknowledgement[];
   pending_acknowledgements: WorkspacePendingAcknowledgement[];
+  pending_acknowledgements_by_folder?: AcknowledgementFolderNode[];
   summary: {
     activity_count: number;
     pending_acknowledgement_count: number;
@@ -410,4 +689,197 @@ export interface OdooRpcResult<T = any> {
   message?: string;
   count?: number;
   data: T;
+}
+
+export interface EmployeeFilesConfig {
+  setup_complete: boolean;
+  primary_organizing_dimension: string;
+  organizing_dimensions: string[];
+  sub_organizing_dimension: string;
+  include_all_existing: boolean;
+  include_inactive: boolean;
+  exclude_test_employees: boolean;
+  collect_existing_documents: boolean;
+  group_name_display: string;
+  show_inactive_groups: boolean;
+  show_group_counts_on_cards: boolean;
+  duplicate_detection_mode: string;
+  max_file_size_mb: number;
+  allowed_file_types: string;
+  header_field_keys: string[];
+  available_header_fields?: EmployeeFilesHeaderFieldOption[];
+  max_issue_retry_attempts: number;
+  enable_custom_groups: boolean;
+  enable_esign: boolean;
+  esign_provider: string;
+  notification_routing_json?: string;
+  integration_mapping_json?: string;
+  category_action_matrix_json?: string;
+}
+
+export interface EmployeeFilesHomeStats {
+  setup_complete: boolean;
+  ems_employees: number;
+  configured_exclusions: number;
+  expected_employee_files: number;
+  employee_files_initialized: number;
+  successfully_synced: number;
+  processing: number;
+  needs_attention: number;
+  excluded: number;
+}
+
+export interface EmployeeFileGroup {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  group_kind: "system_managed" | "custom";
+  organizing_dimension: string;
+  dimension_value_key: string;
+  parent_group_id: number | false;
+  parent_group_name?: string;
+  employee_count: number;
+  document_count: number;
+  attention_count: number;
+  read_only_membership: boolean;
+  show_on_home?: boolean;
+  member_employee_ids?: number[];
+  members?: EmployeeFileSummary[];
+}
+
+export interface EmployeeFileSummaryPage {
+  items: EmployeeFileSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface EmployeeFilesHeaderFieldOption {
+  key: string;
+  label: string;
+  ems_managed: boolean;
+}
+
+export interface EmployeeFileHeaderField {
+  key: string;
+  label: string;
+  value: string;
+  ems_managed: boolean;
+}
+
+export interface EmployeeFileSummary {
+  id: number;
+  employee_id: number;
+  employee_name: string;
+  employee_identification?: string;
+  department_id: number | false;
+  department_name: string;
+  job_title: string;
+  document_count: number;
+  attention_count: number;
+  state: string;
+  favorite: boolean;
+  storage_folder_id: number | false;
+  related_groups?: EmployeeFileGroup[];
+  header_fields?: EmployeeFileHeaderField[];
+  ems_read_only_note?: string;
+}
+
+export interface EmployeeFileSummaryWithGroups extends EmployeeFileSummary {
+  related_groups?: EmployeeFileGroup[];
+}
+
+export interface EmployeeFileExclusion {
+  id: number;
+  employee_id: number;
+  employee_name: string;
+  department_name: string;
+  reason: string;
+  justification: string;
+  configured_by: string;
+  recoverable: boolean;
+  date_identified: string;
+  status: string;
+}
+
+export interface EmsEmployeeOption {
+  id: number;
+  name: string;
+  department_name: string;
+  active: boolean;
+}
+
+export interface EmployeeFilesSetupPreview {
+  organizing_dimensions: string[];
+  sub_organizing_dimension?: string;
+  primary_organizing_dimension?: string;
+  nested_primary_view?: boolean;
+  groups_to_create: number;
+  employees_included: number;
+  ems_employees_in_company?: number;
+  documents_expected: number;
+  need_attention_expected: number;
+  excluded_total: number;
+  excluded_breakdown: Record<string, number>;
+  dimension_summaries?: Array<{
+    dimension: string;
+    groups_to_create: number;
+    group_breakdown: Array<{
+      name: string;
+      employees: number;
+      documents: number;
+      excluded: number;
+    }>;
+  }>;
+  group_breakdown: Array<{
+    name: string;
+    employees: number;
+    documents: number;
+    excluded: number;
+  }>;
+}
+
+export interface EmployeeFilesSetupRun {
+  id: number;
+  state: string;
+  employees_found: number;
+  files_initialized: number;
+  files_fully_loaded: number;
+  documents_collected: number;
+  need_attention: number;
+  stages: Array<{
+    stage_key: string;
+    label: string;
+    total_count: number;
+    done_count: number;
+    status: string;
+  }>;
+}
+
+export interface EmployeeFileIssue {
+  id: number;
+  source?: "issue" | "exclusion";
+  name: string;
+  category: string;
+  classification?: string;
+  classification_label?: string;
+  issue_type: string;
+  issue_type_label?: string;
+  details: string;
+  state: string;
+  recoverable: boolean;
+  recommended_action: string;
+  retry_count: number;
+  employee_id: number | false;
+  employee_name: string;
+  employee_file_id: number | false;
+  document_id: number | false;
+  date_identified?: string;
+}
+
+export interface EmployeeFileDimensionOption {
+  key: string;
+  label: string;
+  populated: boolean;
 }

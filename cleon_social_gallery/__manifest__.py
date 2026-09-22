@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CLEON Social Gallery",
-    "version": "17.0.1.0.3",
+    "version": "17.0.1.0.7",
     "category": "Human Resources",
     "summary": "Corporate photo albums, social feed, and culture engagement",
     "depends": ["base", "hr", "hr_employee", "mail", "cleon_document_management"],

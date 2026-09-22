@@ -7,7 +7,7 @@
         <field name="name">hr.core_employment_type.tree</field>
         <field name="model">hr.core_employment_type</field>
         <field name="arch" type="xml">
-            <tree js_class="organisation_list">
+            <tree>
                 <field name="name"/>
                 <field name="code"/>
                 <field name="active"/>

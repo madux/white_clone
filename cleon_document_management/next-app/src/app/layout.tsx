@@ -6,7 +6,7 @@ import AppChrome from "@/app/components/AppChrome";
 import Providers from "@/app/providers";
 import "@/app/globals.css";
 import { SortableTableManager } from "@/app/components/SortableTable";
-import OnboardingGuide from "@/app/components/OnboardingGuide";
+import RoutedOnboardingGuides from "@/app/components/RoutedOnboardingGuides";
 
 export const metadata: Metadata = {
   title: "CLEONHR — Document Management",
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Suspense fallback={null}>
             <AppChrome>{children}</AppChrome>
           </Suspense>
-          <OnboardingGuide />
+          <RoutedOnboardingGuides />
         </Providers>
       </body>
     </html>

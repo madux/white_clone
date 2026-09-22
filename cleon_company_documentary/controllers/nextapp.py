@@ -27,6 +27,20 @@ class CompanyDocumentaryNextAppController(http.Controller):
         return None
 
     @staticmethod
+    def _user_is_documentary_manager(user):
+        return (
+            user.has_group("base.group_system")
+            or user.has_group("cleon_company_documentary.group_company_documentary_manager")
+        )
+
+    @staticmethod
+    def _user_is_documentary_admin(user):
+        return (
+            user.has_group("base.group_system")
+            or user.has_group("cleon_company_documentary.group_company_documentary_admin")
+        )
+
+    @staticmethod
     def _user_script(user):
         user_data = json.dumps({
             "user_id": user.id,
@@ -34,9 +48,8 @@ class CompanyDocumentaryNextAppController(http.Controller):
             "user_email": user.email or user.login or "",
             "company_name": user.company_id.name if user.company_id else "",
             "is_admin": user.has_group("base.group_system"),
-            "is_document_manager": user.has_group(
-                "cleon_company_documentary.group_company_documentary_manager"
-            ),
+            "is_documentary_manager": CompanyDocumentaryNextAppController._user_is_documentary_manager(user),
+            "is_documentary_admin": CompanyDocumentaryNextAppController._user_is_documentary_admin(user),
         })
         return f"<script>window.__ODOO_USER__={user_data}</script>"
 
@@ -97,9 +110,8 @@ class CompanyDocumentaryNextAppController(http.Controller):
                     "email": user.email or user.login or "",
                     "company_name": user.company_id.name if user.company_id else "",
                     "is_admin": user.has_group("base.group_system"),
-                    "is_document_manager": user.has_group(
-                        "cleon_company_documentary.group_company_documentary_manager"
-                    ),
+                    "is_documentary_manager": self._user_is_documentary_manager(user),
+                    "is_documentary_admin": self._user_is_documentary_admin(user),
                 },
             }
         except Exception as error:

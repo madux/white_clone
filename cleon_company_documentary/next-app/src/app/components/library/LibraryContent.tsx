@@ -7,6 +7,7 @@ import {
   Filter,
   LayoutGrid,
   List,
+  Pencil,
   Pin,
   ShieldCheck,
   Star,
@@ -25,6 +26,7 @@ type MediaAction = "favorite" | "archive" | "delete";
 
 export function LibraryContent({
   folders,
+  favoriteFolders = [],
   featuredFolders,
   selectedFolder,
   libraryView,
@@ -59,6 +61,7 @@ export function LibraryContent({
   onNotice,
 }: {
   folders: DocumentaryFolder[];
+  favoriteFolders?: DocumentaryFolder[];
   featuredFolders: DocumentaryFolder[];
   selectedFolder: DocumentaryFolder | null;
   libraryView: LibraryView;
@@ -93,6 +96,7 @@ export function LibraryContent({
   onNotice: (type: "error" | "success", text: string) => void;
 }) {
   const showLibraryOverview = !selectedFolder && libraryView === "home";
+  const showFavoriteFolders = !selectedFolder && libraryView === "favorites";
   const showFilters = libraryView === "all" || !!selectedFolder;
   const mediaSectionHeading = selectedFolder
     ? { title: selectedFolder.name, description: `${selectedFolder.media_count} videos in this space` }
@@ -100,9 +104,18 @@ export function LibraryContent({
       ? search
         ? { title: `Results for “${search}”`, description: "" }
         : { title: "Latest videos", description: "" }
-      : search
-        ? { title: `Results for “${search}”`, description: "" }
-        : null;
+      : libraryView === "favorites"
+        ? search
+          ? { title: `Results for “${search}”`, description: "" }
+          : { title: "Favorite videos", description: "Videos you bookmarked across the library." }
+        : search
+          ? { title: `Results for “${search}”`, description: "" }
+          : null;
+
+  const confirmFolderDelete = (folder: DocumentaryFolder) => {
+    if (!window.confirm(`Move “${folder.name}” to the recycle bin?`)) return;
+    onFolderAction(folder.id, "delete");
+  };
 
   return (
     <>
@@ -119,10 +132,23 @@ export function LibraryContent({
           </div>
           <div className="featured-grid">
             {featuredFolders.map((folder, index) => (
-              <FeaturedFolder key={folder.id} folder={folder} tint={index} onClick={() => onSelectFolder(folder)} onPin={() => onPinFolder(folder)} canManage={canManage} />
+              <FeaturedFolder
+                key={folder.id}
+                folder={folder}
+                tint={index}
+                onClick={() => onSelectFolder(folder)}
+                onPin={() => onPinFolder(folder)}
+                onFavorite={() => onFavoriteFolder(folder)}
+                onEdit={() => onEditFolder(folder)}
+                onDelete={() => confirmFolderDelete(folder)}
+                canManage={canManage}
+              />
             ))}
             {!featuredFolders.length && (
-              <EmptyState title="Create your first library" description="Organize company stories and training into a shared space." action={canManage ? "Create a folder" : undefined} onAction={onCreateFolder} />
+              <EmptyState
+                title="No pinned folders yet"
+                description="Pin a folder from the list below to feature it here for quick access."
+              />
             )}
           </div>
         </section>
@@ -137,10 +163,49 @@ export function LibraryContent({
           </div>
           <div className="folder-grid">
             {folders.map((folder) => (
-              <FolderCard key={folder.id} folder={folder} canManage={canManage} onOpen={() => onSelectFolder(folder)} onAction={onFolderAction} onEdit={() => onEditFolder(folder)} onPin={() => onPinFolder(folder)} />
+              <FolderCard
+                key={folder.id}
+                folder={folder}
+                canManage={canManage}
+                onOpen={() => onSelectFolder(folder)}
+                onAction={onFolderAction}
+                onEdit={() => onEditFolder(folder)}
+                onPin={() => onPinFolder(folder)}
+                onFavorite={() => onFavoriteFolder(folder)}
+              />
             ))}
             {!folders.length && (
               <EmptyState title="No folders yet" description="A folder gives every upload a clear home." action={canManage ? "Create a folder" : undefined} onAction={onCreateFolder} />
+            )}
+          </div>
+        </section>
+      )}
+      {showFavoriteFolders && (
+        <section className="section-block">
+          <div className="section-heading">
+            <div>
+              <h2>Favorite folders</h2>
+              <p>Spaces you marked for quick access.</p>
+            </div>
+          </div>
+          <div className="folder-grid">
+            {favoriteFolders.map((folder) => (
+              <FolderCard
+                key={folder.id}
+                folder={folder}
+                canManage={canManage}
+                onOpen={() => onSelectFolder(folder)}
+                onAction={onFolderAction}
+                onEdit={() => onEditFolder(folder)}
+                onPin={() => onPinFolder(folder)}
+                onFavorite={() => onFavoriteFolder(folder)}
+              />
+            ))}
+            {!favoriteFolders.length && (
+              <EmptyState
+                title="No favorite folders"
+                description="Open a folder and tap Favorite to save it here."
+              />
             )}
           </div>
         </section>
@@ -174,6 +239,26 @@ export function LibraryContent({
                   <Pin size={15} fill={selectedFolder.is_pinned ? "currentColor" : "none"} />
                   Pin
                 </button>
+                {canManage && selectedFolder.can_edit && (
+                  <>
+                    <button
+                      type="button"
+                      className="folder-quick-action"
+                      onClick={() => onEditFolder(selectedFolder)}
+                    >
+                      <Pencil size={15} />
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="folder-quick-action danger"
+                      onClick={() => confirmFolderDelete(selectedFolder)}
+                    >
+                      <Trash2 size={15} />
+                      Delete
+                    </button>
+                  </>
+                )}
               </div>
             )}
             <div className="view-toggle">

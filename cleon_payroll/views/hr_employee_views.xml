@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_hr_employee_form_inherit_cleon" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.cleon</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" type="object"
+                        name="action_view_cleon_payslips" icon="fa-money">
+                    <field name="cleon_payslip_count" widget="statinfo" string="Payslips"/>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='job_id']" position="after">
+                <field name="cleon_location_id" options="{'no_open': true, 'no_create': true}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_employee_kanban_pink" model="ir.ui.view">
+        <field name="name">hr.employee.kanban.pink</field>
+        <field name="model">hr.employee</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" js_class="payroll_kanban_sidebar">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="job_title"/>
+                <field name="department_id"/>
+                <field name="work_email"/>
+                <field name="employee_number"/>
+                <field name="create_date"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click p-0 border-0 rounded-3 shadow-sm overflow-hidden position-relative" 
+                            style="background: linear-gradient(135deg, #FFF5F7 0%, #FCE4EC 50%, #F8BBD0 100%); max-width: 380px; font-family: 'Inter', sans-serif;">
+                            
+                            <!-- Background Accent Pattern -->
+                            <div style="position: absolute; right: -20px; top: -20px; width: 100px; height: 100px; background: rgba(233, 30, 99, 0.05); border-radius: 50%; pointer-events: none;"/>
+                            
+                            <!-- Top Header Section -->
+                            <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="fw-bold fs-6 text-uppercase" style="color: #AD1457; letter-spacing: 0.5px;">
+                                        <i class="fa fa-building me-1"/> <t t-esc="record.department_id.value || 'Cleon'"/>
+                                    </span>
+                                </div>
+                                <i class="fa fa-circle text-success fs-6" title="Active Status"/>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="row g-0 px-3 py-2 align-items-center">
+                                <!-- Left: Employee Avatar -->
+                                <div class="col-4 text-center">
+                                    <div class="position-relative d-inline-block">
+                                        <img t-att-src="kanban_image('hr.employee', 'avatar_128', record.id.raw_value)" 
+                                            class="rounded-3 img-fluid border border-2 shadow-sm" 
+                                            style="border-color: #F48FB1 !important; width: 90px; height: 100px; object-fit: cover;" 
+                                            alt="Employee Photo"/>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Employee Details -->
+                                <div class="col-8 ps-3">
+                                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem;">
+                                        <field name="name"/>
+                                    </h5>
+                                    <p class="text-muted mb-2 fw-semibold" style="font-size: 0.85rem; color: #880E4F !important;">
+                                        <field name="job_title"/>
+                                    </p>
+                                    
+                                    <div class="lh-sm" style="font-size: 0.78rem; color: #4A148C;">
+                                        <div class="mb-1">
+                                            <span class="fw-bold">ID:</span> 
+                                            <span class="color-darkred"><field name="employee_number"/></span>
+                                        </div>
+                                        <div class="mb-1 text-truncate">
+                                            <span class="fw-bold">Dept:</span> 
+                                            <span class="color-darkred"><field name="department_id"/></span>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <span class="fw-bold">Email:</span> 
+                                            <span class="color-darkred"><field name="work_email"/></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Footer Badge -->
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 mt-1" 
+                                style="background: rgba(255, 255, 255, 0.6); border-top: 1px solid rgba(244, 143, 177, 0.3);">
+                                <span class="badge rounded-pill px-2 py-1" style="background-color: #F8BBD0; color: #880E4F; font-weight: 500;">
+                                    <i class="fa fa-check-circle me-1"/> Access Granted
+                                </span>
+                                <small style="color: #AD1457; font-weight: 500; font-size: 0.75rem;">
+                                    Since: <t t-esc="record.create_date.value || '2026'"/>
+                                </small>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_hr_employee_pink_kanban" model="ir.actions.act_window">
+        <field name="name">Employee</field>
+        <field name="res_model">hr.employee</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No employees found. Let's create one!
+            </p>
+        </field>
+    </record>
+
+    <record id="action_hr_employee_pink_kanban_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="view_employee_kanban_pink"/>
+        <field name="act_window_id" ref="action_hr_employee_pink_kanban"/>
+    </record>
+
+</odoo>

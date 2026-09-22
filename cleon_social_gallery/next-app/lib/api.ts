@@ -13,8 +13,13 @@ import type {
   GalleryUserOption,
   TrustedUser,
   UploadHistoryEntry,
+  ModuleRoleAssignment,
+  ModuleRoleDefinition,
+  ModuleRoleMember,
   UploadInit,
   User,
+  PaginatedResult,
+  ScopeTargets,
 } from "./types";
 
 interface JsonRpcResponse<T> {
@@ -60,6 +65,24 @@ const unwrap = <D>(result: { success: boolean; message?: string; data?: D }): D 
   return result.data as D;
 };
 
+const unwrapPaginated = <D>(result: {
+  success: boolean;
+  message?: string;
+  data?: D[];
+  total?: number;
+  offset?: number;
+  limit?: number;
+}): PaginatedResult<D> => {
+  if (!result.success) throw new Error(result.message || "The request could not be completed.");
+  const items = result.data || [];
+  return {
+    items,
+    total: result.total ?? items.length,
+    offset: result.offset ?? 0,
+    limit: result.limit ?? items.length,
+  };
+};
+
 export const api = {
   injectedUser(): User | null {
     if (typeof window === "undefined" || !window.__ODOO_USER__) return null;
@@ -83,7 +106,14 @@ export const api = {
   },
 
   async albums(params: Record<string, unknown> = {}) {
-    return unwrap(await rpc<{ success: boolean; data: GalleryAlbum[]; message?: string }>("/api/social-gallery/albums", params));
+    return unwrapPaginated(await rpc<{
+      success: boolean;
+      data: GalleryAlbum[];
+      total?: number;
+      offset?: number;
+      limit?: number;
+      message?: string;
+    }>("/api/social-gallery/albums", params));
   },
 
   async createAlbum(payload: Record<string, unknown>) {
@@ -103,7 +133,14 @@ export const api = {
   },
 
   async media(params: Record<string, unknown> = {}) {
-    return unwrap(await rpc<{ success: boolean; data: GalleryMedia[]; message?: string }>("/api/social-gallery/media", params));
+    return unwrapPaginated(await rpc<{
+      success: boolean;
+      data: GalleryMedia[];
+      total?: number;
+      offset?: number;
+      limit?: number;
+      message?: string;
+    }>("/api/social-gallery/media", params));
   },
 
   async updateMedia(payload: Record<string, unknown>) {
@@ -215,7 +252,18 @@ export const api = {
   },
 
   async audit(params: Record<string, unknown> = {}) {
-    return unwrap(await rpc<{ success: boolean; data: AuditLogEntry[]; message?: string }>("/api/social-gallery/audit", params));
+    return unwrapPaginated(await rpc<{
+      success: boolean;
+      data: AuditLogEntry[];
+      total?: number;
+      offset?: number;
+      limit?: number;
+      message?: string;
+    }>("/api/social-gallery/audit", params));
+  },
+
+  async scopeTargets() {
+    return unwrap(await rpc<{ success: boolean; data: ScopeTargets; message?: string }>("/api/social-gallery/scope-targets"));
   },
 
   async settings(payload: Record<string, unknown> = {}) {
@@ -256,6 +304,18 @@ export const api = {
 
   async storageConfig(check = false) {
     return unwrap(await rpc<{ success: boolean; data: { configured: boolean; reachable?: boolean; bucket?: string; endpoint_url?: string; credentials_present?: boolean; provider?: string; region?: string }; message?: string }>("/api/social-gallery/storage/config", { check }));
+  },
+
+  async roleDefinitions() {
+    return unwrap(await rpc<{ success: boolean; data: ModuleRoleDefinition[]; message?: string }>("/api/social-gallery/roles/definitions"));
+  },
+
+  async roleMembers(search = "") {
+    return unwrap(await rpc<{ success: boolean; data: ModuleRoleMember[]; message?: string }>("/api/social-gallery/roles/members", { search, limit: 50 }));
+  },
+
+  async assignRoles(employeeId: number, assignments: ModuleRoleAssignment[]) {
+    return unwrap(await rpc<{ success: boolean; data: ModuleRoleMember; message?: string }>("/api/social-gallery/roles/assign", { employee_id: employeeId, assignments }));
   },
 };
 

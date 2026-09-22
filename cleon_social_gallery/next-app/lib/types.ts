@@ -24,6 +24,33 @@ export interface User {
   is_gallery_admin?: boolean;
 }
 
+export interface ModuleRoleDefinition {
+  id: number;
+  role_key: "user" | "manager" | "admin";
+  label: string;
+  description: string;
+  capabilities: string;
+  assignable: boolean;
+  group_id: number;
+}
+
+export interface ModuleRoleMember {
+  employee_id: number;
+  employee_name: string;
+  department: string;
+  job_title: string;
+  user_id: number | false;
+  user_name: string;
+  user_login: string;
+  has_login: boolean;
+  roles: Partial<Record<"user" | "manager" | "admin", boolean>>;
+}
+
+export interface ModuleRoleAssignment {
+  role_key: "manager" | "admin";
+  enabled: boolean;
+}
+
 export interface GalleryAlbum {
   id: number;
   name: string;
@@ -119,10 +146,25 @@ export interface GallerySettings {
   notify_approval_request: boolean;
   notify_comments: boolean;
   notify_likes: boolean;
+  notify_content_reports: boolean;
   like_batch_size: number;
   weekly_digest: boolean;
   allow_external_share: boolean;
   ai_moderation_enabled: boolean;
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface ScopeTargets {
+  departments: { id: number; name: string }[];
+  branches: { id: number; name: string }[];
+  employees: { id: number; name: string; department?: string }[];
+  branches_available: boolean;
 }
 
 export interface DashboardAlbum extends GalleryAlbum {

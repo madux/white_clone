@@ -22,9 +22,9 @@ import { formatStatusLabel } from "../../../lib/formatLabel";
 import {
   useDashboardStats,
   useDocuments,
-  useFolders,
   useWorkspaceActivity,
 } from "../../../hooks/useDocuments";
+import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 
 function LoadingBlock({ className = "" }: { className?: string }) {
   return (
@@ -56,6 +56,29 @@ function formatActivityWhen(value: string) {
   }).format(new Date(String(value).replace(" ", "T")));
 }
 
+type ApprovalRingSegment = {
+  label: string;
+  count: number;
+  color: string;
+  dotClass: string;
+};
+
+function buildApprovalRingGradient(
+  segments: ApprovalRingSegment[],
+  total: number,
+): string {
+  if (!total) return "#f1f5f9";
+  let cursor = 0;
+  const stops: string[] = [];
+  for (const segment of segments) {
+    if (!segment.count) continue;
+    const start = cursor;
+    cursor += (segment.count / total) * 100;
+    stops.push(`${segment.color} ${start}% ${cursor}%`);
+  }
+  return stops.length ? `conic-gradient(${stops.join(", ")})` : "#f1f5f9";
+}
+
 const statusStyles = {
   approved: "bg-pink-50 text-brand-pink",
   processing: "bg-amber-50 text-amber-700",
@@ -67,17 +90,60 @@ const statusStyles = {
 
 export default function Dashboard() {
   const stats = useDashboardStats();
-  const folders = useFolders();
   const documents = useDocuments();
   const workspaceActivity = useWorkspaceActivity();
-  const dataError = stats.error || folders.error || documents.error;
+  const dataError = stats.error || documents.error;
   const documentRows = documents.data ?? [];
-  const approvedDocuments = documentRows.filter(
+  const documentSpacesPreview = documentRows.slice(0, 10);
+  const totalDocuments = documentRows.length;
+  const approvedCount = documentRows.filter(
     (document) => document.state === "approved",
   ).length;
-  const approvalProgress = documentRows.length
-    ? Math.round((approvedDocuments / documentRows.length) * 100)
+  const inReviewCount = documentRows.filter(
+    (document) => document.state === "processing",
+  ).length;
+  const draftCount = documentRows.filter(
+    (document) => document.state === "draft",
+  ).length;
+  const issueCount = documentRows.filter(
+    (document) =>
+      document.state === "rejected" ||
+      document.state === "expired" ||
+      document.state === "missing",
+  ).length;
+  const approvalProgress = totalDocuments
+    ? Math.round((approvedCount / totalDocuments) * 100)
     : 0;
+  const approvalRingSegments: ApprovalRingSegment[] = [
+    {
+      label: "Approved",
+      count: approvedCount,
+      color: "#e83e8c",
+      dotClass: "bg-brand-pink",
+    },
+    {
+      label: "In review",
+      count: inReviewCount,
+      color: "#f3a6c5",
+      dotClass: "bg-pink-400",
+    },
+    {
+      label: "Draft",
+      count: draftCount,
+      color: "#f7d9e5",
+      dotClass: "bg-pink-100",
+    },
+    {
+      label: "Rejected / expired",
+      count: issueCount,
+      color: "#f5d0e2",
+      dotClass: "bg-pink-200",
+    },
+  ].filter((segment) => segment.count > 0);
+  const approvalRingGradient = buildApprovalRingGradient(
+    approvalRingSegments,
+    totalDocuments,
+  );
   const statusMetrics = [
     {
       label: "Approved",
@@ -120,7 +186,6 @@ export default function Dashboard() {
           return [0, step, step * 2, step * 3, top];
         })();
   const chartScaleMax = yTicks[yTicks.length - 1] || 1;
-  const totalDocuments = documentRows.length;
   const statCards: Array<{
     label: string;
     value: number | undefined;
@@ -217,42 +282,40 @@ export default function Dashboard() {
       <section className="grid gap-6 xl:grid-cols-[1.1fr_1.5fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-                Browse
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Your document spaces
-              </h2>
-            </div>
+            <h2 className="text-lg font-bold text-slate-900">Your document spaces</h2>
             <FolderKanban className="h-5 w-5 text-slate-300" />
           </div>
-          {folders.isLoading ? (
+          {documents.isLoading ? (
             <div className="space-y-3">
               <LoadingBlock className="h-20 w-full" />
               <LoadingBlock className="h-20 w-full" />
             </div>
-          ) : folders.data?.length ? (
+          ) : documentSpacesPreview.length ? (
             <div className="space-y-3">
-              {folders.data.map((folder) => (
+              {documentSpacesPreview.map((document) => (
                 <Link
-                  href={`/pages/${folder.folder_type === "employee" ? "employee" : "organization"}`}
-                  key={folder.id}
+                  href={documentViewHref(document, true)}
+                  key={document.id}
                   className="group flex items-center justify-between rounded-xl border border-slate-100 p-4 transition hover:border-pink-200 hover:bg-pink-50/40"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="h-3 w-3 shrink-0 rounded-full bg-brand-pink" />
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-pink-50 text-brand-pink">
+                      <FileText className="h-4 w-4" />
+                    </span>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-800">
-                        {folder.folder_name}
+                        {document.name}
                       </p>
                       <p className="mt-1 truncate text-xs text-slate-400">
-                        {folder.description}
+                        {document.folder_name || "—"}
+                        {document.document_type
+                          ? ` · ${document.document_type}`
+                          : ""}
                       </p>
                     </div>
                   </div>
                   <span className="ml-3 flex shrink-0 items-center gap-1 text-xs font-semibold text-slate-400 group-hover:text-brand-pink">
-                    {folder.document_count} files{" "}
+                    {formatStatusLabel(document.state)}{" "}
                     <ArrowUpRight className="h-3.5 w-3.5" />
                   </span>
                 </Link>
@@ -260,21 +323,14 @@ export default function Dashboard() {
             </div>
           ) : (
             <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-500">
-              No folders are available yet.
+              No documents are available yet.
             </p>
           )}
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-                Activity
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Workspace log
-              </h2>
-            </div>
+            <h2 className="text-lg font-bold text-slate-900">Workspace log</h2>
             <Link
               href="/pages/activity/"
               className="text-xs font-semibold text-brand-pink hover:underline"
@@ -284,7 +340,7 @@ export default function Dashboard() {
           </div>
           {workspaceActivity.data?.summary.pending_acknowledgement_count ? (
             <Link
-              href="/pages/activity/?tab=pending"
+              href="/pages/organization"
               className="mb-4 flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
             >
               <Clock3 className="h-3.5 w-3.5 shrink-0" />
@@ -347,12 +403,7 @@ export default function Dashboard() {
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-                Activity
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Document analytics
-              </h2>
+              <h2 className="text-lg font-bold text-slate-900">Document analytics</h2>
               <p className="mt-1 text-xs text-slate-500">
                 {totalDocuments} document{totalDocuments === 1 ? "" : "s"} by
                 approval status
@@ -437,14 +488,7 @@ export default function Dashboard() {
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-                Attention
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Reminders
-              </h2>
-            </div>
+            <h2 className="text-lg font-bold text-slate-900">Reminders</h2>
             <BellRing className="h-5 w-5 text-brand-pink" />
           </div>
           <div className="mt-7">
@@ -474,14 +518,7 @@ export default function Dashboard() {
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-                Collaboration
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Team activity
-              </h2>
-            </div>
+            <h2 className="text-lg font-bold text-slate-900">Team activity</h2>
             <Users className="h-5 w-5 text-brand-pink" />
           </div>
           <div className="mt-5 space-y-4">
@@ -512,7 +549,7 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <span className="ml-auto text-[10px] text-slate-400">
-                    {document.created_at.slice(0, 10)}
+                    {formatDocumentDateShort(document.created_at)}
                   </span>
                 </div>
               );
@@ -524,22 +561,13 @@ export default function Dashboard() {
       <section className="grid gap-6 xl:grid-cols-[1fr_1fr_0.8fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-                Compliance
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Approval progress
-              </h2>
-            </div>
+            <h2 className="text-lg font-bold text-slate-900">Approval status</h2>
             <ShieldCheck className="h-5 w-5 text-brand-pink" />
           </div>
           <div className="mt-6 flex items-center justify-center">
             <div
               className="relative flex h-44 w-44 items-center justify-center rounded-full"
-              style={{
-                background: `conic-gradient(#e83e8c 0 ${approvalProgress}%, #f3a6c5 ${approvalProgress}% 82%, #f7d9e5 82% 100%)`,
-              }}
+              style={{ background: approvalRingGradient }}
             >
               <div className="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-white">
                 <span className="text-4xl font-semibold tracking-[-0.06em] text-slate-950">
@@ -549,31 +577,27 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="mt-5 flex justify-center gap-4 text-[10px] font-semibold text-slate-500">
-            <span className="flex items-center gap-1.5">
-              <i className="h-2 w-2 rounded-full bg-brand-pink" />
-              Approved
-            </span>
-            <span className="flex items-center gap-1.5">
-              <i className="h-2 w-2 rounded-full bg-pink-300" />
-              Review
-            </span>
-            <span className="flex items-center gap-1.5">
-              <i className="h-2 w-2 rounded-full bg-pink-100" />
-              Pending
-            </span>
+          <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] font-semibold text-slate-500">
+            {approvalRingSegments.length ? (
+              approvalRingSegments.map((segment) => (
+                <span
+                  key={segment.label}
+                  className="flex items-center gap-1.5"
+                >
+                  <i
+                    className={`h-2 w-2 rounded-full ${segment.dotClass}`}
+                  />
+                  {segment.label} ({segment.count})
+                </span>
+              ))
+            ) : (
+              <span className="text-slate-400">No documents yet</span>
+            )}
           </div>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-                Workspace
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Quick actions
-              </h2>
-            </div>
+            <h2 className="text-lg font-bold text-slate-900">Quick actions</h2>
             <ArrowUpRight className="h-5 w-5 text-brand-pink" />
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
@@ -609,21 +633,12 @@ export default function Dashboard() {
             </Link>
           </div>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-brand-text to-brand-pink p-6 text-white shadow-lg shadow-pink-200">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-pink-100">
-            Document health
-          </p>
-          <h2 className="mt-2 text-2xl font-bold">
-            Keep your workspace audit-ready.
-          </h2>
-          <p className="mt-3 text-sm leading-6 text-pink-100">
-            Stay ahead of renewals, approvals, and missing employee records.
-          </p>
+        <div className="flex flex-col justify-center rounded-2xl bg-gradient-to-br from-brand-text to-brand-pink p-6 text-white shadow-lg shadow-pink-200">
           <Link
             href="/pages/document-intelligence"
-            className="mt-7 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-brand-text transition hover:bg-pink-50"
+            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-brand-text transition hover:bg-pink-50"
           >
-            Open intelligence <ArrowUpRight className="h-4 w-4" />
+            Open Document Intelligence <ArrowUpRight className="h-4 w-4" />
           </Link>
         </div>
       </section>

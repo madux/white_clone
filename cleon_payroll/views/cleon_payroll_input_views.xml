@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cleon_payroll_input_type_form" model="ir.ui.view">
+        <field name="name">cleon.payroll.input.type.form</field>
+        <field name="model">cleon.payroll.input.type</field>
+        <field name="arch" type="xml">
+            <form string="Input Type" class="o_qms_form">
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+                        </div>
+                        <span class="qms-card-title">Input Type Details</span>
+                    </div>
+                    <div class="pink-card-body">
+                        <group>
+                            <group col="4">
+                                <field name="name" class="pink-text" placeholder="Overtime Amount"/>
+                                <field name="code" placeholder="OVERTIME"/>
+                            </group>
+                        </group>
+                    </div>
+                    <div class="ash-card-body text-sm">
+                        <span class="qms-card-title">Available in Structures</span>
+                        <field name="struct_ids" widget="many2many_tags"/>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_payroll_input_type_list" model="ir.ui.view">
+        <field name="name">cleon.payroll.input.type.list</field>
+        <field name="model">cleon.payroll.input.type</field>
+        <field name="arch" type="xml">
+            <tree string="Input Types">
+                <field name="code"/>
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_cleon_payroll_input_type" model="ir.actions.act_window">
+        <field name="name">Payroll Input Types</field>
+        <field name="res_model">cleon.payroll.input.type</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

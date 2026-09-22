@@ -7,12 +7,14 @@ import { api } from "../../../../lib/api";
 import {
   useDocumentaryFolderAction,
   useDocumentaryMediaAction,
+  useDocumentaryMediaBatchAction,
   useDocumentarySettings,
   useMediaApproval,
   useSaveDocumentarySettings,
 } from "../../../../hooks/useDocumentary";
 import { formatDuration } from "../documentaryUtils";
 import { ModalShell } from "./ModalShell";
+import RolesPage from "../RolesPage";
 
 export function RecycleBinView({
   media,
@@ -28,7 +30,12 @@ export function RecycleBinView({
   onRefresh: () => void;
 }) {
   const mediaAction = useDocumentaryMediaAction();
+  const mediaBatchAction = useDocumentaryMediaBatchAction();
   const folderAction = useDocumentaryFolderAction();
+  const [selectedMediaIds, setSelectedMediaIds] = useState<number[]>([]);
+  const [selectedFolderIds, setSelectedFolderIds] = useState<number[]>([]);
+  const allMediaSelected = selectedMediaIds.length === media.length && media.length > 0;
+  const allFoldersSelected = selectedFolderIds.length === folders.length && folders.length > 0;
 
   async function restoreMedia(item: DocumentaryMedia) {
     try {
@@ -83,6 +90,64 @@ export function RecycleBinView({
 
   return (
     <section className="section-block">
+      {(media.length > 0 || folders.length > 0) && (
+        <div className="batch-toolbar">
+          <label className="bulk-select-all">
+            <input
+              type="checkbox"
+              checked={allMediaSelected && allFoldersSelected && (media.length + folders.length) > 0}
+              onChange={() => {
+                const selectAll = !(allMediaSelected && allFoldersSelected);
+                setSelectedMediaIds(selectAll ? media.map((item) => item.id) : []);
+                setSelectedFolderIds(selectAll ? folders.map((item) => item.id) : []);
+              }}
+            />
+            <span>
+              {selectedMediaIds.length + selectedFolderIds.length
+                ? `${selectedMediaIds.length + selectedFolderIds.length} selected`
+                : `Select all (${media.length + folders.length})`}
+            </span>
+          </label>
+          <div className="batch-toolbar-actions">
+            <button
+              type="button"
+              disabled={!selectedMediaIds.length}
+              onClick={() => mediaBatchAction.mutateAsync({ ids: selectedMediaIds, action: "restore" })
+                .then(() => { setSelectedMediaIds([]); onNotice("success", "Selected videos restored."); onRefresh(); })
+                .catch((error) => onNotice("error", error instanceof Error ? error.message : "Restore failed."))}
+            >
+              <RotateCcw size={14} /> Restore videos
+            </button>
+            <button
+              type="button"
+              disabled={!selectedMediaIds.length}
+              className="danger"
+              onClick={() => {
+                if (!window.confirm(`Permanently delete ${selectedMediaIds.length} video(s)?`)) return;
+                mediaBatchAction.mutateAsync({ ids: selectedMediaIds, action: "purge" })
+                  .then(() => { setSelectedMediaIds([]); onNotice("success", "Selected videos permanently deleted."); onRefresh(); })
+                  .catch((error) => onNotice("error", error instanceof Error ? error.message : "Delete failed."));
+              }}
+            >
+              <Trash2 size={14} /> Delete videos forever
+            </button>
+            <button
+              type="button"
+              disabled={!selectedFolderIds.length}
+              onClick={() => Promise.all(selectedFolderIds.map((id) => folderAction.mutateAsync({ id, action: "restore" })))
+                .then(() => { setSelectedFolderIds([]); onNotice("success", "Selected folders restored."); onRefresh(); })
+                .catch((error) => onNotice("error", error instanceof Error ? error.message : "Restore failed."))}
+            >
+              <RotateCcw size={14} /> Restore folders
+            </button>
+          </div>
+          {(selectedMediaIds.length + selectedFolderIds.length) > 0 && (
+            <button type="button" className="batch-clear" onClick={() => { setSelectedMediaIds([]); setSelectedFolderIds([]); }}>
+              <X size={14} /> Clear
+            </button>
+          )}
+        </div>
+      )}
       {media.length > 0 && (
         <div className="section-heading">
           <div />
@@ -103,6 +168,14 @@ export function RecycleBinView({
           <div className="recycle-list">
             {folders.map((folder) => (
               <div className="recycle-row" key={folder.id}>
+                <input
+                  type="checkbox"
+                  checked={selectedFolderIds.includes(folder.id)}
+                  onChange={() => setSelectedFolderIds((current) => current.includes(folder.id)
+                    ? current.filter((id) => id !== folder.id)
+                    : [...current, folder.id])}
+                  aria-label={`Select ${folder.name}`}
+                />
                 <div>
                   <strong>{folder.name}</strong>
                   <span>{folder.media_count} videos</span>
@@ -121,6 +194,14 @@ export function RecycleBinView({
           <div className="recycle-list">
             {media.map((item) => (
               <div className="recycle-row" key={item.id}>
+                <input
+                  type="checkbox"
+                  checked={selectedMediaIds.includes(item.id)}
+                  onChange={() => setSelectedMediaIds((current) => current.includes(item.id)
+                    ? current.filter((id) => id !== item.id)
+                    : [...current, item.id])}
+                  aria-label={`Select ${item.title}`}
+                />
                 <div>
                   <strong>{item.title}</strong>
                   <span>
@@ -149,12 +230,15 @@ export function RecycleBinView({
 export function SettingsPanelModal({
   onClose,
   onNotice,
+  isSystemAdmin = false,
 }: {
   onClose: () => void;
   onNotice: (type: "error" | "success", text: string) => void;
+  isSystemAdmin?: boolean;
 }) {
   const query = useDocumentarySettings(true);
   const save = useSaveDocumentarySettings();
+  const [activeTab, setActiveTab] = useState<"configuration" | "roles">("configuration");
   const [form, setForm] = useState<DocumentarySettings | null>(null);
   const [storageStatus, setStorageStatus] = useState<{
     configured?: boolean;
@@ -188,7 +272,7 @@ export function SettingsPanelModal({
     }
   }
 
-  if (!form) {
+  if (!form && activeTab === "configuration") {
     return (
       <ModalShell eyebrow="Configuration" title="Settings" onClose={onClose}>
         <div className="loading-state compact">
@@ -200,6 +284,27 @@ export function SettingsPanelModal({
 
   return (
     <ModalShell eyebrow="Configuration" title="Settings & configuration" onClose={onClose}>
+      {isSystemAdmin && (
+        <div className="settings-modal-tabs">
+          <button
+            type="button"
+            className={activeTab === "configuration" ? "active" : ""}
+            onClick={() => setActiveTab("configuration")}
+          >
+            Configuration
+          </button>
+          <button
+            type="button"
+            className={activeTab === "roles" ? "active" : ""}
+            onClick={() => setActiveTab("roles")}
+          >
+            Module roles
+          </button>
+        </div>
+      )}
+      {activeTab === "roles" && isSystemAdmin ? (
+        <RolesPage embedded />
+      ) : form ? (
       <form className="modal-form" onSubmit={(e) => void handleSave(e)}>
         <div className="switch-list">
           <label className="switch-row">
@@ -329,6 +434,7 @@ export function SettingsPanelModal({
           </button>
         </div>
       </form>
+      ) : null}
     </ModalShell>
   );
 }
@@ -406,8 +512,10 @@ export function ApprovalQueue({
   onRefresh: () => void;
 }) {
   const approval = useMediaApproval();
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const pending = media.filter((item) => item.approval_status === "pending");
   const scheduled = media.filter((item) => item.approval_status === "scheduled");
+  const allPendingSelected = selectedIds.length === pending.length && pending.length > 0;
 
   async function act(id: number, action: "approve" | "reject", comment?: string) {
     try {
@@ -430,6 +538,45 @@ export function ApprovalQueue({
 
   return (
     <section className="section-block">
+      {pending.length > 0 && (
+        <div className="batch-toolbar">
+          <label className="bulk-select-all">
+            <input
+              type="checkbox"
+              checked={allPendingSelected}
+              onChange={() => setSelectedIds(allPendingSelected ? [] : pending.map((item) => item.id))}
+            />
+            <span>{selectedIds.length ? `${selectedIds.length} selected` : `Select all (${pending.length})`}</span>
+          </label>
+          <div className="batch-toolbar-actions">
+            <button
+              type="button"
+              className="primary-button small"
+              disabled={!selectedIds.length}
+              onClick={() => Promise.all(selectedIds.map((id) => approval.mutateAsync({ id, action: "approve" })))
+                .then(() => { setSelectedIds([]); onNotice("success", "Selected videos approved."); onRefresh(); })
+                .catch((error) => onNotice("error", error instanceof Error ? error.message : "Approval failed."))}
+            >
+              Approve selected
+            </button>
+            <button
+              type="button"
+              className="danger-button small"
+              disabled={!selectedIds.length}
+              onClick={() => Promise.all(selectedIds.map((id) => approval.mutateAsync({ id, action: "reject" })))
+                .then(() => { setSelectedIds([]); onNotice("success", "Selected videos rejected."); onRefresh(); })
+                .catch((error) => onNotice("error", error instanceof Error ? error.message : "Rejection failed."))}
+            >
+              Reject selected
+            </button>
+          </div>
+          {selectedIds.length > 0 && (
+            <button type="button" className="batch-clear" onClick={() => setSelectedIds([])}>
+              <X size={14} /> Clear
+            </button>
+          )}
+        </div>
+      )}
       {(pending.length > 0 || scheduled.length > 0) && (
         <div className="section-heading">
           <div>
@@ -446,6 +593,14 @@ export function ApprovalQueue({
       <div className="approval-list">
         {pending.map((item) => (
           <div className="approval-row" key={item.id}>
+            <input
+              type="checkbox"
+              checked={selectedIds.includes(item.id)}
+              onChange={() => setSelectedIds((current) => current.includes(item.id)
+                ? current.filter((id) => id !== item.id)
+                : [...current, item.id])}
+              aria-label={`Select ${item.title}`}
+            />
             <div>
               <strong>{item.title}</strong>
               <span>{item.folder_name}</span>

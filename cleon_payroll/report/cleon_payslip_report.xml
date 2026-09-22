@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_cleon_payslip" model="ir.actions.report">
+        <field name="name">Payslip</field>
+        <field name="model">cleon.payslip</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">cleon_payroll.report_cleon_payslip_document</field>
+        <field name="report_file">cleon_payroll.report_cleon_payslip_document</field>
+        <field name="binding_model_id" ref="model_cleon_payslip"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Payslip - %s' % (object.employee_id.name)</field>
+    </record>
+
+</odoo>

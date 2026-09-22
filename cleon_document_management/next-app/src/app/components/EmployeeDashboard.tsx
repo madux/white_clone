@@ -118,14 +118,7 @@ export default function EmployeeDashboard() {
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-                Action required
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Outstanding requirements
-              </h2>
-            </div>
+            <h2 className="text-lg font-bold text-slate-900">Outstanding requirements</h2>
             <Clock3 className="h-5 w-5 text-brand-pink" />
           </div>
           {workspace.isLoading ? (
@@ -194,14 +187,7 @@ export default function EmployeeDashboard() {
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-                Workspace
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Quick access
-              </h2>
-            </div>
+            <h2 className="text-lg font-bold text-slate-900">Quick access</h2>
             <ArrowUpRight className="h-5 w-5 text-brand-pink" />
           </div>
           <div className="grid gap-3">

@@ -19,10 +19,26 @@ export const QUERY_KEYS = {
   exceptions: ["compliance", "exceptions"],
   evaluations: ["compliance", "evaluations"],
   evaluationRuns: ["compliance", "evaluation-runs"],
+  complianceRun: (runId: number) => ["compliance", "run", runId],
+  complianceRunEmployees: (
+    runId: number,
+    page: number,
+    search: string,
+    status: string,
+  ) => ["compliance", "run", runId, "employees", page, search, status],
+  complianceReport: (reportKey: string, page: number, search: string) =>
+    ["compliance", "report", reportKey, page, search],
   approvalInbox: ["admin", "approval-inbox"],
   pendingEmployeeUploads: ["admin", "pending-employee-uploads"],
   workspaceActivity: ["admin", "workspace-activity"],
+  documentAcknowledgementAudience: (
+    documentId: number,
+    page: number,
+    search: string,
+    status: string,
+  ) => ["admin", "document-acknowledgement-audience", documentId, page, search, status],
   myPendingUploads: ["documents", "my-pending-uploads"],
+  myReviewAlerts: ["documents", "my-review-alerts"],
   myCompliance: ["documents", "my-compliance"],
   onboarding: ["user", "onboarding"],
 };
@@ -94,6 +110,15 @@ export function useMyPendingUploads() {
   });
 }
 
+export function useMyReviewAlerts(enabled = true) {
+  return useQuery({
+    queryKey: QUERY_KEYS.myReviewAlerts,
+    queryFn: () => api.getMyReviewAlerts().then((result) => result.data),
+    enabled,
+    refetchInterval: 30000,
+  });
+}
+
 export function useMyCompliance() {
   return useQuery({
     queryKey: QUERY_KEYS.myCompliance,
@@ -129,6 +154,39 @@ export function useWorkspaceActivity(enabled = true) {
     queryFn: () => api.getWorkspaceActivity().then((result) => result.data),
     enabled,
     refetchInterval: 60000,
+  });
+}
+
+export function useDocumentAcknowledgementAudience(
+  documentId: number | null,
+  page: number,
+  search: string,
+  status: "all" | "acknowledged" | "pending",
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: QUERY_KEYS.documentAcknowledgementAudience(
+      documentId ?? 0,
+      page,
+      search,
+      status,
+    ),
+    queryFn: () =>
+      api
+        .getDocumentAcknowledgementAudience({
+          document_id: documentId as number,
+          page,
+          limit: 10,
+          search,
+          status,
+        })
+        .then((result) => {
+          if (!result.success || !result.data) {
+            throw new Error(result.message || "Could not load acknowledgement audience.");
+          }
+          return result.data;
+        }),
+    enabled: enabled && Boolean(documentId && documentId > 0),
   });
 }
 
@@ -207,6 +265,17 @@ export function useToggleSettingsDocumentType() {
   });
 }
 
+export function useDeleteSettingsDocumentType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteSettingsDocumentType,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["document-settings"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documentTypes });
+    },
+  });
+}
+
 export function useDocumentTypes() {
   return useQuery({
     queryKey: QUERY_KEYS.documentTypes,
@@ -260,13 +329,22 @@ export function useCreatePolicy() {
     mutationFn: api.createPolicy,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.policies });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluationRuns });
     },
   });
 }
 
 export function useUpdatePolicy() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: api.updatePolicy, onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.policies }) });
+  return useMutation({
+    mutationFn: api.updatePolicy,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.policies });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluationRuns });
+    },
+  });
 }
 
 export function useDeletePolicy() {
@@ -302,7 +380,14 @@ export function useRejectException() {
 
 export function useCreateException() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: api.createException, onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations }); } });
+  return useMutation({
+    mutationFn: api.createException,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.myCompliance });
+    },
+  });
 }
 
 export function useDeactivateException() {
@@ -331,6 +416,66 @@ export function useEvaluationRuns(policyId?: number) {
   return useQuery({
     queryKey: [...QUERY_KEYS.evaluationRuns, policyId ?? "all"],
     queryFn: () => api.getEvaluationRuns(policyId),
+  });
+}
+
+export function useComplianceRun(runId: number) {
+  return useQuery({
+    queryKey: QUERY_KEYS.complianceRun(runId),
+    queryFn: () => api.getComplianceRun(runId),
+    enabled: runId > 0,
+  });
+}
+
+export function useComplianceRunEmployees(
+  runId: number,
+  page: number,
+  search: string,
+  status: string,
+) {
+  return useQuery({
+    queryKey: QUERY_KEYS.complianceRunEmployees(runId, page, search, status),
+    queryFn: () =>
+      api.getComplianceRunEmployees(runId, {
+        page,
+        page_size: 10,
+        search,
+        status: status === "all" ? undefined : status,
+      }),
+    enabled: runId > 0,
+  });
+}
+
+export function useComplianceReport(
+  reportKey: string,
+  page: number,
+  search: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: QUERY_KEYS.complianceReport(reportKey, page, search),
+    queryFn: () =>
+      api.getComplianceReport(reportKey, {
+        page,
+        page_size: 10,
+        search,
+      }),
+    enabled,
+  });
+}
+
+export function useSendComplianceRunRequest() {
+  return useMutation({
+    mutationFn: ({
+      runId,
+      ...payload
+    }: {
+      runId: number;
+      employee_id: number;
+      due_date: string;
+      subject: string;
+      message: string;
+    }) => api.sendComplianceRunRequest(runId, payload),
   });
 }
 
@@ -479,6 +624,8 @@ export function useUploadEmployeeDocument() {
     onSuccess: () => {
       invalidateDocumentQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-activity"] });
     },
   });
 }
@@ -508,7 +655,30 @@ export function useDocumentAction() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.documentAction,
-    onSuccess: () => invalidateDocumentQueries(queryClient),
+    onSuccess: () => {
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "document-search"] });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.lifecycleDocuments("archived"),
+      });
+    },
+  });
+}
+
+export function useDeleteDocumentVersion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteDocumentVersion,
+    onSuccess: (result) => {
+      invalidateDocumentQueries(queryClient);
+      const documentId = result?.data?.document_id;
+      if (documentId) {
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.documentVersions(documentId),
+        });
+      }
+    },
   });
 }
 
@@ -540,6 +710,12 @@ export function useReviewDocument() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.approvalInbox });
       queryClient.invalidateQueries({ queryKey: ["admin", "attention"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.myPendingUploads });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.myReviewAlerts });
+      queryClient.invalidateQueries({ queryKey: ["documents", "mine"] });
+      queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-activity"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
     },
   });

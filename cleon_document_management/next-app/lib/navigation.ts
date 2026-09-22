@@ -27,7 +27,16 @@ export function getNavigationLabel(
 
   if (route.startsWith("/pages/employee/profile")) return "Employee profile";
   if (route.startsWith("/pages/employee/folder")) return "Employee folder";
-  if (route === "/pages/employee") return "Employee Files";
+  if (route.startsWith("/pages/employee/group")) return "Employee group";
+  if (route === "/pages/employee") {
+    const tab = searchParams?.get("tab");
+    if (tab === "issues") return "Issues";
+    if (tab === "pending-approvals" || tab === "pending") {
+      return "Pending approvals";
+    }
+    return "Employee Files";
+  }
+  if (route === "/pages/employee/issues") return "Issues";
   if (route.startsWith("/pages/organization/folder")) return "Organizational folder";
   if (route === "/pages/organization") return "Organizational Files";
   if (route === "/pages/pending-uploads") return "Pending Uploads";
@@ -38,6 +47,7 @@ export function getNavigationLabel(
   if (route === "/pages/quick-access") return "Quick Access";
   if (route === "/pages/archived") return "Archived Documents";
   if (route === "/pages/compliance") return "Compliance";
+  if (route.startsWith("/pages/compliance/run")) return "Policy run";
   if (route === "/pages/settings") return "Settings";
   if (route.startsWith("/pages/document-intelligence/datasets/new")) {
     return searchParams?.get("id") ? "Edit dataset" : "New dataset";

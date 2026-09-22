@@ -293,11 +293,11 @@ body.o_login_page,
 } */
 
 
-.cleonhr_form_card:hover {
+/* .cleonhr_form_card:hover {
     transform: translateY(-5px);
     color:#f5f6f8;
-    background-color: #cd0d67;
-}
+    background-color: #e8e7e7;
+} */
 
 .loginavatar {
     width: 50px;

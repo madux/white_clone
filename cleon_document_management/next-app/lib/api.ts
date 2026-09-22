@@ -9,6 +9,7 @@ import type {
   User,
   AdminAttention,
   ApprovalInbox,
+  ReviewAlertItem,
   PendingEmployeeUploads,
   MyPendingUploads,
   MyCompliance,
@@ -16,9 +17,13 @@ import type {
   QuickAccess,
   DashboardStats,
   WorkspaceActivity,
+  DocumentAcknowledgementAudience,
+  ModuleRoleAssignment,
+  ModuleRoleDefinition,
+  ModuleRoleMember,
   DocumentType,
   ShareLink,
-  UploadDuplicateMatch,
+  UploadConflict,
 } from "./types";
 
 interface JsonRpcResponse<T> {
@@ -39,6 +44,8 @@ declare global {
       tz?: string;
       is_admin?: boolean;
       is_document_manager?: boolean;
+      is_document_admin?: boolean;
+      employee_files_permissions?: import("./types").EmployeeFilesPermissions;
     };
   }
 }
@@ -87,6 +94,15 @@ export async function rpc<T = any>(
   }
 }
 
+function unwrapCompliance<T extends { success?: boolean; message?: string }>(
+  result: T,
+): T {
+  if (result?.success === false) {
+    throw new Error(result.message || "Compliance request failed.");
+  }
+  return result;
+}
+
 export const api = {
   injectedUser: (): User | null => {
     const rawUser =
@@ -109,6 +125,8 @@ export const api = {
         tz: rawUser.tz || "",
         is_admin: rawUser.is_admin,
         is_document_manager: rawUser.is_document_manager,
+        is_document_admin: rawUser.is_document_admin,
+        employee_files_permissions: rawUser.employee_files_permissions,
       };
       if (
         typeof window !== "undefined" &&
@@ -295,6 +313,8 @@ export const api = {
     folder_id: number;
     document_type_ids: number[];
     expiry_dates?: string[];
+    replace_document_ids?: Array<number | null>;
+    change_notes?: string[];
   }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
@@ -302,6 +322,12 @@ export const api = {
     form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
     if (payload.expiry_dates?.length) {
       form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
+    }
+    if (payload.replace_document_ids?.length) {
+      form.append("replace_document_ids", JSON.stringify(payload.replace_document_ids));
+    }
+    if (payload.change_notes?.length) {
+      form.append("change_notes", JSON.stringify(payload.change_notes));
     }
     return multipartClient
       .post<{
@@ -315,12 +341,35 @@ export const api = {
     files: File[];
     document_type_ids: number[];
     expiry_dates?: string[];
+    issue_dates?: string[];
+    descriptions?: string[];
+    replace_document_ids?: Array<number | null>;
+    change_notes?: string[];
+    allow_separate_duplicates?: boolean[];
   }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
     form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
     if (payload.expiry_dates?.length) {
       form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
+    }
+    if (payload.issue_dates?.length) {
+      form.append("issue_dates", JSON.stringify(payload.issue_dates));
+    }
+    if (payload.descriptions?.length) {
+      form.append("descriptions", JSON.stringify(payload.descriptions));
+    }
+    if (payload.replace_document_ids?.length) {
+      form.append("replace_document_ids", JSON.stringify(payload.replace_document_ids));
+    }
+    if (payload.change_notes?.length) {
+      form.append("change_notes", JSON.stringify(payload.change_notes));
+    }
+    if (payload.allow_separate_duplicates?.length) {
+      form.append(
+        "allow_separate_duplicates",
+        JSON.stringify(payload.allow_separate_duplicates),
+      );
     }
     return multipartClient
       .post<{
@@ -336,6 +385,11 @@ export const api = {
     employee_id: number;
     document_type_ids: number[];
     expiry_dates?: string[];
+    issue_dates?: string[];
+    descriptions?: string[];
+    replace_document_ids?: Array<number | null>;
+    change_notes?: string[];
+    allow_separate_duplicates?: boolean[];
   }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
@@ -343,6 +397,24 @@ export const api = {
     form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
     if (payload.expiry_dates?.length) {
       form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
+    }
+    if (payload.issue_dates?.length) {
+      form.append("issue_dates", JSON.stringify(payload.issue_dates));
+    }
+    if (payload.descriptions?.length) {
+      form.append("descriptions", JSON.stringify(payload.descriptions));
+    }
+    if (payload.replace_document_ids?.length) {
+      form.append("replace_document_ids", JSON.stringify(payload.replace_document_ids));
+    }
+    if (payload.change_notes?.length) {
+      form.append("change_notes", JSON.stringify(payload.change_notes));
+    }
+    if (payload.allow_separate_duplicates?.length) {
+      form.append(
+        "allow_separate_duplicates",
+        JSON.stringify(payload.allow_separate_duplicates),
+      );
     }
     return multipartClient
       .post<{ success: boolean; data?: { id: number; name: string }; message?: string }>(
@@ -352,15 +424,15 @@ export const api = {
       .then((response) => response.data);
   },
 
-  checkUploadDuplicates: (payload: {
+  checkUploadConflicts: (payload: {
     employee_id: number;
-    items: { filename: string; document_type_id: number }[];
+    items: { document_type_id: number }[];
   }) =>
     rpc<{
       success: boolean;
-      matches?: UploadDuplicateMatch[];
+      conflicts?: UploadConflict[];
       message?: string;
-    }>("/api/check-upload-duplicates", payload),
+    }>("/api/check-upload-conflicts", payload),
 
   requestDocumentApproval: (id: number) => {
     return rpc<{
@@ -433,11 +505,24 @@ export const api = {
       {},
     ),
 
+  getDocumentAcknowledgementAudience: (payload: {
+    document_id: number;
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: "all" | "acknowledged" | "pending";
+  }) =>
+    rpc<{ success: boolean; data: DocumentAcknowledgementAudience; message?: string }>(
+      "/api/acknowledgements/document-audience",
+      payload,
+    ),
+
   getOnboarding: () =>
     rpc<{ success: boolean; data: OnboardingState }>("/api/onboarding", {}),
 
   updateOnboarding: (payload: {
-    action: "complete_step" | "complete" | "dismiss" | "reset";
+    action: "complete_step" | "complete" | "dismiss" | "reset" | "arm";
+    module?: string;
     step_id?: string;
   }) =>
     rpc<{ success: boolean; data: OnboardingState; message?: string }>(
@@ -451,6 +536,18 @@ export const api = {
     reason?: string;
   }) =>
     rpc<{ success: boolean; data: any }>("/api/document-review", payload),
+
+  getMyReviewAlerts: () =>
+    rpc<{
+      success: boolean;
+      data: { count: number; items: ReviewAlertItem[] };
+    }>("/api/my-review-alerts", {}),
+
+  acknowledgeReviewDecision: (id: number) =>
+    rpc<{ success: boolean; data?: { id: number; review_decision_unread: boolean } }>(
+      "/api/document/acknowledge-review-decision",
+      { id },
+    ),
 
   getDocumentLifecycle: (lifecycle: "archived" | "recycle_bin") =>
     rpc<{ success: boolean; data: DocDocument[] }>(
@@ -485,6 +582,12 @@ export const api = {
       { id },
     ),
 
+  deleteSettingsDocumentType: (id: number) =>
+    rpc<{ success: boolean; message?: string }>(
+      "/api/settings/document-type/delete",
+      { id },
+    ),
+
   getPolicyTypes: () =>
     rpc<{ success: boolean; data: any[] }>(
       "/api/compliance/policy-types",
@@ -507,7 +610,7 @@ export const api = {
     rpc<{ success: boolean; data: any }>(
       "/api/compliance/exceptions/create",
       payload,
-    ),
+    ).then(unwrapCompliance),
 
   deactivateException: (id: number) =>
     rpc<{ success: boolean; active: boolean }>(
@@ -531,13 +634,13 @@ export const api = {
     rpc<{ success: boolean; status?: string; message?: string }>(
       `/api/compliance/exceptions/${id}/approve`,
       {},
-    ),
+    ).then(unwrapCompliance),
 
   rejectException: (id: number) =>
     rpc<{ success: boolean; status?: string; message?: string }>(
       `/api/compliance/exceptions/${id}/reject`,
       {},
-    ),
+    ).then(unwrapCompliance),
 
   getEvaluations: (employeeId?: number) =>
     rpc<{ success: boolean; data: any[] }>(
@@ -551,11 +654,68 @@ export const api = {
       policyId ? { policy_id: policyId } : {},
     ).then((r) => r.data),
 
+  getComplianceRun: (runId: number) =>
+    rpc<{ success: boolean; data: any; message?: string }>(
+      `/api/compliance/runs/${runId}`,
+      {},
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Run could not be loaded.");
+      return r.data;
+    }),
+
+  getComplianceRunEmployees: (runId: number, payload: Record<string, unknown> = {}) =>
+    rpc<{ success: boolean; data: any[]; total: number; page: number; page_size: number; message?: string }>(
+      `/api/compliance/runs/${runId}/employees`,
+      payload,
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Employees could not be loaded.");
+      return r;
+    }),
+
+  getComplianceRunEmployee: (runId: number, employeeId: number) =>
+    rpc<{ success: boolean; data: any; message?: string }>(
+      `/api/compliance/runs/${runId}/employees/${employeeId}`,
+      {},
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Employee result could not be loaded.");
+      return r.data;
+    }),
+
+  exportComplianceRun: (runId: number, payload: Record<string, unknown> = {}) =>
+    rpc<{ success: boolean; run: any; data: any[]; message?: string }>(
+      `/api/compliance/runs/${runId}/export`,
+      payload,
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Export failed.");
+      return r;
+    }),
+
+  sendComplianceRunRequest: (
+    runId: number,
+    payload: { employee_id: number; due_date: string; subject: string; message: string },
+  ) =>
+    rpc<{ success: boolean; message?: string }>(
+      `/api/compliance/runs/${runId}/request`,
+      payload,
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Request could not be sent.");
+      return r;
+    }),
+
+  getComplianceReport: (reportKey: string, payload: Record<string, unknown> = {}) =>
+    rpc<{ success: boolean; data: any[]; total: number; page: number; page_size: number; message?: string }>(
+      `/api/compliance/reports/${reportKey}`,
+      payload,
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Report could not be loaded.");
+      return r;
+    }),
+
   evaluatePolicy: (policyId: number) =>
     rpc<{ success: boolean; data: any[]; run?: any; message?: string }>(
       `/api/compliance/policies/${policyId}/evaluate`,
       {},
-    ),
+    ).then(unwrapCompliance),
 
   getPolicies: () =>
     rpc<{ success: boolean; count: number; data: CompliancePolicy[] }>(
@@ -567,13 +727,13 @@ export const api = {
     rpc<{ success: boolean; data: CompliancePolicy }>(
       "/api/compliance/policies/create",
       payload,
-    ),
+    ).then(unwrapCompliance),
 
   updatePolicy: (payload: Record<string, any>) =>
     rpc<{ success: boolean; data: CompliancePolicy }>(
       "/api/compliance/policies/update",
       payload,
-    ),
+    ).then(unwrapCompliance),
 
   deletePolicy: (id: number) =>
     rpc<{ success: boolean; message: string }>(
@@ -606,6 +766,12 @@ export const api = {
       { document_id: documentId },
     ),
 
+  deleteDocumentVersion: (versionId: number) =>
+    rpc<{ success: boolean; message: string; data?: { document_id: number } }>(
+      "/api/delete-document-version",
+      { version_id: versionId },
+    ),
+
   getShareLinks: () =>
     rpc<{ success: boolean; data: ShareLink[] }>(
       "/api/share-links",
@@ -623,6 +789,335 @@ export const api = {
   downloadEmployee: (employeeId: number) => {
     triggerDownload(`/document-management/employee/${employeeId}/download`);
   },
+
+  getModuleRoleDefinitions: () =>
+    rpc<{ success: boolean; data: ModuleRoleDefinition[] }>(
+      "/api/document-management/roles/definitions",
+    ).then((result) => result.data),
+
+  getModuleRoleMembers: (search = "") =>
+    rpc<{ success: boolean; data: ModuleRoleMember[] }>(
+      "/api/document-management/roles/members",
+      { search, limit: 50 },
+    ).then((result) => result.data),
+
+  assignModuleRoles: (
+    employeeId: number,
+    assignments: ModuleRoleAssignment[],
+  ) =>
+    rpc<{ success: boolean; data: ModuleRoleMember }>(
+      "/api/document-management/roles/assign",
+      {
+        employee_id: employeeId,
+        assignments,
+      },
+    ).then((result) => result.data),
+
+  listEmployeeFilesRoles: () =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesRole[] }>(
+      "/api/employee-files/roles",
+    ).then((result) => result.data),
+
+  saveEmployeeFilesRole: (role: import("./types").EmployeeFilesRole) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesRole }>(
+      "/api/employee-files/roles/save",
+      { role },
+    ).then((result) => result.data),
+
+  deleteEmployeeFilesRole: (roleId: number) =>
+    rpc<{ success: boolean }>("/api/employee-files/roles/delete", {
+      role_id: roleId,
+    }),
+
+  getEmployeeFilesRoleMembers: (search = "") =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesRoleMembersPayload }>(
+      "/api/employee-files/roles/members",
+      { search, limit: 50 },
+    ).then((result) => result.data),
+
+  assignEmployeeFilesRoles: (userId: number, roleIds: number[]) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesRoleMember }>(
+      "/api/employee-files/roles/assign",
+      { user_id: userId, role_ids: roleIds },
+    ).then((result) => result.data),
+
+  listEmployeeFilesRoleDocumentTypes: () =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesDocumentTypeOption[] }>(
+      "/api/employee-files/roles/document-types",
+    ).then((result) => result.data),
+
+  getEmployeeFilesConfig: () =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesConfig }>(
+      "/api/employee-files/config",
+    ).then((r) => r.data),
+
+  saveEmployeeFilesConfig: (payload: Record<string, unknown>) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesConfig }>(
+      "/api/employee-files/config/save",
+      payload,
+    ).then((r) => r.data),
+
+  saveEmployeeFilesHeaderFields: (headerFieldKeys: string[]) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesConfig }>(
+      "/api/employee-files/config/header-fields",
+      { header_field_keys: headerFieldKeys },
+    ).then((r) => r.data),
+
+  previewEmployeeFilesOrganizing: (payload: Record<string, unknown>) =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFilesSetupPreview;
+    }>("/api/employee-files/config/preview", payload).then((r) => r.data),
+
+  getEmployeeFilesDimensions: () =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFileDimensionOption[];
+    }>("/api/employee-files/dimensions").then((r) => r.data),
+
+  listEmployeeFileExclusions: (reason?: string) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileExclusion[] }>(
+      "/api/employee-files/exclusions",
+      reason ? { reason } : {},
+    ).then((r) => r.data),
+
+  addEmployeeFileExclusions: (employeeIds: number[], justification?: string) =>
+    rpc<{ success: boolean; ids: number[] }>("/api/employee-files/exclusions/add", {
+      employee_ids: employeeIds,
+      justification,
+    }),
+
+  removeEmployeeFileExclusion: (id: number) =>
+    rpc<{ success: boolean }>("/api/employee-files/exclusions/remove", { id }),
+
+  listEmsEmployees: (search?: string, limit = 200) =>
+    rpc<{ success: boolean; data: import("./types").EmsEmployeeOption[] }>(
+      "/api/employee-files/ems-employees",
+      { search, limit },
+    ).then((r) => r.data),
+
+  previewEmployeeFilesSetup: (payload: Record<string, unknown>) =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFilesSetupPreview;
+    }>("/api/employee-files/setup/preview", payload).then((r) => r.data),
+
+  confirmEmployeeFilesSetup: (payload: Record<string, unknown>) =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFilesSetupRun;
+    }>("/api/employee-files/setup/confirm", payload).then((r) => r.data),
+
+  getEmployeeFilesSetupStatus: (runId?: number) =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFilesSetupRun | null;
+    }>("/api/employee-files/setup/status", runId ? { run_id: runId } : {}).then(
+      (r) => r.data,
+    ),
+
+  getEmployeeFilesHomeStats: () =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesHomeStats }>(
+      "/api/employee-files/home/stats",
+    ).then((r) => r.data),
+
+  listEmployeeFileGroups: (params: {
+    group_kind?: string;
+    dimension?: string;
+    search?: string;
+    for_home?: boolean;
+    include_all_custom?: boolean;
+  }) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup[] }>(
+      "/api/employee-files/groups",
+      params,
+    ).then((r) => r.data),
+
+  updateEmployeeFileGroup: (payload: {
+    id: number;
+    name?: string;
+    description?: string;
+    show_on_home?: boolean;
+  }) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup }>(
+      "/api/employee-files/group/update",
+      payload,
+    ).then((r) => r.data),
+
+  getEmployeeFileGroup: (id: number) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup }>(
+      "/api/employee-files/group",
+      { id },
+    ).then((r) => r.data),
+
+  searchEmployeeFilesDocuments: (params: {
+    query?: string;
+    category?: string;
+    document_type_id?: string | number;
+    department_id?: string | number;
+    source?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+    order?: string;
+  }) =>
+    rpc<{
+      success: boolean;
+      data: {
+        items: import("./types").DocDocument[];
+        total: number;
+        limit: number;
+        offset: number;
+      };
+    }>("/api/employee-files/documents/search", params).then((r) => r.data),
+
+  listEmployeeFileSummaries: (params?: {
+    search?: string;
+    limit?: number;
+    offset?: number;
+    department_id?: number | string;
+    order?: string;
+  }) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileSummaryPage }>(
+      "/api/employee-files/employee-files",
+      params ?? {},
+    ).then((r) => r.data),
+
+  listEmployeeGroupMembers: (
+    groupId: number,
+    params?: { search?: string; limit?: number; offset?: number },
+  ) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileSummaryPage }>(
+      "/api/employee-files/group/members",
+      { id: groupId, ...(params ?? {}) },
+    ).then((r) => r.data),
+
+  getEmployeeFileSummary: (employeeId: number) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileSummary }>(
+      "/api/employee-files/employee-file",
+      { employee_id: employeeId },
+    ).then((r) => r.data),
+
+  getEmployeeFileDocuments: (employeeId: number) =>
+    rpc<{ success: boolean; data: import("./types").DocDocument[] }>(
+      "/api/employee-files/employee-file/documents",
+      { employee_id: employeeId },
+    ).then((r) => r.data),
+
+  getEmployeeFileActivity: (employeeId: number) =>
+    rpc<{ success: boolean; data: import("./types").WorkspaceActivityEvent[] }>(
+      "/api/employee-files/employee-file/activity",
+      { employee_id: employeeId },
+    ).then((r) => r.data),
+
+  listEmployeeFileIssues: (
+    category = "all",
+    params?: { search?: string; limit?: number; offset?: number },
+  ) =>
+    rpc<{
+      success: boolean;
+      data: import("./types").EmployeeFileIssue[];
+      total: number;
+      limit: number;
+      offset: number;
+      summary: { total: number; categories: Array<{ category: string; label: string; count: number }> };
+    }>("/api/employee-files/issues", { category, ...(params ?? {}) }).then((r) => r),
+
+  employeeFileIssueAction: (id: number, action?: string) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileIssue }>(
+      "/api/employee-files/issues/action",
+      { id, action },
+    ).then((r) => r.data),
+
+  downloadEmployeeFileIssuesReport: () =>
+    triggerDownload("/api/employee-files/issues/export"),
+
+  createCustomEmployeeGroup: (payload: {
+    name: string;
+    description?: string;
+    icon?: string;
+  }) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup }>(
+      "/api/employee-files/group/create",
+      payload,
+    ).then((r) => r.data),
+
+  addEmployeeFilesToGroup: (groupId: number, employeeFileIds: number[]) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup }>(
+      "/api/employee-files/group/add-members",
+      { id: groupId, employee_file_ids: employeeFileIds },
+    ).then((r) => r.data),
+
+  removeEmployeeFilesFromGroup: (groupId: number, employeeFileIds: number[]) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFileGroup }>(
+      "/api/employee-files/group/remove-members",
+      { id: groupId, employee_file_ids: employeeFileIds },
+    ).then((r) => r.data),
+
+  employeeFilesGlobalSearch: (query: string, scope = "all") =>
+    rpc<{
+      success: boolean;
+      data: { employees: import("./types").EmployeeFileSummary[]; documents: any[] };
+    }>("/api/employee-files/search", { query, scope }).then((r) => r.data),
+
+  toggleEmployeeFileFavorite: (id: number) =>
+    rpc<{ success: boolean; favorite: boolean }>(
+      "/api/employee-files/favorite",
+      { id },
+    ).then((r) => r.favorite),
+
+  reclassifyEmployeeDocument: (documentId: number, documentTypeId: number) =>
+    rpc<{ success: boolean }>("/api/employee-files/document/reclassify", {
+      document_id: documentId,
+      document_type_id: documentTypeId,
+    }),
+
+  requestDocumentSignature: (documentId: number, signerEmployeeId: number) =>
+    rpc<{ success: boolean; data: { id: number; state: string } }>(
+      "/api/employee-files/signature/request",
+      { document_id: documentId, signer_employee_id: signerEmployeeId },
+    ).then((r) => r.data),
+
+  getEmployeeDocumentRelations: (documentId: number) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: import("./types").DocDocumentRelation[];
+    }>("/api/employee-files/document/relations", {
+      document_id: documentId,
+    }).then((r) => {
+      if (!r.success) {
+        throw new Error(r.message || "Could not load document relationships.");
+      }
+      return r.data;
+    }),
+
+  addEmployeeDocumentRelation: (payload: {
+    source_document_id: number;
+    target_document_id: number;
+    relation_type: import("./types").DocumentRelationType;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: import("./types").DocDocumentRelation;
+    }>("/api/employee-files/document/relation/add", payload).then((r) => {
+      if (!r.success) {
+        throw new Error(r.message || "Could not add document relationship.");
+      }
+      return r.data;
+    }),
+
+  removeEmployeeDocumentRelation: (relationId: number) =>
+    rpc<{ success: boolean; message?: string }>(
+      "/api/employee-files/document/relation/remove",
+      { relation_id: relationId },
+    ).then((r) => {
+      if (!r.success) {
+        throw new Error(r.message || "Could not remove document relationship.");
+      }
+      return r;
+    }),
 };
 
 function triggerDownload(url: string) {

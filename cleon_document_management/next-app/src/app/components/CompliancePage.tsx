@@ -9,6 +9,7 @@ import {
   Search,
   ShieldCheck,
   RotateCcw,
+  ToggleLeft,
   Trash2,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
@@ -20,9 +21,9 @@ import {
   useDeactivateException,
   useDeleteException,
   useCreatePolicy,
+  useDeletePolicy,
   useDocumentTypes,
   useEvaluatePolicy,
-  useEvaluations,
   useEvaluationRuns,
   useExceptions,
   useReactivateException,
@@ -30,14 +31,22 @@ import {
   usePolicies,
   usePolicyTypes,
 } from "../../../hooks/useDocuments";
+import BulkActionBar from "./BulkActionBar";
 import PolicyActions from "./PolicyActions";
 import ModalDialog from "./ModalDialog";
 import PolicyTypeMultiSelect from "./PolicyTypeMultiSelect";
 import SortableTable from "./SortableTable";
 import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
 import ThemedSelect from "./ThemedSelect";
+import {
+  AUDIT_FREQUENCY_LABELS,
+  EVENT_TRIGGER_LABELS,
+} from "../../../lib/complianceCopy";
+import ComplianceReportsPanel from "./ComplianceReportsPanel";
+import SectionTabs from "./SectionTabs";
+import { useRouter } from "next/navigation";
 
-type Tab = "policies" | "exceptions" | "history";
+type Tab = "policies" | "exceptions" | "history" | "reports";
 const schedules = [
   "manual",
   "one_time",
@@ -51,13 +60,14 @@ const schedules = [
 ];
 
 export default function CompliancePage() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("policies");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [policySubmitError, setPolicySubmitError] = useState("");
   const [running, setRunning] = useState(false);
   const policies = usePolicies();
   const exceptions = useExceptions();
-  const evaluations = useEvaluations();
   const runs = useEvaluationRuns();
   const types = usePolicyTypes();
   const documents = useDocumentTypes();
@@ -65,6 +75,14 @@ export default function CompliancePage() {
   const createPolicy = useCreatePolicy();
   const createException = useCreateException();
   const evaluate = useEvaluatePolicy();
+  const deletePolicy = useDeletePolicy();
+  const [selectedPolicyIds, setSelectedPolicyIds] = useState<number[]>([]);
+  const [selectedExceptionIds, setSelectedExceptionIds] = useState<number[]>([]);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const approveException = useApproveException();
+  const rejectException = useRejectException();
+  const deactivateException = useDeactivateException();
+  const deleteException = useDeleteException();
   const [policyForm, setPolicyForm] = useState({
     name: "",
     description: "",
@@ -80,7 +98,7 @@ export default function CompliancePage() {
     // Type-specific fields
     allow_waiver: true,
     alert_schedule_days: "60,30,15,7,0",
-    escalate_manager_days: 15,
+    escalate_manager_days: 0,
     escalate_hr_days: 7,
     auto_request_renewal: true,
     event_trigger: "onboarding",
@@ -117,31 +135,38 @@ export default function CompliancePage() {
   );
   const submitPolicy = async (event: FormEvent) => {
     event.preventDefault();
+    setPolicySubmitError("");
     const effectiveAppliesTo =
       policyForm.applies_to === "all" || policyForm.scope_ids.length === 0
         ? "all"
         : policyForm.applies_to;
 
-    await createPolicy.mutateAsync({
-      ...policyForm,
-      policy_type_id: Number(policyForm.policy_type_id),
-      applies_to: effectiveAppliesTo,
-      document_type_ids: policyForm.document_type_ids,
-      employee_ids:
-        effectiveAppliesTo === "employee" ? policyForm.scope_ids : [],
-      department_ids:
-        effectiveAppliesTo === "department" ? policyForm.scope_ids : [],
-      grade_ids: effectiveAppliesTo === "grade" ? policyForm.scope_ids : [],
-      custom_schedule_days: Number(policyForm.custom_schedule_days),
-      minimum_documents: Number(policyForm.minimum_documents),
-      grace_period_days: Number(policyForm.grace_period_days),
-      assigned_reviewer_id: policyForm.assigned_reviewer_id
-        ? Number(policyForm.assigned_reviewer_id)
-        : false,
-      assigned_auditor_id: policyForm.assigned_auditor_id
-        ? Number(policyForm.assigned_auditor_id)
-        : false,
-    });
+    try {
+      await createPolicy.mutateAsync({
+        ...policyForm,
+        policy_type_id: Number(policyForm.policy_type_id),
+        applies_to: effectiveAppliesTo,
+        document_type_ids: policyForm.document_type_ids,
+        employee_ids:
+          effectiveAppliesTo === "employee" ? policyForm.scope_ids : [],
+        department_ids:
+          effectiveAppliesTo === "department" ? policyForm.scope_ids : [],
+        grade_ids: effectiveAppliesTo === "grade" ? policyForm.scope_ids : [],
+        custom_schedule_days: Number(policyForm.custom_schedule_days),
+        minimum_documents: Number(policyForm.minimum_documents),
+        grace_period_days: Number(policyForm.grace_period_days),
+        assigned_reviewer_id: policyForm.assigned_reviewer_id
+          ? Number(policyForm.assigned_reviewer_id)
+          : false,
+        assigned_auditor_id: policyForm.assigned_auditor_id
+          ? Number(policyForm.assigned_auditor_id)
+          : false,
+        escalate_manager_days: 0,
+      });
+    } catch (error: any) {
+      setPolicySubmitError(error?.message || "Failed to create policy.");
+      return;
+    }
     setShowForm(false);
     setPolicyForm({
       name: "",
@@ -157,7 +182,7 @@ export default function CompliancePage() {
       effective_date: new Date().toISOString().slice(0, 10),
       allow_waiver: true,
       alert_schedule_days: "60,30,15,7,0",
-      escalate_manager_days: 15,
+      escalate_manager_days: 0,
       escalate_hr_days: 7,
       auto_request_renewal: true,
       event_trigger: "onboarding",
@@ -210,8 +235,12 @@ export default function CompliancePage() {
           </button>
           <button
             type="button"
-            onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200"
+            onClick={() => {
+              setPolicySubmitError("");
+              setShowForm(true);
+            }}
+            disabled={tab === "history" || tab === "reports"}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
             {tab === "exceptions" ? "New Exception" : "New Policy"}
@@ -236,61 +265,232 @@ export default function CompliancePage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <FileText className="h-5 w-5 text-brand-pink" />
           <p className="mt-5 text-3xl font-bold text-slate-900">
-            {evaluations.data?.length ?? 0}
+            {runs.data?.length ?? 0}
           </p>
-          <p className="text-sm text-slate-500">Recorded evaluations</p>
+          <p className="text-sm text-slate-500">Policy runs</p>
         </div>
       </div>
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <nav
-            className="flex gap-1 rounded-xl bg-slate-50 p-1"
-            aria-label="Compliance sections"
-          >
-            {(
-              [
-                ["policies", "Policies"],
-                ["exceptions", "Exceptions"],
-                ["history", "Run History"],
-              ] as [Tab, string][]
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => {
-                  setTab(value);
-                  setSearch("");
-                }}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${tab === value ? "bg-white text-brand-pink shadow-sm" : "text-slate-400 hover:text-slate-700"}`}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
+          <SectionTabs
+            items={[
+              { id: "policies", label: "Policies" },
+              { id: "exceptions", label: "Exceptions" },
+              { id: "history", label: "Run History" },
+              { id: "reports", label: "Reports" },
+            ]}
+            value={tab}
+            onChange={(value) => {
+              setTab(value);
+              setSearch("");
+              setSelectedPolicyIds([]);
+              setSelectedExceptionIds([]);
+            }}
+            className="!w-auto min-w-0 flex-1"
+            ariaLabel="Compliance sections"
+          />
           <label className="relative block sm:w-72">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder={`Search ${tab === "policies" ? "policies" : tab === "exceptions" ? "exceptions" : "history"}...`}
+              placeholder={`Search ${tab}...`}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-pink/40 focus:bg-white focus:ring-4 focus:ring-brand-pink/10"
             />
           </label>
         </div>
         {tab === "policies" && (
+          <>
+            <BulkActionBar
+              count={selectedPolicyIds.length}
+              onClear={() => setSelectedPolicyIds([])}
+            >
+              <button
+                type="button"
+                disabled={bulkRunning}
+                onClick={async () => {
+                  setBulkRunning(true);
+                  try {
+                    for (const id of selectedPolicyIds) {
+                      await evaluate.mutateAsync(id);
+                    }
+                    setSelectedPolicyIds([]);
+                  } finally {
+                    setBulkRunning(false);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-brand-text"
+              >
+                <ListChecks className="h-3.5 w-3.5" />
+                {bulkRunning ? "Running..." : "Run check"}
+              </button>
+              <button
+                type="button"
+                disabled={deletePolicy.isPending}
+                onClick={async () => {
+                  if (
+                    !window.confirm(
+                      `Delete ${selectedPolicyIds.length} selected polic${selectedPolicyIds.length === 1 ? "y" : "ies"}? This cannot be undone.`,
+                    )
+                  ) {
+                    return;
+                  }
+                  for (const id of selectedPolicyIds) {
+                    await deletePolicy.mutateAsync(id);
+                  }
+                  setSelectedPolicyIds([]);
+                }}
+                className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-red-600"
+              >
+                {deletePolicy.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </BulkActionBar>
             <PolicyTable
-            policies={displayedPolicies}
-            documents={documents.data ?? []}
-            types={types.data ?? []}
-            targets={targets.data}
-          />
+              policies={displayedPolicies}
+              documents={documents.data ?? []}
+              types={types.data ?? []}
+              targets={targets.data}
+              selectedIds={selectedPolicyIds}
+              onToggleSelected={(id) =>
+                setSelectedPolicyIds((current) =>
+                  current.includes(id)
+                    ? current.filter((item) => item !== id)
+                    : [...current, id],
+                )
+              }
+              onToggleAll={() => {
+                const ids = displayedPolicies.map((item) => item.id);
+                const allSelected =
+                  ids.length > 0 && ids.every((id) => selectedPolicyIds.includes(id));
+                setSelectedPolicyIds(allSelected ? [] : ids);
+              }}
+              allSelected={
+                displayedPolicies.length > 0 &&
+                displayedPolicies.every((item) => selectedPolicyIds.includes(item.id))
+              }
+            />
+          </>
         )}
         {tab === "exceptions" && (
-          <ExceptionTable exceptions={displayedExceptions} />
+          <>
+            <BulkActionBar
+              count={selectedExceptionIds.length}
+              onClear={() => setSelectedExceptionIds([])}
+            >
+              <button
+                type="button"
+                disabled={approveException.isPending}
+                onClick={async () => {
+                  const draftIds = displayedExceptions
+                    .filter(
+                      (item) =>
+                        selectedExceptionIds.includes(item.id) &&
+                        item.status === "draft",
+                    )
+                    .map((item) => item.id);
+                  for (const id of draftIds) {
+                    await approveException.mutateAsync(id);
+                  }
+                  setSelectedExceptionIds([]);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-emerald-700"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Approve
+              </button>
+              <button
+                type="button"
+                disabled={rejectException.isPending}
+                onClick={async () => {
+                  const draftIds = displayedExceptions
+                    .filter(
+                      (item) =>
+                        selectedExceptionIds.includes(item.id) &&
+                        item.status === "draft",
+                    )
+                    .map((item) => item.id);
+                  for (const id of draftIds) {
+                    await rejectException.mutateAsync(id);
+                  }
+                  setSelectedExceptionIds([]);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-red-600"
+              >
+                <Ban className="h-3.5 w-3.5" />
+                Reject
+              </button>
+              <button
+                type="button"
+                disabled={deactivateException.isPending}
+                onClick={async () => {
+                  const activeIds = displayedExceptions
+                    .filter(
+                      (item) =>
+                        selectedExceptionIds.includes(item.id) &&
+                        item.active !== false,
+                    )
+                    .map((item) => item.id);
+                  for (const id of activeIds) {
+                    await deactivateException.mutateAsync(id);
+                  }
+                  setSelectedExceptionIds([]);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-slate-700"
+              >
+                <ToggleLeft className="h-3.5 w-3.5" />
+                Deactivate
+              </button>
+              <button
+                type="button"
+                disabled={deleteException.isPending}
+                onClick={async () => {
+                  if (
+                    !window.confirm(
+                      `Delete ${selectedExceptionIds.length} selected exception${selectedExceptionIds.length === 1 ? "" : "s"}?`,
+                    )
+                  ) {
+                    return;
+                  }
+                  for (const id of selectedExceptionIds) {
+                    await deleteException.mutateAsync(id);
+                  }
+                  setSelectedExceptionIds([]);
+                }}
+                className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-red-600"
+              >
+                {deleteException.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </BulkActionBar>
+            <ExceptionTable
+              exceptions={displayedExceptions}
+              selectedIds={selectedExceptionIds}
+              onToggleSelected={(id) =>
+                setSelectedExceptionIds((current) =>
+                  current.includes(id)
+                    ? current.filter((item) => item !== id)
+                    : [...current, id],
+                )
+              }
+              onToggleAll={() => {
+                const ids = displayedExceptions.map((item) => item.id);
+                const allSelected =
+                  ids.length > 0 && ids.every((id) => selectedExceptionIds.includes(id));
+                setSelectedExceptionIds(allSelected ? [] : ids);
+              }}
+              allSelected={
+                displayedExceptions.length > 0 &&
+                displayedExceptions.every((item) => selectedExceptionIds.includes(item.id))
+              }
+            />
+          </>
         )}
         {tab === "history" && (
-            <HistoryTable runs={runs.data ?? []} />
+            <HistoryTable
+              runs={runs.data ?? []}
+              onOpenRun={(runId) => router.push(`/pages/compliance/run?run=${runId}`)}
+            />
         )}
+        {tab === "reports" && <ComplianceReportsPanel />}
       </section>
       {showForm &&
         (tab === "exceptions" ? (
@@ -311,7 +511,11 @@ export default function CompliancePage() {
             documents={documents.data ?? []}
             targets={targets.data}
             pending={createPolicy.isPending}
-            onClose={() => setShowForm(false)}
+            submitError={policySubmitError}
+            onClose={() => {
+              setPolicySubmitError("");
+              setShowForm(false);
+            }}
             onSubmit={submitPolicy}
           />
         ))}
@@ -324,11 +528,19 @@ function PolicyTable({
   documents,
   types,
   targets,
+  selectedIds,
+  onToggleSelected,
+  onToggleAll,
+  allSelected,
 }: {
   policies: any[];
   documents: any[];
   types: any[];
   targets: any;
+  selectedIds: number[];
+  onToggleSelected: (id: number) => void;
+  onToggleAll: () => void;
+  allSelected: boolean;
 }) {
   return (
     <Table
@@ -343,10 +555,22 @@ function PolicyTable({
         "Actions",
       ]}
       empty="No policies found."
+      selectAllChecked={allSelected}
+      onToggleAll={onToggleAll}
+      hasSelection
     >
       <>
         {policies.map((policy) => (
           <tr key={policy.id} className="hover:bg-pink-50/30">
+            <td className="cell w-10">
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(policy.id)}
+                onChange={() => onToggleSelected(policy.id)}
+                className="h-4 w-4 accent-pink-600"
+                aria-label={`Select ${policy.name}`}
+              />
+            </td>
             <td className="cell">
               <b>{policy.name}</b>
               <small>{policy.description || "No description provided"}</small>
@@ -387,15 +611,39 @@ function PolicyTable({
     </Table>
   );
 }
-function ExceptionTable({ exceptions }: { exceptions: any[] }) {
+function ExceptionTable({
+  exceptions,
+  selectedIds,
+  onToggleSelected,
+  onToggleAll,
+  allSelected,
+}: {
+  exceptions: any[];
+  selectedIds: number[];
+  onToggleSelected: (id: number) => void;
+  onToggleAll: () => void;
+  allSelected: boolean;
+}) {
   return (
     <Table
       headers={["Employee", "Reason", "Valid until", "Status", "Actions"]}
       empty="No exceptions found."
+      selectAllChecked={allSelected}
+      onToggleAll={onToggleAll}
+      hasSelection
     >
       <>
         {exceptions.map((item) => (
           <tr key={item.id} className="hover:bg-pink-50/30">
+            <td className="cell w-10">
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(item.id)}
+                onChange={() => onToggleSelected(item.id)}
+                className="h-4 w-4 accent-pink-600"
+                aria-label={`Select exception for ${item.employee}`}
+              />
+            </td>
             <td className="cell">
               <b>{item.employee}</b>
               <small>{item.policy}</small>
@@ -430,11 +678,17 @@ function ExceptionActions({ exception }: { exception: any }) {
   };
   return <div className="flex flex-wrap items-center justify-end gap-1">
     {exception.status === "draft" && <><button type="button" onClick={() => approve.mutateAsync(exception.id)} disabled={approve.isPending} className="row-action text-emerald-600" title="Approve exception" aria-label="Approve exception"><ShieldCheck /></button><button type="button" onClick={() => reject.mutateAsync(exception.id)} disabled={reject.isPending} className="row-action danger" title="Reject exception" aria-label="Reject exception"><Ban /></button></>}
-    <button type="button" onClick={toggle} disabled={deactivate.isPending || reactivate.isPending} className="row-action" title={active ? "Deactivate exception" : "Reactivate exception"}>{active ? <Ban /> : <RotateCcw />}</button>
+    <button type="button" onClick={toggle} disabled={deactivate.isPending || reactivate.isPending} className="row-action" title={active ? "Deactivate exception" : "Reactivate exception"} aria-label={active ? "Deactivate exception" : "Reactivate exception"}>{active ? <ToggleLeft /> : <RotateCcw />}</button>
     <button type="button" onClick={deleteException} disabled={remove.isPending} className="row-action danger" title="Delete exception"><Trash2 /></button>
   </div>;
 }
-function HistoryTable({ runs }: { runs: any[] }) {
+function HistoryTable({
+  runs,
+  onOpenRun,
+}: {
+  runs: any[];
+  onOpenRun: (runId: number) => void;
+}) {
   return (
     <Table
       headers={["Policy", "Run type", "Employees", "Results", "Evaluated at"]}
@@ -442,14 +696,26 @@ function HistoryTable({ runs }: { runs: any[] }) {
     >
       <>
         {runs.map((item) => (
-          <tr key={item.id} className="hover:bg-pink-50/30">
+          <tr
+            key={item.id}
+            className="cursor-pointer hover:bg-pink-50/30"
+            onClick={() => onOpenRun(item.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpenRun(item.id);
+              }
+            }}
+            tabIndex={0}
+            aria-label={`Open run for ${item.policy}`}
+          >
             <td className="cell">
               <b>{item.policy}</b>
             </td>
             <td className="cell">{formatFieldLabel(item.run_type)}</td>
             <td className="cell">{item.employee_count}</td>
             <td className="cell"><small>{item.compliant_count} compliant · {item.partial_count} partial · {item.non_compliant_count} missing · {item.excepted_count} excepted</small></td>
-            <td className="cell">{item.evaluated_at}</td>
+            <td className="cell">{item.evaluated_at ? formatDateTime(item.evaluated_at) : "—"}</td>
           </tr>
         ))}
       </>
@@ -465,16 +731,33 @@ function Table({
   children,
   headers,
   empty,
+  hasSelection = false,
+  selectAllChecked = false,
+  onToggleAll,
 }: {
   children: React.ReactNode;
   headers: string[];
   empty: string;
+  hasSelection?: boolean;
+  selectAllChecked?: boolean;
+  onToggleAll?: () => void;
 }) {
   return (
     <div className="overflow-x-auto">
       <SortableTable className="w-full min-w-[760px] text-left">
         <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
           <tr>
+            {hasSelection ? (
+              <th className="w-10 px-5 py-4">
+                <input
+                  type="checkbox"
+                  checked={selectAllChecked}
+                  onChange={onToggleAll}
+                  className="h-4 w-4 accent-pink-600"
+                  aria-label="Select all rows"
+                />
+              </th>
+            ) : null}
             {headers.map((header) => (
               <th key={header} className="px-5 py-4">
                 {header}
@@ -598,13 +881,13 @@ export function AlertCadenceSelector({
   onChange: (newValue: string) => void;
 }) {
   const PRESETS = [
-    { label: "90 Days Prior", days: 90 },
-    { label: "60 Days Prior", days: 60 },
-    { label: "30 Days Prior", days: 30 },
-    { label: "15 Days Prior", days: 15 },
-    { label: "7 Days Prior", days: 7 },
-    { label: "1 Day Prior", days: 1 },
-    { label: "On Expiry Day (0)", days: 0 },
+    { label: "90 days before", days: 90 },
+    { label: "60 days before", days: 60 },
+    { label: "30 days before", days: 30 },
+    { label: "15 days before", days: 15 },
+    { label: "7 days before", days: 7 },
+    { label: "1 day before", days: 1 },
+    { label: "On expiry day", days: 0 },
   ];
 
   const currentDays = (value || "60,30,15,7,0")
@@ -625,10 +908,10 @@ export function AlertCadenceSelector({
   return (
     <div className="space-y-2 sm:col-span-2">
       <span className="label text-slate-700 font-semibold">
-        Expiration Reminders Schedule
+        When to send reminders
       </span>
       <p className="text-xs text-slate-500">
-        Select when automated email reminders will be sent to the employee before document expiration:
+        Choose how far before the expiry date the employee should be reminded:
       </p>
       <div className="flex flex-wrap gap-2 pt-1">
         {PRESETS.map((preset) => {
@@ -672,7 +955,7 @@ function TypeSpecificFields({
           Document Requirement Settings
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Grace Period Window (Days)">
+          <Field label="Extra days to submit">
             <input
               type="number"
               min="0"
@@ -693,7 +976,7 @@ function TypeSpecificFields({
                 }
                 className="h-4 w-4 accent-pink-600 rounded"
               />
-              Allow HR Admins to grant waivers / exemptions
+              Allow exceptions or waivers
             </label>
           </div>
         </div>
@@ -705,7 +988,7 @@ function TypeSpecificFields({
     return (
       <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
         <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-          Expiration Alert & Escalation Rules
+          Expiration Alert Settings
         </p>
 
         <AlertCadenceSelector
@@ -714,41 +997,23 @@ function TypeSpecificFields({
         />
 
         <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
-          <Field label="Notify Line Manager">
-            <ThemedSelect
-              value={String(form.escalate_manager_days)}
-              onChange={(val) =>
-                setForm({ ...form, escalate_manager_days: Number(val) })
-              }
-              options={[
-                { value: "30", label: "30 Days before expiry" },
-                { value: "15", label: "15 Days before expiry" },
-                { value: "7", label: "7 Days before expiry" },
-                { value: "3", label: "3 Days before expiry" },
-                { value: "0", label: "On Expiry Day" },
-              ]}
-            />
-          </Field>
-
-          <Field label="Escalate to HR Admin">
+          <Field label="Also notify HR admin">
             <ThemedSelect
               value={String(form.escalate_hr_days)}
               onChange={(val) =>
                 setForm({ ...form, escalate_hr_days: Number(val) })
               }
               options={[
-                { value: "15", label: "15 Days before expiry" },
-                { value: "7", label: "7 Days before expiry" },
-                { value: "3", label: "3 Days before expiry" },
-                { value: "1", label: "1 Day before expiry" },
-                { value: "0", label: "On Expiry Day" },
+                { value: "15", label: "15 days before expiry" },
+                { value: "7", label: "7 days before expiry" },
+                { value: "3", label: "3 days before expiry" },
+                { value: "1", label: "1 day before expiry" },
+                { value: "0", label: "On expiry day" },
               ]}
             />
           </Field>
-        </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
-          <Field label="Post-Expiry Buffer Window (Days)">
+          <Field label="Extra days after expiry">
             <input
               type="number"
               min="0"
@@ -770,7 +1035,7 @@ function TypeSpecificFields({
                 }
                 className="h-4 w-4 accent-pink-600 rounded"
               />
-              Auto-generate replacement upload task for employee
+              Create a task for the employee to upload a new copy
             </label>
           </div>
         </div>
@@ -782,23 +1047,20 @@ function TypeSpecificFields({
     return (
       <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
         <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-          Event-Driven Request Settings
+          Compliance Request Settings
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Lifecycle Event Trigger">
+          <Field label="When should this start?">
             <ThemedSelect
               value={form.event_trigger}
               onChange={(val) => setForm({ ...form, event_trigger: val })}
-              options={[
-                { value: "onboarding", label: "Onboarding" },
-                { value: "promotion", label: "Promotion" },
-                { value: "department_transfer", label: "Department Transfer" },
-                { value: "location_change", label: "Location Change" },
-                { value: "marital_status_change", label: "Marital Status Change" },
-              ]}
+              options={Object.entries(EVENT_TRIGGER_LABELS).map(([value, label]) => ({
+                value,
+                label,
+              }))}
             />
           </Field>
-          <Field label="Task Deadline (Days after event)">
+          <Field label="Days to submit documents">
             <input
               type="number"
               min="1"
@@ -809,7 +1071,7 @@ function TypeSpecificFields({
               }
             />
           </Field>
-          <Field label="Automated Reminder Frequency (Days)">
+          <Field label="Send reminder every (days)">
             <input
               type="number"
               min="1"
@@ -823,13 +1085,13 @@ function TypeSpecificFields({
               }
             />
           </Field>
-          <Field label="Assigned HR Reviewer (Admin)">
+          <Field label="Who follows up?">
             <ThemedSelect
               value={String(form.assigned_reviewer_id || "")}
               onChange={(val) =>
                 setForm({ ...form, assigned_reviewer_id: val })
               }
-              placeholder="Select HR Admin Reviewer"
+              placeholder="Select HR contact"
               options={(targets?.users || []).map((u: any) => ({
                 value: String(u.id),
                 label: u.name,
@@ -845,22 +1107,20 @@ function TypeSpecificFields({
     return (
       <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
         <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-          Review Schedule & Audit Parameters
+          Review Schedule Settings
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Audit Frequency">
+          <Field label="How often to check">
             <ThemedSelect
               value={form.audit_frequency}
               onChange={(val) => setForm({ ...form, audit_frequency: val })}
-              options={[
-                { value: "monthly", label: "Monthly" },
-                { value: "quarterly", label: "Quarterly" },
-                { value: "semi_annually", label: "Semi-Annually" },
-                { value: "annually", label: "Annually" },
-              ]}
+              options={Object.entries(AUDIT_FREQUENCY_LABELS).map(([value, label]) => ({
+                value,
+                label,
+              }))}
             />
           </Field>
-          <Field label="Folder Audit Sampling % (1-100%)">
+          <Field label="How many people to check (%)">
             <input
               type="number"
               min="1"
@@ -872,13 +1132,13 @@ function TypeSpecificFields({
               }
             />
           </Field>
-          <Field label="Assigned HR Auditor (Admin)" full>
+          <Field label="Who runs the check?" full>
             <ThemedSelect
               value={String(form.assigned_auditor_id || "")}
               onChange={(val) =>
                 setForm({ ...form, assigned_auditor_id: val })
               }
-              placeholder="Select HR Admin Auditor"
+              placeholder="Select HR contact"
               options={(targets?.users || []).map((u: any) => ({
                 value: String(u.id),
                 label: u.name,
@@ -900,6 +1160,7 @@ function PolicyForm({
   documents,
   targets,
   pending,
+  submitError,
   onClose,
   onSubmit,
 }: any) {
@@ -999,7 +1260,7 @@ function PolicyForm({
           targets={targets}
         />
 
-        <Field label="Required document types" full>
+        <Field label="Which documents are needed?">
           <PolicyTypeMultiSelect
             types={documents}
             selected={form.document_type_ids}
@@ -1056,7 +1317,7 @@ function PolicyForm({
             }
           />
         </Field>
-        <Field label="Minimum documents">
+        <Field label="How many copies are needed?">
           <input
             required
             min="1"
@@ -1068,7 +1329,7 @@ function PolicyForm({
             }
           />
         </Field>
-        <Field label="Grace period (days)">
+        <Field label="Extra days before marked missing">
           <input
             required
             min="0"
@@ -1080,9 +1341,9 @@ function PolicyForm({
             }
           />
         </Field>
-        {formError && (
+        {(formError || submitError) && (
           <p className="sm:col-span-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-            {formError}
+            {formError || submitError}
           </p>
         )}
         <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 sm:col-span-2">
@@ -1146,6 +1407,11 @@ function PolicyForm({
               <dd className="text-slate-700">{form.grace_period_days} days</dd>
             </div>
           </dl>
+          {submitError && (
+            <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+              {submitError}
+            </p>
+          )}
           <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
             <button
               type="button"

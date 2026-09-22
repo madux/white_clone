@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cleon_payslip_form" model="ir.ui.view">
+        <field name="name">cleon.payslip.form</field>
+        <field name="model">cleon.payslip</field>
+        <field name="arch" type="xml">
+            <form string="Payslip" class="o_qms_form">
+                <header>
+                    <button class="btn btn-success" name="action_compute_sheet" type="object"
+                            string="Compute Sheet" invisible="state != 'draft'"/>
+                    <button class="btn btn-success" name="action_confirm" type="object"
+                            string="Confirm" invisible="state != 'computed'"/>
+                    <button class="btn btn-warning" name="action_mark_paid" type="object"
+                            string="Mark as Paid" invisible="state != 'confirm'"/>
+                    <button class="btn btn-danger" name="action_cancel" type="object"
+                            string="Cancel" invisible="state in ('paid','cancel')"/>
+                    <button class="btn btn-danger" name="action_draft" type="object"
+                            string="Set to Draft" invisible="state != 'cancel'"/>
+                </header>
+                <sheet>
+                    <div class="qms-card">
+                        <div class="qms-card-header">
+                            <div class="qms-card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <span class="qms-card-title">Payslip</span>
+                        </div>
+
+                        <div class="pink-card-body">
+                            <group>
+                                <group col="4">
+                                    <field name="name" class="pink-text" readonly="1"/>
+                                    <field name="state" widget="badge"
+                                        decoration-danger="state == 'draft'"
+                                        decoration-info="state == 'computed'"
+                                        decoration-warning="state == 'confirm'"
+                                        decoration-success="state == 'paid'"/>
+                                </group>
+                                <group>
+                                    <field name="payslip_run_id" options="{'no_open': true, 'no_create': true}"/>
+                                    <field name="company_id" options="{'no_open': true, 'no_create': true}"/>
+                                </group>
+                            </group>
+                        </div>
+
+                        <div class="ash-card-body text-sm">
+                            <span class="qms-card-title">Employee Information</span>
+                            <group>
+                                <group>
+                                    <field name="employee_id" readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}"/>
+                                    <field name="contract_id" readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}"/>
+                                </group>
+                                <group>
+                                    <field name="structure_id" readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}"/>
+                                    <field name="basic_wage" readonly="1"/>
+                                </group>
+                            </group>
+                        </div>
+
+                        <div class="ash-card-body">
+                            <span class="qms-card-title">Period</span>
+                            <group>
+                                <group>
+                                    <field name="date_from" readonly="state != 'draft'"/>
+                                    <field name="date_to" readonly="state != 'draft'"/>
+                                </group>
+                            </group>
+                        </div>
+ 
+                        <notebook>  
+                            <page string="💳 Computed Pay Lines" name="paylines">
+                                <div class="qms-card" style="margin-bottom:0;">
+                                    <div class="qms-card-header">
+                                        <div class="qms-card-icon" style="background:#DC3545;">
+                                            <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        </div>
+                                        <span class="qms-card-title">Computed Lines</span>
+                                    </div>
+                                    <div class="qms-card-body" style="padding:0;">
+                                        <field name="line_ids" readonly="1">
+                                            <tree decoration-muted="not appears_on_payslip">
+                                                <field name="sequence"/>
+                                                <field name="code"/>
+                                                <field name="name"/>
+                                                <field name="category_id" options="{'no_open': true, 'no_create': true}"/>
+                                                <field name="rule_type" options="{'no_open': true, 'no_create': true}"/>
+                                                <field name="quantity"/>
+                                                <field name="rate"/>
+                                                <field name="amount"/>
+                                                <field name="total" sum="Total"/>
+                                                <field name="appears_on_payslip" column_invisible="1"/>
+                                            </tree>
+                                        </field>
+                                    </div>
+                                </div>
+                            </page>
+                            <page string="💰 Overtime, Benefits, Compensations &amp; Other inputs" name="otherinputs">
+                                <div class="qms-card" style="margin-bottom:0;">
+                                    <div class="qms-card-header">
+                                        <div class="qms-card-icon" style="background:#DC3545;">
+                                            <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        </div>
+                                        <span class="qms-card-title">Other Inputs</span>
+                                    </div>
+                                    <div class="qms-card-body" style="padding:0;">
+                                        <field name="input_line_ids" readonly="state not in ('draft','computed')">
+                                            <tree editable="bottom">
+                                                <field name="input_type_id" options="{'no_open': true, 'no_create': true}"/>
+                                                <field name="name"/>
+                                                <field name="rule_type"/>
+                                                <field name="amount"/>
+                                            </tree>
+                                        </field>
+                                    </div>
+                                </div>
+                            </page>
+                            <page string="📝 Worked Entry" name="worked_days">
+                                <div class="qms-card" style="margin-bottom:0;">
+                                    <div class="qms-card-header">
+                                        <div class="qms-card-icon" style="background:#DC3545;">
+                                            <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        </div>
+                                        <span class="qms-card-title">Worked Days</span>
+                                    </div>
+                                    <div class="qms-card-body" style="padding:0;">
+                                        <field name="worked_days_line_ids" readonly="state not in ('draft','computed')">
+                                            <tree editable="bottom">
+                                                <field name="name"/>
+                                                <field name="code"/>
+                                                <field name="number_of_days"/>
+                                                <field name="number_of_hours"/>
+                                                <field name="work_overtime_hours"/>
+                                            </tree>
+                                        </field>
+                                    </div>
+                                </div>
+                            </page>
+                            
+                        </notebook>  
+
+                        <div class="pink-card-body">
+                            <group>
+                                <group>
+                                    <field name="gross_wage" readonly="1"/>
+                                    <field name="total_deduction" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="total_employer_contribution" readonly="1"/>
+                                    <field name="net_wage" readonly="1" class="pink-text"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="move_id" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                            </group>
+                        </div>
+
+                        
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_payslip_list" model="ir.ui.view">
+        <field name="name">cleon.payslip.list</field>
+        <field name="model">cleon.payslip</field>
+        <field name="arch" type="xml">
+            <tree string="Payslips" decoration-success="state == 'paid'" decoration-muted="state == 'cancel'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="structure_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="gross_wage" sum="Total Gross"/>
+                <field name="total_deduction" sum="Total Deduction"/>
+                <field name="net_wage" sum="Total Net"/>
+                <field name="state" widget="badge"
+                       decoration-danger="state == 'draft'"
+                       decoration-info="state == 'computed'"
+                       decoration-warning="state == 'confirm'"
+                       decoration-success="state == 'paid'"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_cleon_payslip_search" model="ir.ui.view">
+        <field name="name">cleon.payslip.search</field>
+        <field name="model">cleon.payslip</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="structure_id"/>
+                <field name="payslip_run_id"/>
+                <filter string="Draft" name="filter_draft" domain="[('state','=','draft')]"/>
+                <filter string="Confirmed" name="filter_confirm" domain="[('state','=','confirm')]"/>
+                <filter string="Paid" name="filter_paid" domain="[('state','=','paid')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Employee" name="group_employee" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Batch" name="group_run" context="{'group_by': 'payslip_run_id'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_employee_payslip_kanban_pink" model="ir.ui.view">
+        <field name="name">cleon.payslip.kanban.pink</field>
+        <field name="model">cleon.payslip</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" js_class="payroll_kanban_sidebar">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="job_title"/>
+                <field name="department_id"/>
+                <field name="employee_number"/>
+                <field name="create_date"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click p-0 border-0 rounded-3 shadow-sm overflow-hidden position-relative" 
+                            style="background: linear-gradient(135deg, #FFF5F7 0%, #FCE4EC 50%, #F8BBD0 100%); max-width: 380px; font-family: 'Inter', sans-serif;">
+                            
+                            <!-- Background Accent Pattern -->
+                            <div style="position: absolute; right: -20px; top: -20px; width: 100px; height: 100px; background: rgba(233, 30, 99, 0.05); border-radius: 50%; pointer-events: none;"/>
+                            
+                            <!-- Top Header Section -->
+                            <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="fw-bold fs-6 text-uppercase" style="color: #AD1457; letter-spacing: 0.5px;">
+                                        <i class="fa fa-building me-1"/> <t t-esc="record.department_id.value || 'Cleon'"/>
+                                    </span>
+                                </div>
+                                <i class="fa fa-circle text-success fs-6" title="Active Status"/>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="row g-0 px-3 py-2 align-items-center">
+                                <!-- Left: Employee Avatar -->
+                                <div class="col-4 text-center">
+                                    <div class="position-relative d-inline-block">
+                                        <img t-att-src="kanban_image('cleon.payslip', 'avatar_128', record.id.raw_value)" 
+                                            class="rounded-3 img-fluid border border-2 shadow-sm" 
+                                            style="border-color: #F48FB1 !important; width: 90px; height: 100px; object-fit: cover;" 
+                                            alt="Employee Photo"/>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Employee Details -->
+                                <div class="col-8 ps-3">
+                                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem;">
+                                        <field name="name"/>
+                                    </h5>
+                                    <p class="text-muted mb-2 fw-semibold" style="font-size: 0.85rem; color: #880E4F !important;">
+                                        <field name="job_title"/>
+                                    </p>
+                                    
+                                    <div class="lh-sm" style="font-size: 0.78rem; color: #1b191e;">
+                                         
+                                        <div class="mb-1 text-truncate">
+                                            <span class="fw-bold">Dept:</span> 
+                                            <span class="color-darkred"><field name="department_id"/></span>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <span class="fw-bold">Structure / Pay Group:</span> 
+                                            <span class="color-darkred"><field name="structure_id"/></span>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <span class="fw-bold">Batch Reference: </span> 
+                                            <span class="color-darkred"><field name="payslip_run_id"/></span>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <span class="fw-bold">Gross Pay: </span> 
+                                            <span class="color-darkred"><field name="gross_wage"/></span>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <span class="fw-bold">Net Pay: </span> 
+                                            <span class="color-darkred"><field name="net_wage"/></span>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <span class="fw-bold">Deductions: </span> 
+                                            <span class="color-darkred"><field name="total_deduction"/></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Footer Badge -->
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 mt-1" 
+                                style="background: rgba(255, 255, 255, 0.6); border-top: 1px solid rgba(244, 143, 177, 0.3);">
+                                <span class="badge rounded-pill px-2 py-1" style="background-color: #F8BBD0; color: #880E4F; font-weight: 500;">
+                                    <i class="fa fa-check-circle me-1"/> Access Granted
+                                </span>
+                                <small style="color: #AD1457; font-weight: 500; font-size: 0.75rem;">
+                                    Since: <t t-esc="record.create_date.value || '2026'"/>
+                                </small>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <record id="action_cleon_payslip" model="ir.actions.act_window">
+        <field name="name">Payslips</field>
+        <field name="res_model">cleon.payslip</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="search_view_id" ref="view_cleon_payslip_search"/>
+    </record>
+
+</odoo>

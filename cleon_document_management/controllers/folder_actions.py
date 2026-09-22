@@ -241,6 +241,12 @@ class DocumentFolderActions(http.Controller):
         folder = request.env["doc.folder"].browse(int(id or 0)).exists()
         if not folder or folder.folder_type != "employee":
             return {"success": False, "message": "Employee folder not found."}
+        config = request.env["doc.employee.files.config"].get_for_company()
+        if config.setup_complete:
+            return {
+                "success": False,
+                "message": "Employee membership is managed by EMS after Employee Files setup.",
+            }
         ids = [int(value) for value in (employee_ids or [])]
         if not ids:
             return {"success": False, "message": "Select at least one employee."}
@@ -263,6 +269,12 @@ class DocumentFolderActions(http.Controller):
         destination = request.env["doc.folder"].browse(int(destination_folder_id or 0)).exists()
         if not source or source.folder_type != "employee":
             return {"success": False, "message": "Employee source folder not found."}
+        config = request.env["doc.employee.files.config"].get_for_company()
+        if config.setup_complete:
+            return {
+                "success": False,
+                "message": "Employee membership is managed by EMS after Employee Files setup.",
+            }
         if not destination or destination.folder_type != "employee" or not destination.active or destination.deleted_at:
             return {"success": False, "message": "Choose an active employee destination folder."}
         if source == destination:

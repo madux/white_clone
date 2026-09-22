@@ -12,6 +12,11 @@ import PolicyTypeMultiSelect from "./PolicyTypeMultiSelect";
 import ThemedSelect from "./ThemedSelect";
 import { ScopeChecklist, AlertCadenceSelector } from "./CompliancePage";
 import { formatFieldLabel } from "../../../lib/formatLabel";
+import {
+  AUDIT_FREQUENCY_LABELS,
+  EVENT_TRIGGER_LABELS,
+  eventTriggerLabel,
+} from "../../../lib/complianceCopy";
 
 const schedules = [
   "one_time",
@@ -52,7 +57,7 @@ export default function PolicyActions({
     // Type-specific parameters
     allow_waiver: policy.allow_waiver ?? true,
     alert_schedule_days: policy.alert_schedule_days || "60,30,15,7,0",
-    escalate_manager_days: policy.escalate_manager_days ?? 15,
+    escalate_manager_days: 0,
     escalate_hr_days: policy.escalate_hr_days ?? 7,
     auto_request_renewal: policy.auto_request_renewal ?? true,
     event_trigger: policy.event_trigger || "onboarding",
@@ -99,39 +104,44 @@ export default function PolicyActions({
       form.applies_to === "all" || form.scope_ids.length === 0
         ? "all"
         : form.applies_to;
-    await update.mutateAsync({
-      id: policy.id,
-      name: form.name.trim(),
-      description: form.description.trim(),
-      policy_type_id: Number(form.policy_type_id),
-      document_type_ids: form.document_type_ids,
-      applies_to: effectiveAppliesTo,
-      department_ids: effectiveAppliesTo === "department" ? form.scope_ids : [],
-      grade_ids: effectiveAppliesTo === "grade" ? form.scope_ids : [],
-      employee_ids: effectiveAppliesTo === "employee" ? form.scope_ids : [],
-      schedule: form.schedule || false,
-      custom_schedule_days: Number(form.custom_schedule_days),
-      minimum_documents: Number(form.minimum_documents),
-      grace_period_days: Number(form.grace_period_days),
-      effective_date: form.effective_date,
-      active: form.active,
-      allow_waiver: form.allow_waiver,
-      alert_schedule_days: form.alert_schedule_days,
-      escalate_manager_days: Number(form.escalate_manager_days),
-      escalate_hr_days: Number(form.escalate_hr_days),
-      auto_request_renewal: form.auto_request_renewal,
-      event_trigger: form.event_trigger,
-      due_days: Number(form.due_days),
-      reminder_frequency_days: Number(form.reminder_frequency_days),
-      assigned_reviewer_id: form.assigned_reviewer_id
-        ? Number(form.assigned_reviewer_id)
-        : false,
-      audit_frequency: form.audit_frequency,
-      sample_pct: Number(form.sample_pct),
-      assigned_auditor_id: form.assigned_auditor_id
-        ? Number(form.assigned_auditor_id)
-        : false,
-    });
+    try {
+      await update.mutateAsync({
+        id: policy.id,
+        name: form.name.trim(),
+        description: form.description.trim(),
+        policy_type_id: Number(form.policy_type_id),
+        document_type_ids: form.document_type_ids,
+        applies_to: effectiveAppliesTo,
+        department_ids: effectiveAppliesTo === "department" ? form.scope_ids : [],
+        grade_ids: effectiveAppliesTo === "grade" ? form.scope_ids : [],
+        employee_ids: effectiveAppliesTo === "employee" ? form.scope_ids : [],
+        schedule: form.schedule || false,
+        custom_schedule_days: Number(form.custom_schedule_days),
+        minimum_documents: Number(form.minimum_documents),
+        grace_period_days: Number(form.grace_period_days),
+        effective_date: form.effective_date,
+        active: form.active,
+        allow_waiver: form.allow_waiver,
+        alert_schedule_days: form.alert_schedule_days,
+        escalate_manager_days: 0,
+        escalate_hr_days: Number(form.escalate_hr_days),
+        auto_request_renewal: form.auto_request_renewal,
+        event_trigger: form.event_trigger,
+        due_days: Number(form.due_days),
+        reminder_frequency_days: Number(form.reminder_frequency_days),
+        assigned_reviewer_id: form.assigned_reviewer_id
+          ? Number(form.assigned_reviewer_id)
+          : false,
+        audit_frequency: form.audit_frequency,
+        sample_pct: Number(form.sample_pct),
+        assigned_auditor_id: form.assigned_auditor_id
+          ? Number(form.assigned_auditor_id)
+          : false,
+      });
+    } catch (error: any) {
+      setError(error?.message || "Failed to save policy.");
+      return;
+    }
     setMode(null);
   };
   const run = async () => {
@@ -253,31 +263,27 @@ export default function PolicyActions({
                   {policy.policy_type_code === "renewable_document" && (
                     <>
                       <Info
-                        label="Alert schedule"
+                        label="Reminder schedule"
                         value={`${policy.alert_schedule_days} days`}
                       />
                       <Info
-                        label="Manager escalation"
-                        value={`${policy.escalate_manager_days} days`}
-                      />
-                      <Info
-                        label="HR escalation"
-                        value={`${policy.escalate_hr_days} days`}
+                        label="Notify HR admin"
+                        value={`${policy.escalate_hr_days} days before`}
                       />
                     </>
                   )}
                   {policy.policy_type_code === "compliance_request" && (
                     <>
                       <Info
-                        label="Event trigger"
-                        value={policy.event_trigger}
+                        label="Starts when"
+                        value={eventTriggerLabel(policy.event_trigger, "—")}
                       />
                       <Info
-                        label="Task deadline"
+                        label="Days to submit"
                         value={`${policy.due_days} days`}
                       />
                       <Info
-                        label="Assigned HR Admin"
+                        label="HR contact"
                         value={policy.assigned_reviewer || "Unassigned"}
                       />
                     </>
@@ -285,15 +291,15 @@ export default function PolicyActions({
                   {policy.policy_type_code === "retention" && (
                     <>
                       <Info
-                        label="Audit frequency"
-                        value={policy.audit_frequency}
+                        label="How often"
+                        value={AUDIT_FREQUENCY_LABELS[policy.audit_frequency] || policy.audit_frequency}
                       />
                       <Info
-                        label="Audit sampling"
+                        label="People checked"
                         value={`${policy.sample_pct}%`}
                       />
                       <Info
-                        label="Assigned HR Auditor"
+                        label="HR contact"
                         value={policy.assigned_auditor || "Unassigned"}
                       />
                     </>
@@ -347,7 +353,7 @@ export default function PolicyActions({
                 {typeCode === "document_requirement" && (
                   <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3 grid gap-3 sm:grid-cols-2">
                     <label>
-                      <span className="label">Grace Period Window (Days)</span>
+                      <span className="label">Extra days to submit</span>
                       <input
                         type="number"
                         min="0"
@@ -370,7 +376,7 @@ export default function PolicyActions({
                         }
                         className="h-4 w-4 accent-pink-600 rounded"
                       />
-                      Allow HR Admins to grant waivers
+                      Allow exceptions or waivers
                     </label>
                   </div>
                 )}
@@ -378,7 +384,7 @@ export default function PolicyActions({
                 {typeCode === "renewable_document" && (
                   <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
                     <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-                      Expiration Alert & Escalation Rules
+                      Expiration Alert Settings
                     </p>
 
                     <AlertCadenceSelector
@@ -390,48 +396,24 @@ export default function PolicyActions({
 
                     <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
                       <label>
-                        <span className="label">Notify Line Manager</span>
-                        <ThemedSelect
-                          value={String(form.escalate_manager_days)}
-                          onChange={(val) =>
-                            setForm({
-                              ...form,
-                              escalate_manager_days: Number(val),
-                            })
-                          }
-                          options={[
-                            { value: "30", label: "30 Days before expiry" },
-                            { value: "15", label: "15 Days before expiry" },
-                            { value: "7", label: "7 Days before expiry" },
-                            { value: "3", label: "3 Days before expiry" },
-                            { value: "0", label: "On Expiry Day" },
-                          ]}
-                        />
-                      </label>
-
-                      <label>
-                        <span className="label">Escalate to HR Admin</span>
+                        <span className="label">Also notify HR admin</span>
                         <ThemedSelect
                           value={String(form.escalate_hr_days)}
                           onChange={(val) =>
                             setForm({ ...form, escalate_hr_days: Number(val) })
                           }
                           options={[
-                            { value: "15", label: "15 Days before expiry" },
-                            { value: "7", label: "7 Days before expiry" },
-                            { value: "3", label: "3 Days before expiry" },
-                            { value: "1", label: "1 Day before expiry" },
-                            { value: "0", label: "On Expiry Day" },
+                            { value: "15", label: "15 days before expiry" },
+                            { value: "7", label: "7 days before expiry" },
+                            { value: "3", label: "3 days before expiry" },
+                            { value: "1", label: "1 day before expiry" },
+                            { value: "0", label: "On expiry day" },
                           ]}
                         />
                       </label>
-                    </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
                       <label>
-                        <span className="label">
-                          Post-Expiry Buffer Window (Days)
-                        </span>
+                        <span className="label">Extra days after expiry</span>
                         <input
                           type="number"
                           min="0"
@@ -459,7 +441,7 @@ export default function PolicyActions({
                             }
                             className="h-4 w-4 accent-pink-600 rounded"
                           />
-                          Auto-generate renewal upload task
+                          Create a task for the employee to upload a new copy
                         </label>
                       </div>
                     </div>
@@ -469,32 +451,19 @@ export default function PolicyActions({
                 {typeCode === "compliance_request" && (
                   <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3 grid gap-3 sm:grid-cols-2">
                     <label>
-                      <span className="label">Lifecycle Event Trigger</span>
+                      <span className="label">When should this start?</span>
                       <ThemedSelect
                         value={form.event_trigger}
                         onChange={(val) =>
                           setForm({ ...form, event_trigger: val })
                         }
-                        options={[
-                          { value: "onboarding", label: "Onboarding" },
-                          { value: "promotion", label: "Promotion" },
-                          {
-                            value: "department_transfer",
-                            label: "Department Transfer",
-                          },
-                          {
-                            value: "location_change",
-                            label: "Location Change",
-                          },
-                          {
-                            value: "marital_status_change",
-                            label: "Marital Status Change",
-                          },
-                        ]}
+                        options={Object.entries(EVENT_TRIGGER_LABELS).map(
+                          ([value, label]) => ({ value, label }),
+                        )}
                       />
                     </label>
                     <label>
-                      <span className="label">Task Deadline (Days)</span>
+                      <span className="label">Days to submit documents</span>
                       <input
                         type="number"
                         min="1"
@@ -507,14 +476,14 @@ export default function PolicyActions({
                     </label>
                     <label className="sm:col-span-2">
                       <span className="label">
-                        Assigned HR Reviewer (Admin)
+                        Who follows up?
                       </span>
                       <ThemedSelect
                         value={String(form.assigned_reviewer_id || "")}
                         onChange={(val) =>
                           setForm({ ...form, assigned_reviewer_id: val })
                         }
-                        placeholder="Select HR Admin Reviewer"
+                        placeholder="Select HR contact"
                         options={(targets?.users || []).map((u: any) => ({
                           value: String(u.id),
                           label: u.name,
@@ -524,25 +493,22 @@ export default function PolicyActions({
                   </div>
                 )}
 
-                {/* {typeCode === "retention" && (
+                {typeCode === "retention" && (
                   <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3 grid gap-3 sm:grid-cols-2">
                     <label>
-                      <span className="label">Audit Frequency</span>
+                      <span className="label">How often to check</span>
                       <ThemedSelect
                         value={form.audit_frequency}
                         onChange={(val) =>
                           setForm({ ...form, audit_frequency: val })
                         }
-                        options={[
-                          { value: "monthly", label: "Monthly" },
-                          { value: "quarterly", label: "Quarterly" },
-                          { value: "semi_annually", label: "Semi-Annually" },
-                          { value: "annually", label: "Annually" },
-                        ]}
+                        options={Object.entries(AUDIT_FREQUENCY_LABELS).map(
+                          ([value, label]) => ({ value, label }),
+                        )}
                       />
                     </label>
                     <label>
-                      <span className="label">Sampling % (1-100%)</span>
+                      <span className="label">How many people to check (%)</span>
                       <input
                         type="number"
                         min="1"
@@ -555,13 +521,13 @@ export default function PolicyActions({
                       />
                     </label>
                     <label className="sm:col-span-2">
-                      <span className="label">Assigned HR Auditor (Admin)</span>
+                      <span className="label">Who runs the check?</span>
                       <ThemedSelect
                         value={String(form.assigned_auditor_id || "")}
                         onChange={(val) =>
                           setForm({ ...form, assigned_auditor_id: val })
                         }
-                        placeholder="Select HR Admin Auditor"
+                        placeholder="Select HR contact"
                         options={(targets?.users || []).map((u: any) => ({
                           value: String(u.id),
                           label: u.name,
@@ -569,10 +535,10 @@ export default function PolicyActions({
                       />
                     </label>
                   </div>
-                )} */}
+                )}
 
                 <label className="sm:col-span-2">
-                  <span className="label">Required document types</span>
+                  <span className="label">Which documents are needed?</span>
                   <div className="mt-2">
                     <PolicyTypeMultiSelect
                       types={documents}

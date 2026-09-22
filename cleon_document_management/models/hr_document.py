@@ -1,8 +1,9 @@
-from datetime import timedelta
+import base64
 import logging
+from datetime import timedelta
 
 from odoo import api, fields, models, _
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.osv import expression
 
 _logger = logging.getLogger(__name__)
@@ -57,6 +58,21 @@ class Document(models.Model):
         ondelete="restrict",
         string="Employee",
         index=True,
+    )
+
+    employee_file_id = fields.Many2one(
+        "doc.employee.file",
+        string="Employee File",
+        ondelete="set null",
+        index=True,
+    )
+
+    classification_state = fields.Selection(
+        [
+            ("classified", "Classified"),
+            ("pending", "Pending Classification"),
+        ],
+        default="classified",
     )
 
     document_type_id = fields.Many2one(
@@ -125,6 +141,20 @@ class Document(models.Model):
     expiry_date = fields.Date(
         string="Expiry Date",
     )
+
+    issue_date = fields.Date(string="Issue Date")
+
+    pending_attachment_id = fields.Many2one(
+        "ir.attachment",
+        string="Pending Replacement File",
+        ondelete="set null",
+        copy=False,
+    )
+    pending_description = fields.Text(copy=False)
+    pending_issue_date = fields.Date(copy=False)
+    pending_expiry_date = fields.Date(copy=False)
+    pending_has_expiry = fields.Boolean(default=False, copy=False)
+    pending_change_note = fields.Char(copy=False)
 
     expiry_notified = fields.Boolean(
         default=False,
@@ -218,6 +248,26 @@ class Document(models.Model):
         required=True,
     )
 
+    rejection_reason = fields.Text(
+        string="Last rejection reason",
+        copy=False,
+        help="Reason from the most recent review rejection visible to the uploader.",
+    )
+
+    last_review_decision = fields.Selection(
+        [
+            ("approved", "Approved"),
+            ("rejected", "Rejected"),
+        ],
+        copy=False,
+    )
+
+    review_decision_unread = fields.Boolean(
+        string="Uploader review alert unread",
+        default=False,
+        copy=False,
+    )
+
     is_locked = fields.Boolean(default=False)
     active = fields.Boolean(default=True)
     distribution_status = fields.Selection(
@@ -280,8 +330,24 @@ class Document(models.Model):
             )
             document.write({"pinned_user_ids": [command]})
 
+    def _ef_permission(self):
+        return self.env["doc.employee.files.permission"]
+
     def _is_document_manager(self):
-        return self.env.user.has_group("cleon_document_management.group_document_manager")
+        perm = self._ef_permission()
+        user = self.env.user
+        if perm.user_is_platform_admin(user) or perm.user_has_legacy_manager(user):
+            return True
+        return perm.user_can_access_ef_home(user)
+
+    def _can_ef_manage_document(self, action_field):
+        self.ensure_one()
+        perm = self._ef_permission()
+        user = self.env.user
+        folder = self.folder_id
+        if folder.folder_type == "employee" and self.employee_id:
+            return perm.user_can_on_document(user, self, action_field)
+        return perm.user_is_platform_admin(user) or perm.user_has_legacy_manager(user)
 
     def _employee_self_service_write_fields(self):
         """Fields a non-manager may update on their own documents."""
@@ -299,7 +365,10 @@ class Document(models.Model):
         if self.env.context.get("ask_indexing"):
             return super().write(vals)
         if self.env.su:
-            return super().write(vals)
+            result = super().write(vals)
+            if "state" in vals and vals["state"] in ("approved", "signed"):
+                self.env["doc.compliance.policy"]._evaluate_documents(self)
+            return result
         if not self.env.context.get("intelligence_upload") and not self._is_document_manager():
             allowed = self._employee_self_service_write_fields() | self._mail_thread_internal_write_fields(vals)
             if set(vals) - allowed:
@@ -323,16 +392,27 @@ class Document(models.Model):
             live.with_context(ask_indexing=True).write(
                 {"ask_index_stamp": False, "ask_index_state": "waiting"}
             )
+        if "state" in vals and vals["state"] in ("approved", "signed"):
+            self.env["doc.compliance.policy"]._evaluate_documents(self)
+        if not self.env.context.get("skip_ef_document_reconcile"):
+            reconcile_fields = {"employee_id", "employee_file_id", "folder_id", "active"}
+            if reconcile_fields.intersection(vals):
+                service = self.env["doc.employee.files.service"].sudo()
+                for document in self:
+                    service.reconcile_document_employee_file(document)
         return result
 
     def unlink(self):
-        if not self.env.context.get("intelligence_upload") and not self._is_document_manager():
-            raise AccessError(_("Only document managers can delete documents."))
+        if not self.env.context.get("intelligence_upload"):
+            for document in self:
+                if not document._can_ef_manage_document("action_delete"):
+                    raise AccessError(_("You do not have permission to delete this document."))
         return super().unlink()
 
     def action_archive(self):
-        if not self._is_document_manager():
-            raise AccessError(_("Only document managers can archive documents."))
+        for document in self:
+            if not document._can_ef_manage_document("action_archive"):
+                raise AccessError(_("You do not have permission to archive this document."))
         self.write({"active": False, "distribution_status": "archived", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
 
     def _user_owns_document(self):
@@ -344,18 +424,20 @@ class Document(models.Model):
 
     def action_restore(self):
         for document in self:
-            if not document._is_document_manager() and not document._user_owns_document():
-                raise AccessError(_("Only document managers can restore documents."))
+            if not document._can_ef_manage_document("action_delete") and not document._user_owns_document():
+                raise AccessError(_("You do not have permission to restore this document."))
         self.write({"active": True, "distribution_status": "active", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
 
     def action_deactivate(self):
-        if not self._is_document_manager():
-            raise AccessError(_("Only document managers can deactivate documents."))
+        for document in self:
+            if not document._can_ef_manage_document("action_delete"):
+                raise AccessError(_("You do not have permission to deactivate this document."))
         self.write({"active": False, "distribution_status": "deactivated", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
 
     def action_move_to_recycle_bin(self):
-        if not self._is_document_manager():
-            raise AccessError(_("Only document managers can delete documents."))
+        for document in self:
+            if not document._can_ef_manage_document("action_delete"):
+                raise AccessError(_("You do not have permission to delete this document."))
         now = fields.Datetime.now()
         try:
             retention_days = max(int(self.env["ir.config_parameter"].sudo().get_param(
@@ -370,6 +452,28 @@ class Document(models.Model):
             "deleted_by": self.env.user.id,
             "recycle_bin_until": now + timedelta(days=retention_days),
         })
+
+    @api.model
+    def find_upload_conflict(self, employee, document_type):
+        """Active employee file for the same document type (EF-D3 duplicate signal)."""
+        if not employee or not document_type:
+            return self.browse()
+        return self.search(
+            [
+                ("employee_id", "=", employee.id),
+                ("document_type_id", "=", document_type.id),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ],
+            order="write_date desc, id desc",
+            limit=1,
+        )
+
+    def _user_can_replace_file(self):
+        self.ensure_one()
+        if self._is_document_manager():
+            return True
+        return self._user_owns_document()
 
     def _create_version_snapshot(self, change_note=""):
         """Persist the current attachment as a version before replacing it."""
@@ -397,6 +501,280 @@ class Document(models.Model):
             )
             created |= version
         return created
+
+    def _effective_preview_attachment(self):
+        self.ensure_one()
+        if self.pending_attachment_id and self.approval_state == "pending":
+            return self.pending_attachment_id
+        return self.attachment_id
+
+    def _should_bypass_upload_approval(self):
+        self.ensure_one()
+        if self.document_type_id.require_upload_approval:
+            return False
+        folder = self.folder_id
+        employee = self.employee_id
+        return (
+            self._is_document_manager()
+            and folder.folder_type == "employee"
+            and employee
+            and not folder.is_pending_uploads
+        )
+
+    def _resolve_approval_requirements(self):
+        """Return (require_approval, approvers, approval_flow) from the document type."""
+        self.ensure_one()
+        config = self.document_type_id.get_upload_approval_config()
+        return (
+            bool(config["require_upload_approval"]),
+            config["approvers"],
+            config["approval_flow"] or "any",
+        )
+
+    def _start_upload_approval(self, approvers, approval_flow):
+        self.ensure_one()
+        approval_commands = [
+            fields.Command.create(
+                {
+                    "approver_id": approver.id,
+                    "sequence": sequence,
+                    "state": self._approval_step_state_for_flow(
+                        sequence, approval_flow
+                    ),
+                }
+            )
+            for sequence, approver in enumerate(approvers, start=1)
+        ]
+        self.sudo().write(
+            {
+                "approval_ids": [fields.Command.clear()] + approval_commands,
+                "approval_state": "pending",
+                "state": "processing",
+                "rejection_reason": False,
+                "review_decision_unread": False,
+                "last_review_decision": False,
+            }
+        )
+        self._notify_pending_approvers()
+        self._log_approval_event(_("Submitted for approval"))
+
+    def _log_approval_event(self, summary, detail=None):
+        self.ensure_one()
+        body = summary
+        if detail:
+            body = "%s<br/>%s" % (summary, detail)
+        self.sudo().message_post(
+            body=body,
+            subtype_xmlid="mail.mt_note",
+        )
+
+    def _send_users_mail(self, users, subject, body_html):
+        users = users.filtered(lambda user: user.email)
+        if not users:
+            return
+        Mail = self.env["mail.mail"].sudo()
+        for user in users:
+            try:
+                Mail.create(
+                    {
+                        "subject": subject,
+                        "body_html": body_html,
+                        "email_to": user.email,
+                        "auto_delete": True,
+                    }
+                ).send()
+            except Exception:
+                _logger.exception(
+                    "Document review mail failed for %s", user.email
+                )
+
+    def _notify_uploader_review_decision(self, approved, reason=None):
+        self.ensure_one()
+        uploader = self.uploaded_by or self.owner_id
+        if not uploader or not uploader.partner_id:
+            return
+        decision = "approved" if approved else "rejected"
+        if approved:
+            body = _("Your document %(name)s was approved.") % {"name": self.name}
+            subject = _("Document approved: %s") % self.name
+        else:
+            reason_text = reason or _("No reason was provided.")
+            body = _(
+                "Your document %(name)s was rejected. Reason: %(reason)s"
+            ) % {
+                "name": self.name,
+                "reason": reason_text,
+            }
+            subject = _("Document rejected: %s") % self.name
+        write_vals = {
+            "last_review_decision": decision,
+            "review_decision_unread": True,
+        }
+        if approved:
+            write_vals["rejection_reason"] = False
+        else:
+            write_vals["rejection_reason"] = reason or ""
+        self.sudo().write(write_vals)
+        self._log_approval_event(body)
+        self.sudo().message_post(
+            body=body,
+            partner_ids=uploader.partner_id.ids,
+            subtype_xmlid="mail.mt_note",
+        )
+        self._send_users_mail(
+            uploader,
+            subject,
+            "<p>%s</p>" % body,
+        )
+
+    def _discard_pending_replacement(self):
+        self.ensure_one()
+        pending = self.pending_attachment_id
+        self.sudo().write(
+            {
+                "pending_attachment_id": False,
+                "pending_description": False,
+                "pending_issue_date": False,
+                "pending_expiry_date": False,
+                "pending_has_expiry": False,
+                "pending_change_note": False,
+            }
+        )
+        if pending:
+            pending.sudo().unlink()
+
+    def _commit_pending_replacement(self):
+        self.ensure_one()
+        if not self.pending_attachment_id:
+            return
+        change_note = self.pending_change_note or _("Approved replacement upload")
+        self._create_version_snapshot(change_note)
+        pending = self.pending_attachment_id
+        write_vals = {
+            "attachment_id": pending.id,
+            "pending_attachment_id": False,
+            "pending_change_note": False,
+        }
+        if self.pending_description:
+            write_vals["description"] = self.pending_description
+            write_vals["pending_description"] = False
+        if self.pending_issue_date:
+            write_vals["issue_date"] = self.pending_issue_date
+            write_vals["pending_issue_date"] = False
+        if self.pending_has_expiry:
+            write_vals.update(
+                {
+                    "has_expiry": True,
+                    "expiry_date": self.pending_expiry_date,
+                    "pending_has_expiry": False,
+                    "pending_expiry_date": False,
+                }
+            )
+        pending.sudo().write({"res_model": self._name, "res_id": self.id})
+        self.sudo().write(write_vals)
+
+    def _queue_pending_replacement(
+        self,
+        filename,
+        file_bytes,
+        mimetype=None,
+        change_note="",
+        expiry_values=None,
+        description=None,
+        issue_date=None,
+    ):
+        self.ensure_one()
+        if not file_bytes:
+            raise ValidationError(_("The replacement file is empty."))
+        attachment = self.env["ir.attachment"].sudo().create(
+            {
+                "name": filename or self.name,
+                "datas": base64.b64encode(file_bytes),
+                "mimetype": mimetype or "application/octet-stream",
+                "res_model": self._name,
+                "res_id": self.id,
+            }
+        )
+        pending_vals = {
+            "pending_attachment_id": attachment.id,
+            "pending_change_note": change_note or _("Uploaded new version"),
+            "name": filename or self.name,
+        }
+        if description is not None:
+            pending_vals["pending_description"] = description
+        if issue_date:
+            pending_vals["pending_issue_date"] = issue_date
+        if expiry_values:
+            pending_vals["pending_has_expiry"] = bool(expiry_values.get("has_expiry"))
+            pending_vals["pending_expiry_date"] = expiry_values.get("expiry_date")
+        self.sudo().write(pending_vals)
+        require_approval, approvers, approval_flow = self._resolve_approval_requirements()
+        if require_approval and approvers:
+            self._start_upload_approval(approvers, approval_flow)
+        return self
+
+    def replace_file_from_upload(
+        self,
+        filename,
+        file_bytes,
+        mimetype=None,
+        change_note="",
+        expiry_values=None,
+        description=None,
+        issue_date=None,
+    ):
+        """Archive the current file as a version and attach the uploaded replacement."""
+        self.ensure_one()
+        if not self._user_can_replace_file():
+            raise AccessError(_("You do not have permission to update this document."))
+        if not self.active or self.deleted_at:
+            raise ValidationError(_("Cannot version an inactive or deleted document."))
+        if not file_bytes:
+            raise ValidationError(_("The replacement file is empty."))
+        if self.pending_attachment_id and self.approval_state == "pending":
+            raise ValidationError(
+                _("An update is already pending approval for this document.")
+            )
+        if not self.document_type_id.enable_versioning:
+            raise ValidationError(
+                _(
+                    "Versioning is disabled for document type %(type)s.",
+                    type=self.document_type_id.name,
+                )
+            )
+
+        require_approval, approvers, approval_flow = self._resolve_approval_requirements()
+        if require_approval and approvers and not self._should_bypass_upload_approval():
+            return self._queue_pending_replacement(
+                filename,
+                file_bytes,
+                mimetype=mimetype,
+                change_note=change_note,
+                expiry_values=expiry_values,
+                description=description,
+                issue_date=issue_date,
+            )
+
+        self._create_version_snapshot(change_note or _("Uploaded new version"))
+        attachment = self.env["ir.attachment"].sudo().create({
+            "name": filename or self.name,
+            "datas": base64.b64encode(file_bytes),
+            "mimetype": mimetype or "application/octet-stream",
+            "res_model": self._name,
+            "res_id": self.id,
+        })
+        write_vals = {
+            "attachment_id": attachment.id,
+            "name": filename or self.name,
+        }
+        if expiry_values:
+            write_vals.update(expiry_values)
+        if description is not None:
+            write_vals["description"] = description
+        if issue_date:
+            write_vals["issue_date"] = issue_date
+        self.sudo().write(write_vals)
+        return self
 
     @api.model
     def _cron_send_expiry_alerts(self):
@@ -482,7 +860,18 @@ class Document(models.Model):
                 if not folder or not folder._user_can_access():
                     raise AccessError(_("You do not have access to upload into this folder."))
 
-            if folder and folder.folder_type == "organizational" and not folder.require_upload_approval:
+            document_type = (
+                self.env["doc.document.type"]
+                .sudo()
+                .browse(vals.get("document_type_id"))
+                .exists()
+            )
+            if (
+                folder
+                and folder.folder_type == "organizational"
+                and not folder.require_upload_approval
+                and not document_type.require_upload_approval
+            ):
                 vals.setdefault("state", "approved")
                 vals.setdefault("approval_state", "not_required")
 
@@ -500,6 +889,9 @@ class Document(models.Model):
                     partner_ids=admins.mapped("partner_id").ids,
                     subtype_xmlid="mail.mt_note",
                 )
+            self.env["doc.employee.files.service"].sudo().reconcile_document_employee_file(
+                document
+            )
         self._schedule_ask_index(documents)
         return documents
 
@@ -525,19 +917,16 @@ class Document(models.Model):
         approvers = self.env["res.users"]
         approval_flow = "any"
 
-        if folder.is_pending_uploads and employee and employee.department_id:
-            config = self.env["doc.folder"].get_department_approval_config(
-                employee.department_id
+        if self._should_bypass_upload_approval():
+            self.sudo().write(
+                {
+                    "state": "approved",
+                    "approval_state": "not_required",
+                }
             )
-            require_approval = config["require_upload_approval"]
-            approvers = config["approvers"]
-            approval_flow = config["approval_flow"]
-        elif folder.require_upload_approval and not folder.is_pending_uploads:
-            require_approval = True
-            approvers = folder._get_ordered_approvers()
-            approval_flow = folder.approval_flow
-        elif folder.folder_type == "organizational" and not folder.require_upload_approval:
             return
+
+        require_approval, approvers, approval_flow = self._resolve_approval_requirements()
 
         if require_approval and not approvers:
             if folder.is_pending_uploads or (
@@ -552,34 +941,22 @@ class Document(models.Model):
             ):
                 self.sudo().write(
                     {
-                        "state": "draft",
+                        "state": "approved",
                         "approval_state": "not_required",
                     }
                 )
             if folder.is_pending_uploads:
                 self._assign_folder_after_approval()
+            elif folder.folder_type == "organizational":
+                self.sudo().write(
+                    {
+                        "state": "approved",
+                        "approval_state": "not_required",
+                    }
+                )
             return
 
-        approval_commands = [
-            fields.Command.create(
-                {
-                    "approver_id": approver.id,
-                    "sequence": sequence,
-                    "state": self._approval_step_state_for_flow(
-                        sequence, approval_flow
-                    ),
-                }
-            )
-            for sequence, approver in enumerate(approvers, start=1)
-        ]
-        self.sudo().write(
-            {
-                "approval_ids": approval_commands,
-                "approval_state": "pending",
-                "state": "processing",
-            }
-        )
-        self._notify_pending_approvers()
+        self._start_upload_approval(approvers, approval_flow)
 
     def _approval_step_state_for_flow(self, sequence, approval_flow):
         if approval_flow == "sequential":
@@ -588,17 +965,9 @@ class Document(models.Model):
 
     def _get_effective_approval_flow(self):
         self.ensure_one()
-        folder = self.folder_id
-        if (
-            folder.is_pending_uploads
-            and self.employee_id
-            and self.employee_id.department_id
-        ):
-            config = self.env["doc.folder"].get_department_approval_config(
-                self.employee_id.department_id
-            )
-            return config["approval_flow"] or "any"
-        return folder.approval_flow or "any"
+        if self.document_type_id.require_upload_approval:
+            return self.document_type_id.approval_flow or "any"
+        return "any"
 
     def _get_current_pending_approval(self):
         self.ensure_one()
@@ -676,6 +1045,15 @@ class Document(models.Model):
             "current_approver_name": current_approver.name if current else None,
         }
 
+    def _version_metadata(self):
+        self.ensure_one()
+        version_numbers = self.version_ids.mapped("version_number")
+        latest_snapshot = max(version_numbers or [0])
+        return {
+            "version_count": len(self.version_ids),
+            "current_version_number": latest_snapshot + 1,
+        }
+
     def serialize_for_api(self, user=None, **extra):
         self.ensure_one()
         user = user or self.env.user
@@ -689,11 +1067,29 @@ class Document(models.Model):
             "employee_name": self.employee_id.name or "N/A",
             "document_type_id": self.document_type_id.id,
             "document_type": self.document_type_id.name,
+            "document_type_enable_versioning": bool(
+                self.document_type_id.enable_versioning
+            )
+            if self.document_type_id
+            else True,
+            "document_category": self.document_type_id.category
+            if self.document_type_id
+            else "other",
+            "document_category_label": dict(
+                self.document_type_id._fields["category"].selection
+            ).get(self.document_type_id.category, _("Other"))
+            if self.document_type_id
+            else _("Other"),
             "state": self.state,
             "approval_state": self.approval_state,
             "ocr_state": self.ocr_state,
             "has_expiry": self.has_expiry,
             "expiry_date": self.expiry_date,
+            "issue_date": self.issue_date,
+            "has_pending_revision": bool(self.pending_attachment_id),
+            "rejection_reason": self.rejection_reason or "",
+            "review_decision_unread": bool(self.review_decision_unread),
+            "last_review_decision": self.last_review_decision or None,
             "mime_type": self.mime_type,
             "file_size": self.file_size,
             "attachment_id": self.attachment_id.id,
@@ -702,6 +1098,7 @@ class Document(models.Model):
             "active": self.active,
             "distribution_status": self.distribution_status,
         }
+        payload.update(self._version_metadata())
         payload.update(self.get_review_context(user))
         payload.update(extra)
         return payload
@@ -764,12 +1161,38 @@ class Document(models.Model):
                 continue
 
             if any(approval.state == "rejected" for approval in approvals):
-                document.write(
-                    {
-                        "approval_state": "rejected",
-                        "state": "rejected",
-                    }
+                had_pending = bool(document.pending_attachment_id)
+                reject_reason = next(
+                    (
+                        approval.comment
+                        for approval in approvals
+                        if approval.state == "rejected" and approval.comment
+                    ),
+                    None,
                 )
+                if had_pending:
+                    document._discard_pending_replacement()
+                    document.write(
+                        {
+                            "approval_state": "approved",
+                            "state": "approved",
+                            "approval_ids": [fields.Command.clear()],
+                        }
+                    )
+                    document._notify_uploader_review_decision(
+                        False, reason=reject_reason
+                    )
+                else:
+                    document.write(
+                        {
+                            "approval_state": "rejected",
+                            "state": "rejected",
+                            "rejection_reason": reject_reason or "",
+                        }
+                    )
+                    document._notify_uploader_review_decision(
+                        False, reason=reject_reason
+                    )
                 continue
 
             flow = document._get_effective_approval_flow()
@@ -780,6 +1203,8 @@ class Document(models.Model):
                 approved = all(approval.state == "approved" for approval in approvals)
 
             if approved:
+                if document.pending_attachment_id:
+                    document._commit_pending_replacement()
                 document.write(
                     {
                         "approval_state": "approved",
@@ -787,6 +1212,8 @@ class Document(models.Model):
                     }
                 )
                 document._assign_folder_after_approval()
+                if not self.env.context.get("skip_uploader_approval_notice"):
+                    document._notify_uploader_review_decision(True)
             else:
                 document.write({"approval_state": "pending"})
                 document._advance_sequential_approval()

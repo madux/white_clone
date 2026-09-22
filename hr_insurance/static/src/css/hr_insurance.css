@@ -70,7 +70,7 @@
     gap: 9px;
     padding: 9px 10px;
     border-radius: 10px;
-    color: #94a3b8;
+    color: #101010;
     font-size: 13px;
     text-decoration: none;
     cursor: pointer;
@@ -80,7 +80,7 @@
 
 .hd-nl:hover {
     background: rgba(255, 255, 255, .07);
-    color: #fff;
+    color: #f6436f;
 }
 
 .hd-nl.active {
@@ -400,7 +400,7 @@
 }
 
 .hd-pill-done {
-    background: #dcfce7;
+    /* background: #dcfce7; */
     color: #15803d;
 }
 
@@ -687,8 +687,8 @@
     }
 
 .o_field_many2many_tags .o_tag_badge_text {
-    color: white !important;
-    font-size: 11px !important;
+    color: rgb(20, 18, 18) !important;
+    font-size: 12px !important;
 }
 
 /* } */

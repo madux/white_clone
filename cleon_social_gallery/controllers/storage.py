@@ -6,9 +6,13 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
-_ENV_SECRET_KEYS = {
+_ENV_KEYS = {
+    "account_id": "SOCIAL_GALLERY_R2_ACCOUNT_ID",
+    "endpoint_url": "SOCIAL_GALLERY_R2_ENDPOINT_URL",
     "access_key_id": "SOCIAL_GALLERY_R2_ACCESS_KEY_ID",
     "secret_access_key": "SOCIAL_GALLERY_R2_SECRET_ACCESS_KEY",
+    "bucket": "SOCIAL_GALLERY_R2_BUCKET",
+    "region": "SOCIAL_GALLERY_R2_REGION",
 }
 
 
@@ -35,7 +39,7 @@ class CloudflareR2Storage:
     def config(self):
         params = self.env["ir.config_parameter"].sudo()
         values = {name: params.get_param(key, "") for name, key in self.PARAMS.items()}
-        for name, env_key in _ENV_SECRET_KEYS.items():
+        for name, env_key in _ENV_KEYS.items():
             env_value = os.environ.get(env_key, "").strip()
             if env_value:
                 values[name] = env_value
@@ -67,7 +71,9 @@ class CloudflareR2Storage:
 
     def cors_origins(self):
         params = self.env["ir.config_parameter"].sudo()
-        configured = params.get_param("social_gallery.r2_cors_origins", "")
+        configured = os.environ.get("SOCIAL_GALLERY_R2_CORS_ORIGINS", "").strip()
+        if not configured:
+            configured = params.get_param("social_gallery.r2_cors_origins", "")
         origins = [origin.strip() for origin in configured.split(",") if origin.strip()]
         base_url = params.get_param("web.base.url", "").strip().rstrip("/")
         if base_url:
@@ -158,6 +164,38 @@ class CloudflareR2Storage:
         return self._client().abort_multipart_upload(
             Bucket=config["bucket"], Key=object_key, UploadId=upload_id
         )
+
+    def put_object_bytes(self, object_key, body, content_type="application/octet-stream"):
+        if not object_key or not body:
+            return False
+        config = self.config()
+        if not self.is_configured():
+            return False
+        try:
+            self._client().put_object(
+                Bucket=config["bucket"],
+                Key=object_key,
+                Body=body,
+                ContentType=content_type,
+            )
+            return True
+        except Exception:
+            _logger.exception("Failed to upload R2 object %s", object_key)
+            return False
+
+    def get_object_bytes(self, object_key, max_bytes=5 * 1024 * 1024):
+        if not object_key:
+            return b""
+        config = self.config()
+        if not self.is_configured():
+            return b""
+        try:
+            response = self._client().get_object(Bucket=config["bucket"], Key=object_key)
+            body = response["Body"].read(max_bytes + 1)
+            return body[:max_bytes]
+        except Exception:
+            _logger.exception("Failed to read R2 object %s", object_key)
+            return b""
 
     def signed_object_url(self, object_key, download=False, filename=None, expires=600):
         config = self.config()

@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Copy to documentary_r2_config.xml for local/dev installs, or set values via
-  Odoo system parameters. Prefer environment variables for secrets in production:
+  Odoo system parameters.   Prefer environment variables (see repository root .env.example):
 
+    COMPANY_DOCUMENTARY_R2_ACCOUNT_ID
+    COMPANY_DOCUMENTARY_R2_ENDPOINT_URL
     COMPANY_DOCUMENTARY_R2_ACCESS_KEY_ID
     COMPANY_DOCUMENTARY_R2_SECRET_ACCESS_KEY
-
-  Non-secret values can live in ir.config_parameter (seeded on module install).
+    COMPANY_DOCUMENTARY_R2_BUCKET
+    COMPANY_DOCUMENTARY_R2_REGION
+    COMPANY_DOCUMENTARY_R2_CORS_ORIGINS
 -->
 <odoo noupdate="1">
     <record id="param_r2_account_id" model="ir.config_parameter">

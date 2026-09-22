@@ -63,6 +63,7 @@
             <xpath expr="//field[@name='alarm_ids']" position="after">
                 <field name="check_in_attendee_ids"
                     widget="many2many_tags" readonly="1" placeholder="This shows list of attendees"/>
+                <field name="is_public_event"/>
             </xpath>
 
             <xpath expr="//button[@name='set_discuss_videocall_location']" position="replace">
@@ -122,6 +123,7 @@
             <xpath expr="//field[@name='description']" position="before">
                 <field name="check_in_attendee_ids"
                     widget="many2many_tags" readonly="0" options="{'no_create': True}" placeholder="This shows list of attendees"/>
+                <field name="is_public_event"/>
             </xpath>
 
             <xpath expr="//button[@name='set_discuss_videocall_location']" position="replace">

@@ -309,3 +309,153 @@ body {
     }
 
 }
+
+
+/* ==========================================================================
+   PROVIDER CARD
+   ========================================================================== */
+.ins_provider_card {
+    background-color: #ffffff;
+    border: 1px solid #e7e9ee;
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    padding: 18px 18px 14px;
+    width: 100%;
+}
+
+/* ---- Top row ---- */
+.ins_card_top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.ins_avatar {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.ins_avatar_pink   { background-color: #ec4899; }
+.ins_avatar_blue   { background-color: #3b82f6; }
+.ins_avatar_purple { background-color: #a855f7; }
+.ins_avatar_orange { background-color: #f97316; }
+
+.ins_provider_info {
+    flex: 1;
+    min-width: 0;
+}
+
+.ins_provider_name {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #14161a;
+}
+
+.ins_contact_line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 4px;
+    font-size: 12.5px;
+    color: #6b7280;
+}
+
+.ins_contact_icon {
+    width: 12px;
+    text-align: center;
+    color: #9aa0ab;
+    font-size: 11px;
+}
+
+.ins_verified_badge {
+    color: #22c55e;
+    font-size: 16px;
+    line-height: 1;
+    margin-top: 2px;
+}
+
+/* ---- Tags ---- */
+.ins_tags_row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 14px 0 12px;
+}
+
+.ins_tag_group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* Category tags (Individual / Family / Corporate) — blue */
+.ins_tag_group_type .o_tag {
+    background-color: #eaf1ff !important;
+    color: #3b6fe0 !important;
+    border-radius: 999px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    padding: 4px 10px !important;
+    border: none !important;
+}
+
+/* Plan tags (Bronze / Silver / Gold) — purple/pink */
+.ins_tag_group_plan .o_tag {
+    background-color: #f7ecfb !important;
+    color: #a534c9 !important;
+    border-radius: 999px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    padding: 4px 10px !important;
+    border: none !important;
+}
+
+/* Hide the default delete "x" since tags are readonly */
+.ins_tags_row .o_tag .o_delete {
+    display: none !important;
+}
+
+/* ---- Divider ---- */
+.ins_divider {
+    border-top: 1px solid #eef0f2;
+    margin: 4px 0 12px;
+}
+
+/* ---- Footer ---- */
+.ins_card_footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ins_hospital_count {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: #6b7280;
+}
+
+.ins_view_details_btn {
+    background-color: #ec4899;
+    color: #ffffff;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.ins_view_details_btn:hover {
+    background-color: #db2777;
+    color: #ffffff;
+}

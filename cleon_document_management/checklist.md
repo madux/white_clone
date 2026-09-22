@@ -55,6 +55,7 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [x] Rebuilt and synced `static/src/nextapp` so inbox + Intelligence share one export
 - [x] Merged latest origin/document-intelligence into `michael` (company documentary + onboarding). Source had no conflicts; rebuilt DMS static export.
 - [x] Merged origin/document-intelligence again (social gallery, documentary compliance, pending uploads). Combined source conflicts; rebuilt DMS static export.
+- [x] Merged origin/document-intelligence again (employee files roles, compliance, Activity). Combined templates + Ask AI with incoming employee-files; rebuilt DMS static export.
 
 ## Ask UI follow-up
 - [x] LLM chat titles that are not the full question (gpt-oss token/content fix)

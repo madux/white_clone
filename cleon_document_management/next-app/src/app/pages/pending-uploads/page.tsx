@@ -1,7 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import PendingUploadsPage from "@/app/components/PendingUploadsPage";
-
-export default function Page() {
-  return <PendingUploadsPage />;
+export default function PendingUploadsRoute() {
+  redirect("/pages/employee?tab=pending-approvals");
 }

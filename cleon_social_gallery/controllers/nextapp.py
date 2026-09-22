@@ -25,6 +25,20 @@ class SocialGalleryNextAppController(http.Controller):
         return None
 
     @staticmethod
+    def _user_is_gallery_manager(user):
+        return (
+            user.has_group("base.group_system")
+            or user.has_group("cleon_social_gallery.group_social_gallery_manager")
+        )
+
+    @staticmethod
+    def _user_is_gallery_admin(user):
+        return (
+            user.has_group("base.group_system")
+            or user.has_group("cleon_social_gallery.group_social_gallery_admin")
+        )
+
+    @staticmethod
     def _user_script(user):
         user_data = json.dumps({
             "user_id": user.id,
@@ -32,12 +46,8 @@ class SocialGalleryNextAppController(http.Controller):
             "user_email": user.email or user.login or "",
             "company_name": user.company_id.name if user.company_id else "",
             "is_admin": user.has_group("base.group_system"),
-            "is_gallery_manager": user.has_group(
-                "cleon_social_gallery.group_social_gallery_manager"
-            ),
-            "is_gallery_admin": user.has_group(
-                "cleon_social_gallery.group_social_gallery_admin"
-            ),
+            "is_gallery_manager": SocialGalleryNextAppController._user_is_gallery_manager(user),
+            "is_gallery_admin": SocialGalleryNextAppController._user_is_gallery_admin(user),
         })
         return f"<script>window.__ODOO_USER__={user_data}</script>"
 
@@ -98,12 +108,8 @@ class SocialGalleryNextAppController(http.Controller):
                     "email": user.email or user.login or "",
                     "company_name": user.company_id.name if user.company_id else "",
                     "is_admin": user.has_group("base.group_system"),
-                    "is_gallery_manager": user.has_group(
-                        "cleon_social_gallery.group_social_gallery_manager"
-                    ),
-                    "is_gallery_admin": user.has_group(
-                        "cleon_social_gallery.group_social_gallery_admin"
-                    ),
+                    "is_gallery_manager": self._user_is_gallery_manager(user),
+                    "is_gallery_admin": self._user_is_gallery_admin(user),
                 },
             }
         except Exception as error:

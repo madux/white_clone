@@ -16,3 +16,5 @@ def post_init_hook(env):
         storage.ensure_bucket_cors()
     except Exception:
         _logger.exception("Company Documentary R2 CORS bootstrap failed")
+    if "documentary.role.definition" in env:
+        env["documentary.role.definition"].sync_registry()

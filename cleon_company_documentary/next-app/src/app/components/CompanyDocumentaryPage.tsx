@@ -112,11 +112,14 @@ export default function CompanyDocumentaryPage() {
 
   const folders = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data]);
   const media = useMemo(() => mediaQuery.data ?? [], [mediaQuery.data]);
-  const featuredFolders = useMemo(() => {
-    const pinned = folders.filter((folder) => folder.is_pinned);
-    if (pinned.length) return pinned.slice(0, 4);
-    return folders.filter((folder) => folder.media_count > 0).slice(0, 4);
-  }, [folders]);
+  const featuredFolders = useMemo(
+    () => folders.filter((folder) => folder.is_pinned).slice(0, 4),
+    [folders],
+  );
+  const favoriteFolders = useMemo(
+    () => folders.filter((folder) => folder.favorite),
+    [folders],
+  );
   const pendingCount = useMemo(
     () => media.filter((item) => item.approval_status === "pending").length,
     [media],
@@ -128,10 +131,20 @@ export default function CompanyDocumentaryPage() {
       return media.filter((item) =>
         ["pending", "scheduled", "rejected"].includes(item.approval_status || ""),
       );
+    if (libraryView === "home" && !selectedFolder && !search.trim()) {
+      return media.slice(0, 4);
+    }
     return media;
-  }, [libraryView, media, continueQuery.data]);
-  const canManage = Boolean(userQuery.data?.is_admin || userQuery.data?.is_document_manager);
-  const isAdmin = Boolean(userQuery.data?.is_admin);
+  }, [libraryView, media, continueQuery.data, selectedFolder, search]);
+  const canManage = Boolean(
+    userQuery.data?.is_documentary_manager ||
+      userQuery.data?.is_documentary_admin ||
+      userQuery.data?.is_admin,
+  );
+  const isAdmin = Boolean(
+    userQuery.data?.is_documentary_admin || userQuery.data?.is_admin,
+  );
+  const isSystemAdmin = Boolean(userQuery.data?.is_admin);
 
   function navigate(view: LibraryView) {
     setLibraryView(view);
@@ -351,6 +364,7 @@ export default function CompanyDocumentaryPage() {
           {showLibrary && (
             <LibraryContent
               folders={folders}
+              favoriteFolders={favoriteFolders}
               featuredFolders={featuredFolders}
               selectedFolder={selectedFolder}
               libraryView={libraryView}
@@ -440,7 +454,11 @@ export default function CompanyDocumentaryPage() {
       )}
       {showAnalytics && <AnalyticsDashboard folders={folders} onClose={() => setShowAnalytics(false)} />}
       {showSettings && (
-        <SettingsPanelModal onClose={() => setShowSettings(false)} onNotice={showNotice} />
+        <SettingsPanelModal
+          onClose={() => setShowSettings(false)}
+          onNotice={showNotice}
+          isSystemAdmin={isSystemAdmin}
+        />
       )}
     </main>
   );

@@ -74,6 +74,8 @@ class DocumentApproval(models.Model):
         for approval in self:
             if approval.approver_id != self.env.user:
                 raise UserError(_("You are not assigned to reject this document."))
+            if not (approval.comment or "").strip():
+                raise UserError(_("A rejection reason is required."))
 
             flow = approval.document_id._get_effective_approval_flow()
             if flow == "sequential":

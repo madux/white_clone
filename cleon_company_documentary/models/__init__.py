@@ -9,3 +9,6 @@ from . import documentary_watch_event
 from . import documentary_audit
 from . import documentary_comment
 from . import documentary_like
+from . import documentary_role_assignment_audit
+from . import documentary_role_definition
+from . import documentary_role_service

@@ -10,11 +10,15 @@ import { EmptyState } from "../shared/EmptyState";
 import { LoadingGrid } from "../shared/LoadingGrid";
 import { PageToolbar } from "../shared/PageToolbar";
 import { AlbumCover } from "../shared/AlbumCover";
+import { LoadMoreFooter } from "../shared/LoadMoreFooter";
 import { StatusBadge } from "../shared/StatusBadge";
 
 interface AlbumsViewProps {
   albums: GalleryAlbum[];
   loading: boolean;
+  total?: number;
+  onLoadMore?: () => void;
+  loadingMore?: boolean;
   onOpenAlbum: (albumId: number) => void;
   onRefresh: () => void;
   onCreateAlbum?: () => void;
@@ -22,7 +26,7 @@ interface AlbumsViewProps {
 }
 
 export default function AlbumsView({
-  albums, loading, onOpenAlbum, onRefresh, onCreateAlbum, isManager,
+  albums, loading, total, onLoadMore, loadingMore, onOpenAlbum, onRefresh, onCreateAlbum, isManager,
 }: AlbumsViewProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [editAlbum, setEditAlbum] = useState<GalleryAlbum | null>(null);
@@ -55,7 +59,7 @@ export default function AlbumsView({
                 <option value="size">Largest Size</option>
               </select>
             </div>
-            <span className="meta-muted">{albums.length} albums</span>
+            <span className="meta-muted">{total ?? albums.length} albums</span>
           </>
         )}
       />
@@ -122,6 +126,15 @@ export default function AlbumsView({
             </article>
           ))}
         </div>
+      )}
+
+      {onLoadMore && (
+        <LoadMoreFooter
+          shown={albums.length}
+          total={total ?? albums.length}
+          loading={loadingMore}
+          onLoadMore={onLoadMore}
+        />
       )}
 
       {showCreate && !onCreateAlbum && (

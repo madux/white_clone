@@ -25,7 +25,7 @@
     <record id="group_document_admin" model="res.groups">
         <field name="name">Document Administrator</field>
         <field name="category_id" ref="module_category_document_management"/>
-        <field name="implied_ids" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+        <field name="implied_ids" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
     </record>
 
     <!-- Odoo administrators must also receive the document-management role. -->

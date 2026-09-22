@@ -11,3 +11,8 @@ def _sync_document_user_groups(env):
 
 def post_init_hook(env):
     _sync_document_user_groups(env)
+    if "doc.role.definition" in env:
+        env["doc.role.definition"].sync_registry()
+    if "doc.employee.files.role.service" in env:
+        for company in env["res.company"].search([]):
+            env["doc.employee.files.role.service"].with_company(company).migrate_legacy_document_managers()

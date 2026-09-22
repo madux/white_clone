@@ -10,7 +10,7 @@ class HrEnrollment(models.Model):
     _description = 'CleonHr enrollment'
     _rec_name = 'name'
 
-    @api.constrains('hmo_id', 'employee_id')
+    @api.constrains('hmo_id', 'employee_id', 'plan_id')
     def _constraint_employee_existing(self):
         for rec in self:
             if not rec.hmo_id or not rec.employee_id:
@@ -21,9 +21,17 @@ class HrEnrollment(models.Model):
                 ('employee_id', '=', rec.employee_id.id),
             ], limit=1)
             if existing > 1:
-                raise ValidationError(
-                    "The employee is already enrolled with the selected HMO and plan"
-                )
+                self.plan_id = False 
+                self.hmo_id = False 
+                return {
+                    'warning': {
+                        'title': 'Duplicate detected',
+                        'message': 'The employee is already enrolled with the selected HMO and plan',
+                    }
+                }
+                # raise ValidationError(
+                #     "The employee is already enrolled with the selected HMO and plan"
+                # )
 
     @api.onchange('birthday')
     def _onchange_birthday(self):
@@ -84,13 +92,21 @@ class HrEnrollment(models.Model):
     phone = fields.Char("Phone", related="employee_id.work_phone")
     email = fields.Char("Email", related="employee_id.work_email")
     employee_number = fields.Char("Employee ID", related="employee_id.barcode")
-    company_id = fields.Many2one("res.company", string="Company")
+    company_id = fields.Many2one("res.company", string="Company",  default=lambda self:self.env.company)
     gender = fields.Char(
         string='Gender',
         # related="employee_id.gender"
     )
     # gender = fields.Selection([('male', 'Male'),('female', 'Female'),('other', 'Other')], string='Gender')
+    hmo_plan_ids = fields.Many2many('hmo.plan')
 
+    @api.onchange('hmo_id')
+    def _onchange_hmo_id(self):
+        if self.hmo_id:
+            self.hmo_plan_ids = [(6, 0, self.hmo_id.hmo_plan_ids.ids)]
+        else:
+            self.hmo_plan_ids = [(5, 0, 0)]
+            
     plan_id = fields.Many2one(
         'hmo.plan',
         string='HMO Plan',
