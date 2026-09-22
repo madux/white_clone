@@ -166,12 +166,55 @@
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     overflow: visible;
+    /* The full-page height is set from the selected page size by the component. */
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
+.o_lp_pager {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 0;
+    color: #64748b;
+    font-size: 12px;
+}
+.o_lp_pager_summary { display: flex; align-items: center; gap: 12px; }
+.o_lp_pager_summary label { margin: 0; }
+.o_lp_pager_summary select {
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid #dce2ec;
+    border-radius: 6px;
+    background: #fff;
+    color: #526078;
+    font: inherit;
+    cursor: pointer;
+}
+.o_lp_pager_summary select:focus-visible { outline: 2px solid #e91e78; outline-offset: 2px; }
+@media (max-width: 600px) {
+    .o_lp_pager { flex-wrap: wrap; }
+    .o_lp_pager_summary { flex-wrap: wrap; }
+}
+.o_lp_pager nav { display: flex; gap: 6px; }
+.o_lp_pager button {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 9px;
+    border: 1px solid #dce2ec;
+    border-radius: 6px;
+    background: #fff;
+    color: #526078;
+    cursor: pointer;
+}
+.o_lp_pager button.active { color: #fff; background: #e91e78; border-color: #e91e78; }
+.o_lp_pager button:disabled { opacity: .45; cursor: default; }
+.o_lp_pager button:focus-visible { outline: 2px solid #e91e78; outline-offset: 2px; }
+
 .o_lp_table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .o_lp_table th {
@@ -182,15 +225,44 @@
     font-weight: 700;
     text-align: left;
     background: #f8fafc;
-    padding: 13px 14px;
+    padding: 11px 12px;
     border-bottom: 1px solid #e2e8f0;
 }
 
 .o_lp_table td {
-    padding: 14px;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 11px 12px;
+    border-bottom: 1px solid #e5eaf2;
     vertical-align: middle;
     font-size: 13px;
+}
+
+.o_lp_table th:first-child,
+.o_lp_table td:first-child { width: 210px; min-width: 210px; }
+
+.o_lp_table tbody tr:nth-child(even) { background: #fbfcfe; }
+.o_lp_table tbody tr:hover { background: #fff6fa; }
+
+.o_lp_policy_name {
+    display: block;
+    border: 0;
+    background: none;
+    padding: 0;
+    text-align: left;
+    color: #172033;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.o_lp_policy_name:hover { color: #d8156a; text-decoration: underline; }
+.o_lp_policy_name:focus-visible { outline: 2px solid #e91e78; outline-offset: 3px; }
+
+.o_lp_policy_code {
+    display: block;
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 11px;
+    letter-spacing: .01em;
 }
 
 .o_lp_table tr:last-child td {

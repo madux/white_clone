@@ -23,6 +23,8 @@ export class LeavePoliciesPage extends Component {
             search: "",
             listState: "current",
             statusFilter: "all",
+            page: 1,
+            pageSize: 6,
             menuId: false,
             wizard: false,
             step: 1,
@@ -69,8 +71,53 @@ export class LeavePoliciesPage extends Component {
             : rows;
     }
 
+    get pageCount() {
+        return Math.max(1, Math.ceil(this.visibleRows.length / this.state.pageSize));
+    }
+
+    get currentPage() {
+        return Math.min(this.state.page, this.pageCount);
+    }
+
+    get pagedRows() {
+        const start = (this.currentPage - 1) * this.state.pageSize;
+        return this.visibleRows.slice(start, start + this.state.pageSize);
+    }
+
+    get pageNumbers() {
+        return Array.from({ length: this.pageCount }, (_, index) => index + 1);
+    }
+
+    get pageStart() {
+        return this.visibleRows.length ? (this.currentPage - 1) * this.state.pageSize + 1 : 0;
+    }
+
+    get pageEnd() {
+        return Math.min(this.currentPage * this.state.pageSize, this.visibleRows.length);
+    }
+
+    get listMinHeight() {
+        // Reserve the height of the fullest page so the pager does not jump on the last page.
+        return 42 + 62 * Math.min(this.state.pageSize, this.visibleRows.length);
+    }
+
+    changePageSize(event) {
+        const size = Number(event.target.value);
+        if (![6, 10, 25, 50].includes(size)) return;
+        this.state.pageSize = size;
+        this.state.page = 1;
+        this.state.menuId = false;
+    }
+
+    goToPage(page) {
+        if (page < 1 || page > this.pageCount) return;
+        this.state.page = page;
+        this.state.menuId = false;
+    }
+
     setStatusFilter(value) {
         this.state.statusFilter = value;
+        this.state.page = 1;
     }
 
     async load() {
@@ -645,6 +692,7 @@ export class LeavePoliciesPage extends Component {
     async setListState(value) {
         this.state.listState = value;
         this.state.statusFilter = "all";
+        this.state.page = 1;
         await this.load();
     }
 }

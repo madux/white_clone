@@ -17,7 +17,7 @@
       <div class="o_lp_filters">
         <label class="o_lp_search_box">
           <i class="fa fa-search"/>
-          <input t-model="state.search" placeholder="Search policies, codes, or leave types…"/>
+          <input t-model="state.search" t-on-input="() => this.goToPage(1)" placeholder="Search policies, codes, or leave types…"/>
         </label>
         <div class="o_lp_filters_right">
           <!-- Status filter chips (only on Current Policies) -->
@@ -66,7 +66,7 @@
       </div>
 
       <!-- Policy Table -->
-      <div t-else="" class="o_lp_table_wrap">
+      <div t-else="" class="o_lp_table_wrap" t-att-style="'min-height:' + listMinHeight + 'px'">
         <table class="o_lp_table">
           <thead>
             <tr>
@@ -84,10 +84,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr t-foreach="visibleRows" t-as="row" t-key="row.id">
+            <tr t-foreach="pagedRows" t-as="row" t-key="row.id">
               <td>
-                <b t-esc="row.name"/>
-                <small t-esc="row.code"/>
+                <button type="button" class="o_lp_policy_name" t-on-click="() => this.view(row)" t-esc="row.name"/>
+                <span class="o_lp_policy_code">Code: <t t-esc="row.code"/></span>
               </td>
               <td t-esc="row.policy_type_label || 'Paid Leave'"/>
               <td>
@@ -151,6 +151,25 @@
           </tbody>
         </table>
       </div>
+      <footer t-if="!state.loading and visibleRows.length" class="o_lp_pager">
+        <div class="o_lp_pager_summary">
+          <span>Showing <t t-esc="pageStart"/>–<t t-esc="pageEnd"/> of <t t-esc="visibleRows.length"/> policies</span>
+          <label>
+            <span class="visually-hidden">Policies per page</span>
+            <select t-att-value="state.pageSize" t-on-change="changePageSize" aria-label="Policies per page">
+              <option value="6">6 per page</option>
+              <option value="10">10 per page</option>
+              <option value="25">25 per page</option>
+              <option value="50">50 per page</option>
+            </select>
+          </label>
+        </div>
+        <nav aria-label="Leave policy pages">
+          <button type="button" t-on-click="() => this.goToPage(currentPage - 1)" t-att-disabled="currentPage === 1" aria-label="Previous page" title="Previous page"><i class="fa fa-chevron-left"/></button>
+          <button type="button" t-foreach="pageNumbers" t-as="page" t-key="page" t-att-class="currentPage === page ? 'active' : ''" t-att-aria-current="currentPage === page ? 'page' : undefined" t-on-click="() => this.goToPage(page)" t-esc="page"/>
+          <button type="button" t-on-click="() => this.goToPage(currentPage + 1)" t-att-disabled="currentPage === pageCount" aria-label="Next page" title="Next page"><i class="fa fa-chevron-right"/></button>
+        </nav>
+      </footer>
 
       <!-- ═══════════════════════════════════════════════════════
            POLICY CREATION & EDIT DRAWER / WIZARD
