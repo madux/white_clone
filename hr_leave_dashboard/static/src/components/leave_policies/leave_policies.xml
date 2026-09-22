@@ -638,6 +638,14 @@
                   <label><input type="radio" value="selected" t-model="state.form.apply_to"/> Select Employees / Groups</label>
                   <label><input type="radio" value="conditions" t-model="state.form.apply_to"/> Add Conditions (Department, Tenure, Grade, Role)</label>
                 </div>
+                <label class="d-block mb-3">
+                  <span class="d-block mb-1">Eligible gender</span>
+                  <select class="form-select" t-model="state.form.applicable_gender">
+                    <option value="all">All genders</option>
+                    <option value="female">Female employees</option>
+                    <option value="male">Male employees</option>
+                  </select>
+                </label>
                 <t t-call="hr_leave_dashboard.PolicyEligibility"/>
               </section>
             </t>

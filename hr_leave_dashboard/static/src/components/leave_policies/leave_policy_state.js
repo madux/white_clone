@@ -35,6 +35,7 @@ export const newForm = (mode = "simple", defaults = {}) => ({
     code: "",
     description: "",
     policy_type: "paid",
+    applicable_gender: "all",
     category: "General",
     color: "#E91E78",
     ai_enabled: true,
@@ -102,6 +103,7 @@ export function hasAdvancedOverrides(form) {
 
     // 1. Advanced Policy-level settings
     if (form.apply_to === "conditions") return true;
+    if (form.applicable_gender && form.applicable_gender !== "all") return true;
     if (Number(form.minimum_tenure_months || 0) > 0) return true;
     if (form.approval && form.approval.workflow === "custom") return true;
     if (form.selected) {

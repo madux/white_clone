@@ -25,6 +25,10 @@ class HrLeavePolicy(models.Model):
     ], string="Leave Type", required=True, default="paid", index=True)
     category_name = fields.Char(string="Category", default="General")
     color = fields.Char(default="#E91E78")
+    applicable_gender = fields.Selection([
+        ("all", "All Genders"), ("female", "Female Employees"),
+        ("male", "Male Employees"),
+    ], default="all", required=True, string="Applicable Gender")
     state = fields.Selection([
         ("draft", "Draft"),
         ("active", "Active"),
@@ -105,7 +109,7 @@ class HrLeavePolicy(models.Model):
                 "minimum_tenure_months", "allow_carry_forward", "maximum_carry_forward",
                 "carry_forward_expiry_value", "carry_forward_expiry_unit", "balance_usage_priority",
                 "approval_required", "approval_workflow", "allow_multiple_requests",
-                "allow_withdrawal", "allow_half_day", "ai_enabled", "policy_type",
+                "allow_withdrawal", "allow_half_day", "ai_enabled", "policy_type", "applicable_gender",
             )}, "approval_chain_id": (self.approval_template_id.chain_id or self.approval_chain_id).id,
             "approval_template_id": self.approval_template_id.id,
             "approval_workflow_type_id": self.approval_workflow_type_id.id,
@@ -140,6 +144,7 @@ class HrLeavePolicy(models.Model):
                     "policy_mode": "advanced", "policy_type": {"sick": "sick", "family": "family", "career": "career", "unpaid": "unpaid", "compensatory": "compassionate"}.get(leave_type.policy_classification, "paid"),
                     "category_name": labels.get(leave_type.policy_classification, _("General")),
                     "color": leave_type.cleon_color_hex or "#E91E78", "state": "draft",
+                    "applicable_gender": leave_type.applicable_gender or "all",
                     "apply_to": "all" if leave_type.eligibility_scope == "all" else "selected",
                     "employee_ids": [(6, 0, leave_type.eligible_employee_ids.ids)], "department_ids": [(6, 0, leave_type.eligible_department_ids.ids)],
                     "unit_ids": [(6, 0, leave_type.eligible_unit_ids.ids)], "grade_ids": [(6, 0, leave_type.eligible_grade_ids.ids)],
@@ -168,6 +173,82 @@ class HrLeavePolicy(models.Model):
                 policy._audit(_("Migrated legacy Leave Type configuration into policy '%s'.") % policy.name, after={"leave_type_id": line.leave_type_id.id})
         return True
 
+    @api.model
+    def _seed_default_leave_policies(self):
+        """One-time, recoverable replacement of generated policies for this company.
+
+        Called by XML data on install/upgrade. Existing policies and assignment
+        history are archived, never deleted; subsequent upgrades leave user edits
+        to these defaults alone.
+        """
+        company = self.env.company
+        marker = "hr_leave_dashboard.default_policies_v1.%s" % company.id
+        parameters = self.env["ir.config_parameter"].sudo()
+        if parameters.get_param(marker):
+            return True
+
+        definitions = (
+            # policy, code, existing leave type, broad type, category, colour,
+            # gender, entitlement, status, native classification
+            ("Annual Vacation", "VACATION", "Annual Leave", "paid", "Vacation", "#3B82F6", "all", 15, "active", "annual"),
+            ("Medical Leave", "MEDICAL", "Sick Leave", "sick", "Health", "#EF4444", "all", 10, "active", "sick"),
+            ("Maternity Leave", "MATERNITY", "Maternity Leave", "family", "Maternity", "#A855F7", "female", 90, "active", "family"),
+            ("Paternity Leave", "PATERNITY", "Paternity Leave", "family", "Paternity", "#6366F1", "male", 7, "active", "family"),
+            ("Compassionate Leave", "COMPASS", "Compassionate Leave", "compassionate", "Compassionate", "#14B8A6", "all", 5, "active", "other"),
+            ("Study Leave", "STUDY", "Study Leave", "career", "Learning", "#F97316", "all", 10, "draft", "career"),
+            ("Unpaid Leave", "UNPAIDNEW", "Unpaid Leave", "unpaid", "Unpaid", "#6B7280", "all", 0, "active", "unpaid"),
+        )
+        Policy = self.sudo().with_company(company).with_context(active_test=False)
+        current = Policy.search([("company_id", "=", company.id), ("active", "=", True)])
+        for policy in current:
+            if policy.state == "active":
+                policy._close_assignments()
+            policy._write_lifecycle({"active": False})
+            policy._audit(_("Archived during the baseline policy replacement."), {"active": True}, {"active": False})
+
+        LeaveType = self.env["hr.leave.type"].sudo().with_company(company).with_context(active_test=False)
+        for name, code, type_name, broad, category, color, gender, amount, status, classification in definitions:
+            leave_type = LeaveType.search([
+                ("company_id", "=", company.id), ("name", "=ilike", type_name),
+            ], limit=1)
+            type_values = {
+                "policy_classification": classification, "applicable_gender": gender,
+                "max_entitlement": amount, "unlimited_entitlement": broad == "unpaid",
+                "cleon_category": "unpaid" if broad == "unpaid" else "paid",
+                "cleon_color_hex": color,
+            }
+            if leave_type:
+                leave_type.write(type_values)
+            else:
+                leave_type = LeaveType.create({
+                    "name": type_name, "company_id": company.id,
+                    "leave_code": re.sub(r"[^A-Z]", "", type_name.upper())[:4] or "LT",
+                    **type_values,
+                })
+            policy = Policy.search([("company_id", "=", company.id), ("code", "=", code)], limit=1)
+            if policy:
+                # A partially completed earlier run should not overwrite edits.
+                continue
+            policy = Policy.create({
+                "name": name, "code": code, "company_id": company.id,
+                "policy_type": broad, "category_name": category, "color": color,
+                "applicable_gender": gender, "policy_mode": "advanced" if gender != "all" else "simple",
+                "apply_to": "all", "state": "draft",
+            })
+            self.env["hr.leave.policy.line"].sudo().create({
+                "policy_id": policy.id, "leave_type_id": leave_type.id,
+                "compensation": "unpaid" if broad == "unpaid" else "paid",
+                "unit": "days", "entitlement_type": "fixed",
+                "accrual_period": "annually", "accrual_basis": "calendar",
+                "accrual_amount": amount,
+            })
+            if status == "active":
+                policy._write_lifecycle({"state": "active"})
+                policy._sync_assignments("replace")
+            policy._audit(_("Created from baseline leave policy data."), after=policy._row())
+        parameters.set_param(marker, "1")
+        return True
+
     @api.constrains("state", "line_ids")
     def _check_active_has_types(self):
         for policy in self:
@@ -194,6 +275,8 @@ class HrLeavePolicy(models.Model):
         employees = self.env["hr.employee"].sudo().search([
             ("company_id", "=", self.company_id.id), ("active", "=", True),
         ])
+        if self.applicable_gender != "all":
+            employees = employees.filtered(lambda employee: employee.gender == self.applicable_gender)
         if self.apply_to == "all":
             return employees
         tests = []
@@ -274,9 +357,10 @@ class HrLeavePolicy(models.Model):
             "id": self.id, "name": self.name, "code": self.code, "description": self.description or "",
             "mode": self.policy_mode, "policy_type": self.policy_type, "policy_type_label": dict(self._fields["policy_type"].selection).get(self.policy_type),
             "category": self.category_name or "General", "color": self.color or "#E91E78",
+            "applicable_gender": self.applicable_gender,
             "state": self.state, "active": self.active, "display_status": "archived" if not self.active else self.state, "ai_enabled": self.ai_enabled,
             "leave_types": [{"id": value.leave_type_id.id, "name": value.leave_type_id.name, "entitlement": value.accrual_amount, "unit": value.unit, "compensation": value.compensation} for value in lines],
-            "applicability": _("All Employees") if self.apply_to == "all" else _("%d eligible employee(s)") % len(eligible),
+            "applicability": (_("Female Employees") if self.applicable_gender == "female" else _("Male Employees") if self.applicable_gender == "male" else _("All Employees")) if self.apply_to == "all" else _("%d eligible employee(s)") % len(eligible),
             "employee_count": len(assigned or eligible), "employee_ids": (assigned or eligible).ids,
             "default_entitlement": line.accrual_amount if len(lines) == 1 else False,
             "default_unit": line.unit if len(lines) == 1 else "",
@@ -364,6 +448,7 @@ class HrLeavePolicy(models.Model):
             "description": payload.get("description") or "", "policy_mode": payload.get("mode") if payload.get("mode") in ("simple", "advanced") else "simple",
             "policy_type": payload.get("policy_type") if payload.get("policy_type") in dict(self._fields["policy_type"].selection) else "paid",
             "category_name": payload.get("category") or "General", "color": payload.get("color") or "#E91E78",
+            "applicable_gender": payload.get("applicable_gender") if payload.get("applicable_gender") in ("all", "male", "female") else "all",
             "state": "draft", "active": True,
             "company_id": self.env.company.id, "apply_to": payload.get("apply_to") if payload.get("apply_to") in ("all", "selected", "conditions") else "all",
             "condition_match": payload.get("condition_match") if payload.get("condition_match") in ("all", "any") else "all",
@@ -453,6 +538,7 @@ class HrLeavePolicy(models.Model):
         values = {
             "company_id": self.env.company.id, "policy_mode": payload.get("mode", "simple"),
             "apply_to": payload.get("apply_to", "all"),
+            "applicable_gender": payload.get("applicable_gender", "all"),
             "condition_match": payload.get("condition_match", "all"),
             "minimum_tenure_months": int(payload.get("minimum_tenure_months") or 0),
         }

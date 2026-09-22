@@ -12,6 +12,7 @@
         'data/sequence_data.xml',
         'data/official_holidays_data.xml',
         'data/blackout_windows_data.xml',
+        'data/default_leave_policies.xml',
         'data/leave_cron_data.xml',
         'views/dashboard_action.xml',
         'views/leave_base.xml',
