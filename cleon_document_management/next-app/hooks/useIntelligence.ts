@@ -105,10 +105,17 @@ export function useIntelligenceDatasets() {
     queryFn: intelligenceDatasetApi.list,
     refetchInterval: (query) => {
       const rows = query.state.data || [];
-      return rows.some((row) =>
-        ["queued", "running"].includes(row.state),
-      )
-        ? 4000
+      return rows.some((row) => {
+        const job =
+          row.latest_job && typeof row.latest_job === "object"
+            ? row.latest_job
+            : null;
+        return (
+          ["queued", "running"].includes(row.state) ||
+          (job && ["queued", "running"].includes(job.state))
+        );
+      })
+        ? 2000
         : false;
     },
   });
@@ -129,6 +136,7 @@ export function useIntelligenceWizardEstimate(payload: {
   auto_classify: boolean;
   id?: number;
   upload_count?: number;
+  processing_mode?: string;
 }) {
   return useQuery({
     queryKey: ["intelligence", "wizard-estimate", payload],
@@ -338,6 +346,26 @@ export function useIntelligenceConversations(saved?: boolean, search?: string) {
         ...(saved ? { saved: true } : {}),
         ...(search ? { search } : {}),
       }),
+  });
+}
+
+export function useIntelligenceAskIndexStatus(enabled: boolean, search?: string) {
+  return useQuery({
+    queryKey: ["intelligence", "ask-index-status", search || ""],
+    queryFn: () =>
+      intelligenceDatasetApi.askIndexStatus({
+        ...(search ? { search } : {}),
+      }),
+    enabled,
+    refetchInterval: (query) => {
+      if (!enabled) {
+        return false;
+      }
+      const data = query.state.data;
+      const inFlight =
+        (data?.indexing_count || 0) + (data?.waiting_count || 0);
+      return inFlight > 0 ? 2000 : 8000;
+    },
   });
 }
 

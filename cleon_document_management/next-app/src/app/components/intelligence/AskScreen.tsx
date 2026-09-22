@@ -26,6 +26,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   FormEvent,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -35,14 +36,27 @@ import {
   useIntelligenceDatasets,
 } from "../../../../hooks/useIntelligence";
 import { intelligenceDatasetApi } from "../../../../lib/intelligence-api";
+import AskIndexStatusPanel from "./AskIndexStatusPanel";
 import type {
   IntelligenceChatMessage,
   IntelligenceConversation,
+  IntelligenceDataset,
 } from "../../../../lib/intelligence-api";
 import ChatMarkdown from "./ChatMarkdown";
 import { IntelligenceError } from "./states";
 
 const MASCOT = "/document-management/ask_ai.png";
+
+function isAskReadyDataset(item: IntelligenceDataset) {
+  if (["draft", "failed", "cancelled", "rejected"].includes(item.state)) {
+    return false;
+  }
+  return (
+    item.record_count > 0 ||
+    item.state === "completed" ||
+    item.state === "needs_review"
+  );
+}
 
 const SUGGESTIONS = [
   { category: "Compliance", text: "Who has expired certifications?", Icon: ShieldAlert },
@@ -194,8 +208,10 @@ export default function AskScreen() {
     name: string;
   } | null>(null);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
-  const [datasetPickerOpen, setDatasetPickerOpen] = useState(false);
+  const [indexOpen, setIndexOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [localDatasetId, setLocalDatasetId] = useState<number | "">("");
+  const [datasetTouched, setDatasetTouched] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const attachRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -203,12 +219,25 @@ export default function AskScreen() {
   const endRef = useRef<HTMLDivElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const datasets = useIntelligenceDatasets();
+  const readyDatasets = useMemo(
+    () => (datasets.data || []).filter(isAskReadyDataset),
+    [datasets.data],
+  );
   const list = useIntelligenceConversations(tab === "saved", search);
   const messages = conversation?.messages || [];
   const suggestions = SUGGESTIONS.filter(
     (item) => category === "All Suggestions" || item.category === category,
   );
   const visibleSuggestions = showAllSuggestions ? suggestions : suggestions.slice(0, 9);
+  const focusedDatasetId: number | "" = datasetTouched
+    ? localDatasetId
+    : Number(conversation?.dataset_id || 0) ||
+      (readyDatasets.length === 1 ? readyDatasets[0].id : "");
+  const focusedDatasetName =
+    (focusedDatasetId
+      ? readyDatasets.find((item) => item.id === focusedDatasetId)?.name ||
+        conversation?.dataset
+      : "") || "";
 
   function fitComposer() {
     const el = composerRef.current;
@@ -292,10 +321,8 @@ export default function AskScreen() {
   }, [attachOpen, urlOpen, libraryOpen, viewingSource, pendingDelete, router]);
 
   useEffect(() => {
-    if (datasetPickerOpen) {
-      datasetRef.current?.focus();
-    }
-  }, [datasetPickerOpen]);
+    setDatasetTouched(false);
+  }, [conversation?.id]);
 
   async function refreshList() {
     await queryClient.invalidateQueries({ queryKey: ["intelligence", "conversations"] });
@@ -370,8 +397,8 @@ export default function AskScreen() {
         id: current?.id || 0,
         name: current?.name || "New chat",
         saved: current?.saved || false,
-        dataset_id: current?.dataset_id || false,
-        dataset: current?.dataset || "",
+        dataset_id: focusedDatasetId || false,
+        dataset: focusedDatasetName,
         write_date: current?.write_date || "",
         preview: trimmed,
         sources: current?.sources || [],
@@ -384,7 +411,7 @@ export default function AskScreen() {
         {
           id: conversation?.id,
           question: trimmed,
-          dataset_id: conversation?.dataset_id || undefined,
+          dataset_id: focusedDatasetId || 0,
           regenerate,
         },
         (event) => {
@@ -484,7 +511,9 @@ export default function AskScreen() {
     if (conversation?.id) {
       return conversation;
     }
-    const created = await intelligenceDatasetApi.conversationCreate();
+    const created = await intelligenceDatasetApi.conversationCreate({
+      dataset_id: focusedDatasetId || false,
+    });
     setConversation(created);
     return created;
   }
@@ -591,7 +620,11 @@ export default function AskScreen() {
   }
 
   async function startNewConversation() {
-    const created = await intelligenceDatasetApi.conversationCreate();
+    const defaultId = readyDatasets.length === 1 ? readyDatasets[0].id : false;
+    const created = await intelligenceDatasetApi.conversationCreate({
+      dataset_id: defaultId,
+    });
+    setDatasetTouched(false);
     setConversation(created);
     setQuestion("");
     setError("");
@@ -675,8 +708,6 @@ export default function AskScreen() {
   const hasThread = messages.length > 0 || thinking;
   const typedPlaceholder = useTypedPlaceholder(Boolean(question) || listening);
 
-  const activeDataset = conversation?.dataset || "";
-
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white text-[13px]">
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-2">
@@ -686,9 +717,16 @@ export default function AskScreen() {
           </span>
           <div className="min-w-0">
             <h1 className="text-sm font-semibold tracking-tight text-slate-900">AI Workspace</h1>
-            <p className="text-[11px] text-slate-400">
-              {indexed.toLocaleString()} indexed documents connected
-            </p>
+            <button
+              type="button"
+              className="group inline-flex max-w-full items-center gap-0.5 text-left text-[11px] text-slate-400 hover:text-slate-600"
+              onClick={() => setIndexOpen(true)}
+            >
+              <span className="truncate">
+                {indexed.toLocaleString()} indexed documents connected
+              </span>
+              <ChevronRight className="h-3 w-3 shrink-0 opacity-0 transition group-hover:opacity-100" />
+            </button>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -1149,25 +1187,33 @@ export default function AskScreen() {
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
             Working Set
           </p>
-          {activeDataset ? (
+          {!readyDatasets.length ? (
+            <p className="mt-1.5 text-[12px] text-slate-500">
+              No datasets are ready yet. Run an extraction to use one here.
+            </p>
+          ) : focusedDatasetId ? (
             <p className="mt-1.5 text-[12px] text-slate-600">
-              Queries are focused on <span className="font-semibold">{activeDataset}</span>.
+              Queries use <span className="font-semibold">{focusedDatasetName}</span>.
             </p>
           ) : (
-            <p className="mt-1.5 text-[12px] text-slate-500">
-              No active dataset. Select one to focus all queries.
+            <p className="mt-1.5 text-[12px] text-slate-600">
+              Queries use <span className="font-semibold">all approved datasets</span>.
+              Choose one to focus.
             </p>
           )}
-          {datasetPickerOpen || activeDataset ? (
+          {readyDatasets.length ? (
             <select
               ref={datasetRef}
               className="mt-3 w-full rounded-xl border border-slate-200 bg-[#f7f8fb] px-3 py-2.5 text-sm text-slate-800 outline-none"
-              value={conversation?.dataset_id || ""}
+              value={focusedDatasetId}
               onChange={async (event) => {
+                const nextId = event.target.value ? Number(event.target.value) : "";
+                setLocalDatasetId(nextId);
+                setDatasetTouched(true);
                 const current = await ensureConversation();
                 const next = await intelligenceDatasetApi.conversationUpdate({
                   id: current.id,
-                  dataset_id: event.target.value ? Number(event.target.value) : 0,
+                  dataset_id: nextId || 0,
                 });
                 setConversation({
                   ...next,
@@ -1175,25 +1221,16 @@ export default function AskScreen() {
                 });
               }}
             >
-              <option value="">All approved records</option>
-              {(datasets.data || []).map((item) => (
+              {readyDatasets.length > 1 ? (
+                <option value="">All approved datasets</option>
+              ) : null}
+              {readyDatasets.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
                 </option>
               ))}
             </select>
-          ) : (
-            <button
-              type="button"
-              className="mt-2 text-[12px] font-semibold text-brand-pink"
-              onClick={() => {
-                setDatasetPickerOpen(true);
-                window.setTimeout(() => datasetRef.current?.focus(), 0);
-              }}
-            >
-              Select dataset →
-            </button>
-          )}
+          ) : null}
 
           <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
             Attached files
@@ -1531,6 +1568,15 @@ export default function AskScreen() {
           </div>
         </div>
       ) : null}
+      <AskIndexStatusPanel
+        open={indexOpen}
+        onClose={() => {
+          setIndexOpen(false);
+          void queryClient.invalidateQueries({
+            queryKey: ["intelligence", "conversations"],
+          });
+        }}
+      />
       {viewingSource ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"

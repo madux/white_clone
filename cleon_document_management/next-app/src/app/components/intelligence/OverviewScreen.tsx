@@ -19,6 +19,7 @@ import {
   IntelligenceError,
   IntelligenceLoading,
 } from "./states";
+import JobProgressBar from "./JobProgressBar";
 
 function metricValue(value: number | null) {
   return value == null ? "—" : `${value}%`;
@@ -190,7 +191,9 @@ export default function OverviewScreen() {
                           </p>
                         ) : null}
                       </td>
-                      <td className="py-3">{job.progress ?? 0}%</td>
+                      <td className="py-3">
+                        <JobProgressBar job={job} />
+                      </td>
                       <td className="py-3 text-right">
                         <JobActions
                           job={job}

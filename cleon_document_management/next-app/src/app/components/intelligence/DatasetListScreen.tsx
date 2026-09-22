@@ -10,6 +10,7 @@ import {
 } from "../../../../hooks/useIntelligence";
 import type { IntelligenceDataset } from "../../../../lib/intelligence-api";
 import { formatFieldLabel, formatStatusLabel } from "../../../../lib/formatLabel";
+import JobProgressBar from "./JobProgressBar";
 import {
   IntelligenceEmpty,
   IntelligenceError,
@@ -156,9 +157,13 @@ export default function DatasetListScreen() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {item.latest_job && typeof item.latest_job === "object"
-                      ? `${item.latest_job.progress}% (${item.latest_job.processed_count}/${item.latest_job.document_count})`
-                      : "—"}
+                    <JobProgressBar
+                      job={
+                        item.latest_job && typeof item.latest_job === "object"
+                          ? item.latest_job
+                          : null
+                      }
+                    />
                   </td>
                   <td className="px-4 py-3">{item.owner_name}</td>
                   <td className="px-4 py-3 text-right">

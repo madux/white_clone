@@ -179,6 +179,8 @@ export const intelligenceDatasetApi = {
       employee_count: number;
       document_type_ids?: number[];
       untyped_count?: number;
+      page_count?: number;
+      estimated_seconds?: number;
     }>("/api/document-intelligence/wizard/estimate", payload),
   uploadFiles: async (datasetId: number, files: File[]) => {
     const form = new FormData();
@@ -328,6 +330,11 @@ export const intelligenceDatasetApi = {
       indexed_count: number;
       conversations: IntelligenceConversation[];
     }>("/api/document-intelligence/conversations", params),
+  askIndexStatus: (params: Record<string, unknown> = {}) =>
+    unwrap<AskIndexStatus>(
+      "/api/document-intelligence/ask/index-status",
+      params,
+    ),
   conversationGet: (id: number) =>
     unwrap<IntelligenceConversation>(
       "/api/document-intelligence/conversations/get",
@@ -481,6 +488,28 @@ export interface IntelligenceConversation {
     preview_url: string;
   }>;
   messages?: IntelligenceChatMessage[];
+}
+
+export type AskIndexState = "waiting" | "indexing" | "indexed" | "skipped";
+
+export interface AskIndexFile {
+  id: number;
+  name: string;
+  folder: string;
+  mimetype: string;
+  chunk_count: number;
+  state: AskIndexState;
+  write_date: string;
+}
+
+export interface AskIndexStatus {
+  total_count: number;
+  indexed_count: number;
+  indexing_count: number;
+  waiting_count: number;
+  skipped_count: number;
+  truncated: boolean;
+  files: AskIndexFile[];
 }
 
 export interface IntelligenceAuditEvent {

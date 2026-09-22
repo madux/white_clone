@@ -41,6 +41,17 @@ type ConfirmState =
   | { kind: "deactivate"; item: IntelligenceDocumentType }
   | { kind: "delete"; ids: number[]; names: string };
 
+function friendlyDeleteError(message: string, typeName = "this document type") {
+  const raw = message || "";
+  if (/foreign key|RESTRICT|doc_document|doc_document_type/i.test(raw)) {
+    return (
+      `You can't delete ${typeName} because files are still assigned to it. ` +
+      "Change those files to another type, or deactivate it instead."
+    );
+  }
+  return raw;
+}
+
 export default function TypesConfigPanel() {
   const types = useIntelligenceTypes();
   const createType = useCreateIntelligenceType();
@@ -52,6 +63,7 @@ export default function TypesConfigPanel() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [selected, setSelected] = useState<number[]>([]);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [confirmError, setConfirmError] = useState("");
   const busy =
     createType.isPending || updateType.isPending || deleteTypes.isPending;
   const rows = useMemo(() => {
@@ -148,11 +160,18 @@ export default function TypesConfigPanel() {
     }
   };
 
+  const openConfirm = (next: ConfirmState) => {
+    setError("");
+    setConfirmError("");
+    setConfirm(next);
+  };
+
   const runConfirm = async () => {
     if (!confirm) {
       return;
     }
     setError("");
+    setConfirmError("");
     try {
       if (confirm.kind === "deactivate") {
         await updateType.mutateAsync({ id: confirm.item.id, active: false });
@@ -162,7 +181,12 @@ export default function TypesConfigPanel() {
       }
       setConfirm(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "That action could not be completed.");
+      const raw =
+        err instanceof Error ? err.message : "That action could not be completed.";
+      const names = confirm.kind === "delete" ? confirm.names : confirm.item.name;
+      const friendly = friendlyDeleteError(raw, names);
+      setConfirmError(friendly);
+      setError(friendly);
     }
   };
 
@@ -182,7 +206,7 @@ export default function TypesConfigPanel() {
             type="button"
             className="rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-600"
             onClick={() =>
-              setConfirm({
+              openConfirm({
                 kind: "delete",
                 ids: selected,
                 names: selectedRows.map((item) => item.name).join(", "),
@@ -200,7 +224,7 @@ export default function TypesConfigPanel() {
           Add document type
         </button>
       </div>
-      {error && !showForm ? <IntelligenceError message={error} /> : null}
+      {error && !showForm && !confirm ? <IntelligenceError message={error} /> : null}
       {types.isError ? (
         <IntelligenceError message="Document types could not be loaded. Confirm you are logged into Odoo." />
       ) : null}
@@ -272,7 +296,7 @@ export default function TypesConfigPanel() {
                         <button
                           type="button"
                           className="text-sm font-semibold text-brand-pink"
-                          onClick={() => setConfirm({ kind: "deactivate", item })}
+                          onClick={() => openConfirm({ kind: "deactivate", item })}
                         >
                           Deactivate
                         </button>
@@ -291,7 +315,7 @@ export default function TypesConfigPanel() {
                         type="button"
                         className="text-sm font-semibold text-red-600"
                         onClick={() =>
-                          setConfirm({
+                          openConfirm({
                             kind: "delete",
                             ids: [item.id],
                             names: item.name,
@@ -516,11 +540,19 @@ export default function TypesConfigPanel() {
                 ? `${confirm.item.name} will move to the bottom of the list and stay greyed out until you activate it again.`
                 : `“${confirm.names}” will be removed. This cannot be undone.`}
             </p>
+            {confirmError ? (
+              <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">
+                {confirmError}
+              </p>
+            ) : null}
             <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
                 className="rounded-full px-4 py-2 text-sm font-semibold text-slate-500"
-                onClick={() => setConfirm(null)}
+                onClick={() => {
+                  setConfirm(null);
+                  setConfirmError("");
+                }}
               >
                 Cancel
               </button>

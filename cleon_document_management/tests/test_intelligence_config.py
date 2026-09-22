@@ -175,6 +175,92 @@ class TestIntelligenceConfig(TransactionCase):
         self.assertEqual(estimate["document_count"], 1)
         self.assertEqual(estimate["document_type_ids"], [cv.id])
         self.assertNotIn(other.id, estimate["document_type_ids"])
+        self.assertEqual(estimate["page_count"], 1)
+        self.assertGreater(estimate["estimated_seconds"], 0)
+
+    def test_auto_classify_keeps_library_type_without_false_issue(self):
+        from unittest.mock import patch
+        from odoo.addons.cleon_document_management.models.intelligence_pipeline import (
+            _type_from_llm_payload,
+            classify_document,
+        )
+
+        folder = self.env["doc.folder"].create(
+            {"folder_name": "Org Classify", "folder_type": "organizational"}
+        )
+        document_type = self.env["doc.document.type"].create(
+            {
+                "name": "CV Classify",
+                "category": "identity",
+                "intelligence_scope": "organization",
+            }
+        )
+        profile = self.env["doc.intelligence.profile"].create(
+            {
+                "name": "CV Classify Profile",
+                "document_type_id": document_type.id,
+            }
+        )
+        self.env["doc.intelligence.field"].create(
+            {
+                "version_id": profile.current_version_id.id,
+                "name": "Employee name",
+                "key": "employee_name",
+                "field_type": "text",
+                "required": True,
+            }
+        )
+        document_type.default_profile_id = profile.id
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": "scan.txt",
+                "type": "binary",
+                "mimetype": "text/plain",
+                "raw": b"Curriculum Vitae\nEmployee name: Jane Doe\n",
+            }
+        )
+        document = self.env["doc.document"].create(
+            {
+                "name": "scan.txt",
+                "folder_id": folder.id,
+                "document_type_id": document_type.id,
+                "attachment_id": attachment.id,
+            }
+        )
+        matched = _type_from_llm_payload(
+            document_type,
+            {"document_type_id": document_type.name, "confidence": 0.9},
+        )
+        self.assertEqual(matched, document_type)
+        dataset = self.env["doc.intelligence.dataset"].create(
+            {
+                "name": "Auto classify CV",
+                "source": "organizational",
+                "scope_kind": "selected_files",
+                "scope_ids_json": json.dumps([document.id]),
+                "auto_classify": True,
+                "field_keys_json": '["employee_name"]',
+            }
+        )
+        groq_path = (
+            "odoo.addons.cleon_document_management.models.intelligence_groq."
+            "groq_configured"
+        )
+        with patch(groq_path, return_value=False):
+            classified, confidence, _alts = classify_document(
+                document, dataset, "Jane Doe"
+            )
+            self.assertEqual(classified, document_type)
+            self.assertGreaterEqual(confidence, 0.4)
+            job = dataset.action_run()
+        record = job.record_ids
+        self.assertEqual(record.document_type_id, document_type)
+        self.assertFalse(
+            record.issue_ids.filtered(
+                lambda issue: "could not match this file" in (issue.message or "")
+                or "could not be classified" in (issue.message or "")
+            )
+        )
 
     def test_upload_files_are_source_documents(self):
         document_type = self.env["doc.document.type"].create(

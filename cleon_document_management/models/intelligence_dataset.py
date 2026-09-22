@@ -583,22 +583,45 @@ class IntelligenceDataset(models.Model):
         )
         return type_ids, untyped_count
 
+    def _estimate_pages_and_time(self, documents, processing_mode="balanced", total_count=None):
+        from .intelligence_pipeline import estimate_attachment_pages
+
+        sample = documents[:40]
+        if not sample:
+            return 0, 0
+        pages = sum(
+            estimate_attachment_pages(document.attachment_id) for document in sample
+        )
+        total = len(documents) if total_count is None else int(total_count)
+        if total > len(sample):
+            pages = int(round(pages * total / float(len(sample))))
+        seconds_per_page = {
+            "fast": 5,
+            "balanced": 8,
+            "conservative": 12,
+        }.get(processing_mode or "balanced", 8)
+        return pages, pages * seconds_per_page
+
     @api.model
     def wizard_estimate(self, values):
         values = values or {}
         source = values.get("source") or ""
         scope_kind = values.get("scope_kind") or "company"
         scope_ids = values.get("scope_ids") or []
+        processing_mode = values.get("processing_mode") or "balanced"
         dataset = self.browse(
             int(values.get("id") or values.get("dataset_id") or 0)
         ).exists()
         if source == "upload":
             docs = dataset.upload_document_ids if dataset else self.env["doc.document"]
             untyped_count = len(docs.filtered(lambda doc: not doc.document_type_id))
+            pages, seconds = self._estimate_pages_and_time(docs, processing_mode)
             return {
                 "document_count": len(docs),
                 "employee_count": 0,
                 "untyped_count": untyped_count,
+                "page_count": pages,
+                "estimated_seconds": seconds,
             }
         type_ids, untyped_count = self._scope_document_type_stats(
             source, scope_kind, scope_ids, dataset
@@ -616,11 +639,17 @@ class IntelligenceDataset(models.Model):
             ["employee_id"],
             ["employee_id"],
         )
+        sample = self.env["doc.document"].search(domain, limit=40)
+        pages, seconds = self._estimate_pages_and_time(
+            sample, processing_mode, total_count=document_count
+        )
         return {
             "document_count": document_count,
             "employee_count": len(groups),
             "document_type_ids": type_ids,
             "untyped_count": untyped_count,
+            "page_count": pages,
+            "estimated_seconds": seconds,
         }
 
     def _snapshot_thresholds(self):
@@ -716,8 +745,12 @@ class IntelligenceDataset(models.Model):
             [self.id],
         )
         active = self.job_ids.filtered(lambda job: job.state in ("queued", "running"))
+        queue_only = bool(self.env.context.get("intelligence_queue_only"))
         if active:
             job = active[0]
+            if queue_only:
+                self._start_job_now(job)
+                return job
             job.action_process(limit=25)
             return job
         job = self.env["doc.intelligence.job"].create(
@@ -737,8 +770,44 @@ class IntelligenceDataset(models.Model):
             detail="Extraction job queued.",
             correlation_id="job-%s" % job.id,
         )
+        if queue_only:
+            self._start_job_now(job)
+            return job
         job.action_process(limit=25)
         return job
+
+    def _start_job_now(self, job):
+        from .intelligence_async import run_after_commit
+
+        job.ensure_one()
+        job_id = job.id
+
+        def _process(env):
+            running = env["doc.intelligence.job"].browse(job_id).exists()
+            if running and running.state in ("queued", "running"):
+                _logger.info("Starting extraction job %s in the background", job_id)
+                running.action_process(limit=25)
+
+        run_after_commit(self.env, _process, name="cleon-extract-job")
+        cron = self.env.ref(
+            "cleon_document_management.ir_cron_process_intelligence_jobs",
+            raise_if_not_found=False,
+        )
+        if cron:
+            cron.sudo()._trigger()
+        return True
+
+    def _trigger_job_cron(self):
+        job = self.job_ids.filtered(lambda item: item.state in ("queued", "running"))[:1]
+        if job:
+            return self._start_job_now(job)
+        cron = self.env.ref(
+            "cleon_document_management.ir_cron_process_intelligence_jobs",
+            raise_if_not_found=False,
+        )
+        if cron:
+            cron.sudo()._trigger()
+        return True
 
     def _ensure_can_delete(self):
         user = self.env.user
@@ -912,6 +981,9 @@ class IntelligenceJob(models.Model):
         document_type, class_conf, _alts = classify_document(
             document, dataset, text
         )
+        if not document_type and document.document_type_id:
+            document_type = document.document_type_id
+            class_conf = max(class_conf or 0.0, 0.45)
         profile = document_type.default_profile_id if document_type else False
         version = False
         if profile:
@@ -946,8 +1018,7 @@ class IntelligenceJob(models.Model):
                     "record_id": record.id,
                     "severity": "blocking",
                     "message": _(
-                        "This file could not be classified as a known document type. "
-                        "It was not treated as one of the selected types."
+                        "Cleon AI could not match this file to a known document type."
                     ),
                 }
             )
@@ -1035,7 +1106,7 @@ class IntelligenceJob(models.Model):
                 "validation_status": validation,
             }
         )
-        if status == "approved":
+        if status != "rejected":
             self.env["doc.intelligence.chunk"].index_record(record)
 
     def action_pause(self):
@@ -1066,6 +1137,7 @@ class IntelligenceJob(models.Model):
                 target=job,
                 correlation_id="job-%s" % job.id,
             )
+            job.dataset_id._start_job_now(job)
         return True
 
     def action_retry(self):
@@ -1082,7 +1154,10 @@ class IntelligenceJob(models.Model):
                 target=job,
                 correlation_id="job-%s" % job.id,
             )
-            job.action_process(limit=25)
+            if self.env.context.get("intelligence_queue_only"):
+                job.dataset_id._start_job_now(job)
+            else:
+                job.action_process(limit=25)
         return True
 
     @api.model
@@ -1091,6 +1166,12 @@ class IntelligenceJob(models.Model):
             [("state", "in", ["queued", "running"])],
             limit=5,
         )
+        if jobs:
+            _logger.info(
+                "Processing %s queued extraction job(s): %s",
+                len(jobs),
+                ",".join(str(job.id) for job in jobs),
+            )
         jobs.action_process(limit=15)
 
     @api.model

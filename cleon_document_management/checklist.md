@@ -96,6 +96,17 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [x] Deploy Next export after document-type + field-picker change
 - [ ] Restart Odoo with `-u cleon_document_management` for wizard estimate type IDs
 
+## Dataset wizard — run, classify, preview
+- [x] AI classification no longer flags a typed file as unclassified
+- [x] Save and run leaves the wizard; extraction continues in the background
+- [x] Dataset progress is a bar, not a raw percentage
+- [x] Preview shows page count and approximate time
+- [x] Hide Fields on preview when only automatic classification is selected
+- [x] Deploy Next export after wizard run/classify/preview fixes
+- [ ] Restart Odoo with `-u cleon_document_management` so queued extraction and classify fallback load
+- [x] Ask indexes a My Workspace upload immediately (not only the 1-minute cron)
+- [x] Dataset extraction starts in a background thread after Save and run (cron is backup only)
+
 ## Dataset wizard fixes
 - [x] Live file counts / employees / departments (wizard options no longer crash on hr.branch)
 - [x] Explain extraction vs accuracy metrics honestly
@@ -167,6 +178,18 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [ ] Restart Odoo so document type delete and inactive listing load
 - [x] Edit document type loads existing extraction fields (not an empty profile)
 
+## Ask — index progress screen
+- [x] Header “N indexed documents connected” opens a per-file indexing progress screen
+- [x] API lists waiting / indexing / indexed / no-text with live polling
+- [x] Header count is unique documents, not chunks
+- [x] Deploy Next export after Ask index status panel
+- [x] Restart Odoo with `-u cleon_document_management` so `ask_index_state` and `/ask/index-status` load
+- [x] Index status uses `folder_name` (doc.folder has no `name` field)
+- [x] Index status uses `mime_type` (doc.document has no `mimetype` field)
+- [x] Preload Qwen3 embedding + reranker once at Odoo startup (weights stay in memory)
+- [x] Ask uses the selected dataset as the primary source (not crowded out by personal-file RAG)
+- [x] Ask working set defaults to all approved datasets, or the only dataset if there is one
+
 ## Templates & Forms — generate editor crash
 - [x] Remember generated document id (URL + sessionStorage)
 - [x] Full-page open editor after generate
@@ -176,3 +199,10 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [x] Dataset wizard: Organizational scope is a folder table + per-file picker
 - [x] Deploy Next export after org scope file picker
 - [ ] Restart Odoo with `-u cleon_document_management` for selected_files scope
+
+## Configuration — document type delete
+- [x] Block delete when files still use the type (count with sudo, including archived)
+- [x] Show a plain-language message instead of the Postgres FK error
+- [x] Show that message in the delete confirm dialog
+- [ ] Restart Odoo with `-u cleon_document_management` so the API change loads
+- [x] Deploy Next export (`npm run deploy`) and hard-refresh configuration

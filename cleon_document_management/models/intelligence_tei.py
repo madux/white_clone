@@ -16,6 +16,7 @@ _embedder = None
 _reranker = None
 _embed_error = ""
 _rerank_error = ""
+_preload_started = False
 
 
 def current_embed_model():
@@ -76,6 +77,7 @@ def _get_embedder():
         try:
             _embedder = _load_sentence_transformer(EMBED_MODEL)
             _embed_error = ""
+            _logger.info("Embedding weights loaded once and kept in memory.")
         except Exception as error:
             _embed_error = str(error)
             raise
@@ -93,10 +95,50 @@ def _get_reranker():
         try:
             _reranker = _load_cross_encoder(RERANK_MODEL)
             _rerank_error = ""
+            _logger.info("Reranker weights loaded once and kept in memory.")
         except Exception as error:
             _rerank_error = str(error)
             raise
         return _reranker
+
+
+def preload_local_models(background=True):
+    """Read Qwen3 weights once when the server starts, not on the first Ask."""
+    global _preload_started
+    libraries_ok, error = _libraries_ok()
+    if not libraries_ok:
+        _logger.warning("Skipping Qwen3 preload: %s", error)
+        return
+    with _lock:
+        if _embedder is not None and _reranker is not None:
+            _logger.info("Qwen3 embedding and reranker already in memory; skipping reload.")
+            return
+        if _preload_started:
+            return
+        _preload_started = True
+
+    def _run():
+        try:
+            _logger.info(
+                "Startup preload: loading Qwen3 embedding + reranker once on %s",
+                _device(),
+            )
+            _get_embedder()
+            _get_reranker()
+            _logger.info(
+                "Startup preload complete. Ask and indexing reuse these weights."
+            )
+        except Exception:
+            _logger.exception(
+                "Startup preload failed; models will load on first Ask/index instead."
+            )
+
+    if background:
+        threading.Thread(
+            target=_run, name="cleon-rag-preload", daemon=True
+        ).start()
+        return
+    _run()
 
 
 def embed_texts(texts, env=None, is_query=False):

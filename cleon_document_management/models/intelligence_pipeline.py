@@ -350,6 +350,73 @@ def _candidate_types(dataset):
     return dataset.document_type_ids
 
 
+def estimate_attachment_pages(attachment):
+    if not attachment:
+        return 1
+    if _is_image(attachment):
+        return 1
+    suffix = _suffix(attachment)
+    mime = (attachment.mimetype or "").lower()
+    if suffix != ".pdf" and mime != "application/pdf":
+        return 1
+    try:
+        raw = attachment_bytes(attachment)
+        if not raw:
+            return 1
+        fitz = _pymupdf()
+        pdf = fitz.open(stream=raw, filetype="pdf")
+        pages = pdf.page_count or 1
+        pdf.close()
+        return max(int(pages), 1)
+    except Exception as error:
+        _logger.debug("page estimate failed: %s", error)
+        return 1
+
+
+def _type_from_llm_payload(types, payload):
+    if not payload or not types:
+        return types.browse()
+    raw = payload.get("document_type_id")
+    if raw in (None, "", False):
+        raw = payload.get("type_id") or payload.get("id")
+    if isinstance(raw, dict):
+        raw = raw.get("id") or raw.get("document_type_id") or raw.get("name")
+    try:
+        type_id = int(raw)
+    except (TypeError, ValueError):
+        type_id = 0
+    if type_id:
+        chosen = types.filtered(lambda item: item.id == type_id)[:1]
+        if chosen:
+            return chosen
+    name = str(
+        payload.get("document_type")
+        or payload.get("name")
+        or (raw if not type_id else "")
+        or ""
+    ).strip().lower()
+    if not name:
+        return types.browse()
+    exact = types.filtered(lambda item: (item.name or "").strip().lower() == name)[:1]
+    if exact:
+        return exact
+    return types.filtered(lambda item: name in (item.name or "").lower())[:1]
+
+
+def _fallback_classified_type(document, types, text):
+    keyword_type, keyword_conf, alternatives = _keyword_classify(
+        document, types, text
+    )
+    if keyword_type:
+        return keyword_type, keyword_conf, alternatives
+    existing = document.document_type_id
+    if existing and (not types or existing in types):
+        return existing, 0.55, []
+    if existing:
+        return existing, 0.45, []
+    return types.browse(), 0.2, []
+
+
 def _keyword_classify(document, types, text):
     haystack = " ".join(
         [document.name or "", (text or "")[:4000]]
@@ -386,7 +453,7 @@ def classify_document(document, dataset, text=""):
             return types[0], 0.55, []
         return document.document_type_id, 0.4, []
 
-    fallback_type, fallback_conf, alternatives = _keyword_classify(
+    fallback_type, fallback_conf, alternatives = _fallback_classified_type(
         document, types, text
     )
     from .intelligence_groq import complete_chat, groq_configured, parse_json_object
@@ -435,16 +502,13 @@ def classify_document(document, dataset, text=""):
             max_completion_tokens=800,
         )
         payload = parse_json_object(raw)
-        type_id = payload.get("document_type_id")
-        try:
-            type_id = int(type_id) if type_id not in (None, "", False) else 0
-        except (TypeError, ValueError):
-            type_id = 0
-        chosen = types.filtered(lambda item: item.id == type_id)[:1]
+        chosen = _type_from_llm_payload(types, payload)
         confidence = float(payload.get("confidence") or 0)
         confidence = max(0.0, min(confidence, 1.0))
         if chosen:
             return chosen[0], confidence or 0.7, alternatives
+        if fallback_type:
+            return fallback_type, max(fallback_conf, 0.45), alternatives
         return types.browse(), min(confidence or 0.25, 0.4), alternatives
     except Exception as error:
         _logger.warning("LLM classification failed: %s", error)

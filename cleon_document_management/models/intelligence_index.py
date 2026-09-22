@@ -319,19 +319,40 @@ class IntelligenceChunk(models.Model):
 
     @api.model
     def search_similar(self, question, limit=8, dataset_id=None):
-        domain = [
-            ("record_id.review_status", "in", ["approved", "overridden"]),
-        ]
+        domain = []
         if dataset_id:
             domain.append(("record_id.dataset_id", "=", int(dataset_id)))
+            domain.append(
+                ("record_id.review_status", "not in", ["rejected"])
+            )
+        else:
+            domain.append(
+                ("record_id.review_status", "in", ["approved", "overridden"])
+            )
         user = self.env.user
         is_admin = user.has_group("base.group_system") or user.has_group(
             "cleon_document_management.group_document_admin"
         )
-        if not is_admin:
+        dataset = (
+            self.env["doc.intelligence.dataset"].browse(int(dataset_id)).exists()
+            if dataset_id
+            else self.env["doc.intelligence.dataset"]
+        )
+        owns_dataset = bool(dataset and dataset.owner_id == user)
+        if not is_admin and not owns_dataset:
             employee = user.employee_id
             domain.append(("employee_id", "=", employee.id if employee else 0))
         allowed = self.search(domain)
+        if dataset_id and not allowed:
+            records = self.env["doc.intelligence.record"].search(
+                [
+                    ("dataset_id", "=", int(dataset_id)),
+                    ("review_status", "not in", ["rejected"]),
+                ]
+            )
+            for record in records.filtered(lambda item: not item.chunk_ids):
+                self.index_record(record)
+            allowed = self.search(domain)
         return hybrid_retrieve(allowed, question, limit=limit)
 
 
@@ -430,6 +451,12 @@ class IntelligenceLibraryChunk(models.Model):
     content = fields.Text(required=True)
     embedding_json = fields.Text()
     embedding_model = fields.Char()
+
+    def _register_hook(self):
+        super()._register_hook()
+        from .intelligence_tei import preload_local_models
+
+        preload_local_models(background=True)
 
     def init(self):
         cr = self.env.cr

@@ -1,5 +1,19 @@
 "use client";
 
+function formatDuration(seconds?: number) {
+  if (!seconds || seconds < 0) return "about 1 second";
+  if (seconds < 60) {
+    const value = Math.max(1, Math.round(seconds));
+    return `about ${value} ${value === 1 ? "second" : "seconds"}`;
+  }
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  if (minutes < 60) {
+    return `about ${minutes} min`;
+  }
+  const hours = Math.round(minutes / 60);
+  return `about ${hours} ${hours === 1 ? "hour" : "hours"}`;
+}
+
 export default function PreviewStep({
   name,
   source,
@@ -12,6 +26,8 @@ export default function PreviewStep({
   reviewBelow,
   documentCount,
   employeeCount,
+  pageCount,
+  estimatedSeconds,
   estimating,
   onName,
 }: {
@@ -26,6 +42,8 @@ export default function PreviewStep({
   reviewBelow: number;
   documentCount?: number;
   employeeCount?: number;
+  pageCount?: number;
+  estimatedSeconds?: number;
   estimating: boolean;
   onName: (value: string) => void;
 }) {
@@ -37,14 +55,15 @@ export default function PreviewStep({
         : source === "upload"
           ? "Upload documents"
           : source || "—";
+  const autoOnly = autoClassify && typeNames.length === 0;
 
   return (
     <div className="space-y-5">
       <div>
         <h2 className="text-lg font-bold text-slate-900">Preview and run</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Name the dataset, then save and run. Document counts are live. Page,
-          time, and cost estimates are not calculated yet.
+          Name the dataset, then save and run. Extraction continues in the
+          background on the dataset page.
         </p>
       </div>
       <label className="block">
@@ -87,12 +106,14 @@ export default function PreviewStep({
               : typeNames.join(", ") || "None"}
           </dd>
         </div>
-        <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Fields
-          </dt>
-          <dd className="mt-1 font-medium text-slate-800">{fieldCount}</dd>
-        </div>
+        {autoOnly ? null : (
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Fields
+            </dt>
+            <dd className="mt-1 font-medium text-slate-800">{fieldCount}</dd>
+          </div>
+        )}
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
             Processing
@@ -124,9 +145,15 @@ export default function PreviewStep({
         </div>
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Pages / time / cost
+            Pages / time
           </dt>
-          <dd className="mt-1 font-medium text-slate-800">Not estimated yet</dd>
+          <dd className="mt-1 font-medium text-slate-800">
+            {estimating
+              ? "Estimating…"
+              : `${(pageCount ?? 0).toLocaleString()} ${
+                  (pageCount ?? 0) === 1 ? "page" : "pages"
+                } · ${formatDuration(estimatedSeconds)}`}
+          </dd>
         </div>
       </dl>
     </div>

@@ -77,16 +77,26 @@ def _parse_date(value):
 
 
 def _permitted_records(env, dataset_id=None):
-    domain = [("review_status", "in", ["approved", "overridden"])]
     user = env.user
     is_admin = user.has_group("base.group_system") or user.has_group(
         "cleon_document_management.group_document_admin"
     )
-    if not is_admin:
+    dataset = (
+        env["doc.intelligence.dataset"].browse(int(dataset_id)).exists()
+        if dataset_id
+        else env["doc.intelligence.dataset"]
+    )
+    if dataset_id:
+        domain = [
+            ("dataset_id", "=", int(dataset_id)),
+            ("review_status", "not in", ["rejected"]),
+        ]
+    else:
+        domain = [("review_status", "in", ["approved", "overridden"])]
+    owns_dataset = bool(dataset and dataset.owner_id == user)
+    if not is_admin and not owns_dataset:
         employee = user.employee_id
         domain.append(("employee_id", "=", employee.id if employee else 0))
-    if dataset_id:
-        domain.append(("dataset_id", "=", int(dataset_id)))
     return env["doc.intelligence.record"].search(domain)
 
 
@@ -297,42 +307,64 @@ def start_answer(
                     "model": "structured-fields",
                 },
             }
-    library = env["doc.intelligence.library.chunk"].search_similar(question, limit=8)
     evidence = []
     if extra_context:
         evidence.append(extra_context)
-    for chunk in library:
+
+    dataset_chunks = env["doc.intelligence.chunk"].search_similar(
+        question,
+        limit=8 if dataset_id else 6,
+        dataset_id=dataset_id,
+    )
+    for chunk in dataset_chunks:
         document = chunk.document_id
+        status = chunk.record_id.review_status or ""
+        pending = status in ("needs_review", "extracted")
         evidence.append(
-            "YOUR FILE — %s%s\n%s"
+            "%s — Dataset: %s | Document: %s | Employee: %s | Page: %s\n%s"
             % (
+                "DATASET EXCERPT (pending review)" if pending else "DATASET EXCERPT",
+                chunk.record_id.dataset_id.name or "selected dataset",
                 document.name,
-                (" · %s" % document.employee_id.name) if document.employee_id else "",
+                chunk.employee_id.name or "n/a",
+                chunk.page,
                 chunk.content,
             )
         )
-    if dataset_id:
-        chunks = env["doc.intelligence.chunk"].search_similar(
-            question, dataset_id=dataset_id
+
+    # A selected dataset is the working set. Do not let personal-file RAG
+    # crowd it out of the prompt. Only mix library files when no dataset is
+    # focused, or the dataset had no matching excerpts.
+    use_library = not dataset_id or not dataset_chunks
+    if use_library:
+        library = env["doc.intelligence.library.chunk"].search_similar(
+            question, limit=8 if not dataset_id else 4
         )
-        for chunk in chunks[:4]:
+        for chunk in library:
             document = chunk.document_id
             evidence.append(
-                "DATASET EXCERPT — Document: %s | Employee: %s | Page: %s\n%s"
+                "YOUR FILE — %s%s\n%s"
                 % (
                     document.name,
-                    chunk.employee_id.name or "n/a",
-                    chunk.page,
+                    (" · %s" % document.employee_id.name) if document.employee_id else "",
                     chunk.content,
                 )
             )
+    if dataset_id and not dataset_chunks:
+        evidence.insert(
+            1 if extra_context else 0,
+            "SELECTED DATASET NOTE: no matching extracted excerpts were found. "
+            "Approve or finish extraction in Validate if this dataset should answer "
+            "the question. Live files below are fallback only.",
+        )
     if not evidence:
         return {
             "mode": "ready",
             "result": {
                 "answer": (
-                    "There is not enough indexed text in your files or shared files "
-                    "to answer. If a file was just added, wait a minute for it to be indexed."
+                    "There is not enough indexed text in the selected dataset or your "
+                    "files to answer. Approve extracted records in Validate, or wait "
+                    "for a newly added file to finish indexing."
                 ),
                 "insufficient_evidence": True,
                 "citations": [],
@@ -346,7 +378,7 @@ def start_answer(
             "mode": "ready",
             "result": {
                 "answer": (
-                    "Matching approved excerpts were found, but GROQ_API_KEY is not "
+                    "Matching excerpts were found, but GROQ_API_KEY is not "
                     "set so the language model cannot compose an answer."
                 ),
                 "insufficient_evidence": True,
@@ -356,10 +388,15 @@ def start_answer(
                 "model": LLM_MODEL,
             },
         }
-    context = "\n\n".join(evidence[:8])
+    context = "\n\n".join(evidence[:12])
     return {
         "mode": "stream",
-        "messages": _answer_messages(question, context, history),
+        "messages": _answer_messages(
+            question,
+            context,
+            history,
+            dataset_focused=bool(dataset_id),
+        ),
         "context": context,
         "result_meta": {
             "insufficient_evidence": False,

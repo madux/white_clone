@@ -164,6 +164,15 @@ class Document(models.Model):
 
     extracted_text = fields.Text(readonly=True)
     ask_index_stamp = fields.Char(index=True)
+    ask_index_state = fields.Selection(
+        [
+            ("waiting", "Waiting"),
+            ("indexing", "Indexing"),
+            ("indexed", "Indexed"),
+            ("skipped", "No text"),
+        ],
+        index=True,
+    )
     ask_chunk_ids = fields.One2many(
         "doc.intelligence.library.chunk",
         "document_id",
@@ -306,10 +315,14 @@ class Document(models.Model):
             dead._drop_ask_index()
             live = (self - dead).filtered(lambda document: document._ask_index_eligible())
             if live:
-                live.with_context(ask_indexing=True).write({"ask_index_stamp": False})
+                live.with_context(ask_indexing=True).write(
+                    {"ask_index_stamp": False, "ask_index_state": "waiting"}
+                )
         if {"attachment_id", "extracted_text", "checksum"} & set(vals):
             live = self.filtered(lambda document: document._ask_index_eligible())
-            live.with_context(ask_indexing=True).write({"ask_index_stamp": False})
+            live.with_context(ask_indexing=True).write(
+                {"ask_index_stamp": False, "ask_index_state": "waiting"}
+            )
         return result
 
     def unlink(self):
@@ -487,7 +500,22 @@ class Document(models.Model):
                     partner_ids=admins.mapped("partner_id").ids,
                     subtype_xmlid="mail.mt_note",
                 )
+        self._schedule_ask_index(documents)
         return documents
+
+    def _schedule_ask_index(self, documents):
+        from .intelligence_async import run_after_commit
+
+        eligible = documents.filtered(lambda document: document._ask_index_eligible())
+        if not eligible:
+            return
+        eligible.with_context(ask_indexing=True).write({"ask_index_state": "waiting"})
+        ids = eligible.ids
+
+        def _index(env):
+            env["doc.document"].browse(ids).exists()._index_for_ask()
+
+        run_after_commit(self.env, _index, name="cleon-ask-index")
 
     def _apply_upload_approval_workflow(self):
         self.ensure_one()
@@ -785,10 +813,12 @@ class Document(models.Model):
         chunks = self.sudo().mapped("ask_chunk_ids")
         if chunks:
             chunks.unlink()
-        stamped = self.filtered("ask_index_stamp")
-        if stamped:
-            stamped.sudo().with_context(ask_indexing=True).write(
-                {"ask_index_stamp": False}
+        to_clear = self.filtered(
+            lambda document: document.ask_index_stamp or document.ask_index_state
+        )
+        if to_clear:
+            to_clear.sudo().with_context(ask_indexing=True).write(
+                {"ask_index_stamp": False, "ask_index_state": False}
             )
 
     def _index_for_ask(self):
@@ -800,6 +830,21 @@ class Document(models.Model):
             if not document._ask_index_eligible():
                 document._drop_ask_index()
                 continue
+            current_stamp = document._ask_index_stamp_value()
+            if document.ask_index_stamp == current_stamp:
+                if document.ask_chunk_ids:
+                    if document.ask_index_state != "indexed":
+                        document.with_context(ask_indexing=True).write(
+                            {"ask_index_state": "indexed"}
+                        )
+                elif document.ask_index_state != "skipped":
+                    document.with_context(ask_indexing=True).write(
+                        {"ask_index_state": "skipped"}
+                    )
+                continue
+            document.with_context(ask_indexing=True).write(
+                {"ask_index_state": "indexing"}
+            )
             text = (document.extracted_text or "").strip()
             if not text and document.attachment_id:
                 try:
@@ -820,16 +865,93 @@ class Document(models.Model):
                     )
             stamp = document._ask_index_stamp_value()
             if document.ask_index_stamp == stamp and document.ask_chunk_ids:
-                continue
-            if not (document.extracted_text or "").strip():
-                document._drop_ask_index()
                 document.with_context(ask_indexing=True).write(
-                    {"ask_index_stamp": stamp}
+                    {"ask_index_state": "indexed"}
                 )
                 continue
+            if not (document.extracted_text or "").strip():
+                _logger.warning(
+                    "Ask index skipped for document %s (%s): no text could be read.",
+                    document.id,
+                    document.name,
+                )
+                document._drop_ask_index()
+                document.with_context(ask_indexing=True).write(
+                    {"ask_index_stamp": stamp, "ask_index_state": "skipped"}
+                )
+                continue
+            _logger.info("Indexing document %s (%s) for Ask AI", document.id, document.name)
             document.env["doc.intelligence.library.chunk"].index_document(document)
-            document.with_context(ask_indexing=True).write({"ask_index_stamp": stamp})
+            document.with_context(ask_indexing=True).write(
+                {"ask_index_stamp": stamp, "ask_index_state": "indexed"}
+            )
         return True
+
+    def _ask_index_resolved_state(self, chunk_count):
+        self.ensure_one()
+        if self.ask_index_state:
+            return self.ask_index_state
+        if chunk_count:
+            return "indexed"
+        if self.ask_index_stamp:
+            return "skipped"
+        return "waiting"
+
+    @api.model
+    def ask_index_status(self, limit=300, search=""):
+        limit = min(max(int(limit or 300), 1), 400)
+        term = (search or "").strip().lower()
+        docs = self._ask_library_documents()
+        chunk_model = self.env["doc.intelligence.library.chunk"].sudo()
+        groups = chunk_model.read_group(
+            [("document_id", "in", docs.ids or [0])],
+            ["document_id"],
+            ["document_id"],
+        )
+        chunk_counts = {
+            group["document_id"][0]: group["document_id_count"]
+            for group in groups
+            if group.get("document_id")
+        }
+        counts = {
+            "indexed": 0,
+            "indexing": 0,
+            "waiting": 0,
+            "skipped": 0,
+        }
+        files = []
+        for document in docs:
+            chunk_count = chunk_counts.get(document.id, 0)
+            state = document._ask_index_resolved_state(chunk_count)
+            counts[state] = counts.get(state, 0) + 1
+            name = document.name or "Untitled"
+            folder = document.folder_id.folder_name or ""
+            if term and term not in name.lower() and term not in folder.lower():
+                continue
+            files.append(
+                {
+                    "id": document.id,
+                    "name": name,
+                    "folder": folder,
+                    "mimetype": document.mime_type or "",
+                    "chunk_count": chunk_count,
+                    "state": state,
+                    "write_date": str(document.write_date or ""),
+                }
+            )
+        order = {"indexing": 0, "waiting": 1, "indexed": 2, "skipped": 3}
+        files.sort(key=lambda item: item.get("write_date") or "", reverse=True)
+        files.sort(key=lambda item: order.get(item["state"], 9))
+        truncated = len(files) > limit
+        return {
+            "total_count": len(docs),
+            "indexed_count": counts["indexed"],
+            "indexing_count": counts["indexing"],
+            "waiting_count": counts["waiting"],
+            "skipped_count": counts["skipped"],
+            "truncated": truncated,
+            "files": files[:limit],
+        }
 
     @api.model
     def _ask_library_documents(self):
@@ -910,6 +1032,7 @@ class Document(models.Model):
 
     @api.model
     def _cron_index_ask_library(self):
+        _logger.info("Ask library index cron started")
         live = [
             ("active", "=", True),
             ("deleted_at", "=", False),

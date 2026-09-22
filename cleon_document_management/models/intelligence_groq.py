@@ -150,15 +150,30 @@ def transcribe_images(images, env=None):
     return "\n".join(parts).strip()
 
 
-def _answer_messages(question, context, history=None):
+def _answer_messages(question, context, history=None, dataset_focused=False):
+    if dataset_focused:
+        source_rule = (
+            "DATASET EXCERPT items are extracted records from the selected Intelligence "
+            "dataset. They are the primary source for this answer. Prefer them over "
+            "YOUR FILE excerpts unless the user clearly asks about a live file. "
+            "If a DATASET EXCERPT is marked pending review, say the value is extracted "
+            "but not yet approved. "
+        )
+    else:
+        source_rule = (
+            "DATASET EXCERPT items are approved extracted records. Use them for "
+            "structured HR facts (employees, dates, types, fields). "
+            "YOUR FILE excerpts are this user's own or shared documents. "
+        )
     system = (
         "You are Cleon AI, the brain and AI agent of the Cleon HR app. "
         "You are not ChatGPT, Claude, Gemini, or any other third-party assistant. "
         "Speak as Cleon AI: helpful, clear, and professional for HR and people operations. "
         "Answer using the supplied evidence and the conversation so far. "
-        "If YOUR FILE excerpts are present, they are this user's own or shared documents. "
-        "If PRIMARY ATTACHED DOCUMENT excerpts are present, treat them as extra files "
-        "the user attached to this chat. Use DATASET EXCERPT items only as extra context. "
+        + source_rule
+        + "If PRIMARY ATTACHED DOCUMENT excerpts are present, treat them as extra files "
+        "the user attached to this chat. Never ignore DATASET EXCERPT items when they "
+        "are present. "
         "Use markdown when it helps: headings (##), tables, **bold**, lists, "
         "and `code`. Keep tables compact: one markdown row per table row, every "
         "cell on that same line. If a table has a heading column and a details "

@@ -172,6 +172,52 @@ class DocumentIntelligenceController(http.Controller):
             document_type.default_profile_id = profile.id
         return profile
 
+    def _documents_using_types(self, records):
+        return (
+            request.env["doc.document"]
+            .sudo()
+            .with_context(active_test=False)
+            .search([("document_type_id", "in", records.ids)])
+        )
+
+    def _type_delete_blocked_message(self, records, files=None, raw=""):
+        names = records.mapped("name")
+        label = names[0] if len(names) == 1 else ", ".join(names)
+        if files is None:
+            files = self._documents_using_types(records)
+        if files:
+            if len(records) == 1:
+                count = len(files)
+                noun = "file" if count == 1 else "files"
+                return (
+                    "You can't delete %s because %s %s still assigned to it. "
+                    "Change those files to another type, or deactivate %s instead."
+                    % (label, count, noun, label)
+                )
+            grouped = {}
+            for document in files:
+                grouped.setdefault(document.document_type_id.name, 0)
+                grouped[document.document_type_id.name] += 1
+            details = ", ".join(
+                "%s (%s)" % (name, grouped[name]) for name in grouped
+            )
+            return (
+                "You can't delete these types because files are still assigned to them: "
+                "%s. Change those files to another type, or deactivate the types instead."
+                % details
+            )
+        text = (raw or "").lower()
+        if "doc_document" in text or "foreign key" in text or "restrict" in text:
+            return (
+                "You can't delete %s while files are still assigned to it. "
+                "Change those files to another type, or deactivate it instead."
+                % label
+            )
+        return (raw or "").strip() or (
+            "You can't delete %s while it is still in use. Deactivate it instead."
+            % label
+        )
+
     @http.route(
         "/api/document-intelligence/document-types",
         type="json",
@@ -292,24 +338,37 @@ class DocumentIntelligenceController(http.Controller):
         )
         if not records:
             return {"success": False, "message": "Document type not found."}
-        used = request.env["doc.document"].search(
-            [("document_type_id", "in", records.ids)],
-            limit=1,
-        )
-        if used:
+        files = self._documents_using_types(records)
+        if files:
             return {
                 "success": False,
-                "message": "A document still uses %s. Deactivate it instead of deleting."
-                % (used.document_type_id.name,),
+                "message": self._type_delete_blocked_message(records, files=files),
             }
-        profiles = (
-            request.env["doc.intelligence.profile"]
-            .with_context(active_test=False)
-            .search([("document_type_id", "in", records.ids)])
-        )
-        profiles.with_context(allow_profile_unlink=True).unlink()
-        names = ", ".join(records.mapped("name"))
-        records.unlink()
+        try:
+            profiles = (
+                request.env["doc.intelligence.profile"]
+                .with_context(active_test=False)
+                .search([("document_type_id", "in", records.ids)])
+            )
+            profiles.with_context(allow_profile_unlink=True).unlink()
+            names = ", ".join(records.mapped("name"))
+            records.unlink()
+        except (AccessError, UserError, ValidationError) as error:
+            request.env.cr.rollback()
+            return {
+                "success": False,
+                "message": self._type_delete_blocked_message(
+                    records, raw=str(error)
+                ),
+            }
+        except Exception as error:
+            request.env.cr.rollback()
+            return {
+                "success": False,
+                "message": self._type_delete_blocked_message(
+                    records, raw=str(error)
+                ),
+            }
         request.env["doc.intelligence.audit.event"].log_event(
             "rule",
             "document_type_deleted",
@@ -717,13 +776,12 @@ class DocumentIntelligenceController(http.Controller):
             dataset = request.env["doc.intelligence.dataset"].save_draft(
                 values, kwargs.get("id")
             )
-            job = dataset.action_run()
+            job = dataset.with_context(intelligence_queue_only=True).action_run()
             payload = self._dataset_data(dataset)
             payload["latest_job"] = self._job_data(job)
             payload["run_queued"] = True
             payload["message"] = (
-                "Extraction finished for the current batch. Open Validate to "
-                "review records that need attention."
+                "Extraction started. Follow progress on the dataset page."
             )
             return {"success": True, "data": payload}
         except (AccessError, UserError, ValidationError) as error:
@@ -1095,7 +1153,7 @@ class DocumentIntelligenceController(http.Controller):
         if not self._can_control_job(job):
             return self._deny("You are not allowed to retry this job.")
         try:
-            job.action_retry()
+            job.with_context(intelligence_queue_only=True).action_retry()
         except (AccessError, UserError, ValidationError) as error:
             return {"success": False, "message": str(error)}
         return {"success": True, "data": self._job_data(job)}
@@ -1206,16 +1264,39 @@ class DocumentIntelligenceController(http.Controller):
             domain, limit=50, order="write_date desc, id desc"
         )
         docs = request.env["doc.document"]._ask_library_documents()
-        indexed = request.env["doc.intelligence.library.chunk"].sudo().search_count(
-            [("document_id", "in", docs.ids or [0])]
+        indexed_groups = (
+            request.env["doc.intelligence.library.chunk"]
+            .sudo()
+            .read_group(
+                [("document_id", "in", docs.ids or [0])],
+                ["document_id"],
+                ["document_id"],
+            )
         )
         return {
             "success": True,
             "data": {
-                "indexed_count": indexed,
+                "indexed_count": len(indexed_groups),
                 "conversations": [item.to_api() for item in records],
             },
         }
+
+    @http.route(
+        "/api/document-intelligence/ask/index-status",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def ask_index_status(self, **kwargs):
+        try:
+            data = request.env["doc.document"].ask_index_status(
+                limit=kwargs.get("limit") or 300,
+                search=kwargs.get("search") or "",
+            )
+        except Exception as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": data}
 
     @http.route(
         "/api/document-intelligence/conversations/create",
@@ -1300,8 +1381,8 @@ class DocumentIntelligenceController(http.Controller):
             conversation = request.env["doc.intelligence.conversation"].create(
                 {"name": "New chat"}
             )
-        if kwargs.get("dataset_id"):
-            conversation.dataset_id = int(kwargs["dataset_id"])
+        if kwargs.get("dataset_id") or "dataset_id" in kwargs:
+            conversation.dataset_id = int(kwargs.get("dataset_id") or 0) or False
         try:
             payload = conversation.action_ask(kwargs.get("question") or "")
         except (AccessError, UserError, ValidationError) as error:
@@ -1359,8 +1440,8 @@ class DocumentIntelligenceController(http.Controller):
                         conversation = env["doc.intelligence.conversation"].create(
                             {"name": "New chat"}
                         )
-                    if dataset_id:
-                        conversation.dataset_id = dataset_id
+                    if "dataset_id" in body:
+                        conversation.dataset_id = dataset_id or False
                     for event in conversation.iter_ask_events(
                         question, regenerate=bool(body.get("regenerate"))
                     ):

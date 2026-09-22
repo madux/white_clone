@@ -186,6 +186,7 @@ export default function DatasetWizardScreen() {
     document_type_ids: [],
     auto_classify: true,
     upload_count: uploads.length,
+    processing_mode: draft.processingMode,
   });
 
   const scopedTypeIds = estimate.data?.document_type_ids;
@@ -342,9 +343,7 @@ export default function DatasetWizardScreen() {
     if (stepError) return;
     setBanner(null);
     try {
-      const saved = await runDataset.mutateAsync(toPayload(true));
-      setDatasetPk(saved.id);
-      setBanner(saved.message || "Dataset queued.");
+      await runDataset.mutateAsync(toPayload(true));
       router.push("/pages/document-intelligence/datasets");
     } catch (error) {
       setBanner(error instanceof Error ? error.message : "Run was rejected.");
@@ -543,6 +542,8 @@ export default function DatasetWizardScreen() {
             reviewBelow={thresholds.reviewBelow}
             documentCount={estimate.data?.document_count}
             employeeCount={estimate.data?.employee_count}
+            pageCount={estimate.data?.page_count}
+            estimatedSeconds={estimate.data?.estimated_seconds}
             estimating={estimate.isFetching && !estimate.data}
             onName={(value) => setDraft({ ...draft, name: value })}
           />
