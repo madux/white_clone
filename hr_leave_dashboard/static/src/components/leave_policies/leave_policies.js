@@ -3,12 +3,13 @@
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { SettingsPanel, TagsPicker } from "../policy_controls";
+import { ListPager } from "../list_pager/list_pager";
 import { newLine, newForm, hasAdvancedOverrides } from "./leave_policy_state";
 
 export { newLine, newForm, hasAdvancedOverrides };
 
 export class LeavePoliciesPage extends Component {
-    static components = { SettingsPanel, TagsPicker };
+    static components = { SettingsPanel, TagsPicker, ListPager };
     static template = "hr_leave_dashboard.LeavePoliciesPage";
     static props = { embedded: { type: Boolean, optional: true } };
 

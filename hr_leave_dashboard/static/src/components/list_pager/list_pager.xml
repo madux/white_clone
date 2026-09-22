@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.ListPager" owl="1">
+    <footer class="o_leave_list_pager">
+      <div class="o_leave_list_pager_summary">
+        <span>Showing <t t-esc="start"/>–<t t-esc="end"/> of <t t-esc="props.total"/> <t t-esc="props.label"/></span>
+        <label>
+          <span class="visually-hidden">Rows per page</span>
+          <select t-att-value="props.pageSize" t-on-change="props.onPageSizeChange" aria-label="Rows per page">
+            <option t-foreach="sizes" t-as="size" t-key="size" t-att-value="size"><t t-esc="size"/> per page</option>
+          </select>
+        </label>
+      </div>
+      <nav t-att-aria-label="props.label + ' pages'">
+        <button type="button" t-on-click="() => props.onPageChange(currentPage - 1)" t-att-disabled="currentPage === 1" aria-label="Previous page" title="Previous page"><i class="fa fa-chevron-left"/></button>
+        <button type="button" t-foreach="pageNumbers" t-as="page" t-key="page" t-att-class="currentPage === page ? 'active' : ''" t-att-aria-current="currentPage === page ? 'page' : undefined" t-on-click="() => props.onPageChange(page)" t-esc="page"/>
+        <button type="button" t-on-click="() => props.onPageChange(currentPage + 1)" t-att-disabled="currentPage === pageCount" aria-label="Next page" title="Next page"><i class="fa fa-chevron-right"/></button>
+      </nav>
+    </footer>
+  </t>
+</templates>

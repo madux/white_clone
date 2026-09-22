@@ -170,47 +170,6 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.o_lp_pager {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 18px 0;
-    color: #64748b;
-    font-size: 12px;
-}
-.o_lp_pager_summary { display: flex; align-items: center; gap: 12px; }
-.o_lp_pager_summary label { margin: 0; }
-.o_lp_pager_summary select {
-    height: 32px;
-    padding: 0 8px;
-    border: 1px solid #dce2ec;
-    border-radius: 6px;
-    background: #fff;
-    color: #526078;
-    font: inherit;
-    cursor: pointer;
-}
-.o_lp_pager_summary select:focus-visible { outline: 2px solid #e91e78; outline-offset: 2px; }
-@media (max-width: 600px) {
-    .o_lp_pager { flex-wrap: wrap; }
-    .o_lp_pager_summary { flex-wrap: wrap; }
-}
-.o_lp_pager nav { display: flex; gap: 6px; }
-.o_lp_pager button {
-    min-width: 32px;
-    height: 32px;
-    padding: 0 9px;
-    border: 1px solid #dce2ec;
-    border-radius: 6px;
-    background: #fff;
-    color: #526078;
-    cursor: pointer;
-}
-.o_lp_pager button.active { color: #fff; background: #e91e78; border-color: #e91e78; }
-.o_lp_pager button:disabled { opacity: .45; cursor: default; }
-.o_lp_pager button:focus-visible { outline: 2px solid #e91e78; outline-offset: 2px; }
-
 .o_lp_table {
     width: 100%;
     border-collapse: separate;
@@ -258,10 +217,9 @@
 .o_lp_policy_name:focus-visible { outline: 2px solid #e91e78; outline-offset: 3px; }
 
 .o_lp_policy_code {
-    display: block;
-    margin-top: 3px;
+    display: inline-block;
     color: #64748b;
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: .01em;
 }
 
