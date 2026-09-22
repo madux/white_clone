@@ -1,23 +1,73 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onMounted, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { SettingsPanel, TagsPicker } from "../policy_controls";
+import { ListPager } from "../list_pager/list_pager";
 
 const holidayForm = () => ({ id: false, name: "", type: "public", date_from: "", date_to: "", applies_to: "all", location_ids: [], repeats: "once", country_id: false, state_id: false, country_region: "", description: "", active: true });
 const blackoutForm = () => ({ id: false, name: "", date_from: "", date_to: "", applies_to: "all", department_ids: [], policy_ids: [], group_ids: [], reason: "", state: "draft", exception_mode: "hard_block", exception_chain_id: false });
 
 class ResourcePage extends Component {
     setup() {
-        this.orm = useService("orm"); this.notification = useService("notification");
-        this.state = useState({ loading: true, rows: [], options: [], catalog: {}, form: null, search: "", actionMenu: false, canExport: false });
+        this.orm = useService("orm");
+        this.notification = useService("notification");
+        this.state = useState({
+            loading: true,
+            rows: [],
+            options: [],
+            catalog: {},
+            form: null,
+            search: "",
+            actionMenu: false,
+            canExport: false,
+            page: 1,
+            pageSize: 10,
+        });
+        this.closeActionMenu = () => {
+            if (this.state.actionMenu) this.state.actionMenu = false;
+        };
+        onMounted(() => document.addEventListener("click", this.closeActionMenu));
+        onWillUnmount(() => document.removeEventListener("click", this.closeActionMenu));
         onWillStart(async () => {
             const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
             this.state.canExport = Boolean(access.can_export);
             await this.load();
         });
     }
-    get visibleRows() { const q = this.state.search.toLowerCase(); return this.state.rows.filter(row => !q || `${row.name} ${row.reason || row.description || ""}`.toLowerCase().includes(q)); }
+
+    get visibleRows() {
+        const q = this.state.search.toLowerCase();
+        return this.state.rows.filter(row => !q || `${row.name} ${row.reason || row.description || ""}`.toLowerCase().includes(q));
+    }
+
+    get pageCount() {
+        return Math.max(1, Math.ceil(this.visibleRows.length / this.state.pageSize));
+    }
+
+    get currentPage() {
+        return Math.min(this.state.page, this.pageCount);
+    }
+
+    get pagedRows() {
+        const start = (this.currentPage - 1) * this.state.pageSize;
+        return this.visibleRows.slice(start, start + this.state.pageSize);
+    }
+
+    goToPage(page) {
+        if (page < 1 || page > this.pageCount) return;
+        this.state.page = page;
+        this.state.actionMenu = false;
+    }
+
+    changePageSize(event) {
+        const size = Number(event.target.value);
+        if (![10, 25, 50, 100].includes(size)) return;
+        this.state.pageSize = size;
+        this.state.page = 1;
+        this.state.actionMenu = false;
+    }
+
     get resourceLabel() { return this.model === "hr.leave.official.holiday" ? "Holiday" : "Blackout Window"; }
     get resourceLabelPlural() { return this.model === "hr.leave.official.holiday" ? "Holidays" : "Blackout Windows"; }
     actionLabel(action) { return `${action} ${this.resourceLabel}`; }
@@ -39,7 +89,7 @@ class ResourcePage extends Component {
 export class OfficialHolidaysPage extends ResourcePage {
     static template = "hr_leave_dashboard.OfficialHolidaysPage";
     static props = ["*"];
-    static components = { SettingsPanel, TagsPicker };
+    static components = { SettingsPanel, TagsPicker, ListPager };
     model = "hr.leave.official.holiday"; deleteMethod = "delete_holiday"; duplicateMethod = "duplicate_holiday";
     async load() { this.state.loading = true; const data = await this.orm.call(this.model, "get_holiday_page_data", []); this.state.rows = data.rows; this.state.options = data.locations; this.state.catalog = data; this.state.loading = false; }
     add() { this.state.form = holidayForm(); }
@@ -66,7 +116,7 @@ export class OfficialHolidaysPage extends ResourcePage {
 export class BlackoutWindowsPage extends ResourcePage {
     static template = "hr_leave_dashboard.BlackoutWindowsPage";
     static props = ["*"];
-    static components = { SettingsPanel, TagsPicker };
+    static components = { SettingsPanel, TagsPicker, ListPager };
     model = "hr.leave.blackout.period"; deleteMethod = "delete_blackout"; duplicateMethod = "duplicate_blackout";
     async load() { this.state.loading = true; const data = await this.orm.call(this.model, "get_blackout_page_data", []); this.state.rows = data.rows; this.state.options = data.departments; this.state.catalog = data; this.state.loading = false; }
     add() { this.state.form = blackoutForm(); }

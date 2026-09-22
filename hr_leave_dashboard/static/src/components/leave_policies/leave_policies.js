@@ -26,7 +26,7 @@ export class LeavePoliciesPage extends Component {
             listState: "current",
             statusFilter: "all",
             page: 1,
-            pageSize: 6,
+            pageSize: 10,
             menuId: false,
             assigneePopoverId: false,
             assigneeRows: [],
@@ -112,7 +112,7 @@ export class LeavePoliciesPage extends Component {
 
     changePageSize(event) {
         const size = Number(event.target.value);
-        if (![6, 10, 25, 50].includes(size)) return;
+        if (![6, 10, 25, 50, 100].includes(size)) return;
         this.state.pageSize = size;
         this.state.page = 1;
         this.state.menuId = false;

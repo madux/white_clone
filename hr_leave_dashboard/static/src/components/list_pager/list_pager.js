@@ -15,7 +15,7 @@ export class ListPager extends Component {
         pageSizes: { type: Array, optional: true },
     };
 
-    get sizes() { return this.props.pageSizes || [6, 10, 25, 50]; }
+    get sizes() { return this.props.pageSizes || [10, 25, 50, 100]; }
     get pageCount() { return Math.max(1, Math.ceil(this.props.total / this.props.pageSize)); }
     get currentPage() { return Math.min(this.props.page, this.pageCount); }
     get start() { return this.props.total ? (this.currentPage - 1) * this.props.pageSize + 1 : 0; }
