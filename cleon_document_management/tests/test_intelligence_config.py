@@ -1,6 +1,7 @@
 from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase
+import json
 
 
 class TestIntelligenceConfig(TransactionCase):
@@ -43,9 +44,47 @@ class TestIntelligenceConfig(TransactionCase):
         self.assertEqual(profile.current_version_id, version)
         self.assertEqual(version.field_ids.mapped("key"), ["expiry_date"])
 
+    def test_archive_profile_does_not_archive_document_type(self):
+        document_type = self.env["doc.document.type"].create(
+            {"name": "Archive Type", "category": "employment"}
+        )
+        profile = self.env["doc.intelligence.profile"].create(
+            {
+                "name": "Archive Type Profile",
+                "document_type_id": document_type.id,
+            }
+        )
+        document_type.default_profile_id = profile.id
+        profile.action_archive()
+        self.assertFalse(profile.active)
+        self.assertTrue(document_type.exists())
+        self.assertTrue(document_type.active)
+        self.assertFalse(document_type.default_profile_id)
+        profile.write({"active": True})
+        self.assertEqual(document_type.default_profile_id, profile)
+
     def test_dataset_run_requires_types_and_fields(self):
         document_type = self.env["doc.document.type"].create(
             {"name": "Run Type", "category": "employment"}
+        )
+        folder = self.env["doc.folder"].create(
+            {"folder_name": "Run Org", "folder_type": "organizational"}
+        )
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": "run.txt",
+                "type": "binary",
+                "mimetype": "text/plain",
+                "raw": b"Contract",
+            }
+        )
+        document = self.env["doc.document"].create(
+            {
+                "name": "Run contract",
+                "folder_id": folder.id,
+                "document_type_id": document_type.id,
+                "attachment_id": attachment.id,
+            }
         )
         dataset = self.env["doc.intelligence.dataset"].create(
             {
@@ -59,6 +98,8 @@ class TestIntelligenceConfig(TransactionCase):
             {
                 "document_type_ids": [(6, 0, [document_type.id])],
                 "field_keys_json": '["employee_name"]',
+                "scope_kind": "selected_files",
+                "scope_ids_json": json.dumps([document.id]),
             }
         )
         job = dataset.action_run()
@@ -66,6 +107,215 @@ class TestIntelligenceConfig(TransactionCase):
         dataset.state = "queued"
         second = dataset.action_run()
         self.assertEqual(job, second)
+        dataset.action_delete()
+        self.assertFalse(dataset.exists())
+        self.assertFalse(job.exists())
+
+    def test_wizard_domain_and_estimate(self):
+        Dataset = self.env["doc.intelligence.dataset"]
+        employee_domain = Dataset._domain_from_values("employee", "company", [])
+        self.assertIn(("folder_id.folder_type", "=", "employee"), employee_domain)
+        scoped = Dataset._domain_from_values("employee", "one_employee", [99])
+        self.assertIn(("employee_id", "in", [99]), scoped)
+        self.assertEqual(Dataset._domain_from_values("upload"), [("id", "=", 0)])
+        empty_org = Dataset._domain_from_values("organizational", "selected_files", [])
+        self.assertIn(("id", "=", 0), empty_org)
+        scoped_org = Dataset._domain_from_values("organizational", "selected_files", [7])
+        self.assertIn(("id", "in", [7]), scoped_org)
+        estimate = Dataset.wizard_estimate(
+            {
+                "source": "organizational",
+                "scope_kind": "selected_files",
+                "scope_ids": [],
+            }
+        )
+        self.assertEqual(estimate["document_count"], 0)
+        self.assertEqual(estimate["document_type_ids"], [])
+        self.assertEqual(estimate["untyped_count"], 0)
+        options = Dataset.wizard_options()
+        self.assertIn("employee", options["sources"])
+        self.assertIn("organizational", options["sources"])
+        self.assertIn("employees", options)
+        self.assertIn("departments", options)
+        self.assertIn("business_units", options)
+
+    def test_wizard_estimate_types_match_selected_files(self):
+        folder = self.env["doc.folder"].create(
+            {"folder_name": "Org Types", "folder_type": "organizational"}
+        )
+        cv = self.env["doc.document.type"].create(
+            {"name": "CV Scope", "category": "identity"}
+        )
+        other = self.env["doc.document.type"].create(
+            {"name": "Other Scope Type", "category": "other"}
+        )
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": "cv.txt",
+                "type": "binary",
+                "mimetype": "text/plain",
+                "raw": b"Curriculum Vitae",
+            }
+        )
+        document = self.env["doc.document"].create(
+            {
+                "name": "Jane CV",
+                "folder_id": folder.id,
+                "document_type_id": cv.id,
+                "attachment_id": attachment.id,
+            }
+        )
+        estimate = self.env["doc.intelligence.dataset"].wizard_estimate(
+            {
+                "source": "organizational",
+                "scope_kind": "selected_files",
+                "scope_ids": [document.id],
+            }
+        )
+        self.assertEqual(estimate["document_count"], 1)
+        self.assertEqual(estimate["document_type_ids"], [cv.id])
+        self.assertNotIn(other.id, estimate["document_type_ids"])
+        self.assertEqual(estimate["page_count"], 1)
+        self.assertGreater(estimate["estimated_seconds"], 0)
+
+    def test_auto_classify_keeps_library_type_without_false_issue(self):
+        from unittest.mock import patch
+        from odoo.addons.cleon_document_management.models.intelligence_pipeline import (
+            _type_from_llm_payload,
+            classify_document,
+        )
+
+        folder = self.env["doc.folder"].create(
+            {"folder_name": "Org Classify", "folder_type": "organizational"}
+        )
+        document_type = self.env["doc.document.type"].create(
+            {
+                "name": "CV Classify",
+                "category": "identity",
+                "intelligence_scope": "organization",
+            }
+        )
+        profile = self.env["doc.intelligence.profile"].create(
+            {
+                "name": "CV Classify Profile",
+                "document_type_id": document_type.id,
+            }
+        )
+        self.env["doc.intelligence.field"].create(
+            {
+                "version_id": profile.current_version_id.id,
+                "name": "Employee name",
+                "key": "employee_name",
+                "field_type": "text",
+                "required": True,
+            }
+        )
+        document_type.default_profile_id = profile.id
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": "scan.txt",
+                "type": "binary",
+                "mimetype": "text/plain",
+                "raw": b"Curriculum Vitae\nEmployee name: Jane Doe\n",
+            }
+        )
+        document = self.env["doc.document"].create(
+            {
+                "name": "scan.txt",
+                "folder_id": folder.id,
+                "document_type_id": document_type.id,
+                "attachment_id": attachment.id,
+            }
+        )
+        matched = _type_from_llm_payload(
+            document_type,
+            {"document_type_id": document_type.name, "confidence": 0.9},
+        )
+        self.assertEqual(matched, document_type)
+        dataset = self.env["doc.intelligence.dataset"].create(
+            {
+                "name": "Auto classify CV",
+                "source": "organizational",
+                "scope_kind": "selected_files",
+                "scope_ids_json": json.dumps([document.id]),
+                "auto_classify": True,
+                "field_keys_json": '["employee_name"]',
+            }
+        )
+        groq_path = (
+            "odoo.addons.cleon_document_management.models.intelligence_groq."
+            "groq_configured"
+        )
+        with patch(groq_path, return_value=False):
+            classified, confidence, _alts = classify_document(
+                document, dataset, "Jane Doe"
+            )
+            self.assertEqual(classified, document_type)
+            self.assertGreaterEqual(confidence, 0.4)
+            job = dataset.action_run()
+        record = job.record_ids
+        self.assertEqual(record.document_type_id, document_type)
+        self.assertFalse(
+            record.issue_ids.filtered(
+                lambda issue: "could not match this file" in (issue.message or "")
+                or "could not be classified" in (issue.message or "")
+            )
+        )
+
+    def test_upload_files_are_source_documents(self):
+        document_type = self.env["doc.document.type"].create(
+            {"name": "Upload Contract", "category": "employment"}
+        )
+        profile = self.env["doc.intelligence.profile"].create(
+            {
+                "name": "Upload Contract Profile",
+                "document_type_id": document_type.id,
+            }
+        )
+        self.env["doc.intelligence.field"].create(
+            {
+                "version_id": profile.current_version_id.id,
+                "name": "Employee name",
+                "key": "employee_name",
+                "field_type": "text",
+                "required": True,
+            }
+        )
+        document_type.default_profile_id = profile.id
+        dataset = self.env["doc.intelligence.dataset"].create(
+            {
+                "name": "Upload run",
+                "source": "upload",
+                "document_type_ids": [(6, 0, [document_type.id])],
+                "field_keys_json": '["employee_name"]',
+            }
+        )
+
+        class Upload:
+            filename = "jane.txt"
+            mimetype = "text/plain"
+
+            def read(self):
+                return b"Employment Contract\nEmployee name: Jane Doe\n"
+
+        dataset.action_add_uploads([Upload()])
+        document = dataset.upload_document_ids
+        self.assertEqual(len(document), 1)
+        self.assertEqual(document.folder_id.folder_type, "intelligence")
+        self.assertNotEqual(document.folder_id.folder_type, "employee")
+        self.assertNotEqual(document.folder_id.folder_type, "organizational")
+        estimate = self.env["doc.intelligence.dataset"].wizard_estimate(
+            {"source": "upload", "id": dataset.id}
+        )
+        self.assertEqual(estimate["document_count"], 1)
+        job = dataset.action_run()
+        self.assertTrue(job.record_ids)
+        self.assertEqual(job.record_ids.document_id, document)
+        extracted = job.record_ids.field_ids.filtered(
+            lambda field: field.key == "employee_name"
+        )
+        self.assertTrue(extracted)
+        self.assertIn("Jane", extracted.value or "")
 
     def test_vertical_slice_extracts_contract_fields(self):
         folder = self.env["doc.folder"].create(
@@ -113,6 +363,8 @@ class TestIntelligenceConfig(TransactionCase):
             {
                 "name": "Slice run",
                 "source": "organizational",
+                "scope_kind": "selected_files",
+                "scope_ids_json": json.dumps([document.id]),
                 "document_type_ids": [(6, 0, [document_type.id])],
                 "field_keys_json": '["employee_name"]',
             }
@@ -176,6 +428,8 @@ class TestIntelligenceConfig(TransactionCase):
             {
                 "name": "PDF run",
                 "source": "organizational",
+                "scope_kind": "selected_files",
+                "scope_ids_json": json.dumps([document.id]),
                 "document_type_ids": [(6, 0, [document_type.id])],
                 "field_keys_json": '["employee_name"]',
             }
@@ -224,12 +478,13 @@ class TestIntelligenceConfig(TransactionCase):
         job = self.env["doc.intelligence.job"].create(
             {
                 "dataset_id": dataset.id,
-                "state": "done",
+                "state": "needs_review",
                 "document_count": 1,
                 "processed_count": 1,
                 "progress": 100,
             }
         )
+        dataset.state = "needs_review"
         record = self.env["doc.intelligence.record"].create(
             {
                 "job_id": job.id,
@@ -268,6 +523,9 @@ class TestIntelligenceConfig(TransactionCase):
         self.assertTrue(issue.resolved)
         record.action_approve("Looks correct")
         self.assertEqual(record.review_status, "approved")
+        self.assertEqual(record.validation_status, "ok")
+        self.assertEqual(dataset.state, "completed")
+        self.assertEqual(job.state, "completed")
         self.assertTrue(
             record.review_action_ids.filtered(lambda item: item.action == "correct")
         )
@@ -388,6 +646,7 @@ class TestIntelligenceConfig(TransactionCase):
         overview = self.env["doc.intelligence.job"].overview_data()
         self.assertEqual(overview["metrics"]["extraction_source"], "reviewed")
         self.assertEqual(overview["metrics"]["extraction_accuracy"], 100.0)
+        self.assertEqual(overview["metrics"]["data_quality"], 100.0)
         self.assertEqual(overview["metrics"]["classification_source"], "estimated")
         self.assertTrue(overview["attention"]["failed"])
         self.assertFalse(overview["attention"]["expiring"])
@@ -439,6 +698,7 @@ class TestIntelligenceConfig(TransactionCase):
         job = self.env["doc.intelligence.job"].create(
             {"dataset_id": dataset.id, "state": "needs_review"}
         )
+        dataset.state = "needs_review"
         record = self.env["doc.intelligence.record"].create(
             {
                 "job_id": job.id,
@@ -447,6 +707,9 @@ class TestIntelligenceConfig(TransactionCase):
             }
         )
         record.action_reject("Incorrect document")
+        self.assertEqual(record.review_status, "rejected")
+        self.assertEqual(dataset.state, "rejected")
+        self.assertEqual(job.state, "rejected")
         reviews = self.env["doc.intelligence.audit.event"].search(
             [("category", "=", "review"), ("action", "=", "reject")]
         )

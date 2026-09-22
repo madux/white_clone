@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   FilePlus2,
   FileText,
+  Sparkles,
   Upload,
   XCircle,
   UserRound,
@@ -961,6 +962,20 @@ export default function EmployeeProfilePage() {
             setViewingVersionId(null);
           }}
           documentId={viewing.id}
+          headerActions={
+            <button
+              type="button"
+              onClick={() =>
+                router.push(
+                  `/pages/document-intelligence/ask?document=${viewing.id}`,
+                )
+              }
+              className="inline-flex items-center gap-2 rounded-full border border-brand-pink px-3 py-2 text-xs font-bold text-brand-pink hover:bg-pink-50"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Ask AI
+            </button>
+          }
           currentVersionNumber={viewing.current_version_number}
           initialVersionId={viewingVersionId}
           previewUrl={documentPreviewUrl(viewing.id, {

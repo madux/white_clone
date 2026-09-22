@@ -7,6 +7,8 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  Clock3,
+  FileStack,
   LayoutDashboard,
   Users,
   Trash2,
@@ -53,8 +55,17 @@ export default function Sidebar() {
       link: "/pages/organization",
       icon: Building2,
     },
+    {
+      name: "Templates & Forms",
+      link: "/pages/organization/templates-forms",
+      icon: FileStack,
+    },
+    {
+      name: "Pending Uploads",
+      link: "/pages/pending-uploads",
+      icon: Clock3,
+    },
     { name: "Activity", link: "/pages/activity", icon: Activity },
-
   ];
 
   const intelligenceLinks: Links[] = [
@@ -85,7 +96,10 @@ export default function Sidebar() {
       const isActive =
         l.name === "Dashboard"
           ? routePath.startsWith("/pages/dashboard")
-          : routePath.startsWith(l.link);
+          : l.name === "Organizational Files"
+            ? routePath.startsWith("/pages/organization") &&
+              !routePath.includes("/templates-forms")
+            : routePath.startsWith(l.link);
       return (
         <Link
           key={l.name}

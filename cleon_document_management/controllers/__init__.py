@@ -5,6 +5,7 @@ from . import compliance
 from . import folder_actions
 from . import document_actions
 from . import intelligence
+from . import templates_forms
 from . import roles
 from . import employee_files
 from . import employee_files_roles

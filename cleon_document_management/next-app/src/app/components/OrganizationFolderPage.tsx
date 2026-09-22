@@ -7,10 +7,11 @@ import {
   FileText,
   FolderOpen,
   Search,
+  Sparkles,
   Upload,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   useDocumentTypes,
@@ -40,6 +41,7 @@ import {
 
 export default function OrganizationFolderPage() {
   const params = useSearchParams();
+  const router = useRouter();
   const folderId = Number(params.get("folder"));
   const guideTarget = params.get("guide");
   const folders = useFolders();
@@ -459,13 +461,27 @@ export default function OrganizationFolderPage() {
           backdropClassName="bg-slate-900/40"
           iframeMinHeight="min-h-[65vh]"
           headerActions={
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600"
-            >
-              Print
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600"
+              >
+                Print
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/pages/document-intelligence/ask?document=${viewing.id}`,
+                  )
+                }
+                className="inline-flex items-center gap-2 rounded-full border border-brand-pink px-3 py-2 text-xs font-bold text-brand-pink hover:bg-pink-50"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Ask AI
+              </button>
+            </>
           }
         />
       )}

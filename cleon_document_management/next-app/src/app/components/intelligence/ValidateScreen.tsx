@@ -9,7 +9,6 @@ import {
   useReviewIntelligenceRecord,
 } from "../../../../hooks/useIntelligence";
 import type { IntelligenceExtractionRecord } from "../../../../lib/intelligence-api";
-import { formatFieldLabel, formatStatusLabel } from "../../../../lib/formatLabel";
 import {
   IntelligenceEmpty,
   IntelligenceError,
@@ -28,6 +27,12 @@ export default function ValidateScreen() {
   const review = useReviewIntelligenceRecord();
   const bulk = useBulkApproveSafeRecords();
   const records = queue.data || [];
+  const pending = records.filter(
+    (item) =>
+      item.review_status === "needs_review" || item.review_status === "extracted",
+  );
+  const isResults = Boolean(datasetId) && pending.length === 0 && records.length > 0;
+  const workset = isResults ? records : pending.length ? pending : records;
   const [selectedId, setSelectedId] = useState<number>();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [correctionReason, setCorrectionReason] = useState("");
@@ -39,7 +44,13 @@ export default function ValidateScreen() {
   const [message, setMessage] = useState("");
 
   const selected =
-    records.find((item) => item.id === selectedId) || records[0] || null;
+    workset.find((item) => item.id === selectedId) || workset[0] || null;
+  const readOnly =
+    isResults ||
+    Boolean(
+      selected &&
+        !["needs_review", "extracted"].includes(selected.review_status),
+    );
 
   useEffect(() => {
     if (!selected) {
@@ -81,16 +92,30 @@ export default function ValidateScreen() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
+            {isResults ? "Extraction results" : "Review queue"}
+          </p>
+          <h1 className="mt-1 text-3xl font-medium text-slate-900">
+            {isResults ? "Results" : "Validate"}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm font-light text-slate-400">
+            {isResults
+              ? "This run is finished. Open a file to see what was extracted. Nothing is waiting for review."
+              : "Compare the source file with extracted fields. Approve only after blocking issues are resolved. Overrides always need a reason."}
+          </p>
+        </div>
+        {!isResults ? (
         <button
           type="button"
           className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50"
-          disabled={bulk.isPending || !records.length}
+          disabled={bulk.isPending || !workset.length}
           onClick={async () => {
             setMessage("");
             try {
               const result = await bulk.mutateAsync(
-                records.map((item) => item.id),
+                workset.map((item) => item.id),
               );
               setMessage(
                 `Approved ${result.approved_count} high-confidence record(s). Blocking or low-confidence items were skipped.`,
@@ -104,6 +129,14 @@ export default function ValidateScreen() {
         >
           Approve safe records
         </button>
+        ) : (
+          <Link
+            href="/pages/document-intelligence/datasets"
+            className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+          >
+            Back to datasets
+          </Link>
+        )}
       </section>
 
       {queue.isError ? (
@@ -117,10 +150,10 @@ export default function ValidateScreen() {
 
       {queue.isLoading ? (
         <IntelligenceLoading />
-      ) : records.length && selected ? (
+      ) : workset.length && selected ? (
         <div className="grid gap-4 xl:grid-cols-[16rem_minmax(0,1fr)_24rem]">
           <aside className="space-y-2">
-            {records.map((record) => (
+            {workset.map((record) => (
               <button
                 key={record.id}
                 type="button"
@@ -151,7 +184,7 @@ export default function ValidateScreen() {
                 <p className="text-xs text-slate-400">
                   {selected.dataset}
                     {selected.used_ocr ? " · OCR/vision used" : ""}
-                    {selected.text_source ? ` · ${formatFieldLabel(selected.text_source)}` : ""}
+                    {selected.text_source ? ` · ${selected.text_source.replace(/_/g, " ")}` : ""}
                 </p>
               </div>
               <a
@@ -168,20 +201,15 @@ export default function ValidateScreen() {
               src={previewSrc(selected)}
               className="h-[28rem] w-full bg-slate-50"
             />
-            {selected.extracted_text ? (
-              <pre className="max-h-48 overflow-auto border-t border-slate-100 bg-slate-50 p-4 text-xs text-slate-600 whitespace-pre-wrap">
-                {selected.extracted_text}
-              </pre>
-            ) : null}
           </section>
 
           <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="status pending">
-                {formatStatusLabel(selected.review_status)}
+              <span className={`status ${readOnly ? "" : "pending"}`}>
+                {selected.review_status.replace(/_/g, " ")}
               </span>
-              <span className="text-xs font-semibold text-slate-500">
-                {formatStatusLabel(selected.validation_status)}
+              <span className="text-xs font-semibold uppercase text-slate-400">
+                {selected.validation_status}
               </span>
             </div>
 
@@ -198,6 +226,7 @@ export default function ValidateScreen() {
                   </span>
                   <input
                     className="field mt-1"
+                    readOnly={readOnly}
                     value={drafts[field.key] ?? field.value}
                     onChange={(event) =>
                       setDrafts((current) => ({
@@ -210,6 +239,8 @@ export default function ValidateScreen() {
               ))}
             </div>
 
+            {!readOnly ? (
+              <>
             <label className="block">
               <span className="label">Correction reason</span>
               <input
@@ -251,6 +282,8 @@ export default function ValidateScreen() {
             >
               Save field correction
             </button>
+              </>
+            ) : null}
 
             {selected.issues.length ? (
               <ul className="space-y-2">
@@ -267,7 +300,7 @@ export default function ValidateScreen() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <span>{issue.message}</span>
-                      {!issue.resolved ? (
+                      {!issue.resolved && !readOnly ? (
                         <button
                           type="button"
                           className="shrink-0 text-xs font-bold uppercase"
@@ -294,6 +327,8 @@ export default function ValidateScreen() {
               </ul>
             ) : null}
 
+            {!readOnly ? (
+              <>
             <label className="block">
               <span className="label">Review comment</span>
               <textarea
@@ -394,6 +429,10 @@ export default function ValidateScreen() {
                 approval.
               </p>
             ) : null}
+              </>
+            ) : selected.review_comment ? (
+              <p className="text-sm text-slate-500">{selected.review_comment}</p>
+            ) : null}
 
             {selected.review_actions?.length ? (
               <div>
@@ -404,7 +443,7 @@ export default function ValidateScreen() {
                   {selected.review_actions.map((item) => (
                     <li key={item.id}>
                       <strong className="text-slate-700">
-                        {formatFieldLabel(item.action)}
+                        {item.action.replace(/_/g, " ")}
                       </strong>{" "}
                       by {item.user}
                       {item.reason ? ` — ${item.reason}` : ""}
@@ -420,14 +459,22 @@ export default function ValidateScreen() {
         </div>
       ) : (
         <IntelligenceEmpty
-          title="Nothing to validate"
-          description="Run a dataset against Employee or Organizational Files. Records that need review appear here."
+          title={
+            datasetId
+              ? "This dataset is fully reviewed"
+              : "Nothing waiting for review"
+          }
+          description={
+            datasetId
+              ? "Every record for this run is approved, rejected, or no longer has a live source file. Fully rejected runs show as rejected; mixed or approved runs show as completed."
+              : "Run a dataset against Employee or Organizational Files. Only records that still need a person appear here."
+          }
           action={
             <Link
-              href="/pages/document-intelligence/datasets/new"
+              href="/pages/document-intelligence/datasets"
               className="inline-flex rounded-full border border-brand-pink px-4 py-2 text-sm font-semibold text-brand-pink"
             >
-              New Dataset
+              Back to datasets
             </Link>
           }
         />

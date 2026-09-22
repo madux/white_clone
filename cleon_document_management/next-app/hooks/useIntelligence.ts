@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { intelligenceApi, intelligenceDatasetApi } from "../lib/intelligence-api";
 
 export const INTELLIGENCE_KEYS = {
@@ -27,8 +27,10 @@ export function useCreateIntelligenceType() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: intelligenceApi.createDocumentType,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles });
+    },
   });
 }
 
@@ -36,8 +38,21 @@ export function useUpdateIntelligenceType() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: intelligenceApi.updateDocumentType,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles });
+    },
+  });
+}
+
+export function useDeleteIntelligenceTypes() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: intelligenceApi.deleteDocumentTypes,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles });
+    },
   });
 }
 
@@ -56,8 +71,10 @@ export function useUpdateIntelligenceProfile() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: intelligenceApi.updateProfile,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types });
+    },
   });
 }
 
@@ -66,8 +83,10 @@ export function useArchiveIntelligenceProfile() {
   return useMutation({
     mutationFn: ({ id, active }: { id: number; active: boolean }) =>
       intelligenceApi.archiveProfile(id, active),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types });
+    },
   });
 }
 
@@ -86,12 +105,44 @@ export function useIntelligenceDatasets() {
     queryFn: intelligenceDatasetApi.list,
     refetchInterval: (query) => {
       const rows = query.state.data || [];
-      return rows.some((row) =>
-        ["queued", "running"].includes(row.state),
-      )
-        ? 4000
+      return rows.some((row) => {
+        const job =
+          row.latest_job && typeof row.latest_job === "object"
+            ? row.latest_job
+            : null;
+        return (
+          ["queued", "running"].includes(row.state) ||
+          (job && ["queued", "running"].includes(job.state))
+        );
+      })
+        ? 2000
         : false;
     },
+  });
+}
+
+export function useIntelligenceWizardOptions() {
+  return useQuery({
+    queryKey: ["intelligence", "wizard-options"],
+    queryFn: intelligenceDatasetApi.wizardOptions,
+  });
+}
+
+export function useIntelligenceWizardEstimate(payload: {
+  source: string;
+  scope_kind: string;
+  scope_ids: number[];
+  document_type_ids: number[];
+  auto_classify: boolean;
+  id?: number;
+  upload_count?: number;
+  processing_mode?: string;
+}) {
+  return useQuery({
+    queryKey: ["intelligence", "wizard-estimate", payload],
+    queryFn: () => intelligenceDatasetApi.wizardEstimate(payload),
+    enabled: Boolean(payload.source && payload.source !== "external"),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -107,8 +158,59 @@ export function useSaveIntelligenceDataset() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: intelligenceDatasetApi.save,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets }),
+    onSuccess: (saved) => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets });
+      if (saved?.id) {
+        queryClient.invalidateQueries({
+          queryKey: INTELLIGENCE_KEYS.dataset(saved.id),
+        });
+      }
+    },
+  });
+}
+
+export function useUploadIntelligenceFiles() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, files }: { id: number; files: File[] }) =>
+      intelligenceDatasetApi.uploadFiles(id, files),
+    onSuccess: (saved) => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets });
+      queryClient.invalidateQueries({
+        queryKey: INTELLIGENCE_KEYS.dataset(saved.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["intelligence", "wizard-estimate"],
+      });
+    },
+  });
+}
+
+export function useRemoveIntelligenceUpload() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, documentId }: { id: number; documentId: number }) =>
+      intelligenceDatasetApi.removeUpload(id, documentId),
+    onSuccess: (saved) => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets });
+      queryClient.invalidateQueries({
+        queryKey: INTELLIGENCE_KEYS.dataset(saved.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["intelligence", "wizard-estimate"],
+      });
+    },
+  });
+}
+
+export function useDeleteIntelligenceDatasets() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: number[]) => intelligenceDatasetApi.delete(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.reviewQueue });
+    },
   });
 }
 
@@ -123,8 +225,12 @@ export function useRunIntelligenceDataset() {
 
 export function useIntelligenceReviewQueue(datasetId?: number) {
   return useQuery({
-    queryKey: [...INTELLIGENCE_KEYS.reviewQueue, datasetId || "all"],
-    queryFn: () => intelligenceDatasetApi.reviewQueue(datasetId),
+    queryKey: [
+      ...INTELLIGENCE_KEYS.reviewQueue,
+      datasetId || "all",
+      datasetId ? "with-results" : "queue",
+    ],
+    queryFn: () => intelligenceDatasetApi.reviewQueue(datasetId, Boolean(datasetId)),
     refetchInterval: (query) => {
       const rows = query.state.data || [];
       return rows.some((row) => row.review_status === "extracted") ? 4000 : false;
@@ -240,6 +346,26 @@ export function useIntelligenceConversations(saved?: boolean, search?: string) {
         ...(saved ? { saved: true } : {}),
         ...(search ? { search } : {}),
       }),
+  });
+}
+
+export function useIntelligenceAskIndexStatus(enabled: boolean, search?: string) {
+  return useQuery({
+    queryKey: ["intelligence", "ask-index-status", search || ""],
+    queryFn: () =>
+      intelligenceDatasetApi.askIndexStatus({
+        ...(search ? { search } : {}),
+      }),
+    enabled,
+    refetchInterval: (query) => {
+      if (!enabled) {
+        return false;
+      }
+      const data = query.state.data;
+      const inFlight =
+        (data?.indexing_count || 0) + (data?.waiting_count || 0);
+      return inFlight > 0 ? 2000 : 8000;
+    },
   });
 }
 

@@ -9,3 +9,8 @@ python-docx
 openpyxl
 python-pptx
 groq
+sentence-transformers
+transformers
+torch
+pdfminer.six
+

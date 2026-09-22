@@ -17,6 +17,11 @@ from . import intelligence_record
 from . import intelligence_index
 from . import intelligence_audit
 from . import intelligence_conversation
+from . import template
+from . import template_document
+from . import template_assignment
+from . import template_submission
+from . import template_audit
 from . import doc_role_assignment_audit
 from . import doc_role_definition
 from . import doc_role_service

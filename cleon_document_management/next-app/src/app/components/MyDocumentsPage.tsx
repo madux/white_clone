@@ -14,12 +14,13 @@ import {
   Search,
   Share2,
   SlidersHorizontal,
+  Sparkles,
   Star,
   Upload,
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -292,6 +293,7 @@ export default function MyDocumentsPage() {
   const pendingUploads = useMyPendingUploads();
   const updateOnboarding = useUpdateOnboarding();
   const params = useSearchParams();
+  const router = useRouter();
   const guideTarget = params.get("guide");
   const acknowledge = useAcknowledgeDocument();
   const upload = useUploadMyDocument();
@@ -978,6 +980,22 @@ export default function MyDocumentsPage() {
                 </p>
               </div>
             ) : undefined
+          }
+          headerActions={
+            viewing.id > 0 ? (
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/pages/document-intelligence/ask?document=${viewing.id}`,
+                  )
+                }
+                className="inline-flex items-center gap-2 rounded-full border border-brand-pink px-3 py-2 text-xs font-bold text-brand-pink hover:bg-pink-50"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Ask AI
+              </button>
+            ) : null
           }
           footer={
             tab === "shared" && !viewing.acknowledged ? (

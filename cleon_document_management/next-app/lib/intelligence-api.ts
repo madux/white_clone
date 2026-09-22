@@ -1,4 +1,4 @@
-import { rpc } from "./api";
+import { multipartClient, rpc } from "./api";
 
 export interface IntelligenceDocumentType {
   id: number;
@@ -12,6 +12,10 @@ export interface IntelligenceDocumentType {
   default_retention_years: number;
   default_profile_id: number | false;
   default_profile: string;
+  field_count?: number;
+  extraction_instructions?: string;
+  extraction_fields?: IntelligenceField[];
+  profile?: IntelligenceProfile | null | false;
 }
 
 export interface IntelligenceField {
@@ -67,6 +71,11 @@ export const intelligenceApi = {
       "/api/document-intelligence/document-types/update",
       payload,
     ),
+  deleteDocumentTypes: (ids: number[]) =>
+    unwrap<{ ids: number[] }>("/api/document-intelligence/document-types/delete", {
+      ids,
+      id: ids[0],
+    }),
   getProfiles: (params: Record<string, unknown> = {}) =>
     unwrap<IntelligenceProfile[]>(
       "/api/document-intelligence/profiles",
@@ -138,11 +147,60 @@ export interface IntelligenceDataset {
   latest_job?: IntelligenceJob | false;
   run_queued?: boolean;
   message?: string;
+  uploads?: Array<{
+    id: number;
+    name: string;
+    mimetype: string;
+    file_size: number;
+  }>;
 }
 
 export const intelligenceDatasetApi = {
   list: () =>
     unwrap<IntelligenceDataset[]>("/api/document-intelligence/datasets"),
+  wizardOptions: () =>
+    unwrap<{
+      sources: {
+        employee: number;
+        organizational: number;
+        upload: number;
+        external: number;
+      };
+      employees: Array<{ id: number; name: string; department: string }>;
+      departments: Array<{ id: number; name: string }>;
+      grades: Array<{ id: number; name: string }>;
+      business_units: Array<{ id: number; name: string }>;
+      employment_types: Array<{ id: number; name: string }>;
+      locations: Array<{ id: number; name: string }>;
+    }>("/api/document-intelligence/wizard/options"),
+  wizardEstimate: (payload: Record<string, unknown>) =>
+    unwrap<{
+      document_count: number;
+      employee_count: number;
+      document_type_ids?: number[];
+      untyped_count?: number;
+      page_count?: number;
+      estimated_seconds?: number;
+    }>("/api/document-intelligence/wizard/estimate", payload),
+  uploadFiles: async (datasetId: number, files: File[]) => {
+    const form = new FormData();
+    form.append("dataset_id", String(datasetId));
+    files.forEach((file) => form.append("files", file, file.name));
+    const { data } = await multipartClient.post<{
+      success: boolean;
+      message?: string;
+      data?: IntelligenceDataset;
+    }>("/api/document-intelligence/datasets/upload", form);
+    if (!data?.success || !data.data) {
+      throw new Error(data?.message || "Upload failed.");
+    }
+    return data.data;
+  },
+  removeUpload: (id: number, documentId: number) =>
+    unwrap<IntelligenceDataset>(
+      "/api/document-intelligence/datasets/upload/remove",
+      { id, document_id: documentId },
+    ),
   get: (id: number) =>
     unwrap<IntelligenceDataset>("/api/document-intelligence/datasets/get", {
       id,
@@ -157,10 +215,17 @@ export const intelligenceDatasetApi = {
       "/api/document-intelligence/datasets/run",
       payload,
     ),
-  reviewQueue: (datasetId?: number) =>
+  delete: (ids: number[]) =>
+    unwrap<{ ids: number[] }>("/api/document-intelligence/datasets/delete", {
+      ids,
+    }),
+  reviewQueue: (datasetId?: number, includeReviewed = false) =>
     unwrap<IntelligenceExtractionRecord[]>(
       "/api/document-intelligence/review-queue",
-      datasetId ? { dataset_id: datasetId } : {},
+      {
+        ...(datasetId ? { dataset_id: datasetId } : {}),
+        include_reviewed: includeReviewed,
+      },
     ),
   approveRecord: (id: number, reason = "") =>
     unwrap<IntelligenceExtractionRecord>(
@@ -225,6 +290,16 @@ export const intelligenceDatasetApi = {
       llm_model: string;
       vision_model: string;
       embedding_model: string;
+      rerank_model?: string;
+      retrieval?: string;
+      embed_ok?: boolean;
+      rerank_ok?: boolean;
+      embed_loaded?: boolean;
+      rerank_loaded?: boolean;
+      embed_cached?: boolean;
+      rerank_cached?: boolean;
+      libraries_ok?: boolean;
+      device?: string;
       extraction: string;
     }>("/api/document-intelligence/settings/health"),
   overview: () =>
@@ -255,6 +330,11 @@ export const intelligenceDatasetApi = {
       indexed_count: number;
       conversations: IntelligenceConversation[];
     }>("/api/document-intelligence/conversations", params),
+  askIndexStatus: (params: Record<string, unknown> = {}) =>
+    unwrap<AskIndexStatus>(
+      "/api/document-intelligence/ask/index-status",
+      params,
+    ),
   conversationGet: (id: number) =>
     unwrap<IntelligenceConversation>(
       "/api/document-intelligence/conversations/get",
@@ -288,8 +368,13 @@ export const intelligenceDatasetApi = {
     unwrap<{ id: number }>("/api/document-intelligence/conversations/delete", {
       id,
     }),
-  conversationAskStream: async (
-    payload: { id?: number; question: string; dataset_id?: number },
+    conversationAskStream: async (
+    payload: {
+      id?: number;
+      question: string;
+      dataset_id?: number;
+      regenerate?: boolean;
+    },
     onEvent: (event: Record<string, unknown>) => void,
   ) => {
     const response = await fetch(
@@ -326,7 +411,11 @@ export const intelligenceDatasetApi = {
       onEvent(JSON.parse(buffer) as Record<string, unknown>);
     }
   },
-  conversationAttachLibrary: (payload: { id?: number; document_id: number }) =>
+  conversationAttachLibrary: (payload: {
+    id?: number;
+    document_id?: number;
+    document_ids?: number[];
+  }) =>
     unwrap<IntelligenceConversation>(
       "/api/document-intelligence/conversations/attach-library",
       payload,
@@ -338,12 +427,18 @@ export const intelligenceDatasetApi = {
     ),
   conversationAttachUpload: (payload: {
     id?: number;
-    name: string;
-    mimetype: string;
-    data: string;
+    name?: string;
+    mimetype?: string;
+    data?: string;
+    files?: Array<{ name: string; mimetype: string; data: string }>;
   }) =>
     unwrap<IntelligenceConversation>(
       "/api/document-intelligence/conversations/attach-upload",
+      payload,
+    ),
+  conversationRemoveSources: (payload: { id: number; source_ids: number[] }) =>
+    unwrap<IntelligenceConversation>(
+      "/api/document-intelligence/conversations/remove-sources",
       payload,
     ),
   libraryDocuments: (search = "") =>
@@ -390,8 +485,31 @@ export interface IntelligenceConversation {
     name: string;
     url: string;
     document_id: number;
+    preview_url: string;
   }>;
   messages?: IntelligenceChatMessage[];
+}
+
+export type AskIndexState = "waiting" | "indexing" | "indexed" | "skipped";
+
+export interface AskIndexFile {
+  id: number;
+  name: string;
+  folder: string;
+  mimetype: string;
+  chunk_count: number;
+  state: AskIndexState;
+  write_date: string;
+}
+
+export interface AskIndexStatus {
+  total_count: number;
+  indexed_count: number;
+  indexing_count: number;
+  waiting_count: number;
+  skipped_count: number;
+  truncated: boolean;
+  files: AskIndexFile[];
 }
 
 export interface IntelligenceAuditEvent {

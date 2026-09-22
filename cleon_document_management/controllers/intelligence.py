@@ -3,6 +3,8 @@ from odoo import api, http
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.http import request
 
+from ..models.intelligence_conversation import coerce_int_ids
+
 
 class DocumentIntelligenceController(http.Controller):
     """JSON-RPC APIs for Document Intelligence configuration."""
@@ -22,8 +24,46 @@ class DocumentIntelligenceController(http.Controller):
         )
         return {"success": False, "message": message}
 
+    def _profile_version_with_fields(self, profile):
+        if not profile:
+            return False
+        versions = profile.with_context(active_test=False).version_ids
+        current = profile.current_version_id
+        if current and current.field_ids:
+            return current
+        if not versions:
+            return current
+        return max(versions, key=lambda version: len(version.field_ids))
+
+    def _best_profile_for_type(self, document_type):
+        Profile = request.env["doc.intelligence.profile"].with_context(
+            active_test=False
+        )
+        profiles = Profile.search([("document_type_id", "=", document_type.id)])
+        default = document_type.with_context(active_test=False).default_profile_id
+        ranked = []
+        for profile in profiles:
+            version = self._profile_version_with_fields(profile)
+            ranked.append(
+                (
+                    len(version.field_ids) if version else 0,
+                    1 if profile == default else 0,
+                    profile,
+                    version,
+                )
+            )
+        ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        if ranked:
+            return ranked[0][2], ranked[0][3]
+        if default:
+            return default, self._profile_version_with_fields(default)
+        return False, False
+
     def _type_data(self, document_type):
-        profile = document_type.default_profile_id
+        profile, version = self._best_profile_for_type(document_type)
+        extraction_fields = [
+            self._field_data(field) for field in (version.field_ids if version else [])
+        ]
         return {
             "id": document_type.id,
             "name": document_type.name,
@@ -44,6 +84,10 @@ class DocumentIntelligenceController(http.Controller):
             "approver_ids": document_type.approver_ids.ids,
             "default_profile_id": profile.id if profile else False,
             "default_profile": profile.name if profile else "",
+            "field_count": len(extraction_fields),
+            "extraction_instructions": version.extraction_instructions if version else "",
+            "extraction_fields": extraction_fields,
+            "profile": self._profile_data(profile, version) if profile else False,
         }
 
     def _field_data(self, field):
@@ -61,8 +105,8 @@ class DocumentIntelligenceController(http.Controller):
             "profile_version": field.version_id.version,
         }
 
-    def _profile_data(self, profile):
-        version = profile.current_version_id
+    def _profile_data(self, profile, version=None):
+        version = version or self._profile_version_with_fields(profile)
         fields_payload = [
             self._field_data(field) for field in (version.field_ids if version else [])
         ]
@@ -101,6 +145,87 @@ class DocumentIntelligenceController(http.Controller):
                 }
             )
 
+    def _save_type_profile(self, document_type, payload):
+        payload = payload or {}
+        fields_payload = payload.get("fields") or []
+        instructions = payload.get("extraction_instructions") or ""
+        examples = payload.get("examples") or ""
+        profile_name = (payload.get("name") or document_type.name or "").strip()
+        Profile = request.env["doc.intelligence.profile"].with_context(active_test=False)
+        profile, version = self._best_profile_for_type(document_type)
+        if not profile:
+            profile = Profile.create(
+                {
+                    "name": profile_name or document_type.name,
+                    "document_type_id": document_type.id,
+                    "is_system": False,
+                }
+            )
+            document_type.default_profile_id = profile.id
+            version = profile.current_version_id
+        else:
+            profile.write({"name": profile_name or profile.name})
+            if not document_type.default_profile_id:
+                document_type.default_profile_id = profile.id
+        if not version:
+            version = profile.action_new_version()
+        version.write(
+            {
+                "extraction_instructions": instructions,
+                "examples": examples,
+            }
+        )
+        self._replace_fields(version, fields_payload)
+        if not document_type.default_profile_id:
+            document_type.default_profile_id = profile.id
+        return profile
+
+    def _documents_using_types(self, records):
+        return (
+            request.env["doc.document"]
+            .sudo()
+            .with_context(active_test=False)
+            .search([("document_type_id", "in", records.ids)])
+        )
+
+    def _type_delete_blocked_message(self, records, files=None, raw=""):
+        names = records.mapped("name")
+        label = names[0] if len(names) == 1 else ", ".join(names)
+        if files is None:
+            files = self._documents_using_types(records)
+        if files:
+            if len(records) == 1:
+                count = len(files)
+                noun = "file" if count == 1 else "files"
+                return (
+                    "You can't delete %s because %s %s still assigned to it. "
+                    "Change those files to another type, or deactivate %s instead."
+                    % (label, count, noun, label)
+                )
+            grouped = {}
+            for document in files:
+                grouped.setdefault(document.document_type_id.name, 0)
+                grouped[document.document_type_id.name] += 1
+            details = ", ".join(
+                "%s (%s)" % (name, grouped[name]) for name in grouped
+            )
+            return (
+                "You can't delete these types because files are still assigned to them: "
+                "%s. Change those files to another type, or deactivate the types instead."
+                % details
+            )
+        text = (raw or "").lower()
+        if "doc_document" in text or "foreign key" in text or "restrict" in text:
+            return (
+                "You can't delete %s while files are still assigned to it. "
+                "Change those files to another type, or deactivate it instead."
+                % label
+            )
+        return (raw or "").strip() or (
+            "You can't delete %s while it is still in use. Deactivate it instead."
+            % label
+        )
+
     @http.route(
         "/api/document-intelligence/document-types",
         type="json",
@@ -110,9 +235,12 @@ class DocumentIntelligenceController(http.Controller):
     )
     def document_types(self, **kwargs):
         domain = []
+        Type = request.env["doc.document.type"]
         if kwargs.get("active_only"):
             domain.append(("active", "=", True))
-        types = request.env["doc.document.type"].search(domain, order="sequence, name")
+        else:
+            Type = Type.with_context(active_test=False)
+        types = Type.search(domain, order="active desc, sequence, name")
         return {
             "success": True,
             "data": [self._type_data(item) for item in types],
@@ -143,6 +271,13 @@ class DocumentIntelligenceController(http.Controller):
         if kwargs.get("default_profile_id"):
             values["default_profile_id"] = int(kwargs["default_profile_id"])
         record = request.env["doc.document.type"].create(values)
+        profile_payload = kwargs.get("profile") if isinstance(kwargs.get("profile"), dict) else kwargs
+        if (
+            profile_payload.get("fields")
+            or profile_payload.get("extraction_instructions")
+            or profile_payload.get("name")
+        ):
+            self._save_type_profile(record, profile_payload)
         request.env["doc.intelligence.audit.event"].log_event(
             "rule",
             "document_type_created",
@@ -160,7 +295,12 @@ class DocumentIntelligenceController(http.Controller):
     def update_document_type(self, **kwargs):
         if not self._is_admin():
             return self._deny()
-        record = request.env["doc.document.type"].browse(int(kwargs.get("id") or 0)).exists()
+        record = (
+            request.env["doc.document.type"]
+            .with_context(active_test=False)
+            .browse(int(kwargs.get("id") or 0))
+            .exists()
+        )
         if not record:
             return {"success": False, "message": "Document type not found."}
         values = {}
@@ -177,12 +317,72 @@ class DocumentIntelligenceController(http.Controller):
             if key in kwargs:
                 values[key] = kwargs.get(key)
         record.write(values)
+        profile_payload = kwargs.get("profile") if isinstance(kwargs.get("profile"), dict) else None
+        if profile_payload is not None or "fields" in kwargs or "extraction_instructions" in kwargs:
+            self._save_type_profile(record, profile_payload or kwargs)
         request.env["doc.intelligence.audit.event"].log_event(
             "rule",
             "document_type_updated",
             target=record,
         )
         return {"success": True, "data": self._type_data(record)}
+
+    @http.route(
+        "/api/document-intelligence/document-types/delete",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def delete_document_types(self, **kwargs):
+        if not self._is_admin():
+            return self._deny()
+        ids = coerce_int_ids(kwargs.get("ids") or [kwargs.get("id")])
+        records = (
+            request.env["doc.document.type"]
+            .with_context(active_test=False)
+            .browse(ids)
+            .exists()
+        )
+        if not records:
+            return {"success": False, "message": "Document type not found."}
+        files = self._documents_using_types(records)
+        if files:
+            return {
+                "success": False,
+                "message": self._type_delete_blocked_message(records, files=files),
+            }
+        try:
+            profiles = (
+                request.env["doc.intelligence.profile"]
+                .with_context(active_test=False)
+                .search([("document_type_id", "in", records.ids)])
+            )
+            profiles.with_context(allow_profile_unlink=True).unlink()
+            names = ", ".join(records.mapped("name"))
+            records.unlink()
+        except (AccessError, UserError, ValidationError) as error:
+            request.env.cr.rollback()
+            return {
+                "success": False,
+                "message": self._type_delete_blocked_message(
+                    records, raw=str(error)
+                ),
+            }
+        except Exception as error:
+            request.env.cr.rollback()
+            return {
+                "success": False,
+                "message": self._type_delete_blocked_message(
+                    records, raw=str(error)
+                ),
+            }
+        request.env["doc.intelligence.audit.event"].log_event(
+            "rule",
+            "document_type_deleted",
+            detail=names,
+        )
+        return {"success": True, "data": {"ids": ids}}
 
     @http.route(
         "/api/document-intelligence/profiles",
@@ -197,7 +397,11 @@ class DocumentIntelligenceController(http.Controller):
             domain.append(("active", "=", True))
         if kwargs.get("document_type_id"):
             domain.append(("document_type_id", "=", int(kwargs["document_type_id"])))
-        profiles = request.env["doc.intelligence.profile"].search(domain, order="name")
+        profiles = (
+            request.env["doc.intelligence.profile"]
+            .with_context(active_test=False)
+            .search(domain, order="active desc, name")
+        )
         return {
             "success": True,
             "data": [self._profile_data(item) for item in profiles],
@@ -356,11 +560,15 @@ class DocumentIntelligenceController(http.Controller):
         type_ids = [int(value) for value in (kwargs.get("document_type_ids") or [])]
         field_keys = [str(value) for value in (kwargs.get("field_keys") or []) if value]
         scope_ids = [int(value) for value in (kwargs.get("scope_ids") or []) if value]
+        source = kwargs.get("source") or False
+        scope_kind = kwargs.get("scope_kind") or "company"
+        if source == "organizational":
+            scope_kind = "selected_files"
         values = {
             "name": (kwargs.get("name") or "").strip(),
-            "source": kwargs.get("source") or False,
+            "source": source,
             "processing_mode": kwargs.get("processing_mode") or "balanced",
-            "scope_kind": kwargs.get("scope_kind") or "company",
+            "scope_kind": scope_kind,
             "scope_ids_json": json.dumps(scope_ids),
             "auto_classify": bool(kwargs.get("auto_classify")),
             "document_type_ids": [(6, 0, type_ids)],
@@ -423,6 +631,7 @@ class DocumentIntelligenceController(http.Controller):
             "write_date": str(dataset.write_date or ""),
             "create_date": str(dataset.create_date or ""),
             "latest_job": self._job_data(latest),
+            "uploads": dataset._upload_payload(),
         }
 
     @http.route(
@@ -437,9 +646,38 @@ class DocumentIntelligenceController(http.Controller):
         if not self._is_admin():
             domain.append(("owner_id", "=", request.env.user.id))
         records = request.env["doc.intelligence.dataset"].search(domain)
+        records.filtered(
+            lambda item: item.state in ("completed", "needs_review")
+        ).action_sync_review_state()
         return {
             "success": True,
             "data": [self._dataset_data(item) for item in records],
+        }
+
+    @http.route(
+        "/api/document-intelligence/wizard/options",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def wizard_options(self, **kwargs):
+        return {
+            "success": True,
+            "data": request.env["doc.intelligence.dataset"].wizard_options(),
+        }
+
+    @http.route(
+        "/api/document-intelligence/wizard/estimate",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def wizard_estimate(self, **kwargs):
+        return {
+            "success": True,
+            "data": request.env["doc.intelligence.dataset"].wizard_estimate(kwargs),
         }
 
     @http.route(
@@ -479,6 +717,61 @@ class DocumentIntelligenceController(http.Controller):
             return {"success": False, "message": str(error)}
 
     @http.route(
+        "/api/document-intelligence/datasets/upload",
+        type="http",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def dataset_upload(self, **kwargs):
+        Dataset = request.env["doc.intelligence.dataset"]
+        dataset_id = int(request.httprequest.form.get("dataset_id") or 0)
+        files = request.httprequest.files.getlist("files") or request.httprequest.files.getlist("file")
+        try:
+            if dataset_id:
+                dataset = Dataset.browse(dataset_id).exists()
+                if not dataset:
+                    raise ValidationError("Dataset not found.")
+                if not self._is_admin() and dataset.owner_id != request.env.user:
+                    return request.make_json_response(self._deny(), status=403)
+            else:
+                dataset = Dataset.save_draft({"source": "upload", "wizard_step": 1})
+            if not files:
+                raise ValidationError("Choose at least one file.")
+            dataset.action_add_uploads(files)
+            return request.make_json_response(
+                {"success": True, "data": self._dataset_data(dataset)}
+            )
+        except (AccessError, UserError, ValidationError) as error:
+            return request.make_json_response(
+                {"success": False, "message": str(error)},
+                status=400,
+            )
+
+    @http.route(
+        "/api/document-intelligence/datasets/upload/remove",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def dataset_upload_remove(self, **kwargs):
+        dataset = (
+            request.env["doc.intelligence.dataset"]
+            .browse(int(kwargs.get("id") or 0))
+            .exists()
+        )
+        if not dataset:
+            return {"success": False, "message": "Dataset not found."}
+        if not self._is_admin() and dataset.owner_id != request.env.user:
+            return self._deny("You cannot change this dataset.")
+        try:
+            dataset.action_remove_upload(kwargs.get("document_id"))
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": self._dataset_data(dataset)}
+
+    @http.route(
         "/api/document-intelligence/datasets/run",
         type="json",
         auth="user",
@@ -491,17 +784,39 @@ class DocumentIntelligenceController(http.Controller):
             dataset = request.env["doc.intelligence.dataset"].save_draft(
                 values, kwargs.get("id")
             )
-            job = dataset.action_run()
+            job = dataset.with_context(intelligence_queue_only=True).action_run()
             payload = self._dataset_data(dataset)
             payload["latest_job"] = self._job_data(job)
             payload["run_queued"] = True
             payload["message"] = (
-                "Extraction finished for the current batch. Open Validate to "
-                "review records that need attention."
+                "Extraction started. Follow progress on the dataset page."
             )
             return {"success": True, "data": payload}
         except (AccessError, UserError, ValidationError) as error:
             return {"success": False, "message": str(error)}
+
+    @http.route(
+        "/api/document-intelligence/datasets/delete",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def dataset_delete(self, **kwargs):
+        raw_ids = kwargs.get("ids")
+        if raw_ids is None and kwargs.get("id"):
+            raw_ids = [kwargs.get("id")]
+        ids = [int(value) for value in (raw_ids or []) if value]
+        if not ids:
+            return {"success": False, "message": "Select at least one dataset."}
+        datasets = request.env["doc.intelligence.dataset"].browse(ids).exists()
+        if not datasets:
+            return {"success": False, "message": "Dataset not found."}
+        try:
+            datasets.action_delete()
+        except (AccessError, UserError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": {"ids": ids}}
 
     def _record_data(self, record):
         return {
@@ -571,13 +886,34 @@ class DocumentIntelligenceController(http.Controller):
         csrf=False,
     )
     def review_queue(self, **kwargs):
-        domain = [("review_status", "in", ["needs_review", "extracted"])]
+        Record = request.env["doc.intelligence.record"]
+        Dataset = request.env["doc.intelligence.dataset"]
+        include_reviewed = bool(kwargs.get("include_reviewed"))
+        domain = []
         if kwargs.get("dataset_id"):
-            domain.append(("dataset_id", "=", int(kwargs["dataset_id"])))
-        records = request.env["doc.intelligence.record"].search(domain, limit=100)
+            dataset = Dataset.browse(int(kwargs["dataset_id"])).exists()
+            if not dataset:
+                return {"success": True, "data": []}
+            dataset.action_close_stale_and_sync()
+            domain.append(("dataset_id", "=", dataset.id))
+            if not include_reviewed:
+                domain.append(("review_status", "in", ["needs_review", "extracted"]))
+        else:
+            domain = [("review_status", "in", ["needs_review", "extracted"])]
+        records = Record.search(domain, limit=200)
+        pending_states = {"needs_review", "extracted"}
+        visible = Record.browse()
+        for record in records:
+            if record.review_status in pending_states:
+                if Dataset._document_is_extractable(
+                    record.document_id.with_context(active_test=False)
+                ):
+                    visible |= record
+            else:
+                visible |= record
         return {
             "success": True,
-            "data": [self._record_data(record) for record in records],
+            "data": [self._record_data(record) for record in visible],
         }
 
     def _load_review_record(self, kwargs):
@@ -710,12 +1046,8 @@ class DocumentIntelligenceController(http.Controller):
         csrf=False,
     )
     def settings_health(self, **kwargs):
-        from ..models.intelligence_groq import (
-            EMBED_MODEL,
-            LLM_MODEL,
-            VISION_MODEL,
-            groq_configured,
-        )
+        from ..models.intelligence_groq import LLM_MODEL, VISION_MODEL, groq_configured
+        from ..models.intelligence_tei import embed_health
 
         env = request.env
         pgvector = False
@@ -726,6 +1058,7 @@ class DocumentIntelligenceController(http.Controller):
             env.cr.execute("RELEASE SAVEPOINT di_health")
         except Exception:
             env.cr.execute("ROLLBACK TO SAVEPOINT di_health")
+        health = embed_health(env)
         return {
             "success": True,
             "data": {
@@ -733,10 +1066,21 @@ class DocumentIntelligenceController(http.Controller):
                 "pgvector": pgvector,
                 "llm_model": LLM_MODEL,
                 "vision_model": VISION_MODEL,
-                "embedding_model": EMBED_MODEL,
+                "embedding_model": health["embedding_model"],
+                "rerank_model": health["rerank_model"],
+                "retrieval": "hybrid",
+                "embed_ok": health["embed_ok"],
+                "rerank_ok": health["rerank_ok"],
+                "embed_loaded": health["embed_loaded"],
+                "rerank_loaded": health["rerank_loaded"],
+                "embed_cached": health["embed_cached"],
+                "rerank_cached": health["rerank_cached"],
+                "libraries_ok": health["libraries_ok"],
+                "device": health["device"],
                 "extraction": (
                     "Native text for PDF, Word, Excel, PowerPoint, and plain files. "
-                    "Groq vision only for images and scanned PDFs. Field values use rules, not an LLM."
+                    "Groq vision only for images and scanned PDFs. Ask retrieval is hybrid "
+                    "RAG: local Qwen3 embeddings + Postgres keyword search, then Qwen3 rerank."
                 ),
             },
         }
@@ -817,7 +1161,7 @@ class DocumentIntelligenceController(http.Controller):
         if not self._can_control_job(job):
             return self._deny("You are not allowed to retry this job.")
         try:
-            job.action_retry()
+            job.with_context(intelligence_queue_only=True).action_retry()
         except (AccessError, UserError, ValidationError) as error:
             return {"success": False, "message": str(error)}
         return {"success": True, "data": self._job_data(job)}
@@ -924,17 +1268,43 @@ class DocumentIntelligenceController(http.Controller):
         term = (kwargs.get("search") or "").strip()
         if term:
             domain.append(("name", "ilike", term))
-        records = request.env["doc.intelligence.conversation"].search(domain, limit=50)
-        indexed = request.env["doc.intelligence.chunk"].search_count(
-            [("record_id.review_status", "in", ["approved", "overridden"])]
+        records = request.env["doc.intelligence.conversation"].search(
+            domain, limit=50, order="write_date desc, id desc"
+        )
+        docs = request.env["doc.document"]._ask_library_documents()
+        indexed_groups = (
+            request.env["doc.intelligence.library.chunk"]
+            .sudo()
+            .read_group(
+                [("document_id", "in", docs.ids or [0])],
+                ["document_id"],
+                ["document_id"],
+            )
         )
         return {
             "success": True,
             "data": {
-                "indexed_count": indexed,
+                "indexed_count": len(indexed_groups),
                 "conversations": [item.to_api() for item in records],
             },
         }
+
+    @http.route(
+        "/api/document-intelligence/ask/index-status",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def ask_index_status(self, **kwargs):
+        try:
+            data = request.env["doc.document"].ask_index_status(
+                limit=kwargs.get("limit") or 300,
+                search=kwargs.get("search") or "",
+            )
+        except Exception as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": data}
 
     @http.route(
         "/api/document-intelligence/conversations/create",
@@ -1019,8 +1389,8 @@ class DocumentIntelligenceController(http.Controller):
             conversation = request.env["doc.intelligence.conversation"].create(
                 {"name": "New chat"}
             )
-        if kwargs.get("dataset_id"):
-            conversation.dataset_id = int(kwargs["dataset_id"])
+        if kwargs.get("dataset_id") or "dataset_id" in kwargs:
+            conversation.dataset_id = int(kwargs.get("dataset_id") or 0) or False
         try:
             payload = conversation.action_ask(kwargs.get("question") or "")
         except (AccessError, UserError, ValidationError) as error:
@@ -1078,9 +1448,11 @@ class DocumentIntelligenceController(http.Controller):
                         conversation = env["doc.intelligence.conversation"].create(
                             {"name": "New chat"}
                         )
-                    if dataset_id:
-                        conversation.dataset_id = dataset_id
-                    for event in conversation.iter_ask_events(question):
+                    if "dataset_id" in body:
+                        conversation.dataset_id = dataset_id or False
+                    for event in conversation.iter_ask_events(
+                        question, regenerate=bool(body.get("regenerate"))
+                    ):
                         yield json.dumps(event) + "\n"
                     cr.commit()
                 except (AccessError, UserError, ValidationError) as error:
@@ -1109,8 +1481,11 @@ class DocumentIntelligenceController(http.Controller):
         if not conversation:
             conversation = request.env["doc.intelligence.conversation"].create({})
         try:
-            payload = conversation.action_attach_document(kwargs.get("document_id"))
-        except (AccessError, UserError, ValidationError) as error:
+            document_ids = coerce_int_ids(kwargs.get("document_ids"))
+            if not document_ids:
+                document_ids = coerce_int_ids(kwargs.get("document_id"))
+            payload = conversation.action_attach_documents(document_ids)
+        except (AccessError, UserError, ValidationError, TypeError, ValueError) as error:
             return {"success": False, "message": str(error)}
         return {"success": True, "data": payload}
 
@@ -1143,14 +1518,78 @@ class DocumentIntelligenceController(http.Controller):
         if not conversation:
             conversation = request.env["doc.intelligence.conversation"].create({})
         try:
-            payload = conversation.action_attach_upload(
-                kwargs.get("name") or "upload",
-                kwargs.get("mimetype") or "application/octet-stream",
-                kwargs.get("data") or "",
+            files = kwargs.get("files") or []
+            if isinstance(files, dict):
+                files = [files]
+            if not files:
+                files = [
+                    {
+                        "name": kwargs.get("name") or "upload",
+                        "mimetype": kwargs.get("mimetype")
+                        or "application/octet-stream",
+                        "data": kwargs.get("data") or "",
+                    }
+                ]
+            payload = conversation.action_attach_uploads(files)
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": payload}
+
+    @http.route(
+        "/api/document-intelligence/conversations/remove-sources",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_remove_sources(self, **kwargs):
+        conversation = self._conversation(kwargs)
+        if not conversation:
+            return {"success": False, "message": "Conversation not found."}
+        try:
+            payload = conversation.action_remove_sources(
+                kwargs.get("source_ids") or kwargs.get("source_id")
             )
         except (AccessError, UserError, ValidationError) as error:
             return {"success": False, "message": str(error)}
         return {"success": True, "data": payload}
+
+    @http.route(
+        "/document-management/intelligence/ask-source/<int:source_id>/preview",
+        type="http",
+        auth="user",
+        methods=["GET"],
+    )
+    def ask_source_preview(self, source_id, **kwargs):
+        source = request.env["doc.intelligence.ask.source"].browse(source_id).exists()
+        if not source:
+            return request.not_found()
+        conversation = source.conversation_id
+        is_admin = request.env.user.has_group("base.group_system") or request.env.user.has_group(
+            "cleon_document_management.group_document_admin"
+        )
+        if not conversation or (conversation.user_id != request.env.user and not is_admin):
+            return request.not_found()
+        if source.document_id and source.document_id.attachment_id:
+            attachment = source.document_id.attachment_id
+        else:
+            attachment = source.attachment_id
+        if not attachment:
+            return request.not_found()
+        from odoo.addons.cleon_document_management.models.intelligence_pipeline import (
+            attachment_bytes,
+        )
+
+        return request.make_response(
+            attachment_bytes(attachment),
+            headers=[
+                ("Content-Type", attachment.mimetype or "application/octet-stream"),
+                (
+                    "Content-Disposition",
+                    'inline; filename="%s"' % (attachment.name or source.name or "file"),
+                ),
+            ],
+        )
 
     @http.route(
         "/api/document-intelligence/library-documents",
@@ -1161,10 +1600,20 @@ class DocumentIntelligenceController(http.Controller):
     )
     def library_documents(self, **kwargs):
         term = (kwargs.get("search") or "").strip()
-        domain = [("active", "=", True)]
+        domain = [
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("distribution_status", "=", "active"),
+            ("folder_id.active", "=", True),
+            ("folder_id.deleted_at", "=", False),
+            ("folder_id.distribution_status", "=", "active"),
+            ("folder_id.folder_type", "in", ["employee", "organizational"]),
+        ]
         if term:
             domain.append(("name", "ilike", term))
-        documents = request.env["doc.document"].search(domain, limit=40)
+        documents = request.env["doc.document"].search(
+            domain, limit=80, order="write_date desc"
+        )
         return {
             "success": True,
             "data": [

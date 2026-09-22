@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
   images: { unoptimized: true },
 
   reactStrictMode: true,
+
+  transpilePackages: ["@univerjs/presets", "@univerjs/preset-docs-core"],
 };
 
 export default nextConfig;

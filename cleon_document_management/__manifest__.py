@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CLEON DOCUMENT MANAGEMENT",
-    "version": "17.0.1.19.1",
+    "version": "17.0.1.30.0",
     "category": "CleonHR Document Management",
     "sequence": -1,
     "summary": "CLEON DOCUMENT MANAGEMENT",
@@ -20,6 +20,8 @@
         "data/compliance_data.xml",
         "data/recycle_origin_backfill.xml",
         "data/intelligence_cron.xml",
+        "data/template_categories.xml",
+        "views/template_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
@@ -31,4 +33,7 @@
     "application": False,
     "license": "LGPL-3",
     "post_init_hook": "post_init_hook",
+    "external_dependencies": {
+        "python": ["sentence_transformers", "torch"],
+    },
 }
