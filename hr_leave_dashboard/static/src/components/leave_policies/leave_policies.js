@@ -151,7 +151,14 @@ export class LeavePoliciesPage extends Component {
         if (!lines.length) return "-";
         const first = lines[0].accrual_amount;
         const allSame = lines.every(l => Number(l.accrual_amount) === Number(first));
-        return allSame ? `${first} ${lines[0].unit || 'days'}` : "Varies by Leave Type";
+        return allSame ? String(first) : "Varies by Leave Type";
+    }
+
+    get summaryAccrualSuffix() {
+        const lines = this.state.form.lines || [];
+        if (!lines.length || this.summaryUnit === "Varies by Leave Type" || this.summaryAccrualPeriod === "Varies by Leave Type") return "";
+        const period = { annually: " / year", monthly: " / month", weekly: " / week" }[lines[0].accrual_period] || "";
+        return `${lines[0].unit || "days"}${period}`;
     }
 
     get summaryUnit() {
@@ -160,6 +167,30 @@ export class LeavePoliciesPage extends Component {
         const first = lines[0].unit;
         const allSame = lines.every(l => l.unit === first);
         return allSame ? first : "Varies by Leave Type";
+    }
+
+    get summaryAccrualPeriod() {
+        const lines = this.state.form.lines || [];
+        if (!lines.length) return "-";
+        const first = lines[0].accrual_period;
+        if (!lines.every(line => line.accrual_period === first)) return "Varies by Leave Type";
+        return { annually: "Annually", monthly: "Monthly", weekly: "Weekly", none: "Fixed / No Accrual Cycle" }[first] || first || "-";
+    }
+
+    get summaryAccrualBasis() {
+        const lines = this.state.form.lines || [];
+        if (!lines.length) return "-";
+        const first = lines[0].accrual_basis;
+        if (!lines.every(line => line.accrual_basis === first)) return "Varies by Leave Type";
+        return { join_date: "Joined Date", calendar: "Calendar Year (1st Jan)", anniversary: "Anniversary" }[first] || first || "-";
+    }
+
+    get summaryWaitingPeriod() {
+        const lines = this.state.form.lines || [];
+        if (!lines.length) return "-";
+        const first = Number(lines[0].waiting_period_days || 0);
+        return lines.every(line => Number(line.waiting_period_days || 0) === first)
+            ? String(first) : "Varies by Leave Type";
     }
 
     get summaryCompensation() {

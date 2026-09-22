@@ -180,7 +180,6 @@
             <div>
               <div class="o_lp_title_wrap">
                 <h3><t t-esc="state.form.id ? 'Edit' : 'Add'"/> Leave Policy</h3>
-                <span class="o_lp_mode_tag" t-if="hasAdvancedOverrides">Advanced overrides configured</span>
               </div>
               <p class="o_lp_subtitle">
                 Organisation defaults are prefilled. Open Advanced Settings only when this policy needs more precise overrides.
@@ -190,12 +189,11 @@
               <button type="button"
                       t-att-class="'o_lp_adv_disclosure ' + (state.form.advancedOpen ? 'expanded ' : '') + (hasAdvancedOverrides ? 'configured' : '')"
                       t-on-click="toggleAdvanced"
-                      t-att-title="state.form.advancedOpen ? 'Collapse Advanced Settings' : 'Expand Advanced Settings'">
+                      t-att-title="state.form.advancedOpen ? 'Collapse Advanced Settings' : (hasAdvancedOverrides ? 'Advanced rules are configured; expand to review or edit them' : 'Expand Advanced Settings')">
                 <span class="o_lp_adv_icon">
                   <i class="fa fa-sliders"/>
                 </span>
                 <span class="o_lp_adv_text">Advanced Settings</span>
-                <span t-if="hasAdvancedOverrides" class="o_lp_adv_configured_pill">Configured</span>
                 <span class="o_lp_adv_chevron">
                   <i t-att-class="state.form.advancedOpen ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
                 </span>
@@ -279,7 +277,6 @@
                 <div class="o_lp_card_title">
                   <i class="fa fa-calculator text-primary"/>
                   <h4>B. Accrual Configuration</h4>
-                  <span t-if="hasAdvancedOverrides" class="badge bg-light text-primary ms-auto">Granular Overrides Active</span>
                 </div>
 
                 <t t-if="hasAdvancedOverrides">
@@ -290,52 +287,27 @@
                       <span>This policy contains granular per-leave-type rules. Common settings are summarized below.</span>
                     </div>
 
-                    <div class="o_lp_adv_summary_grid">
-                      <div class="o_lp_summary_item">
-                        <span class="o_lp_summary_label">Accrual Amount / Entitlement</span>
-                        <span class="o_lp_summary_value">
-                          <t t-if="summaryAccrualAmount === 'Varies by Leave Type'">
-                            <span class="o_lp_varies_badge"><i class="fa fa-sliders me-1"/>Varies by Leave Type</span>
-                          </t>
-                          <t t-else="" t-esc="summaryAccrualAmount"/>
-                        </span>
-                      </div>
-                      <div class="o_lp_summary_item">
-                        <span class="o_lp_summary_label">Unit</span>
-                        <span class="o_lp_summary_value">
-                          <t t-if="summaryUnit === 'Varies by Leave Type'">
-                            <span class="o_lp_varies_badge"><i class="fa fa-sliders me-1"/>Varies by Leave Type</span>
-                          </t>
-                          <t t-else="" t-esc="summaryUnit"/>
-                        </span>
-                      </div>
-                      <div class="o_lp_summary_item">
-                        <span class="o_lp_summary_label">Compensation</span>
-                        <span class="o_lp_summary_value">
-                          <t t-if="summaryCompensation === 'Varies by Leave Type'">
-                            <span class="o_lp_varies_badge"><i class="fa fa-sliders me-1"/>Varies by Leave Type</span>
-                          </t>
-                          <t t-else="" t-esc="summaryCompensation"/>
-                        </span>
-                      </div>
-                      <div class="o_lp_summary_item">
-                        <span class="o_lp_summary_label">Minimum Notice</span>
-                        <span class="o_lp_summary_value">
-                          <t t-if="summaryNoticeDays === 'Varies by Leave Type'">
-                            <span class="o_lp_varies_badge"><i class="fa fa-sliders me-1"/>Varies by Leave Type</span>
-                          </t>
-                          <t t-else="" t-esc="summaryNoticeDays"/>
-                        </span>
-                      </div>
-                      <div class="o_lp_summary_item">
-                        <span class="o_lp_summary_label">Supporting Documents</span>
-                        <span class="o_lp_summary_value">
-                          <t t-if="summaryDocPolicy === 'Varies by Leave Type'">
-                            <span class="o_lp_varies_badge"><i class="fa fa-sliders me-1"/>Varies by Leave Type</span>
-                          </t>
-                          <t t-else="" t-esc="summaryDocPolicy"/>
-                        </span>
-                      </div>
+                    <div class="o_lp_grid o_lp_readonly_grid">
+                      <label><span>Compensation</span><input type="text" t-att-value="summaryCompensation" readonly="readonly"/></label>
+                      <label><span>Unit</span><input type="text" t-att-value="summaryUnit" readonly="readonly"/></label>
+                      <label><span>Schedule of Accrual / Period</span><input type="text" t-att-value="summaryAccrualPeriod" readonly="readonly"/></label>
+                      <label><span>Accrual Basis / Start Date</span><input type="text" t-att-value="summaryAccrualBasis" readonly="readonly"/></label>
+                      <label>
+                        <span>Accrual Amount / Entitlement</span>
+                        <div class="input-group">
+                          <input type="text" class="form-control" t-att-value="summaryAccrualAmount" readonly="readonly"/>
+                          <span t-if="summaryAccrualSuffix" class="input-group-text" t-esc="summaryAccrualSuffix"/>
+                        </div>
+                      </label>
+                      <label>
+                        <span>Waiting Period</span>
+                        <div class="input-group">
+                          <input type="text" class="form-control" t-att-value="summaryWaitingPeriod" readonly="readonly"/>
+                          <span t-if="summaryWaitingPeriod !== 'Varies by Leave Type'" class="input-group-text">days after joined date</span>
+                        </div>
+                      </label>
+                      <label><span>Minimum Notice</span><input type="text" t-att-value="summaryNoticeDays" readonly="readonly"/></label>
+                      <label><span>Supporting Documents</span><input type="text" t-att-value="summaryDocPolicy" readonly="readonly"/></label>
                     </div>
 
                     <!-- Per-type Breakdown Table -->
