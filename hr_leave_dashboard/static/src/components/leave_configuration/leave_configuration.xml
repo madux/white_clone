@@ -15,6 +15,7 @@
             <i class="fa fa-lock"/><h3>Configuration access is not assigned</h3><p>Ask an administrator to grant an operational or configuration permission.</p>
           </div>
           <LeavePoliciesPage t-elif="state.activeTab === 'policies'" embedded="true"/>
+          <LeaveTypesPage t-elif="state.activeTab === 'leave_types'" embedded="true"/>
           <LeaveBalancesPage t-elif="state.activeTab === 'balances'" embedded="true"/>
           <OfficialHolidaysPage t-elif="state.activeTab === 'holidays'"/>
           <BlackoutWindowsPage t-elif="state.activeTab === 'blackouts'"/>

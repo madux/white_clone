@@ -6,6 +6,9 @@
     background: #f7f8fc;
     margin-left: 230px;
     transition: margin-left .3s;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 .o_leave_sidebar_collapsed .o_leave_configuration_main { margin-left: 68px; }

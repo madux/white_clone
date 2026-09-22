@@ -105,8 +105,9 @@ export class LeavePoliciesPage extends Component {
     }
 
     get listMinHeight() {
-        // Reserve the height of the fullest page so the pager does not jump on the last page.
-        return 42 + 62 * Math.min(this.state.pageSize, this.visibleRows.length);
+        // Always reserve height for a full pageSize worth of rows so the pager
+        // does not jump when switching status filters (e.g. Draft has fewer rows).
+        return 42 + 62 * this.state.pageSize;
     }
 
     changePageSize(event) {

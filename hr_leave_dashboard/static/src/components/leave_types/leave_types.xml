@@ -686,705 +686,131 @@
         <div>
             <div class="cleon-welcome-backdrop leave-type-modal-backdrop"/>
             <div class="modal d-block leave-type-form-modal" tabindex="-1" role="dialog">
-                <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+                <div class="modal-dialog modal-dialog-scrollable" style="max-width:560px" role="document">
                     <div class="modal-content shadow-lg border-0">
 
                         <!-- Modal Header -->
-                        <div class="modal-header bg-light border-bottom">
+                        <div class="modal-header border-bottom" style="background:linear-gradient(135deg,#e91e78 0%,#c4155f 100%);color:#fff">
                             <div>
-                                <h3 class="h5 font-weight-bold mb-0 text-dark">
+                                <h3 class="h5 font-weight-bold mb-0" style="color:#fff">
                                     <t t-if="props.mode === 'edit'">Edit Leave Type</t>
-                                    <t t-else="">Add New Leave Type</t>
+                                    <t t-else="">Add Leave Type</t>
                                 </h3>
-                                <p class="text-muted small mb-0">
-                                    <t t-if="props.mode === 'edit'">Update leave category details and policies</t>
-                                    <t t-else="">Create a leave category employees can request</t>
+                                <p class="small mb-0" style="color:rgba(255,255,255,0.8)">
+                                    Name, code, colour and classification. All entitlement and approval rules are set on each Leave Policy.
                                 </p>
                             </div>
-                            <button type="button" class="btn-close" t-on-click="handleCancel"/>
+                            <button type="button" class="btn-close btn-close-white" t-on-click="handleCancel"/>
                         </div>
 
-                        <!-- Modal Body with 5 Collapsible Sections -->
+                        <!-- Modal Body -->
                         <div class="modal-body p-4 bg-white" t-ref="modalBody">
 
+                            <!-- Validation errors -->
                             <t t-if="this.validationMessages.length">
-                                <div class="alert alert-danger border-danger mb-4" role="alert">
-                                    <strong class="d-block mb-1"><i class="fa fa-exclamation-circle me-1"/> Unable to save this leave type</strong>
-                                    <ul class="mb-0 ps-3 small">
-                                        <li t-foreach="this.validationMessages" t-as="message" t-key="message"><t t-esc="message"/></li>
+                                <div class="alert alert-danger mb-3" role="alert">
+                                    <strong><i class="fa fa-exclamation-circle me-1"/> Cannot save</strong>
+                                    <ul class="mb-0 ps-3 small mt-1">
+                                        <li t-foreach="this.validationMessages" t-as="msg" t-key="msg"><t t-esc="msg"/></li>
                                     </ul>
                                 </div>
                             </t>
 
-                            <!-- In-Use Warning Banner (Edit only) -->
-                            <t t-if="props.mode === 'edit' and state.form.assignedEmployeeCount &gt; 0">
-                                <div class="alert alert-warning border-warning d-flex align-items-center gap-2 mb-4" role="alert">
-                                    <i class="fa fa-exclamation-triangle fa-lg text-warning"/>
+                            <!-- In-Use banner -->
+                            <t t-if="props.mode === 'edit' and state.form.assignedEmployeeCount > 0">
+                                <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
+                                    <i class="fa fa-exclamation-triangle text-warning"/>
                                     <div class="small">
-                                        <strong>This leave type is currently in use</strong> — Assigned to <t t-esc="state.form.assignedEmployeeCount"/> employees with <t t-esc="state.form.activeRequestCount"/> active requests. Changes may affect leave balances.
+                                        <strong>This leave type is in use</strong> — assigned to <t t-esc="state.form.assignedEmployeeCount"/> employees with <t t-esc="state.form.activeRequestCount"/> active requests. Renaming it will update everywhere it appears.
                                     </div>
                                 </div>
                             </t>
 
-                            <!-- 1. BASIC INFORMATION SECTION -->
-                            <div class="form-section-card border rounded p-3 mb-4 bg-light">
-                                <div class="section-card-header d-flex justify-content-between align-items-center cursor-pointer" t-on-click="() => this.toggleSection('basic')">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="section-num-badge bg-pink text-white font-weight-bold">①</span>
-                                        <div>
-                                            <h4 class="h6 font-weight-bold mb-0 text-dark">Basic Information</h4>
-                                            <span class="text-muted micro-text">Leave type name, code, description and colour</span>
-                                        </div>
-                                    </div>
-                                    <i t-att-class="'fa ' + (state.expandedSections.basic ? 'fa-chevron-up' : 'fa-chevron-down') + ' text-muted'"/>
+                            <!-- Name + Code -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-8">
+                                    <label class="form-label fw-bold small">Leave Type Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" placeholder="e.g. Annual Leave, Sick Leave" t-model="state.form.name"/>
+                                    <span t-if="state.errors.name" class="text-danger" style="font-size:11px"><t t-esc="state.errors.name"/></span>
                                 </div>
-
-                                <t t-if="state.expandedSections.basic">
-                                    <div class="row g-3 mt-2 border-top pt-3 bg-white p-3 rounded border">
-                                        <!-- Leave Type Name -->
-                                        <div class="col-md-8">
-                                            <label class="form-label font-weight-bold small">Leave Type Name <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control form-control-sm" placeholder="e.g., Annual Leave" t-model="state.form.name"/>
-                                            <t t-if="state.errors.name">
-                                                <span class="text-danger micro-text"><t t-esc="state.errors.name"/></span>
-                                            </t>
-                                        </div>
-
-                                        <!-- Code / Abbreviation -->
-                                        <div class="col-md-4">
-                                            <label class="form-label font-weight-bold small">Code / Abbreviation <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control form-control-sm text-uppercase" placeholder="e.g., AL" t-model="state.form.code"/>
-                                            <t t-if="state.errors.code">
-                                                <span class="text-danger micro-text"><t t-esc="state.errors.code"/></span>
-                                            </t>
-                                        </div>
-
-                                        <!-- Description -->
-                                        <div class="col-12">
-                                            <label class="form-label font-weight-bold small">Description</label>
-                                            <textarea class="form-control form-control-sm" rows="2" placeholder="Brief description of this leave type" t-model="state.form.description"/>
-                                        </div>
-
-                                        <!-- Colour Picker -->
-                                        <div class="col-12">
-                                            <label class="form-label font-weight-bold small">Colour</label>
-                                            <div class="d-flex align-items-center gap-3 mb-2">
-                                                <input type="color" class="form-control form-control-color" t-model="state.form.colorHex"/>
-                                                <input type="text" class="form-control form-control-sm w-120 font-monospace" t-model="state.form.colorHex"/>
-                                                <div class="color-preview-bar flex-grow-1 rounded shadow-sm" t-att-style="'height: 32px; background-color: ' + state.form.colorHex"/>
-                                            </div>
-                                            <!-- 16 Preset Swatches -->
-                                            <div class="preset-swatch-grid d-flex flex-wrap gap-2">
-                                                <t t-foreach="this.presetSwatches" t-as="sw" t-key="sw">
-                                                    <span class="preset-swatch-item rounded cursor-pointer"
-                                                          t-att-style="'background-color: ' + sw"
-                                                          t-on-click="() => this.selectPresetColor(sw)"/>
-                                                </t>
-                                            </div>
-                                            <t t-if="state.errors.colorHex">
-                                                <span class="text-danger micro-text d-block mt-1"><t t-esc="state.errors.colorHex"/></span>
-                                            </t>
-                                        </div>
-                                    </div>
-                                </t>
+                                <div class="col-4">
+                                    <label class="form-label fw-bold small">Code <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm text-uppercase" placeholder="AL" maxlength="4" t-model="state.form.code"/>
+                                    <span t-if="state.errors.code" class="text-danger" style="font-size:11px"><t t-esc="state.errors.code"/></span>
+                                </div>
                             </div>
 
-                            <!-- 2. LEAVE TYPE SETTINGS SECTION -->
-                            <div class="form-section-card border rounded p-3 mb-4 bg-light">
-                                <div class="section-card-header d-flex justify-content-between align-items-center cursor-pointer" t-on-click="() => this.toggleSection('settings')">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="section-num-badge bg-warning text-dark font-weight-bold">②</span>
-                                        <div>
-                                            <h4 class="h6 font-weight-bold mb-0 text-dark">Leave Type Settings</h4>
-                                            <span class="text-muted micro-text">Category, entitlement cap and gender eligibility</span>
-                                        </div>
-                                    </div>
-                                    <i t-att-class="'fa ' + (state.expandedSections.settings ? 'fa-chevron-up' : 'fa-chevron-down') + ' text-muted'"/>
-                                </div>
-
-                                <t t-if="state.expandedSections.settings">
-                                    <div class="row g-3 mt-2 border-top pt-3 bg-white p-3 rounded border">
-                                        <!-- Type Category Radio Group -->
-                                        <div class="col-12">
-                                            <label class="form-label font-weight-bold small">Type Category <span class="text-danger">*</span></label>
-                                            <div class="d-flex gap-4">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="cat" id="cat_paid" value="paid" t-model="state.form.category"/>
-                                                    <label class="form-check-label font-weight-bold text-success" for="cat_paid">Paid Leave</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="cat" id="cat_unpaid" value="unpaid" t-model="state.form.category"/>
-                                                    <label class="form-check-label font-weight-bold text-secondary" for="cat_unpaid">Unpaid Leave</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="cat" id="cat_partial" value="partially_paid" t-model="state.form.category"/>
-                                                    <label class="form-check-label font-weight-bold text-warning-dark" for="cat_partial">Partially Paid</label>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Maximum Entitlement Days -->
-                                        <div class="col-md-6">
-                                            <label class="form-label font-weight-bold small">Maximum Entitlement (days/year)</label>
-                                            <input type="number" class="form-control form-control-sm"
-                                                   t-att-disabled="state.form.unlimitedEntitlement"
-                                                   t-model="state.form.maxEntitlement"/>
-                                            <div class="form-check mt-1">
-                                                <input class="form-check-input" type="checkbox" id="unlimited_chk" t-model="state.form.unlimitedEntitlement"/>
-                                                <label class="form-check-label small text-muted" for="unlimited_chk">Unlimited Entitlement</label>
-                                            </div>
-                                            <span t-if="state.errors.entitlement" class="text-danger micro-text"><t t-esc="state.errors.entitlement"/></span>
-                                        </div>
-
-                                        <!-- Applicable Gender -->
-                                        <div class="col-md-6">
-                                            <label class="form-label font-weight-bold small">Applicable Gender</label>
-                                            <select class="form-select form-select-sm" t-model="state.form.applicableGender">
-                                                <option value="all">All Genders</option>
-                                                <option value="male">Male Only</option>
-                                                <option value="female">Female Only</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </t>
+                            <!-- Description -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Description <span class="text-muted fw-normal">(optional)</span></label>
+                                <textarea class="form-control form-control-sm" rows="2" placeholder="Brief description of this leave type…" t-model="state.form.description"/>
                             </div>
 
-                            <!-- 3. APPLIES TO: ELIGIBILITY SECTION -->
-                            <div class="form-section-card border rounded p-3 mb-4 bg-light">
-                                <div class="section-card-header d-flex justify-content-between align-items-center cursor-pointer" t-on-click="() => this.toggleSection('appliesTo')">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="section-num-badge bg-primary text-white font-weight-bold">③</span>
-                                        <div>
-                                            <h4 class="h6 font-weight-bold mb-0 text-dark">Applies To — Eligibility Scope</h4>
-                                            <span class="text-muted micro-text">Who can access this leave type — scope, employee types, locations and service requirements</span>
-                                        </div>
-                                    </div>
-                                    <i t-att-class="'fa ' + (state.expandedSections.appliesTo ? 'fa-chevron-up' : 'fa-chevron-down') + ' text-muted'"/>
+                            <!-- Colour -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Colour</label>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <input type="color" class="form-control form-control-color" style="width:44px;height:36px" t-model="state.form.colorHex"/>
+                                    <input type="text" class="form-control form-control-sm font-monospace" style="width:110px" placeholder="#3B82F6" t-model="state.form.colorHex"/>
+                                    <div class="flex-grow-1 rounded" style="height:36px" t-att-style="'height:36px;border-radius:6px;background-color:' + state.form.colorHex"/>
                                 </div>
-
-                                <t t-if="state.expandedSections.appliesTo">
-                                    <div class="row g-3 mt-2 border-top pt-3 bg-white p-3 rounded border">
-                                        <!-- Eligibility Scope 5 Radio Options -->
-                                        <div class="col-12">
-                                            <label class="form-label font-weight-bold small">Eligibility Scope</label>
-                                            <div class="row g-2 mb-3">
-                                                <div class="col-md-4">
-                                                    <div t-att-class="'p-2 border rounded cursor-pointer ' + (state.form.eligibilityScope === 'all' ? 'border-primary bg-primary-subtle' : 'bg-light')"
-                                                         t-on-click="() => state.form.eligibilityScope = 'all'">
-                                                        <strong class="d-block small text-dark">All Employees</strong>
-                                                        <span class="micro-text text-muted">Everyone in organisation</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div t-att-class="'p-2 border rounded cursor-pointer ' + (state.form.eligibilityScope === 'departments' ? 'border-primary bg-primary-subtle' : 'bg-light')"
-                                                         t-on-click="() => state.form.eligibilityScope = 'departments'">
-                                                        <strong class="d-block small text-dark">Specific Departments</strong>
-                                                        <span class="micro-text text-muted">Choose departments</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div t-att-class="'p-2 border rounded cursor-pointer ' + (state.form.eligibilityScope === 'units' ? 'border-primary bg-primary-subtle' : 'bg-light')"
-                                                         t-on-click="() => state.form.eligibilityScope = 'units'">
-                                                        <strong class="d-block small text-dark">Specific Units</strong>
-                                                        <span class="micro-text text-muted">Choose units / teams</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6 mt-2">
-                                                    <div t-att-class="'p-2 border rounded cursor-pointer ' + (state.form.eligibilityScope === 'grades' ? 'border-primary bg-primary-subtle' : 'bg-light')"
-                                                         t-on-click="() => state.form.eligibilityScope = 'grades'">
-                                                        <strong class="d-block small text-dark">Grade Levels</strong>
-                                                        <span class="micro-text text-muted">Choose grade / levels</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6 mt-2">
-                                                    <div t-att-class="'p-2 border rounded cursor-pointer ' + (state.form.eligibilityScope === 'employees' ? 'border-primary bg-primary-subtle' : 'bg-light')"
-                                                         t-on-click="() => state.form.eligibilityScope = 'employees'">
-                                                        <strong class="d-block small text-dark">Named Employees</strong>
-                                                        <span class="micro-text text-muted">Choose individuals</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Dynamic Multi-Select Dropdowns based on Eligibility Scope -->
-                                        <t t-if="state.form.eligibilityScope === 'departments'">
-                                            <div class="col-12">
-                                                <label class="form-label font-weight-bold small">Select Eligible Departments <span class="text-danger">*</span></label>
-                                                <select class="form-select form-select-sm" multiple="1" style="height: 90px;" t-on-change="(ev) => this.onMultiSelectChange('departmentIds', ev)">
-                                                    <t t-foreach="props.departments" t-as="dept" t-key="dept.id">
-                                                        <option t-att-value="dept.id" t-att-selected="state.form.departmentIds.includes(dept.id)"><t t-esc="dept.name"/></option>
-                                                    </t>
-                                                </select>
-                                            </div>
-                                        </t>
-                                        <t t-if="state.form.eligibilityScope === 'units'">
-                                            <div class="col-12">
-                                                <label class="form-label font-weight-bold small">Select Eligible Units <span class="text-danger">*</span></label>
-                                                <select class="form-select form-select-sm" multiple="1" style="height: 90px;" t-on-change="(ev) => this.onMultiSelectChange('unitIds', ev)">
-                                                    <t t-foreach="props.units" t-as="u" t-key="u.id">
-                                                        <option t-att-value="u.id" t-att-selected="state.form.unitIds.includes(u.id)"><t t-esc="u.name"/></option>
-                                                    </t>
-                                                </select>
-                                            </div>
-                                        </t>
-                                        <t t-if="state.form.eligibilityScope === 'grades'">
-                                            <div class="col-12">
-                                                <label class="form-label font-weight-bold small">Select Eligible Grade Levels <span class="text-danger">*</span></label>
-                                                <select class="form-select form-select-sm" multiple="1" style="height: 90px;" t-on-change="(ev) => this.onMultiSelectChange('gradeIds', ev)">
-                                                    <t t-foreach="props.grades" t-as="g" t-key="g.id">
-                                                        <option t-att-value="g.id" t-att-selected="state.form.gradeIds.includes(g.id)"><t t-esc="g.name"/></option>
-                                                    </t>
-                                                </select>
-                                            </div>
-                                        </t>
-                                        <t t-if="state.form.eligibilityScope === 'employees'">
-                                            <div class="col-12">
-                                                <label class="form-label font-weight-bold small">Select Named Employees <span class="text-danger">*</span></label>
-                                                <select class="form-select form-select-sm" multiple="1" style="height: 100px;" t-on-change="(ev) => this.onMultiSelectChange('employeeIds', ev)">
-                                                    <t t-foreach="props.employees" t-as="emp" t-key="emp.id">
-                                                        <option t-att-value="emp.id" t-att-selected="state.form.employeeIds.includes(emp.id)"><t t-esc="emp.name"/></option>
-                                                    </t>
-                                                </select>
-                                            </div>
-                                        </t>
-
-                                        <!-- Applicable Employee Types Filter -->
-                                        <div class="col-md-6">
-                                            <label class="form-label font-weight-bold small">Applicable Employee Types</label>
-                                            <div class="leave-m2m">
-                                                <div class="leave-m2m-control" role="combobox" aria-haspopup="listbox" t-att-aria-expanded="state.employeeTypePickerOpen" t-on-click="() => this.toggleMultiPicker('employeeType')">
-                                                    <span t-foreach="this.getSelectedMultiItems('employeeTypeIds', props.employmentTypes)" t-as="et" t-key="et.id" class="leave-m2m-tag">
-                                                        <span t-esc="et.name"/>
-                                                        <button type="button" class="leave-m2m-tag-remove" t-att-aria-label="'Remove ' + et.name" t-on-click.stop="() => this.removeMultiValue('employeeTypeIds', et.id)">×</button>
-                                                    </span>
-                                                    <span t-if="!state.form.employeeTypeIds.length" class="leave-m2m-placeholder">Select employee types...</span>
-                                                    <i class="fa fa-chevron-down leave-m2m-chevron" aria-hidden="true"/>
-                                                </div>
-                                                <div t-if="state.employeeTypePickerOpen" class="leave-m2m-dropdown">
-                                                    <div class="leave-m2m-search">
-                                                        <i class="fa fa-search" aria-hidden="true"/>
-                                                        <input type="text" t-model="state.employeeTypeSearch" placeholder="Search employee types..." t-on-keydown="onMultiPickerKeydown"/>
-                                                    </div>
-                                                    <div class="leave-m2m-options" role="listbox">
-                                                        <button t-foreach="this.getAvailableMultiItems('employeeTypeIds', props.employmentTypes, state.employeeTypeSearch)" t-as="et" t-key="et.id" type="button" role="option" class="leave-m2m-option" t-on-click="() => this.addMultiValue('employeeTypeIds', et.id)">
-                                                            <span t-esc="et.name"/>
-                                                        </button>
-                                                        <p t-if="!this.getAvailableMultiItems('employeeTypeIds', props.employmentTypes, state.employeeTypeSearch).length" class="leave-m2m-empty">No more matching employee types.</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <span t-if="state.errors.employmentTypes" class="text-danger micro-text"><t t-esc="state.errors.employmentTypes"/></span>
-                                        </div>
-
-                                        <!-- Applicable Locations -->
-                                        <div class="col-md-6">
-                                            <label class="form-label font-weight-bold small">Applicable Locations</label>
-                                            <div class="leave-m2m">
-                                                <div class="leave-m2m-control" role="combobox" aria-haspopup="listbox" t-att-aria-expanded="state.locationPickerOpen" t-on-click="() => this.toggleMultiPicker('location')">
-                                                    <span t-foreach="this.getSelectedMultiItems('locationIds', props.locations)" t-as="loc" t-key="loc.id" class="leave-m2m-tag">
-                                                        <span t-esc="loc.name"/>
-                                                        <button type="button" class="leave-m2m-tag-remove" t-att-aria-label="'Remove ' + loc.name" t-on-click.stop="() => this.removeMultiValue('locationIds', loc.id)">×</button>
-                                                    </span>
-                                                    <span t-if="!state.form.locationIds.length" class="leave-m2m-placeholder">Select locations...</span>
-                                                    <i class="fa fa-chevron-down leave-m2m-chevron" aria-hidden="true"/>
-                                                </div>
-                                                <div t-if="state.locationPickerOpen" class="leave-m2m-dropdown">
-                                                    <div class="leave-m2m-search">
-                                                        <i class="fa fa-search" aria-hidden="true"/>
-                                                        <input type="text" t-model="state.locationSearch" placeholder="Search locations..." t-on-keydown="onMultiPickerKeydown"/>
-                                                    </div>
-                                                    <div class="leave-m2m-options" role="listbox">
-                                                        <button t-foreach="this.getAvailableMultiItems('locationIds', props.locations, state.locationSearch)" t-as="loc" t-key="loc.id" type="button" role="option" class="leave-m2m-option" t-on-click="() => this.addMultiValue('locationIds', loc.id, 'locations')">
-                                                            <span t-esc="loc.name"/>
-                                                        </button>
-                                                        <p t-if="!this.getAvailableMultiItems('locationIds', props.locations, state.locationSearch).length" class="leave-m2m-empty">No more matching locations.</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <t t-if="state.errors.locations">
-                                                <span class="text-danger micro-text"><t t-esc="state.errors.locations"/></span>
-                                            </t>
-                                        </div>
-
-                                        <!-- Minimum Service Period -->
-                                        <div class="col-md-6">
-                                            <label class="form-label font-weight-bold small">Minimum Service Period (months)</label>
-                                            <input type="number" class="form-control form-control-sm" t-model="state.form.minimumServiceMonths"/>
-                                            <span t-if="this.hasMinimumServicePeriod" class="text-success micro-text">Requires <t t-esc="state.form.minimumServiceMonths"/> months of employment.</span>
-                                        </div>
-                                    </div>
-                                </t>
-                            </div>
-
-                            <!-- 4. ACCRUAL SECTION -->
-                            <div class="form-section-card border rounded p-3 mb-4 bg-light">
-                                <div class="section-card-header d-flex justify-content-between align-items-center cursor-pointer" t-on-click="() => this.toggleSection('accrual')">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="section-num-badge bg-success text-white font-weight-bold">④</span>
-                                        <div>
-                                            <h4 class="h6 font-weight-bold mb-0 text-dark">Accrual Policy</h4>
-                                            <span class="text-muted micro-text">How and when leave days are allocated</span>
-                                        </div>
-                                    </div>
-                                    <i t-att-class="'fa ' + (state.expandedSections.accrual ? 'fa-chevron-up' : 'fa-chevron-down') + ' text-muted'"/>
-                                </div>
-
-                                <t t-if="state.expandedSections.accrual">
-                                    <div class="mt-2 border-top pt-3 bg-white p-3 rounded border">
-                                        <!-- 5 Accrual Method Radio Cards -->
-                                        <div class="d-flex flex-column gap-2 mb-3">
-                                            <div t-att-class="'p-3 border rounded cursor-pointer d-flex align-items-center justify-content-between ' + (state.form.accrualMethod === 'year_start' ? 'border-success bg-success-subtle' : 'bg-light')"
-                                                 t-on-click="() => state.form.accrualMethod = 'year_start'">
-                                                <div>
-                                                    <strong class="d-block text-dark small">Full Allocation at Year Start</strong>
-                                                    <span class="micro-text text-muted">All leave days are credited on January 1st each year</span>
-                                                </div>
-                                                <input class="form-check-input" type="radio" checked="state.form.accrualMethod === 'year_start'"/>
-                                            </div>
-
-                                            <div t-att-class="'p-3 border rounded cursor-pointer d-flex align-items-center justify-content-between ' + (state.form.accrualMethod === 'monthly' ? 'border-success bg-success-subtle' : 'bg-light')"
-                                                 t-on-click="() => state.form.accrualMethod = 'monthly'">
-                                                <div>
-                                                    <strong class="d-block text-dark small">Monthly Accrual</strong>
-                                                    <span class="micro-text text-muted">Leave days accrue gradually every month throughout the year</span>
-                                                </div>
-                                                <input class="form-check-input" type="radio" checked="state.form.accrualMethod === 'monthly'"/>
-                                            </div>
-
-                                            <div t-att-class="'p-3 border rounded cursor-pointer d-flex align-items-center justify-content-between ' + (state.form.accrualMethod === 'hire_anniversary' ? 'border-success bg-success-subtle' : 'bg-light')"
-                                                 t-on-click="() => state.form.accrualMethod = 'hire_anniversary'">
-                                                <div>
-                                                    <strong class="d-block text-dark small">Hire-Date Anniversary</strong>
-                                                    <span class="micro-text text-muted">Allocation renews on each employee's hire date anniversary</span>
-                                                </div>
-                                                <input class="form-check-input" type="radio" checked="state.form.accrualMethod === 'hire_anniversary'"/>
-                                            </div>
-
-                                            <div t-att-class="'p-3 border rounded cursor-pointer d-flex align-items-center justify-content-between ' + (state.form.accrualMethod === 'first_year_prorated' ? 'border-success bg-success-subtle' : 'bg-light')"
-                                                 t-on-click="() => state.form.accrualMethod = 'first_year_prorated'">
-                                                <div>
-                                                    <strong class="d-block text-dark small">Pro-rated (First Year)</strong>
-                                                    <span class="micro-text text-muted">Proportional allocation based on joining date in first year</span>
-                                                </div>
-                                                <input class="form-check-input" type="radio" checked="state.form.accrualMethod === 'first_year_prorated'"/>
-                                            </div>
-
-                                            <div t-att-class="'p-3 border rounded cursor-pointer d-flex align-items-center justify-content-between ' + (state.form.accrualMethod === 'manual' ? 'border-success bg-success-subtle' : 'bg-light')"
-                                                 t-on-click="() => state.form.accrualMethod = 'manual'">
-                                                <div>
-                                                    <strong class="d-block text-dark small">None — Manual Allocation</strong>
-                                                    <span class="micro-text text-muted">Leave balance is set manually by HR (no automatic accrual)</span>
-                                                </div>
-                                                <input class="form-check-input" type="radio" checked="state.form.accrualMethod === 'manual'"/>
-                                            </div>
-                                        </div>
-
-                                        <div t-if="state.form.accrualMethod === 'monthly'" class="row g-2 mb-3">
-                                            <div class="col-md-6">
-                                                <label class="form-label micro-label font-weight-bold">Days earned per month</label>
-                                                <input type="number" min="0" step="0.01" t-att-class="'form-control form-control-sm ' + (state.errors.monthlyAccrualRate ? 'is-invalid' : '')" t-model="state.form.monthlyAccrualRate"/>
-                                                <div t-if="state.errors.monthlyAccrualRate" class="invalid-feedback" t-esc="state.errors.monthlyAccrualRate"/>
-                                            </div>
-                                            <div class="col-md-6 d-flex align-items-end">
-                                                <div class="alert alert-light border w-100 py-2 mb-0 small">
-                                                    Annual equivalent: <strong><t t-esc="this.monthlyAnnualEquivalent"/> days</strong>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Accrual Summary Preview Banner -->
-                                        <div class="alert alert-info border-info mb-0 py-2 px-3 small d-flex align-items-center gap-2">
-                                            <i class="fa fa-info-circle"/>
-                                            <span><t t-esc="this.accrualSummaryPreviewText"/></span>
-                                        </div>
-                                    </div>
-                                </t>
-                            </div>
-
-                            <!-- 5. ADVANCED POLICIES SECTION -->
-                            <div class="form-section-card border rounded p-3 mb-4 bg-light">
-                                <div class="section-card-header d-flex justify-content-between align-items-center cursor-pointer" t-on-click="() => this.toggleSection('advanced')">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="section-num-badge bg-info text-white font-weight-bold">⑤</span>
-                                        <div>
-                                            <h4 class="h6 font-weight-bold mb-0 text-dark">
-                                                Advanced Policies <span class="badge bg-secondary micro-badge ms-1">Optional</span>
-                                            </h4>
-                                            <span class="text-muted micro-text">Carryover, tenure scaling, suspension rules, approval, restrictions</span>
-                                        </div>
-                                    </div>
-                                    <i t-att-class="'fa ' + (state.expandedSections.advanced ? 'fa-chevron-up' : 'fa-chevron-down') + ' text-muted'"/>
-                                </div>
-
-                                <t t-if="state.expandedSections.advanced">
-                                    <div class="row g-3 mt-2 border-top pt-3 bg-white p-3 rounded border">
-
-                                        <!-- Accrual Rules -->
-                                        <div class="col-12 border-bottom pb-3">
-                                            <h5 class="h6 font-weight-bold text-dark mb-2">Accrual Rules &amp; Carryforward</h5>
-                                            <div class="row g-2">
-                                                <div class="col-md-4">
-                                                    <div class="form-check form-switch">
-                                                        <input class="form-check-input" type="checkbox" id="cf_chk" t-model="state.form.allowCarryForward"/>
-                                                        <label class="form-check-label small font-weight-bold" for="cf_chk">Allow Carry Forward</label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div class="form-check form-switch">
-                                                        <input class="form-check-input" type="checkbox" id="encash_chk" t-att-disabled="!state.form.allowCarryForward" t-model="state.form.allowEncashment"/>
-                                                        <label class="form-check-label small font-weight-bold" for="encash_chk">Allow Encashment</label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label micro-label">Max Balance Cap (days)</label>
-                                                    <input type="number" class="form-control form-control-sm" t-att-disabled="!state.form.allowCarryForward" t-model="state.form.maxBalanceCap"/>
-                                                </div>
-                                            </div>
-                                            <div t-if="state.form.allowCarryForward" class="row g-2 mt-2">
-                                                <div class="col-md-6">
-                                                    <label class="form-label micro-label">Max Carry-Forward Days</label>
-                                                    <input type="number" min="0" step="0.5" t-att-class="'form-control form-control-sm ' + (state.errors.maxCarryoverDays ? 'is-invalid' : '')" t-model="state.form.maxCarryoverDays"/>
-                                                    <div t-if="state.errors.maxCarryoverDays" class="invalid-feedback" t-esc="state.errors.maxCarryoverDays"/>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label micro-label">Expiry Rule</label>
-                                                    <select class="form-select form-select-sm" t-model="state.form.carryoverExpiryRule">
-                                                        <option value="never">Never</option>
-                                                        <option value="three_months">3 Months</option>
-                                                        <option value="six_months">6 Months</option>
-                                                        <option value="end_next_year">End of Next Year</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Tenure-based Accrual Scaling Tier Table -->
-                                        <div class="col-12 border-bottom pb-3">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <div class="form-check form-switch m-0">
-                                                    <input class="form-check-input" type="checkbox" id="tenure_chk" t-model="state.form.tenureBasedAccrual"/>
-                                                    <label class="form-check-label font-weight-bold small" for="tenure_chk">Tenure-based Accrual Scaling</label>
-                                                </div>
-                                                <t t-if="state.form.tenureBasedAccrual">
-                                                    <button type="button" class="btn btn-sm btn-link text-primary p-0" t-on-click="addTenureTier">+ Add Tier</button>
-                                                </t>
-                                            </div>
-
-                                            <t t-if="state.form.tenureBasedAccrual">
-                                                <table class="table table-sm border align-middle mb-0">
-                                                    <thead class="bg-light micro-text">
-                                                        <tr>
-                                                            <th>From Year</th>
-                                                            <th>To Year</th>
-                                                            <th>Days Allocated / Yr</th>
-                                                            <th style="width: 40px;"/>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <t t-foreach="state.form.tenureTiers" t-as="tier" t-key="tier.id">
-                                                            <tr>
-                                                                <td><input type="number" class="form-control form-control-sm" t-model="tier.year_from"/></td>
-                                                                <td><input type="number" class="form-control form-control-sm" t-model="tier.year_to"/></td>
-                                                                <td><input type="number" class="form-control form-control-sm" t-model="tier.days_per_year"/></td>
-                                                                <td><button type="button" class="btn btn-sm text-danger p-0" t-on-click="() => this.removeTenureTier(tier_index)"><i class="fa fa-times"/></button></td>
-                                                            </tr>
-                                                        </t>
-                                                    </tbody>
-                                                </table>
-                                            </t>
-                                        </div>
-
-                                        <!-- Accrual Suspension Conditions (5 Checkboxes) -->
-                                        <div class="col-12 border-bottom pb-3">
-                                            <h5 class="h6 font-weight-bold text-dark mb-2">Accrual Suspension Conditions</h5>
-                                            <p class="text-muted micro-text mb-2">Accrual stops automatically during the following employee states:</p>
-                                            <div class="row g-2">
-                                                <div class="col-md-6">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" id="susp_unpaid" t-model="state.form.suspensionUnpaidLeave"/>
-                                                        <label class="form-check-label small" for="susp_unpaid">Unpaid Leave</label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" id="susp_disc" t-model="state.form.suspensionDisciplinary"/>
-                                                        <label class="form-check-label small" for="susp_disc">Disciplinary Suspension</label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" id="susp_sick" t-model="state.form.suspensionExtendedSick"/>
-                                                        <label class="form-check-label small" for="susp_sick">Extended Sick Leave (&gt;30 days)</label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" id="susp_prob" t-model="state.form.suspensionProbation"/>
-                                                        <label class="form-check-label small" for="susp_prob">Probation Period</label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" id="susp_unauth" t-model="state.form.suspensionUnauthorizedAbsence"/>
-                                                        <label class="form-check-label small" for="susp_unauth">Unauthorized Absence</label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Approval Settings -->
-                                        <div class="col-12 border-bottom pb-3">
-                                            <h5 class="h6 font-weight-bold text-dark mb-2">Approval Settings</h5>
-
-                                            <!-- Approval Workflow 3 Radio Cards -->
-                                            <label class="form-label micro-label font-weight-bold mb-2">Approval Workflow</label>
-                                            <div class="row g-2 mb-3">
-                                                <div class="col-md-4">
-                                                    <div t-att-class="'p-2 border rounded cursor-pointer ' + (state.form.approvalWorkflow === 'none' ? 'border-primary bg-primary-subtle' : 'bg-light')"
-                                                         t-on-click="() => state.form.approvalWorkflow = 'none'">
-                                                        <strong class="d-block small text-dark">No Approval Required</strong>
-                                                        <span class="micro-text text-muted">Auto-approved upon submission</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div t-att-class="'p-2 border rounded cursor-pointer ' + (state.form.approvalWorkflow === 'single' ? 'border-primary bg-primary-subtle' : 'bg-light')"
-                                                         t-on-click="() => state.form.approvalWorkflow = 'single'">
-                                                        <strong class="d-block small text-dark">Single Approver</strong>
-                                                        <span class="micro-text text-muted">Requires line manager approval</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div t-att-class="'p-2 border rounded cursor-pointer ' + (state.form.approvalWorkflow === 'multi' ? 'border-primary bg-primary-subtle' : 'bg-light')"
-                                                         t-on-click="() => state.form.approvalWorkflow = 'multi'">
-                                                        <strong class="d-block small text-dark">Multi-level Approval</strong>
-                                                        <span class="micro-text text-muted">Manager + HR Officer approval</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div t-if="state.form.approvalWorkflow === 'multi'" class="border rounded bg-light p-2 mb-3">
-                                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                                    <strong class="small">Ordered Approval Stages</strong>
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" t-on-click="addApprovalStage">+ Add Stage</button>
-                                                </div>
-                                                <div t-foreach="state.form.approvalStages" t-as="stage" t-key="stage.id || stage_index" class="row g-2 align-items-end border-top py-2">
-                                                    <div class="col-md-4">
-                                                        <label class="micro-label">Stage <t t-esc="stage_index + 1"/> Approver</label>
-                                                        <select class="form-select form-select-sm" t-model="stage.approver_type">
-                                                            <option value="direct_manager">Direct Manager</option>
-                                                            <option value="department_head">Department Head</option>
-                                                            <option value="hr_manager">HR Manager</option>
-                                                            <option value="hr_director">HR Director</option>
-                                                            <option value="finance_director">Finance Director</option>
-                                                            <option value="ceo">CEO / MD</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-2"><label class="micro-label">Escalate after</label><input type="number" min="0" class="form-control form-control-sm" t-model="stage.escalation_value"/></div>
-                                                    <div class="col-md-2"><label class="micro-label">Unit</label><select class="form-select form-select-sm" t-model="stage.escalation_unit"><option value="hours">Hours</option><option value="days">Days</option></select></div>
-                                                    <div class="col-md-4 d-flex gap-1">
-                                                        <button type="button" class="btn btn-sm btn-outline-secondary" t-att-disabled="stage_index === 0" t-on-click="() => this.moveApprovalStage(stage_index, -1)"><i class="fa fa-arrow-up"/></button>
-                                                        <button type="button" class="btn btn-sm btn-outline-secondary" t-att-disabled="stage_index === state.form.approvalStages.length - 1" t-on-click="() => this.moveApprovalStage(stage_index, 1)"><i class="fa fa-arrow-down"/></button>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger" t-att-disabled="state.form.approvalStages.length === 1" t-on-click="() => this.removeApprovalStage(stage_index)"><i class="fa fa-trash"/></button>
-                                                    </div>
-                                                </div>
-                                                <div class="small text-muted mt-2">Request <t t-foreach="state.form.approvalStages" t-as="stage" t-key="'chain_' + (stage.id || stage_index)"> → <strong><t t-esc="stage.approver_type.replaceAll('_', ' ')"/></strong></t> → Approved</div>
-                                            </div>
-
-                                            <!-- Require Supporting Document 3-Way Pill Button Group -->
-                                            <label class="form-label micro-label font-weight-bold mb-2">Require Supporting Document</label>
-                                            <div class="btn-group btn-group-sm w-100 mb-3">
-                                                <button type="button" t-att-class="'btn ' + (state.form.supportingDocumentPolicy === 'never' ? 'btn-pink-active' : 'btn-outline-secondary')"
-                                                        t-on-click="() => state.form.supportingDocumentPolicy = 'never'">Never Required</button>
-                                                <button type="button" t-att-class="'btn ' + (state.form.supportingDocumentPolicy === 'conditional' ? 'btn-pink-active' : 'btn-outline-secondary')"
-                                                        t-on-click="() => state.form.supportingDocumentPolicy = 'conditional'">Conditional (&gt;3 days)</button>
-                                                <button type="button" t-att-class="'btn ' + (state.form.supportingDocumentPolicy === 'always' ? 'btn-pink-active' : 'btn-outline-secondary')"
-                                                        t-on-click="() => state.form.supportingDocumentPolicy = 'always'">Always Required</button>
-                                            </div>
-
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label class="form-label micro-label font-weight-bold">
-                                                        Minimum Notice Period (days) <i class="fa fa-info-circle text-muted ms-1" title="Minimum number of days before leave start date request must be submitted"/>
-                                                    </label>
-                                                    <input type="number" class="form-control form-control-sm" t-model="state.form.minimumNoticeDays"/>
-                                                </div>
-                                                <div class="col-md-6 d-flex align-items-center">
-                                                    <div class="form-check form-switch mt-3">
-                                                        <input class="form-check-input" type="checkbox" id="halfday_chk" t-model="state.form.allowHalfDay"/>
-                                                        <label class="form-check-label small font-weight-bold" for="halfday_chk">Allow Half-Day Requests</label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Restrictions and Negative Balance -->
-                                        <div class="col-12 border-bottom pb-3">
-                                            <h5 class="h6 font-weight-bold text-dark mb-2">Restrictions &amp; Overlap Safeguards</h5>
-                                            <div class="row g-3 mb-2">
-                                                <div class="col-md-4">
-                                                    <label class="form-label micro-label font-weight-bold">Minimum Request Days</label>
-                                                    <input type="number" min="0" step="0.5" class="form-control form-control-sm" t-model="state.form.minimumRequestDays"/>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label micro-label font-weight-bold">Max Consecutive Days</label>
-                                                    <input type="number" class="form-control form-control-sm" t-model="state.form.maxConsecutiveDays"/>
-                                                    <span class="micro-text text-muted">Set to 0 for no limit</span>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label micro-label font-weight-bold">Advance Booking Window (days)</label>
-                                                    <input type="number" min="0" class="form-control form-control-sm" t-model="state.form.advanceBookingDays"/>
-                                                    <span class="micro-text text-muted">0 means no future limit</span>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label micro-label font-weight-bold">Retroactive Window (days)</label>
-                                                    <input type="number" min="0" class="form-control form-control-sm" t-model="state.form.retroactiveRequestDays"/>
-                                                    <span class="micro-text text-muted">0 blocks past dates</span>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label micro-label font-weight-bold">Max % of Team on Leave Simultaneously</label>
-                                                    <input type="number" class="form-control form-control-sm" t-model="state.form.teamOverlapPercent"/>
-                                                    <div class="form-check mt-1">
-                                                        <input class="form-check-input" type="checkbox" id="block_overlap_chk" t-model="state.form.blockOverlapThreshold"/>
-                                                        <label class="form-check-label micro-text text-muted" for="block_overlap_chk">Block request if threshold exceeded (otherwise warning only)</label>
-                                                    </div>
-                                                </div>
-                                                <!-- Allow Negative Balance Toggle Switch -->
-                                                <div class="col-12 mt-2">
-                                                    <div class="form-check form-switch">
-                                                        <input class="form-check-input" type="checkbox" id="neg_balance_chk" t-model="state.form.allowNegativeBalance"/>
-                                                        <label class="form-check-label small font-weight-bold" for="neg_balance_chk">Allow Negative Balance (Borrow against future accrual)</label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Display & Visibility -->
-                                        <div class="col-12">
-                                            <h5 class="h6 font-weight-bold text-dark mb-2">Display &amp; Visibility</h5>
-                                            <div class="d-flex gap-4">
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox" id="active_chk" t-model="state.form.active"/>
-                                                    <label class="form-check-label small font-weight-bold" for="active_chk">Active Status</label>
-                                                </div>
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox" id="vis_chk" t-model="state.form.visibleToEmployees"/>
-                                                    <label class="form-check-label small font-weight-bold" for="vis_chk">Visible to Employees</label>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </t>
-                            </div>
-
-                            <!-- Live Policy Summary Banner -->
-                            <div class="alert alert-success border-success bg-success-subtle mb-0 py-2 px-3 small d-flex flex-column gap-1">
-                                <strong class="text-success"><i class="fa fa-check-circle me-1"/> Policy Configuration Live Summary</strong>
-                                <div class="d-flex flex-wrap gap-3 micro-text text-dark">
-                                    <t t-foreach="this.policySummaryItems" t-as="item" t-key="item">
-                                        <span>• <t t-esc="item"/></span>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <t t-foreach="this.presetSwatches" t-as="sw" t-key="sw">
+                                        <span class="preset-swatch-item rounded cursor-pointer"
+                                              t-att-style="'background-color:' + sw + ';width:24px;height:24px;display:inline-block;border:2px solid ' + (state.form.colorHex === sw ? '#1e293b' : 'transparent')"
+                                              t-on-click="() => this.selectPresetColor(sw)"/>
                                     </t>
                                 </div>
+                                <span t-if="state.errors.colorHex" class="text-danger" style="font-size:11px"><t t-esc="state.errors.colorHex"/></span>
+                            </div>
+
+                            <!-- Type Category -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Type Category <span class="text-danger">*</span></label>
+                                <div class="d-flex gap-3 flex-wrap">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="ltcat" id="ltcat_paid" value="paid" t-model="state.form.category"/>
+                                        <label class="form-check-label fw-bold text-success small" for="ltcat_paid">Paid Leave</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="ltcat" id="ltcat_unpaid" value="unpaid" t-model="state.form.category"/>
+                                        <label class="form-check-label fw-bold text-secondary small" for="ltcat_unpaid">Unpaid Leave</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="ltcat" id="ltcat_partial" value="partially_paid" t-model="state.form.category"/>
+                                        <label class="form-check-label fw-bold small" style="color:#b45309" for="ltcat_partial">Partially Paid</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="ltcat" id="ltcat_family" value="family" t-model="state.form.category"/>
+                                        <label class="form-check-label fw-bold text-primary small" for="ltcat_family">Family Leave</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="ltcat" id="ltcat_compassionate" value="compassionate" t-model="state.form.category"/>
+                                        <label class="form-check-label fw-bold small" style="color:#7c3aed" for="ltcat_compassionate">Compassionate</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="ltcat" id="ltcat_career" value="career_development" t-model="state.form.category"/>
+                                        <label class="form-check-label fw-bold small" style="color:#0891b2" for="ltcat_career">Career Development</label>
+                                    </div>
+                                </div>
+                                <p class="text-muted mt-1 mb-0" style="font-size:11px">This is the broad classification used to group this leave type in reports and policy lists.</p>
+                            </div>
+
+                            <!-- Visibility toggle -->
+                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:#f8fafc;border:1px solid #e2e8f0">
+                                <div class="form-check form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" id="lt_visible" t-model="state.form.visibleToEmployees"/>
+                                </div>
+                                <div>
+                                    <label class="form-check-label fw-bold small mb-0" for="lt_visible">Visible to Employees</label>
+                                    <p class="text-muted mb-0" style="font-size:11px">When off, this leave type is hidden from the employee self-service portal.</p>
+                                </div>
+                            </div>
+
+                            <!-- Info note about policies -->
+                            <div class="alert alert-info d-flex gap-2 align-items-start mt-3 mb-0 py-2 px-3" style="font-size:12px">
+                                <i class="fa fa-info-circle mt-1 text-info"/>
+                                <span>Entitlement amounts, accrual rules, approval workflows, carry-forward, and eligibility conditions are all configured on the <strong>Leave Policy</strong>, not here.</span>
                             </div>
 
                         </div>
@@ -1392,14 +818,13 @@
                         <!-- Modal Footer -->
                         <div class="modal-footer bg-light border-top justify-content-between">
                             <button type="button" class="btn btn-sm btn-outline-secondary" t-on-click="handleCancel">Cancel</button>
-
                             <div class="d-flex gap-2">
                                 <t t-if="props.mode === 'create'">
-                                    <button type="button" class="btn btn-sm btn-outline-primary font-weight-bold" t-att-disabled="state.saving" t-on-click="() => this.saveForm(true)">
+                                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold" t-att-disabled="state.saving" t-on-click="() => this.saveForm(true)">
                                         Save &amp; Add Another
                                     </button>
                                 </t>
-                                <button type="button" class="btn btn-sm btn-pink-active font-weight-bold px-4" t-att-disabled="state.saving" t-on-click="() => this.saveForm(false)">
+                                <button type="button" class="btn btn-sm fw-bold px-4" style="background:#e91e78;color:#fff;border-color:#e91e78" t-att-disabled="state.saving" t-on-click="() => this.saveForm(false)">
                                     <t t-if="state.saving"><i class="fa fa-spin fa-circle-o-notch me-1"/></t>
                                     <t t-if="props.mode === 'edit'">Save Changes</t>
                                     <t t-else="">Save Leave Type</t>

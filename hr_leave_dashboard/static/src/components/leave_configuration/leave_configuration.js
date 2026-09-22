@@ -9,6 +9,7 @@ import { LeavePoliciesPage } from "../leave_policies/leave_policies";
 import { LeaveBalancesPage } from "../leave_balances/leave_balances";
 import { LeaveSettingsPage } from "../leave_settings/leave_settings";
 import { OfficialHolidaysPage, BlackoutWindowsPage } from "../configuration_resources/configuration_resources";
+import { LeaveTypesPage } from "../leave_types/leave_types_page";
 import { WorkflowsApp } from "@cleon_approval/workflows_app";
 
 export class LeaveConfiguration extends Component {
@@ -18,6 +19,7 @@ export class LeaveConfiguration extends Component {
         LeavePoliciesPage,
         LeaveBalancesPage,
         LeaveSettingsPage,
+        LeaveTypesPage,
         OfficialHolidaysPage,
         BlackoutWindowsPage,
         WorkflowsApp,
@@ -43,6 +45,7 @@ export class LeaveConfiguration extends Component {
         const tabs = [];
         if (this.state.access.can_configure) {
             tabs.push({ key: "policies", label: "Leave Policies", icon: "fa-file-text-o" });
+            tabs.push({ key: "leave_types", label: "Leave Types", icon: "fa-list-alt" });
             tabs.push({ key: "holidays", label: "Official Holidays", icon: "fa-calendar" });
             tabs.push({ key: "blackouts", label: "Blackout Windows", icon: "fa-ban" });
             tabs.push({ key: "approvals", label: "Approval Settings", icon: "fa-shield" });
@@ -66,7 +69,7 @@ export class LeaveConfiguration extends Component {
     }
 
     openLeaveTypes() {
-        this.setTab("policies");
+        this.setTab("leave_types");
     }
 
     toggleSidebar() {

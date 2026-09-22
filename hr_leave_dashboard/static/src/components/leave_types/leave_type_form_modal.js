@@ -1,12 +1,20 @@
 /** @odoo-module **/
 
-import { Component, onMounted, onWillUnmount, useRef, useState } from "@odoo/owl";
+import { Component, useRef, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
+/**
+ * LeaveTypeFormModal — identity-only form for Leave Type records.
+ *
+ * A Leave Type is just a label: Name, Code, Description, Colour, and
+ * broad classification (Category). All business rules — entitlement,
+ * accrual period, approval workflow, carry-forward, eligibility
+ * conditions — live on the Leave Policy that references this type.
+ */
 export class LeaveTypeFormModal extends Component {
     static template = "hr_leave_dashboard.LeaveTypeFormModal";
     static props = {
-        mode: String, // "create" | "edit"
+        mode: String,                              // "create" | "edit"
         leaveTypeData: { type: Object, optional: true },
         departments: Array,
         units: Array,
@@ -23,34 +31,18 @@ export class LeaveTypeFormModal extends Component {
         this.notification = useService("notification");
         this.modalBodyRef = useRef("modalBody");
 
-        const initialForm = this.buildInitialFormState(this.props.leaveTypeData);
-
         this.state = useState({
-            form: initialForm,
+            form: this._buildForm(this.props.leaveTypeData),
             errors: {},
             saving: false,
-            showDiscardPrompt: false,
-            employeeTypePickerOpen: false,
-            employeeTypeSearch: "",
-            locationPickerOpen: false,
-            locationSearch: "",
-            expandedSections: {
-                basic: true,
-                settings: true,
-                appliesTo: true,
-                accrual: true,
-                advanced: true,
-            },
         });
 
-        this.onDocumentClick = this.onDocumentClick.bind(this);
-        onMounted(() => document.addEventListener("click", this.onDocumentClick));
-        onWillUnmount(() => document.removeEventListener("click", this.onDocumentClick));
-
-        this.initialSnapshot = JSON.stringify(this.serializeForm(this.state.form));
+        this.initialSnapshot = JSON.stringify(this._serialize(this.state.form));
     }
 
-    buildInitialFormState(data = null) {
+    // ── Form initialisation ────────────────────────────────────────────────
+
+    _buildForm(data = null) {
         if (!data) {
             return {
                 id: null,
@@ -59,61 +51,12 @@ export class LeaveTypeFormModal extends Component {
                 description: "",
                 colorHex: "#3B82F6",
                 category: "paid",
-                maxEntitlement: 20,
-                unlimitedEntitlement: false,
-                applicableGender: "all",
-
-                eligibilityScope: "all",
-                departmentIds: [],
-                unitIds: [],
-                gradeIds: [],
-                employeeIds: [],
-                employeeTypeIds: [],
-                locationIds: this.props.locations.length ? [this.props.locations[0].id] : [],
-                minimumServiceMonths: 0,
-
-                accrualMethod: "year_start",
-                monthlyAccrualRate: 0,
-                tenureBasedAccrual: false,
-                tenureTiers: [{ id: "temp_1", year_from: 1, year_to: 5, days_per_year: 20 }],
-
-                suspensionUnpaidLeave: false,
-                suspensionDisciplinary: false,
-                suspensionExtendedSick: false,
-                suspensionProbation: false,
-                suspensionUnauthorizedAbsence: false,
-
-                allowCarryForward: true,
-                maxCarryoverDays: 5,
-                carryoverExpiryRule: "never",
-                allowEncashment: false,
-                maxBalanceCap: 0,
-
-                approvalWorkflow: "single",
-                approvalStages: [
-                    { id: `stage_${Date.now()}_1`, approver_type: "direct_manager", escalation_value: 2, escalation_unit: "days" },
-                    { id: `stage_${Date.now()}_2`, approver_type: "hr_manager", escalation_value: 2, escalation_unit: "days" },
-                ],
-                supportingDocumentPolicy: "never",
-                minimumNoticeDays: 0,
-                minimumRequestDays: 0,
-                advanceBookingDays: 0,
-                retroactiveRequestDays: 0,
-                allowHalfDay: true,
-
-                maxConsecutiveDays: 0,
-                allowNegativeBalance: false,
-                teamOverlapPercent: 0,
-                blockOverlapThreshold: false,
-
-                active: true,
                 visibleToEmployees: true,
-
+                active: true,
                 assignedEmployeeCount: 0,
                 activeRequestCount: 0,
             };
         }
-
         return {
             id: data.id || null,
             name: data.name || "",
@@ -121,119 +64,32 @@ export class LeaveTypeFormModal extends Component {
             description: data.description || "",
             colorHex: data.color_hex || "#3B82F6",
             category: data.category || "paid",
-            maxEntitlement: data.max_entitlement !== undefined ? data.max_entitlement : 20,
-            unlimitedEntitlement: Boolean(data.unlimited_entitlement),
-            applicableGender: data.applicable_gender || "all",
-
-            eligibilityScope: data.eligibility_scope || "all",
-            departmentIds: [...(data.department_ids || [])],
-            unitIds: [...(data.unit_ids || [])],
-            gradeIds: [...(data.grade_ids || [])],
-            employeeIds: [...(data.employee_ids || [])],
-            employeeTypeIds: [...(data.employee_type_ids || [])],
-            // Older Odoo leave types predate the CleonHR location policy. An
-            // empty value means they applied everywhere, so represent that as
-            // all configured locations instead of blocking an unrelated edit.
-            locationIds: data.location_ids && data.location_ids.length
-                ? [...data.location_ids]
-                : this.props.locations.map(location => location.id),
-            minimumServiceMonths: data.minimum_service_months || 0,
-
-            accrualMethod: data.accrual_method || "year_start",
-            monthlyAccrualRate: data.monthly_accrual_rate || 0,
-            tenureBasedAccrual: Boolean(data.tenure_based_accrual),
-            tenureTiers: data.tenure_tiers && data.tenure_tiers.length
-                ? [...data.tenure_tiers]
-                : [{ id: "temp_1", year_from: 1, year_to: 5, days_per_year: 20 }],
-
-            suspensionUnpaidLeave: Boolean(data.suspension_unpaid_leave),
-            suspensionDisciplinary: Boolean(data.suspension_disciplinary),
-            suspensionExtendedSick: Boolean(data.suspension_extended_sick),
-            suspensionProbation: Boolean(data.suspension_probation),
-            suspensionUnauthorizedAbsence: Boolean(data.suspension_unauthorized_absence),
-
-            allowCarryForward: data.allow_carry_forward !== undefined ? Boolean(data.allow_carry_forward) : true,
-            maxCarryoverDays: data.max_carryover_days || 0,
-            carryoverExpiryRule: data.carryover_expiry_rule || "never",
-            allowEncashment: Boolean(data.allow_encashment),
-            maxBalanceCap: data.max_balance_cap || 0,
-
-            approvalWorkflow: data.approval_workflow || "single",
-            approvalStages: data.approval_stages && data.approval_stages.length
-                ? data.approval_stages.map(stage => ({ ...stage }))
-                : [{ id: `stage_${Date.now()}`, approver_type: "direct_manager", escalation_value: 2, escalation_unit: "days" }],
-            supportingDocumentPolicy: data.supporting_document_policy || "never",
-            minimumNoticeDays: data.minimum_notice_days || 0,
-            minimumRequestDays: data.minimum_request_days || 0,
-            advanceBookingDays: data.advance_booking_days || 0,
-            retroactiveRequestDays: data.retroactive_request_days || 0,
-            allowHalfDay: data.allow_half_day !== undefined ? Boolean(data.allow_half_day) : true,
-
-            maxConsecutiveDays: data.max_consecutive_days || 0,
-            allowNegativeBalance: Boolean(data.allow_negative_balance),
-            teamOverlapPercent: data.team_overlap_percent || 0,
-            blockOverlapThreshold: Boolean(data.block_overlap_threshold),
-
+            visibleToEmployees: data.visible_to_employees !== undefined
+                ? Boolean(data.visible_to_employees)
+                : true,
             active: data.active !== undefined ? Boolean(data.active) : true,
-            visibleToEmployees: data.visible_to_employees !== undefined ? Boolean(data.visible_to_employees) : true,
-
             assignedEmployeeCount: data.assigned_count || 0,
             activeRequestCount: data.active_request_count || 0,
         };
     }
 
-    serializeForm(f) {
+    _serialize(f) {
         return {
             name: f.name,
             code: f.code,
             description: f.description,
             colorHex: f.colorHex,
             category: f.category,
-            maxEntitlement: f.maxEntitlement,
-            unlimitedEntitlement: f.unlimitedEntitlement,
-            applicableGender: f.applicableGender,
-            eligibilityScope: f.eligibilityScope,
-            departmentIds: f.departmentIds,
-            unitIds: f.unitIds,
-            gradeIds: f.gradeIds,
-            employeeIds: f.employeeIds,
-            employeeTypeIds: f.employeeTypeIds,
-            locationIds: f.locationIds,
-            minimumServiceMonths: f.minimumServiceMonths,
-            accrualMethod: f.accrualMethod,
-            monthlyAccrualRate: f.monthlyAccrualRate,
-            tenureBasedAccrual: f.tenureBasedAccrual,
-            tenureTiers: f.tenureTiers,
-            suspensionUnpaidLeave: f.suspensionUnpaidLeave,
-            suspensionDisciplinary: f.suspensionDisciplinary,
-            suspensionExtendedSick: f.suspensionExtendedSick,
-            suspensionProbation: f.suspensionProbation,
-            suspensionUnauthorizedAbsence: f.suspensionUnauthorizedAbsence,
-            allowCarryForward: f.allowCarryForward,
-            maxCarryoverDays: f.maxCarryoverDays,
-            carryoverExpiryRule: f.carryoverExpiryRule,
-            allowEncashment: f.allowEncashment,
-            maxBalanceCap: f.maxBalanceCap,
-            approvalWorkflow: f.approvalWorkflow,
-            approvalStages: f.approvalStages,
-            supportingDocumentPolicy: f.supportingDocumentPolicy,
-            minimumNoticeDays: f.minimumNoticeDays,
-            minimumRequestDays: f.minimumRequestDays,
-            advanceBookingDays: f.advanceBookingDays,
-            retroactiveRequestDays: f.retroactiveRequestDays,
-            allowHalfDay: f.allowHalfDay,
-            maxConsecutiveDays: f.maxConsecutiveDays,
-            allowNegativeBalance: f.allowNegativeBalance,
-            teamOverlapPercent: f.teamOverlapPercent,
-            blockOverlapThreshold: f.blockOverlapThreshold,
-            active: f.active,
             visibleToEmployees: f.visibleToEmployees,
+            active: f.active,
         };
     }
 
     get isDirty() {
-        return JSON.stringify(this.serializeForm(this.state.form)) !== this.initialSnapshot;
+        return JSON.stringify(this._serialize(this.state.form)) !== this.initialSnapshot;
     }
+
+    // ── Colour presets ─────────────────────────────────────────────────────
 
     get presetSwatches() {
         return [
@@ -242,177 +98,17 @@ export class LeaveTypeFormModal extends Component {
         ];
     }
 
-    get hasMinimumServicePeriod() {
-        return Number(this.state.form.minimumServiceMonths || 0) > 0;
-    }
-
-    get monthlyAnnualEquivalent() {
-        return (Number(this.state.form.monthlyAccrualRate || 0) * 12).toFixed(1);
-    }
-
     selectPresetColor(hex) {
         this.state.form.colorHex = hex;
     }
 
-    toggleSection(secName) {
-        this.state.expandedSections[secName] = !this.state.expandedSections[secName];
-    }
-
-    onMultiSelectChange(field, ev) {
-        const selectedOptions = Array.from(ev.target.selectedOptions).map(o => Number(o.value));
-        this.state.form[field] = selectedOptions;
-    }
-
-    getSelectedMultiItems(field, items) {
-        const selected = this.state.form[field] || [];
-        return items.filter(item => selected.includes(Number(item.id)));
-    }
-
-    getAvailableMultiItems(field, items, search = "") {
-        const selected = this.state.form[field] || [];
-        const query = search.trim().toLowerCase();
-        return items.filter(item => (
-            !selected.includes(Number(item.id)) &&
-            (!query || (item.name || "").toLowerCase().includes(query))
-        ));
-    }
-
-    toggleMultiPicker(picker) {
-        const isEmployeeType = picker === "employeeType";
-        const willOpen = isEmployeeType
-            ? !this.state.employeeTypePickerOpen
-            : !this.state.locationPickerOpen;
-        this.state.employeeTypePickerOpen = isEmployeeType
-            ? willOpen
-            : false;
-        this.state.locationPickerOpen = isEmployeeType
-            ? false
-            : willOpen;
-        if (willOpen) {
-            requestAnimationFrame(() => {
-                this.modalBodyRef.el?.querySelector(".leave-m2m-dropdown input")?.focus();
-            });
-        }
-    }
-
-    closeMultiPickers() {
-        this.state.employeeTypePickerOpen = false;
-        this.state.locationPickerOpen = false;
-        this.state.employeeTypeSearch = "";
-        this.state.locationSearch = "";
-    }
-
-    onDocumentClick(ev) {
-        if (!ev.target.closest(".leave-m2m")) {
-            this.closeMultiPickers();
-        }
-    }
-
-    onMultiPickerKeydown(ev) {
-        if (ev.key === "Escape") {
-            this.closeMultiPickers();
-        }
-    }
-
-    addMultiValue(field, value, errorKey = null) {
-        const id = Number(value);
-        const selected = this.state.form[field] || [];
-        if (!selected.includes(id)) {
-            this.state.form[field] = [...selected, id];
-        }
-        if (field === "employeeTypeIds") {
-            this.state.employeeTypeSearch = "";
-        } else if (field === "locationIds") {
-            this.state.locationSearch = "";
-        }
-        if (errorKey) {
-            delete this.state.errors[errorKey];
-        }
-    }
-
-    removeMultiValue(field, value) {
-        const id = Number(value);
-        this.state.form[field] = (this.state.form[field] || []).filter(item => item !== id);
-    }
-
-    addTenureTier() {
-        const tiers = this.state.form.tenureTiers;
-        const lastTier = tiers[tiers.length - 1];
-        const nextFrom = lastTier ? (lastTier.year_to ? lastTier.year_to + 1 : lastTier.year_from + 5) : 1;
-        tiers.push({
-            id: `temp_${Date.now()}`,
-            year_from: nextFrom,
-            year_to: nextFrom + 4,
-            days_per_year: 25,
-        });
-    }
-
-    removeTenureTier(idx) {
-        if (this.state.form.tenureTiers.length > 1) {
-            this.state.form.tenureTiers.splice(idx, 1);
-        }
-    }
-
-    addApprovalStage() {
-        this.state.form.approvalStages.push({
-            id: `stage_${Date.now()}`,
-            approver_type: "direct_manager",
-            escalation_value: 2,
-            escalation_unit: "days",
-        });
-    }
-
-    removeApprovalStage(index) {
-        if (this.state.form.approvalStages.length > 1) {
-            this.state.form.approvalStages.splice(index, 1);
-        }
-    }
-
-    moveApprovalStage(index, direction) {
-        const target = index + direction;
-        const stages = this.state.form.approvalStages;
-        if (target < 0 || target >= stages.length) return;
-        [stages[index], stages[target]] = [stages[target], stages[index]];
-    }
-
-    get accrualSummaryPreviewText() {
-        const f = this.state.form;
-        const daysText = f.unlimitedEntitlement ? "Unlimited leave" : `${f.maxEntitlement} days`;
-        if (f.accrualMethod === "year_start") {
-            return `All ${daysText} are credited upfront at the start of each calendar year on January 1st.`;
-        } else if (f.accrualMethod === "monthly") {
-            const annual = (Number(f.monthlyAccrualRate || 0) * 12).toFixed(1);
-            return `${f.monthlyAccrualRate || 0} days accrue monthly (${annual} days per year).`;
-        } else if (f.accrualMethod === "hire_anniversary") {
-            return `Leave entitlement renews on each employee's hire date anniversary.`;
-        } else if (f.accrualMethod === "first_year_prorated") {
-            return `Pro-rated allocation based on joining date during the first year of employment.`;
-        } else {
-            return `No automatic accrual. Leave balances are assigned manually by HR administrators.`;
-        }
-    }
-
-    get policySummaryItems() {
-        const f = this.state.form;
-        const docText = { always: "Always", conditional: "Conditional (>3 days)", never: "Never" }[f.supportingDocumentPolicy];
-        const overlapText = Number(f.teamOverlapPercent) > 0
-            ? `${f.teamOverlapPercent}% ${f.blockOverlapThreshold ? "(blocks requests)" : "(warns only)"}`
-            : "Disabled";
-
-        return [
-            `Notice: ${f.minimumNoticeDays || 0} days`,
-            `Document required: ${docText}`,
-            `Negative balance: ${f.allowNegativeBalance ? "Allowed" : "Not allowed"}`,
-            `Team overlap limit: ${overlapText}`,
-            `Half-day requests: ${f.allowHalfDay ? "Allowed" : "Disabled"}`,
-        ];
-    }
+    // ── Validation ─────────────────────────────────────────────────────────
 
     get validationMessages() {
         return Object.values(this.state.errors).filter(Boolean);
     }
 
-    validateForm() {
+    _validate() {
         const errors = {};
         const f = this.state.form;
 
@@ -420,91 +116,61 @@ export class LeaveTypeFormModal extends Component {
             errors.name = "Leave type name is required.";
         }
         if (!f.code || !f.code.trim()) {
-            f.code = (f.name || "LT").trim().substring(0, 3).toUpperCase();
+            f.code = (f.name || "LT").trim().substring(0, 4).toUpperCase();
         }
-        if (f.code.trim().length > 4) {
-            errors.code = "Code must contain no more than 4 characters.";
+        if ((f.code || "").trim().length > 4) {
+            errors.code = "Code must be 4 characters or fewer.";
         }
-        if (!f.unlimitedEntitlement && Number(f.maxEntitlement) <= 0) {
-            errors.entitlement = "Entitlement must be greater than zero, or mark the type as Unlimited.";
-        }
-        if (this.props.employmentTypes.length && !f.employeeTypeIds.length) {
-            errors.employmentTypes = "At least one applicable employment type is required.";
-        }
-        if (!/^#[0-9A-F]{6}$/i.test((f.colorHex || "").trim())) {
-            errors.colorHex = "Enter a valid six-digit hex colour, for example #3B82F6.";
-        }
-        if (this.props.locations && this.props.locations.length > 0 && (!f.locationIds || f.locationIds.length === 0)) {
-            errors.locations = "At least one applicable location is required.";
-        }
-        if (f.accrualMethod === "monthly" && Number(f.monthlyAccrualRate) <= 0) {
-            errors.monthlyAccrualRate = "Enter a monthly accrual rate greater than zero.";
-        }
-        if (f.allowCarryForward && Number(f.maxCarryoverDays) <= 0) {
-            errors.maxCarryoverDays = "Set the maximum number of days that may be carried forward.";
-        }
-        if (f.approvalWorkflow === "multi" && !f.approvalStages.length) {
-            errors.approvalStages = "Add at least one approval stage.";
-        }
-
-        if (f.eligibilityScope === "departments" && f.departmentIds.length === 0) {
-            errors.eligibility = "Please select at least one department.";
-        } else if (f.eligibilityScope === "units" && f.unitIds.length === 0) {
-            errors.eligibility = "Please select at least one unit.";
-        } else if (f.eligibilityScope === "grades" && f.gradeIds.length === 0) {
-            errors.eligibility = "Please select at least one grade level.";
-        } else if (f.eligibilityScope === "employees" && f.employeeIds.length === 0) {
-            errors.eligibility = "Please select at least one employee.";
+        if (!/^#[0-9A-Fa-f]{6}$/.test((f.colorHex || "").trim())) {
+            errors.colorHex = "Enter a valid hex colour, e.g. #3B82F6.";
         }
 
         this.state.errors = errors;
         return Object.keys(errors).length === 0;
     }
 
+    // ── Save ───────────────────────────────────────────────────────────────
+
     async saveForm(addAnother = false) {
-        if (!this.validateForm()) {
-            this.state.expandedSections.basic = true;
-            this.state.expandedSections.appliesTo = true;
-            requestAnimationFrame(() => {
-                this.modalBodyRef.el?.scrollTo({ top: 0, behavior: "smooth" });
-            });
+        if (!this._validate()) {
+            this.modalBodyRef.el?.scrollTo({ top: 0, behavior: "smooth" });
             return;
         }
 
         this.state.saving = true;
         try {
             const f = this.state.form;
-            const res = await this.orm.call(
-                "hr.leave.type",
-                "save_leave_type_configuration",
-                [f]
-            );
+            await this.orm.call("hr.leave.type", "save_leave_type_configuration", [f]);
 
             this.notification.add(
-                f.id ? `Leave type '${f.name}' updated successfully.` : `New leave type '${f.name}' created successfully.`,
+                f.id
+                    ? `Leave type '${f.name}' updated.`
+                    : `Leave type '${f.name}' created.`,
                 { type: "success" }
             );
 
             await this.props.onSaved();
 
             if (addAnother) {
-                this.state.form = this.buildInitialFormState(null);
+                this.state.form = this._buildForm(null);
                 this.state.errors = {};
-                this.initialSnapshot = JSON.stringify(this.serializeForm(this.state.form));
+                this.initialSnapshot = JSON.stringify(this._serialize(this.state.form));
             } else {
                 this.props.close();
             }
         } catch (err) {
-            console.error("Failed to save leave type configuration", err);
-            this.notification.add(err.message || "Failed to save leave type configuration.", { type: "danger" });
+            console.error("Failed to save leave type", err);
+            this.notification.add(err.message || "Failed to save leave type.", { type: "danger" });
         } finally {
             this.state.saving = false;
         }
     }
 
+    // ── Close ──────────────────────────────────────────────────────────────
+
     handleCancel() {
         if (this.isDirty) {
-            if (confirm("You have unsaved changes. Are you sure you want to discard them?")) {
+            if (confirm("You have unsaved changes. Discard them?")) {
                 this.props.close();
             }
         } else {
