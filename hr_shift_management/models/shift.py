@@ -410,9 +410,10 @@ class CleonHrShift(models.Model):
         return total_hours
 
     @api.model
-    def _get_expected_working_hours_internal(self, employee_id, target_date):
+    def _get_expected_working_hours_internal(self, employee_id, target_date, schedule_cache=None):
         """Internal server-side helper calculating expected shift working hours and datetimes for an employee."""
-        self.env.flush_all()
+        # ORM searches below flush their required fields. Flushing every model
+        # for each employee-day makes attendance sheets disproportionately slow.
         Employee = self.env["hr.employee"].sudo()
         emp = Employee.browse(employee_id)
         if not emp.exists():
@@ -426,55 +427,25 @@ class CleonHrShift(models.Model):
         # access to the shift assignment product.  Use the employee calendar
         # (when configured) and fall back to the protected company policy.
         Policy = self.env["cleon.time.policy"].sudo()
-        policy = Policy.search([("company_id", "=", emp.company_id.id)], limit=1)
+        if schedule_cache is not None and emp.company_id.id in schedule_cache["policies"]:
+            policy = schedule_cache["policies"][emp.company_id.id]
+        else:
+            policy = Policy.search([("company_id", "=", emp.company_id.id)], limit=1)
+            if schedule_cache is not None:
+                schedule_cache["policies"][emp.company_id.id] = policy
         if not Policy._tm_feature_access(policy).get("shift"):
-            weekday = target_date_obj.weekday()
-            weekend_days = [
-                int(day.strip())
-                for day in ((policy.weekend_days if policy else "5,6") or "5,6").split(",")
-                if day.strip().isdigit()
-            ]
-            standard_hours = float(policy.standard_hours if policy else 8.0)
-            break_minutes = int(
-                policy.default_break_minutes
-                if policy and policy.enable_break_period
-                else 0
-            )
-            grace_minutes = int(policy.default_grace_minutes if policy else 0)
-            start_hour = 9.0
-            calendar = emp.resource_calendar_id
-            if calendar:
-                calendar_lines = calendar.attendance_ids.filtered(
-                    lambda line: int(line.dayofweek) == weekday
-                )
-                if calendar_lines:
-                    start_hour = min(calendar_lines.mapped("hour_from"))
-            end_hour = (start_hour + standard_hours + (break_minutes / 60.0)) % 24.0
-            is_rest_day = weekday in weekend_days
-            start_dt = datetime.combine(target_date_obj, time()) + timedelta(hours=start_hour)
-            end_dt = start_dt + timedelta(hours=standard_hours, minutes=break_minutes)
-            return {
-                "shift_id": False,
-                "shift_name": _("Standard Attendance Schedule"),
-                "shift_code": "ATTENDANCE-DEFAULT",
-                "expected_hours": 0.0 if is_rest_day else standard_hours,
-                "is_rest_day": is_rest_day,
-                "start_hour": start_hour,
-                "end_hour": end_hour,
-                "start_datetime": start_dt,
-                "end_datetime": end_dt,
-                "break_minutes": break_minutes,
-                "grace_minutes": grace_minutes,
-                "schedule_source": "attendance_policy",
-            }
+            return self.env["cleon.time.engine"]._default_schedule(emp, target_date_obj)
 
         # 1. Approved shift swap override for target_date
         Swap = self.env["cleon.shift.swap.request"].sudo()
-        swap = Swap.search([
-            ("swap_date", "=", target_date_obj),
-            ("state", "=", "approved"),
-            "|", ("requester_id", "=", emp.id), ("target_employee_id", "=", emp.id),
-        ], limit=1)
+        if schedule_cache is None:
+            swap = Swap.search([
+                ("swap_date", "=", target_date_obj),
+                ("state", "=", "approved"),
+                "|", ("requester_id", "=", emp.id), ("target_employee_id", "=", emp.id),
+            ], limit=1)
+        else:
+            swap = next(iter(schedule_cache["swaps"].get((emp.id, target_date_obj), ())), False)
 
         shift = False
         assignment = False
@@ -484,62 +455,42 @@ class CleonHrShift(models.Model):
         # 2. Strict business precedence lookup for active shift assignment
         if not shift:
             Assignment = self.env["cleon.hr.shift.assignment"].sudo()
+            def find_assignment(assignment_type, employee=False):
+                if schedule_cache is None:
+                    domain = [
+                        ("company_id", "=", emp.company_id.id),
+                        ("assignment_type", "=", assignment_type),
+                        ("date_from", "<=", target_date_obj),
+                        "|", ("date_to", "=", False), ("date_to", ">=", target_date_obj),
+                    ]
+                    domain.append(("employee_id" if employee else "department_id", "=",
+                                   emp.id if employee else emp.department_id.id))
+                    return Assignment.search(domain, limit=1)
+                target_id = emp.id if employee else emp.department_id.id
+                candidates = schedule_cache["assignments"].get(
+                    (assignment_type, employee, target_id), ()
+                )
+                return next((item for item in candidates
+                             if item.date_from <= target_date_obj
+                             and (not item.date_to or item.date_to >= target_date_obj)), False)
             # 2a. Temporary employee assignment
-            assignment = Assignment.search([
-                ("company_id", "=", emp.company_id.id),
-                ("employee_id", "=", emp.id),
-                ("assignment_type", "=", "temporary"),
-                ("date_from", "<=", target_date_obj),
-                "|", ("date_to", "=", False), ("date_to", ">=", target_date_obj),
-            ], limit=1)
+            assignment = find_assignment("temporary", employee=True)
             # 2b. Standard employee assignment
             if not assignment:
-                assignment = Assignment.search([
-                    ("company_id", "=", emp.company_id.id),
-                    ("employee_id", "=", emp.id),
-                    ("assignment_type", "=", "standard"),
-                    ("date_from", "<=", target_date_obj),
-                    "|", ("date_to", "=", False), ("date_to", ">=", target_date_obj),
-                ], limit=1)
+                assignment = find_assignment("standard", employee=True)
             # 2c. Temporary department assignment
             if not assignment and emp.department_id:
-                assignment = Assignment.search([
-                    ("company_id", "=", emp.company_id.id),
-                    ("department_id", "=", emp.department_id.id),
-                    ("assignment_type", "=", "temporary"),
-                    ("date_from", "<=", target_date_obj),
-                    "|", ("date_to", "=", False), ("date_to", ">=", target_date_obj),
-                ], limit=1)
+                assignment = find_assignment("temporary")
             # 2d. Standard department assignment
             if not assignment and emp.department_id:
-                assignment = Assignment.search([
-                    ("company_id", "=", emp.company_id.id),
-                    ("department_id", "=", emp.department_id.id),
-                    ("assignment_type", "=", "standard"),
-                    ("date_from", "<=", target_date_obj),
-                    "|", ("date_to", "=", False), ("date_to", ">=", target_date_obj),
-                ], limit=1)
+                assignment = find_assignment("standard")
 
             if assignment:
                 shift = assignment.shift_id
 
-        # 3. Explicit policy default shift (No arbitrary limit=1 fallback)
+        # No assignment means the shared organisation pattern, even with Shift installed.
         if not shift:
-            if policy and policy.default_shift_id:
-                shift = policy.default_shift_id
-
-        if not shift:
-            return {
-                "shift_id": False,
-                "shift_name": _("No Shift Assigned"),
-                "shift_code": False,
-                "expected_hours": 0.0,
-                "is_rest_day": True,
-                "start_hour": 0.0,
-                "end_hour": 0.0,
-                "break_minutes": 0,
-                "grace_minutes": 0,
-            }
+            return self.env["cleon.time.engine"]._default_schedule(emp, target_date_obj)
 
         # Handle rotating / bi-weekly schedule engine
         if shift.recurrence in ("biweekly", "rotating") and assignment and assignment.date_from:

@@ -496,7 +496,7 @@ class CleonTimeSheet(models.Model):
     @api.model
     def get_tracking_data(self, page="dashboard", state="all", search=""):
         Policy = self.env["cleon.time.policy"]
-        Shift = self.env["cleon.hr.shift"]
+        Engine = self.env["cleon.time.engine"]
         role = Policy._tm_role()
         if role not in ("line_manager", "hr_manager", "hr_admin", "system_admin"):
             raise AccessError(_("Only a Time Management manager or administrator can view team timesheets."))
@@ -520,7 +520,7 @@ class CleonTimeSheet(models.Model):
 
         rows = []
         for sheet in sheets:
-            expected_h = Shift._get_expected_hours_for_period(sheet.employee_id.id, sheet.week_start, sheet.week_end)
+            expected_h = Engine._expected_hours_for_period(sheet.employee_id, sheet.week_start, sheet.week_end)
             row_data = {
                 "id": sheet.id, "employee": sheet.employee_id.sudo().name,
                 "employee_code": sheet.employee_id.sudo().employee_number or "",

@@ -6,7 +6,6 @@ class CleonTimeAuditLog(models.Model):
     _description = "Time Management Audit Log"
     _order = "create_date desc, id desc"
 
-    attendance_id = fields.Many2one("hr.attendance", ondelete="set null", index=True)
     employee_id = fields.Many2one("hr.employee", index=True)
     user_id = fields.Many2one("res.users", required=True, default=lambda self: self.env.user)
     action = fields.Selection([

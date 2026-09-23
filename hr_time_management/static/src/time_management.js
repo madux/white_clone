@@ -63,16 +63,10 @@ export class TimeManagementApp extends Component {
             browserGeolocationSupported: typeof navigator !== "undefined" && Boolean(navigator.geolocation),
         });
         onWillStart(async () => {
-            const access = await this.orm.call("hr.attendance", "get_cleon_access", []);
-            let cleonAccess = null;
-            try {
-                cleonAccess = await this.orm.call("cleon.time.policy", "get_cleon_access", []);
-                this.state.capabilities = cleonAccess.capabilities || {};
-                this.state.featureAccess = cleonAccess.featureAccess || access.features || this.state.featureAccess;
-            } catch (e) {
-                this.state.capabilities = {};
-                this.state.featureAccess = access.features || this.state.featureAccess;
-            }
+            const access = await this.orm.call("cleon.time.policy", "get_cleon_access", []);
+            const cleonAccess = access;
+            this.state.capabilities = access.capabilities || {};
+            this.state.featureAccess = access.featureAccess;
             const forceEmployeePortal = Boolean(this.props.action?.params?.force_employee_portal);
             const forceEmployeeMode = Boolean(this.props.action?.params?.force_employee_mode);
             this.state.isManager = cleonAccess?.is_manager ?? access.is_manager;
@@ -85,6 +79,8 @@ export class TimeManagementApp extends Component {
             }
             const savedFeature = window.sessionStorage.getItem("cleonhr_time_feature");
             if (savedFeature && this.state.featureAccess[savedFeature]) this.state.feature = savedFeature;
+            const requestedApp = this.props.action?.params?.feature;
+            if (requestedApp && this.state.featureAccess[requestedApp]) this.state.feature = requestedApp;
             // The combined Employee Portal is an explicit host application.
             // Being an employee only selects the employee Time workspace; it
             // must not make the portal navigation leak into this module.
@@ -94,7 +90,7 @@ export class TimeManagementApp extends Component {
             if (this.state.mode === "employee" && this.state.isManager && !this.state.canSwitchInterface && !forceEmployeePortal && !forceEmployeeMode) {
                 this.state.mode = "admin";
             }
-            this.state.gateway = this.state.isManager && this.state.mode === "admin";
+            this.state.gateway = !requestedApp && this.state.isManager && this.state.mode === "admin";
             const requestedEmployeePage = this.props.action?.params?.employee_page;
             const requestedFeature = this.employeeFeatureForPage(requestedEmployeePage);
             if (requestedFeature && this.state.featureAccess[requestedFeature]) {
@@ -113,9 +109,6 @@ export class TimeManagementApp extends Component {
                 this.state.page = "settings";
             }
             await this.load();
-            if (this.state.mode === "employee" && this.state.employeePage === "regularizations") {
-                await this.loadRegularizations(false);
-            }
         });
         this.onInterfaceModeChange = async (event) => {
             await this.setMode(event.detail?.mode || "employee", false);
@@ -147,7 +140,11 @@ export class TimeManagementApp extends Component {
         this.state.loading = true;
         try {
             if (this.state.mode === "employee") {
-                this.state.employeeData = await this.orm.call("hr.attendance", "get_cleon_employee_data", []);
+                if (this.state.feature === "attendance" && this.state.employeePage !== "regularizations") {
+                    this.state.employeeData = await this.orm.call("hr.attendance", "get_cleon_employee_data", []);
+                } else {
+                    this.state.employeeData = await this.orm.call("cleon.time.policy", "get_employee_workspace", []);
+                }
                 if (this.state.feature === "overtime") {
                     this.state.employeeOvertime = await this.orm.call("cleon.overtime.request", "get_my_overtime", []);
                 }
@@ -157,6 +154,10 @@ export class TimeManagementApp extends Component {
                 if (this.state.employeePage === "regularizations") {
                     this.state.regularizations = await this.orm.call("cleon.attendance.regularization", "get_my_requests", []);
                 }
+                return;
+            }
+            if (this.state.feature === "attendance" && this.state.page === "regularizations") {
+                await this.loadRegularizations(true);
                 return;
             }
             if (this.state.feature === "shift") {
@@ -471,21 +472,21 @@ export class TimeManagementApp extends Component {
     }
     async openSettings() {
         this.state.page = "settings";
-        this.state.settingsTab = this.state.featureAccess[this.state.feature] ? this.state.feature : "overview";
+        this.state.settingsTab = "general";
         const [policy, overview, regChain, otChain, access, shiftData] = await Promise.all([
             this.orm.call("cleon.time.policy", "get_cleon_policy", []),
             this.orm.call("cleon.time.policy", "get_settings_overview", []),
             this.orm.call("cleon.time.policy", "get_approval_chain_summary", ["time_regularization"]),
             this.orm.call("cleon.time.policy", "get_approval_chain_summary", ["time_overtime"]),
             this.orm.call("cleon.time.policy", "get_cleon_access", []),
-            this.orm.call("cleon.hr.shift", "get_shift_management_data", []),
+            this.state.featureAccess.shift ? this.orm.call("cleon.hr.shift", "get_shift_management_data", []) : Promise.resolve({shifts: []}),
         ]);
         this.state.settingsShifts = shiftData?.shifts || [];
         this.state.policy = policy;
         this.state.capabilities = access.capabilities || {};
         this.state.featureAccess = access.featureAccess || this.state.featureAccess;
         if (
-            this.state.settingsTab !== "overview" &&
+            !["overview", "general", "rules"].includes(this.state.settingsTab) &&
             !this.state.featureAccess[this.state.settingsTab]
         ) {
             this.state.settingsTab = "overview";
@@ -498,20 +499,6 @@ export class TimeManagementApp extends Component {
         const val = ev.target.value;
         const shiftId = val ? Number(val) : false;
         this.state.policy.selected_shift_id = shiftId;
-        if (shiftId && this.state.settingsShifts) {
-            const shift = this.state.settingsShifts.find(s => s.id === shiftId);
-            if (shift) {
-                const duration = Number(shift.scheduled_hours) || 0;
-                this.state.policy.standard_hours = duration || 8.0;
-                this.state.policy.half_day_hours = Math.round((duration / 2.0) * 10) / 10 || 4.0;
-                if (shift.grace_minutes !== undefined) {
-                    this.state.policy.default_grace_minutes = shift.grace_minutes;
-                }
-                if (shift.break_minutes !== undefined) {
-                    this.state.policy.default_break_minutes = shift.break_minutes;
-                }
-            }
-        }
     }
     async openApprovalChain(workflowCode) {
         return this.action.doAction({
@@ -556,7 +543,7 @@ export class TimeManagementApp extends Component {
         }
     }
     async setSettingsTab(tab) {
-        if (tab !== "overview" && !this.state.featureAccess[tab]) {
+        if (!["overview", "general", "rules"].includes(tab) && !this.state.featureAccess[tab]) {
             this.state.settingsTab = "overview";
             this.notification.add("This application is not included in the current subscription.", {type: "warning"});
             return;

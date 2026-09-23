@@ -13,7 +13,7 @@ employeePortalRegistry.add("time", {
     async load({ orm }) {
         const access = await orm.call("cleon.time.policy", "get_cleon_access", []);
         const context = { access };
-        if (access.has_employee && access.portalModules.time) {
+        if (access.has_employee && access.featureAccess.attendance) {
             const data = await orm.call("hr.attendance", "get_cleon_employee_data", []);
             context.employeeName = data.employee;
             context.dashboard = { data, access: access.featureAccess };

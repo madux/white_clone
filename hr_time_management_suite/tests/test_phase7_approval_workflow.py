@@ -80,9 +80,9 @@ class TestPhase7ApprovalWorkflow(TransactionCase):
             self.policy.write(policy_vals)
 
         # Workflow Types
-        self.wft_reg = self.env.ref("hr_time_management.wft_time_regularization")
-        self.wft_ts = self.env.ref("hr_time_management.wft_time_timesheet")
-        self.wft_ot = self.env.ref("hr_time_management.wft_time_overtime")
+        self.wft_reg = self.env.ref("hr_attendance_management.wft_time_regularization")
+        self.wft_ts = self.env.ref("hr_time_work.wft_time_timesheet")
+        self.wft_ot = self.env.ref("hr_overtime_management.wft_time_overtime")
 
         # Deactivate pre-existing default chains for this company to allow isolated test chain creation
         self.env["cleon.approval.chain"].search([("company_id", "=", self.company.id)]).write({"active": False})

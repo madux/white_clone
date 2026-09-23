@@ -1,0 +1,48 @@
+<odoo>
+    <record id="hr_time_management.group_time_management_user" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('hr_attendance.group_hr_attendance_own_reader'))]"/>
+    </record>
+    <record id="hr_time_management.group_time_management_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('hr_attendance.group_hr_attendance_officer'))]"/>
+    </record>
+    <record id="hr_time_management.group_time_management_hr_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('hr_attendance.group_hr_attendance_manager'))]"/>
+    </record>
+    <record id="rule_regularization_company_global" model="ir.rule">
+        <field name="name">Regularization Global Company Rule</field>
+        <field name="model_id" ref="model_cleon_attendance_regularization" />
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+    <record id="rule_biometric_device_company_global" model="ir.rule">
+        <field name="name">Biometric Device Global Company Rule</field>
+        <field name="model_id" ref="model_cleon_biometric_device" />
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+    <record id="rule_biometric_event_company_global" model="ir.rule">
+        <field name="name">Biometric Event Global Company Rule</field>
+        <field name="model_id" ref="model_cleon_biometric_event" />
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+    <record id="rule_regularization_employee_own" model="ir.rule">
+        <field name="name">Employees see their own attendance regularizations</field>
+        <field name="model_id" ref="model_cleon_attendance_regularization" />
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_user')), (4, ref('base.group_user'))]" />
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="False" />
+    </record>
+    <record id="rule_regularization_line_manager_team" model="ir.rule">
+        <field name="name">Line Managers see team attendance regularizations</field>
+        <field name="model_id" ref="model_cleon_attendance_regularization" />
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_line_manager'))]" />
+        <field name="domain_force">['|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_regularization_hr_manager_all" model="ir.rule">
+        <field name="name">HR Managers see company attendance regularizations</field>
+        <field name="model_id" ref="model_cleon_attendance_regularization" />
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_hr_manager')), (4, ref('base.group_system'))]" />
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+</odoo>

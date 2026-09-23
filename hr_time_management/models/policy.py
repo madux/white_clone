@@ -30,9 +30,10 @@ class CleonTimePolicy(models.Model):
         ("five", "5-day week"), ("six", "6-day week"), ("custom", "Custom"),
     ], default="five", required=True)
     standard_hours = fields.Float(default=8.0, required=True)
+    default_start_hour = fields.Float(default=9.0, string="Default Working Pattern Start")
+    workday_boundary_hour = fields.Float(default=0.0, string="Workday Boundary")
     default_break_minutes = fields.Integer(default=60)
     default_grace_minutes = fields.Integer(default=15)
-    regularization_window_days = fields.Integer(default=30, required=True)
     clock_method = fields.Selection([
         ("manual", "Manual"), ("biometric", "Biometric"),
         ("gps", "GPS-based"), ("ip", "IP-based"), ("mixed", "Multiple Methods"),
@@ -43,9 +44,6 @@ class CleonTimePolicy(models.Model):
     daily_overtime_rate = fields.Float(default=1.5)
     weekend_overtime_rate = fields.Float(default=2.0)
     holiday_overtime_rate = fields.Float(default=2.5)
-    overtime_request_mode = fields.Selection([
-        ("automatic", "Automatic"), ("manual", "Manual Request"), ("both", "Automatic and Manual"),
-    ], default="both", required=True)
     synchronization_frequency = fields.Selection([
         ("realtime", "Real-time"), ("daily", "Daily"), ("weekly", "Weekly"),
     ], default="realtime", required=True)
@@ -66,9 +64,6 @@ class CleonTimePolicy(models.Model):
 
         ("strict", "Strict Policy"), ("lenient", "Lenient Policy"),
     ], default="strict", required=True)
-    selected_shift_id = fields.Many2one(
-        "cleon.hr.shift", string="Default Shift Template", check_company=True
-    )
     half_day_hours = fields.Float(default=4.0)
     enable_time_round_off = fields.Boolean(default=True)
     round_off_interval = fields.Integer(default=15)
@@ -86,13 +81,10 @@ class CleonTimePolicy(models.Model):
     launched = fields.Boolean(default=False)
     go_live_date = fields.Date()
     currency_id = fields.Many2one(related="company_id.currency_id", readonly=True)
-    billable_tracking_enabled = fields.Boolean(default=True, string="Enable Billable Tracking")
-    default_billing_rate = fields.Monetary(default=150.0, currency_field="currency_id", string="Default Billing Rate")
     office_latitude = fields.Float(string="Office Latitude", digits=(10, 7), default=0.0)
     office_longitude = fields.Float(string="Office Longitude", digits=(10, 7), default=0.0)
     gps_radius_meters = fields.Float(string="Allowed GPS Radius (meters)", default=200.0)
     ip_whitelist = fields.Text(string="Allowed IP Addresses / Subnets", help="Comma or newline separated list of allowed IP addresses or CIDR subnets")
-    overtime_auto_approve_max_hours = fields.Float(string="Max Auto-Approve Hours", default=2.0)
     regularization_require_approval = fields.Boolean(default=True, string="Require Regularization Approval")
     regularization_fallback_approver = fields.Selection([
         ("direct_manager", "Direct Manager"),
@@ -158,17 +150,24 @@ class CleonTimePolicy(models.Model):
     ]
 
     @api.constrains(
-        "standard_hours", "default_break_minutes", "default_grace_minutes", "regularization_window_days",
+        "default_start_hour", "workday_boundary_hour", "round_off_interval", "weekend_days",
+        "standard_hours", "default_break_minutes", "default_grace_minutes",
         "daily_overtime_threshold", "daily_overtime_rate",
         "weekend_overtime_rate", "holiday_overtime_rate",
     )
     def _check_time_values(self):
         for policy in self:
+            if not 0 <= policy.default_start_hour < 24 or not 0 <= policy.workday_boundary_hour < 24:
+                raise ValidationError(_("Start hour and workday boundary must be between 0 and 24 (exclusive)."))
+            if policy.round_off_interval <= 0:
+                raise ValidationError(_("Rounding interval must be positive."))
+            if any(day.strip() not in {str(n) for n in range(7)} for day in (policy.weekend_days or '').split(',') if day.strip()):
+                raise ValidationError(_("Working-week days must use weekday numbers 0 through 6."))
             if policy.standard_hours <= 0 or policy.standard_hours > 24:
                 raise ValidationError(_("Standard working hours must be greater than 0 and no more than 24."))
             if policy.default_break_minutes < 0 or policy.default_grace_minutes < 0:
                 raise ValidationError(_("Break and grace periods cannot be negative."))
-            if policy.regularization_window_days < 1 or policy.regularization_window_days > 365:
+            if "regularization_window_days" in policy._fields and not 1 <= getattr(policy, "regularization_window_days", 30) <= 365:
                 raise ValidationError(_("The regularization window must be between 1 and 365 days."))
             if policy.daily_overtime_threshold < 0:
                 raise ValidationError(_("The daily overtime threshold cannot be negative."))
@@ -184,10 +183,10 @@ class CleonTimePolicy(models.Model):
             "half_day_hours": policy.half_day_hours if policy else 4.0,
             "default_break_minutes": policy.default_break_minutes if policy else 60,
             "default_grace_minutes": policy.default_grace_minutes if policy else 15,
-            "regularization_window_days": policy.regularization_window_days if policy else 30,
+            "regularization_window_days": getattr(policy, "regularization_window_days", 30) if policy else 30,
             "clock_method": policy.clock_method if policy else "manual",
             "enable_overtime": policy.enable_overtime if policy else True,
-            "overtime_auto_approve_max_hours": policy.overtime_auto_approve_max_hours if policy else 2.0,
+            "overtime_auto_approve_max_hours": getattr(policy, "overtime_auto_approve_max_hours", 2.0) if policy else 2.0,
             "regularization_require_approval": policy.regularization_require_approval if policy else True,
             "overtime_require_approval": policy.overtime_require_approval if policy else True,
             "overtime_notify_employee": policy.overtime_notify_employee if policy else True,
@@ -195,17 +194,16 @@ class CleonTimePolicy(models.Model):
         }
 
     @api.model
+    def _installed_time_features(self):
+        """Operational addons extend this; subscription switches cannot install apps."""
+        return {"attendance": False, "shift": False, "tracking": False, "overtime": False}
+
+    @api.model
     def _tm_feature_access(self, policy=None):
         """Return the applications enabled for the current company subscription."""
         policy = policy or self.sudo().search([("company_id", "=", self.env.company.id)], limit=1)
-        # Existing databases had no subscription switches. Keep all applications
-        # available until an administrator explicitly changes the policy.
-        return {
-            "attendance": not policy or bool(policy.attendance_app_available),
-            "shift": not policy or bool(policy.shift_app_available),
-            "tracking": not policy or bool(policy.tracking_app_available),
-            "overtime": not policy or bool(policy.overtime_app_available),
-        }
+        return {feature: installed and (not policy or bool(policy[feature + "_app_available"]))
+                for feature, installed in self._installed_time_features().items()}
 
     @api.model
     def get_cleon_policy(self):
@@ -216,7 +214,9 @@ class CleonTimePolicy(models.Model):
         return {
             "id": policy.id if policy else False,
             "policy_type": policy.policy_type if policy else "strict",
-            "selected_shift_id": policy.selected_shift_id.id if policy and policy.selected_shift_id else False,
+            "selected_shift_id": getattr(policy, "selected_shift_id", False).id if policy and getattr(policy, "selected_shift_id", False) else False,
+            "default_start_hour": policy.default_start_hour if policy else 9.0,
+            "workday_boundary_hour": policy.workday_boundary_hour if policy else 0.0,
             "work_week": policy.work_week if policy else "five",
             "standard_hours": policy.standard_hours if policy else 8,
             "half_day_hours": policy.half_day_hours if policy else 4.0,
@@ -226,7 +226,7 @@ class CleonTimePolicy(models.Model):
             "round_off_interval": policy.round_off_interval if policy else 15,
             "enable_break_period": policy.enable_break_period if policy else False,
             "weekend_days": [int(d.strip()) for d in (policy.weekend_days or "5,6").split(",") if d.strip().isdigit()] if policy else [5, 6],
-            "regularization_window_days": policy.regularization_window_days if policy else 30,
+            "regularization_window_days": getattr(policy, "regularization_window_days", 30) if policy else 30,
             "clock_method": policy.clock_method if policy else "manual",
             "enable_overtime": policy.enable_overtime if policy else True,
             "daily_overtime_enabled": policy.daily_overtime_enabled if policy else True,
@@ -243,7 +243,7 @@ class CleonTimePolicy(models.Model):
             "holiday_overtime": policy.holiday_overtime if policy else True,
             "holiday_overtime_rate": policy.holiday_overtime_rate if policy else 2.5,
             "holiday_overtime_approval": policy.holiday_overtime_approval if policy else "required",
-            "overtime_request_mode": policy.overtime_request_mode if policy else "both",
+            "overtime_request_mode": getattr(policy, "overtime_request_mode", "both") if policy else "both",
             "synchronization_frequency": policy.synchronization_frequency if policy else "realtime",
             "payroll_integration": policy.payroll_integration if policy else True,
             "performance_integration": policy.performance_integration if policy else True,
@@ -256,14 +256,14 @@ class CleonTimePolicy(models.Model):
             "overtime_app_available": policy.overtime_app_available if policy else True,
             "launched": policy.launched if policy else False,
             "go_live_date": fields.Date.to_string(policy.go_live_date) if policy and policy.go_live_date else False,
-            "billable_tracking_enabled": policy.billable_tracking_enabled if policy else True,
-            "default_billing_rate": policy.default_billing_rate if policy else 150.0,
+            "billable_tracking_enabled": getattr(policy, "billable_tracking_enabled", False) if policy else True,
+            "default_billing_rate": getattr(policy, "default_billing_rate", 0.0) if policy else 150.0,
             "currency_symbol": policy.currency_id.symbol if policy and policy.currency_id else (self.env.company.currency_id.symbol or "$"),
             "office_latitude": policy.office_latitude if policy else 0.0,
             "office_longitude": policy.office_longitude if policy else 0.0,
             "gps_radius_meters": policy.gps_radius_meters if policy else 200.0,
             "ip_whitelist": policy.ip_whitelist or "" if policy else "",
-            "overtime_auto_approve_max_hours": policy.overtime_auto_approve_max_hours if policy else 2.0,
+            "overtime_auto_approve_max_hours": getattr(policy, "overtime_auto_approve_max_hours", 2.0) if policy else 2.0,
             "regularization_require_approval": policy.regularization_require_approval if policy else True,
             "regularization_fallback_approver": policy.regularization_fallback_approver if policy else "direct_manager",
             "overtime_require_approval": policy.overtime_require_approval if policy else True,
@@ -292,7 +292,7 @@ class CleonTimePolicy(models.Model):
             "launched": policy.launched or False,
             "go_live_date": fields.Date.to_string(policy.go_live_date) if policy.go_live_date else False,
             "policy": policy.get_cleon_policy(),
-            "shifts": self.env["cleon.hr.shift"].get_shift_management_data().get("shifts", []),
+            "shifts": self.env["cleon.hr.shift"].get_shift_management_data().get("shifts", []) if self._tm_feature_access()["shift"] else [],
             "approval_overtime_chain": self.get_approval_chain_summary("time_overtime"),
             "approval_regularization_chain": self.get_approval_chain_summary("time_regularization"),
             "approval_timesheet_chain": self.get_approval_chain_summary("time_timesheet"),
@@ -311,7 +311,7 @@ class CleonTimePolicy(models.Model):
             policy = self.create({"company_id": self.env.company.id})
 
         allowed = self._WIZARD_STEP_FIELDS[step_number]
-        clean = {key: value for key, value in dict(step_data or {}).items() if key in allowed}
+        clean = {key: value for key, value in dict(step_data or {}).items() if key in allowed and key in self._fields}
         self._validate_wizard_step(policy, step_number, clean)
         if clean:
             self.save_cleon_policy(clean)
@@ -374,7 +374,7 @@ class CleonTimePolicy(models.Model):
         }
 
     def _validate_wizard_step(self, policy, step_number, values):
-        candidate = lambda field: values.get(field, policy[field])
+        candidate = lambda field: values.get(field, policy[field] if field in policy._fields else 0)
         if step_number == 1:
             if not 0 < float(candidate("standard_hours")) <= 24:
                 raise ValidationError(_("Standard working hours must be greater than 0 and no more than 24."))
@@ -393,7 +393,7 @@ class CleonTimePolicy(models.Model):
             )
             if min(float(candidate(field)) for field in numeric_fields) < 0:
                 raise ValidationError(_("Overtime thresholds, limits, and multiplier rates cannot be negative."))
-        elif step_number == 5 and not 1 <= int(candidate("regularization_window_days")) <= 365:
+        elif step_number == 5 and "regularization_window_days" in policy._fields and not 1 <= int(candidate("regularization_window_days")) <= 365:
             raise ValidationError(_("The regularization window must be between 1 and 365 days."))
         elif step_number == 7 and float(candidate("default_billing_rate")) < 0:
             raise ValidationError(_("The default billing rate cannot be negative."))
@@ -463,8 +463,9 @@ class CleonTimePolicy(models.Model):
             "overtime_auto_approve_max_hours", "regularization_require_approval", "regularization_fallback_approver",
             "overtime_require_approval", "overtime_fallback_approver", "overtime_notify_employee",
             "office_latitude", "office_longitude", "gps_radius_meters", "ip_whitelist",
+            "default_start_hour", "workday_boundary_hour",
         }
-        clean = {key: value for key, value in values.items() if key in allowed}
+        clean = {key: value for key, value in values.items() if key in allowed and key in self._fields}
         if "selected_shift_id" in clean:
             shift_id = int(clean["selected_shift_id"]) if clean["selected_shift_id"] else False
             if shift_id:
@@ -489,8 +490,8 @@ class CleonTimePolicy(models.Model):
             raise AccessError(_("Only Settings administrators can view configuration."))
         company = self.env.company
         policy = self.search([("company_id", "=", company.id)], limit=1)
-        Shift = self.env["cleon.hr.shift"]
-        Timesheet = self.env["cleon.time.sheet"]
+        Shift = self.env.get("cleon.hr.shift")
+        Timesheet = self.env.get("cleon.time.sheet")
 
         # --- Attendance status ---
         att_items = []
@@ -507,9 +508,9 @@ class CleonTimePolicy(models.Model):
             att_status = "not_set"
 
         # --- Shift Management status ---
-        shifts = Shift.search([("company_id", "=", company.id)])
+        shifts = Shift.search([("company_id", "=", company.id)]) if Shift is not None else []
         shift_count = len(shifts)
-        assignments = self.env["cleon.hr.shift.assignment"].search_count([("company_id", "=", company.id)])
+        assignments = self.env["cleon.hr.shift.assignment"].search_count([("company_id", "=", company.id)]) if Shift is not None else 0
         shift_items = [
             _("Shifts Created: %d") % shift_count,
             _("Assignments: %d") % assignments,
@@ -518,7 +519,6 @@ class CleonTimePolicy(models.Model):
         shift_status = "configured" if shift_count >= 2 else ("partial" if shift_count >= 1 else "not_set")
 
         # --- Overtime status ---
-        ot_rules = self.env["cleon.overtime.request"].search_count([("company_id", "=", company.id)])
         ot_items = []
         if policy:
             ot_items = [
@@ -557,7 +557,6 @@ class CleonTimePolicy(models.Model):
             "checklist": checklist,
         }
 
-    default_shift_id = fields.Many2one("cleon.hr.shift", string="Default Company Shift")
 
     @api.model
     def _tm_role(self, user=None):
@@ -736,152 +735,33 @@ class CleonTimePolicy(models.Model):
             "capabilities": self._tm_capabilities(),
         }
 
+
     @api.model
-    def get_payroll_handoff_data(self, date_from=None, date_to=None, state_filter="ready", preview_mode=False):
-        """Outbound payroll handoff contract for approved overtime records.
-
-        Preview calls without dates are scoped to the current calendar month. A final
-        handoff must always name its exact accounting period. Any overlap with an
-        administratively locked period blocks the complete final handoff; records are
-        never silently omitted from a requested range.
-        """
-        if not self._tm_can_configure() and self._tm_role() not in ("hr_manager", "system_admin"):
-            raise AccessError(_("Only HR Administrators and Managers can export payroll handoff data."))
-
-        company = self.env.company
-        policy = self.search([("company_id", "=", company.id)], limit=1)
-
-        if not preview_mode and not (policy and policy.payroll_integration):
-            raise UserError(_("Payroll integration is disabled in Time Management policy settings."))
-
-        if not date_from and not date_to:
-            if not preview_mode:
-                raise ValidationError(_("A date range is required for a final payroll handoff."))
-            date_from = fields.Date.today().replace(day=1)
-            next_month = (date_from.replace(day=28) + timedelta(days=4)).replace(day=1)
-            date_to = next_month - timedelta(days=1)
-        elif not date_from or not date_to:
-            raise ValidationError(_("Both start and end dates are required for payroll handoff."))
-
-        date_from = fields.Date.to_date(date_from)
-        date_to = fields.Date.to_date(date_to)
-        if date_from > date_to:
-            raise ValidationError(_("Payroll handoff start date cannot be after its end date."))
-
-        target_state_filter = state_filter if state_filter in ("ready", "transferred", "all") else "ready"
-        domain = [("company_id", "=", company.id), ("state", "=", "approved")]
-        if target_state_filter == "ready":
-            domain.append(("payroll_state", "=", "ready"))
-        elif target_state_filter == "transferred":
-            domain.append(("payroll_state", "=", "transferred"))
-        else:
-            domain.append(("payroll_state", "in", ["ready", "transferred"]))
-
-        if date_from:
-            domain.append(("date", ">=", date_from))
-        if date_to:
-            domain.append(("date", "<=", date_to))
-
-        ot_records = self.env["cleon.overtime.request"].search(domain)
-        ApprovalInstance = self.env.get("cleon.approval.instance")
-        StepModel = self.env.get("cleon.approval.instance.step")
-
-        items = []
-        unresolved_codes_count = 0
-
-        for ot in ot_records:
-            emp = ot.employee_id.sudo()
-            code = emp.employee_number or False
-            has_missing_code = not bool(code)
-            if has_missing_code:
-                unresolved_codes_count += 1
-
-            app_inst = False
-            if "approval_instance_id" in ot._fields and ot.approval_instance_id:
-                app_inst = ot.approval_instance_id
-            elif ApprovalInstance is not None:
-                app_inst = ApprovalInstance.sudo().search([
-                    ("res_model", "=", "cleon.overtime.request"),
-                    ("res_id", "=", ot.id),
-                ], limit=1, order="id desc")
-
-            decision_src = app_inst.decision_source if (app_inst and app_inst.decision_source) else "human"
-
-            final_step = False
-            if app_inst and StepModel is not None:
-                steps = StepModel.sudo().search([("instance_id", "=", app_inst.id)])
-                if steps:
-                    decided = steps.filtered(lambda s: s.state in ("approved", "rejected") or s.decision_user_id)
-                    if decided:
-                        final_step = decided.sorted(lambda s: (s.sequence, s.id), reverse=True)[0]
-
-            final_approver_name = "System Automation Engine"
-            if final_step and final_step.decision_user_id:
-                final_approver_name = final_step.decision_user_id.sudo().name
-            elif ot.approver_id:
-                final_approver_name = ot.approver_id.sudo().name
-
-            decision_time = False
-            if final_step and final_step.decision_at:
-                decision_time = fields.Datetime.to_string(final_step.decision_at)
-            elif app_inst and app_inst.write_date:
-                decision_time = fields.Datetime.to_string(app_inst.write_date)
-            elif ot.decision_at:
-                decision_time = fields.Datetime.to_string(ot.decision_at)
-            else:
-                decision_time = fields.Datetime.to_string(ot.create_date)
-
-            approval_ref = app_inst.name if hasattr(app_inst, "name") and app_inst.name else (f"APP-INST-{app_inst.id}" if app_inst else f"OT-APPROVAL-{ot.id}")
-
-            items.append({
-                "id": ot.id,
-                "employee_id": emp.id,
-                "employee_name": emp.name,
-                "employee_code": code,
-                "missing_code": has_missing_code,
-                "readiness_error": _("Missing payroll employee code") if has_missing_code else False,
-                "date": fields.Date.to_string(ot.date),
-                "overtime_hours": ot.overtime_hours,
-                "regular_hours": ot.regular_hours,
-                "overtime_type": getattr(ot, "category", "daily"),
-                "payroll_state": ot.payroll_state,
-                "approval_instance_id": app_inst.id if app_inst else False,
-                "approval_reference": approval_ref,
-                "final_decision_at": decision_time,
-                "decision_source": decision_src,
-                "final_approver": final_approver_name,
-            })
-
-        period_lock_records = []
-        if "cleon.time.period.lock" in self.env:
-            lock_domain = [("company_id", "=", company.id), ("state", "=", "locked")]
-            if date_from:
-                lock_domain.append(("date_to", ">=", date_from))
-            if date_to:
-                lock_domain.append(("date_from", "<=", date_to))
-            period_lock_records = self.env["cleon.time.period.lock"].search(lock_domain)
-
-        is_period_locked = len(period_lock_records) > 0
-        locked_lock_name = period_lock_records[0].name if period_lock_records else False
-
-        if is_period_locked and not preview_mode:
-            raise UserError(_("Selected handoff date range overlaps with locked period '%s'. Final payroll export is blocked.") % locked_lock_name)
-
+    def get_employee_workspace(self):
+        """Shared employee/schedule context without fetching presence records."""
+        employee = self.env.user.employee_id
+        if not employee:
+            raise UserError(_("Your user account is not linked to an employee record."))
+        engine = self.env["cleon.time.engine"]
+        today = fields.Date.context_today(self)
+        schedules = []
+        cache = engine._prepare_schedule_cache(employee, today, today + timedelta(days=6))
+        for offset in range(7):
+            day = today + timedelta(days=offset)
+            schedule = engine._expected_schedule(employee, day, cache)
+            schedules.append({"date": fields.Date.to_string(day), "name": schedule["shift_name"],
+                              "start": schedule["start_hour"], "end": schedule["end_hour"],
+                              "break_minutes": schedule.get("break_minutes", 0),
+                              "is_rest_day": schedule["is_rest_day"]})
+        start = today - timedelta(days=today.weekday())
+        expected = engine._expected_hours_for_period(employee, start, start + timedelta(days=6))
         return {
-            "company_id": company.id,
-            "company_name": company.name,
-            "payroll_integration": bool(policy and policy.payroll_integration),
-            "preview_mode": preview_mode,
-            "state_filter": target_state_filter,
-            "date_from": date_from,
-            "date_to": date_to,
-            "total_records": len(items),
-            "total_overtime_hours": sum(i["overtime_hours"] for i in items),
-            "unresolved_employee_codes_count": unresolved_codes_count,
-            "period_locked": is_period_locked,
-            "period_locked_count": len(period_lock_records),
-            "period_lock_name": locked_lock_name,
-            "records": items,
+            "employee": employee.name, "employee_id": employee.id,
+            "shift": schedules[0], "tomorrow_shift": schedules[1], "upcoming_shifts": schedules,
+            "policy": self.get_runtime_policy(), "rows": [], "timesheet_projects": [],
+            "summary": {"weekly_expected_hours": expected, "weekly_timesheet_hours": 0,
+                        "weekly_timesheet_percent": 0, "weekly_missing_hours": expected,
+                        "weekly_timesheet_status": "draft"},
         }
 
     @api.model

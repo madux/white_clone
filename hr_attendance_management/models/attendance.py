@@ -11,7 +11,6 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 class HrAttendance(models.Model):
     _inherit = "hr.attendance"
 
-    cleon_shift_id = fields.Many2one("cleon.hr.shift", string="Shift")
     cleon_break_minutes = fields.Integer(string="Break Duration", default=0)
     cleon_status_override = fields.Selection([
         ("present", "Present"), ("late", "Late"),
@@ -94,8 +93,8 @@ class HrAttendance(models.Model):
             ("employee_id", "=", employee.id),
             ("date", ">=", week_start),
             ("date", "<=", week_end),
-        ])
-        timesheet_hours = sum(timesheets.mapped("unit_amount"))
+        ]) if "cleon.time.sheet" in self.env else []
+        timesheet_hours = sum(line.unit_amount for line in timesheets)
         project_hours = {}
         for line in timesheets:
             project_name = line.project_id.name if line.project_id else _("Internal / Other")
@@ -287,20 +286,7 @@ class HrAttendance(models.Model):
         if not employee:
             return pytz.UTC
         t_date = fields.Date.to_date(target_date) if target_date else fields.Date.context_today(self)
-        Shift = self.env["cleon.hr.shift"]
-        exp = Shift._get_expected_working_hours_internal(employee.id, t_date)
-        if exp and exp.get("shift_id"):
-            shift = Shift.browse(exp["shift_id"])
-            if shift.resource_calendar_id and shift.resource_calendar_id.tz:
-                return pytz.timezone(shift.resource_calendar_id.tz)
-        if employee.resource_calendar_id and employee.resource_calendar_id.tz:
-            return pytz.timezone(employee.resource_calendar_id.tz)
-        if employee.sudo().user_id and employee.sudo().user_id.tz:
-            return pytz.timezone(employee.sudo().user_id.tz)
-        company = employee.company_id or self.env.company
-        if company.partner_id and company.partner_id.tz:
-            return pytz.timezone(company.partner_id.tz)
-        return pytz.UTC
+        return self.env["cleon.time.engine"]._timezone(employee, t_date)
 
     @api.model
     def _calculate_haversine_distance(self, lat1, lon1, lat2, lon2):
@@ -336,28 +322,7 @@ class HrAttendance(models.Model):
                 open_dt = pytz.UTC.localize(open_dt)
             return open_dt.astimezone(open_tz).date()
 
-        # 2. If employee is checked out (initiating a new clock-in), check previous calendar day's overnight shift
-        prev_date = local_date - timedelta(days=1)
-        Shift = self.env["cleon.hr.shift"]
-        exp_prev = Shift._get_expected_working_hours_internal(employee.id, prev_date)
-        if exp_prev and not exp_prev.get("is_rest_day"):
-            start_h = exp_prev.get("start_hour", 0.0)
-            end_h = exp_prev.get("end_hour", 0.0)
-            # Overnight shift (start > end or overnight flag)
-            if start_h > end_h or exp_prev.get("is_night"):
-                start_hours = int(start_h)
-                start_mins = int(round((start_h - start_hours) * 60))
-                prev_start_dt = tz.localize(datetime.combine(prev_date, time(start_hours, start_mins)))
-
-                end_hours = int(end_h) % 24
-                end_mins = int(round((end_h - int(end_h)) * 60))
-                prev_end_dt = tz.localize(datetime.combine(local_date, time(end_hours, end_mins)))
-
-                # For a new clock-in, only associate with previous date if local_dt is strictly before scheduled shift end
-                if prev_start_dt <= local_dt < prev_end_dt:
-                    return prev_date
-
-        return local_date
+        return self.env["cleon.time.engine"]._work_date(employee, p_dt)
 
     @api.model
     def _verify_clock_policy(self, policy, punch_type="browser", latitude=None, longitude=None, accuracy=None, client_ip=None, device=None):
@@ -529,10 +494,11 @@ class HrAttendance(models.Model):
         if previous_state == "checked_out":
             _expected, _grace, shift = self._expected_start(employee, local_date)
             vals = {
-                "cleon_shift_id": shift.id if shift else False,
                 "cleon_break_minutes": shift.break_minutes if shift else (policy.default_break_minutes if policy else 0),
                 "in_mode": mode_str,
             }
+            if "cleon_shift_id" in self._fields:
+                vals["cleon_shift_id"] = shift.id if shift else False
             if lat_val and lon_val:
                 vals.update({"in_latitude": lat_val, "in_longitude": lon_val, "in_accuracy": acc_val, "in_distance_meters": dist_meters})
             attendance.sudo().write(vals)
@@ -605,34 +571,28 @@ class HrAttendance(models.Model):
         return localized.strftime("%I:%M %p").lstrip("0")
 
     @api.model
-    def _expected_start(self, employee, target_date):
-        Shift = self.env["cleon.hr.shift"]
-        exp = Shift._get_expected_working_hours_internal(employee.id, target_date)
-        if exp:
-            if exp.get("is_rest_day"):
-                return False, 0, Shift
-            if exp.get("shift_id"):
-                shift = Shift.browse(exp["shift_id"])
-                start_hour = exp.get("start_hour", shift.start_hour)
-                return start_hour, shift.grace_minutes, shift
-        calendar = employee.resource_calendar_id
-        lines = calendar.attendance_ids.filtered(lambda line: int(line.dayofweek) == target_date.weekday() and line.day_period != "lunch")
-        policy = self.env["cleon.time.policy"].search([
-            ("company_id", "=", employee.company_id.id),
-        ], limit=1)
-        return (
-            min(lines.mapped("hour_from")) if lines else 9.0,
-            policy.default_grace_minutes if policy else 0,
-            Shift,
-        )
+    def _expected_working_hours(self, employee, target_date, cache=None):
+        key = (employee.id, target_date)
+        if cache is not None and key in cache["expected"]:
+            return cache["expected"][key]
+        result = self.env["cleon.time.engine"]._expected_schedule(employee, target_date, cache)
+        if cache is not None:
+            cache["expected"][key] = result
+        return result
 
     @api.model
-    def _status_for(self, attendance, employee, target_date):
+    def _expected_start(self, employee, target_date, cache=None):
+        exp = self._expected_working_hours(employee, target_date, cache)
+        shift = self.env["cleon.hr.shift"].browse(exp["shift_id"]) if exp.get("shift_id") and "cleon.hr.shift" in self.env else False
+        return (False if exp["is_rest_day"] else exp["start_hour"], exp.get("grace_minutes", 0), shift)
+
+    @api.model
+    def _status_for(self, attendance, employee, target_date, cache=None, integration=None):
         """Return independent attendance facts using timezone-aware DATETIME night shift math and rest-day absence exclusion:
         (is_late, late_by, is_early_exit, early_exit_by, is_half_day, summary_status).
         """
-        expected_start, grace, assigned_shift = self._expected_start(employee, target_date)
-        shift = attendance.cleon_shift_id if attendance and attendance.cleon_shift_id else assigned_shift
+        expected_start, grace, assigned_shift = self._expected_start(employee, target_date, cache)
+        shift = getattr(attendance, "cleon_shift_id", False) or assigned_shift
         if shift and hasattr(shift, "start_hour") and shift.start_hour is not False and shift.id:
             expected_start = shift.start_hour
             grace = shift.grace_minutes if hasattr(shift, "grace_minutes") else grace
@@ -670,8 +630,7 @@ class HrAttendance(models.Model):
         early_exit_by = 0
         if attendance.check_out:
             local_check_out = pytz.UTC.localize(attendance.check_out).astimezone(tz)
-            Shift = self.env["cleon.hr.shift"]
-            exp = Shift._get_expected_working_hours_internal(employee.id, target_date)
+            exp = self._expected_working_hours(employee, target_date, cache)
             end_hour = exp.get("end_hour") if exp and exp.get("end_hour") is not None else (shift.end_hour if shift and hasattr(shift, "end_hour") and shift.end_hour else (expected_start + 8.0 if expected_start is not False else 17.0))
             end_hour_int = int(end_hour) % 24
             end_min_int = int(round((end_hour - int(end_hour)) * 60))
@@ -681,7 +640,8 @@ class HrAttendance(models.Model):
                 early_exit_by = int(round((expected_out_dt - local_check_out).total_seconds() / 60.0))
                 is_early_exit = bool(early_exit_by > 0)
 
-        integration = self._time_integration_values(attendance, employee, target_date, shift)
+        if integration is None:
+            integration = self._time_integration_values(attendance, employee, target_date, shift, cache)
         is_half_day = False
         if attendance.check_out and integration["expected_hours"] > 0:
             if integration["net_hours"] < integration["expected_hours"] / 2.0:
@@ -701,63 +661,46 @@ class HrAttendance(models.Model):
         return is_late, late_by, is_early_exit, early_exit_by, is_half_day, summary
 
     @api.model
-    def _time_integration_values(self, attendance, employee, target_date, shift=False):
+    def _time_policy(self, employee, cache=None):
+        company_id = employee.company_id.id
+        if cache is not None and company_id in cache["policies"]:
+            return cache["policies"][company_id]
+        policy = self.env["cleon.time.policy"].search([("company_id", "=", company_id)], limit=1)
+        if cache is not None:
+            cache["policies"][company_id] = policy
+        return policy
+
+    @api.model
+    def _time_integration_values(self, attendance, employee, target_date, shift=False, cache=None):
         """Return normalized integration view consuming Shift expected working hours service for split/night shifts."""
-        policy = self.env["cleon.time.policy"].search([("company_id", "=", employee.company_id.id)], limit=1)
-        Shift = self.env["cleon.hr.shift"]
-        exp = Shift._get_expected_working_hours_internal(employee.id, target_date)
-        expected_hours = exp.get("expected_hours", policy.standard_hours if policy else 8.0) if exp else (policy.standard_hours if policy else 8.0)
-
-        net_hours = max(0.0, (attendance.worked_hours or 0.0) - (
-            (attendance.cleon_break_minutes or 0) / 60.0
-        )) if attendance else 0.0
-        calendar = employee.resource_calendar_id
-        day_start, day_end = self._day_bounds(target_date)
-        is_holiday = bool(calendar and calendar.global_leave_ids.filtered(
-            lambda leave: leave.date_from < day_end and leave.date_to > day_start
-        ))
-        is_weekend = target_date.weekday() >= (5 if not policy or policy.work_week == "five" else 6)
-
-        overtime_category = "daily"
-        overtime_rate = policy.daily_overtime_rate if policy else 1.5
-        threshold = policy.daily_overtime_threshold if policy else expected_hours
-        if is_holiday and (not policy or policy.holiday_overtime):
-            overtime_category = "holiday"
-            overtime_rate = policy.holiday_overtime_rate if policy else 2.5
-            threshold = 0.0
-        elif is_weekend and (not policy or policy.weekend_overtime):
-            overtime_category = "weekend"
-            overtime_rate = policy.weekend_overtime_rate if policy else 2.0
-            threshold = 0.0
-        overtime_hours = max(0.0, net_hours - threshold)
-
+        integration = self.env["cleon.time.engine"]._evaluate_day(
+            employee, target_date, attendance.worked_hours if attendance else 0.0,
+            break_minutes=attendance.cleon_break_minutes if attendance and attendance.cleon_break_minutes else None,
+            cache=cache,
+        )
         timesheet_hours = 0.0
-        if employee and "account.analytic.line" in self.env:
+        if cache is not None and "timesheets" in cache:
+            timesheet_hours = cache["timesheets"].get((employee.id, target_date), 0.0)
+        elif employee and "cleon.time.sheet" in self.env:
             groups = self.env["account.analytic.line"].sudo()._read_group(
                 [("employee_id", "=", employee.id), ("date", "=", target_date)],
                 [], ["unit_amount:sum"],
             )
             timesheet_hours = groups[0][0] if groups else 0.0
-        return {
-            "expected_hours": round(expected_hours, 2),
-            "net_hours": round(net_hours, 2),
-            "hours_variance": round(timesheet_hours - net_hours, 2),
-            "timesheet_hours": round(timesheet_hours, 2),
-            "overtime_hours": round(overtime_hours, 2),
-            "overtime_category": overtime_category,
-            "overtime_rate": overtime_rate,
-            "is_weekend": is_weekend,
-            "is_holiday": is_holiday,
-        }
+        return dict(integration, timesheet_hours=round(timesheet_hours, 2),
+                    hours_variance=round(timesheet_hours - integration["net_hours"], 2))
 
     @api.model
-    def _row(self, employee, attendance, target_date, on_leave=False):
-        expected, _grace, assigned_shift = self._expected_start(employee, target_date)
-        is_late, late_by, is_early_exit, early_exit_by, is_half_day, status = self._status_for(attendance, employee, target_date)
+    def _row(self, employee, attendance, target_date, on_leave=False, cache=None):
+        expected, _grace, assigned_shift = self._expected_start(employee, target_date, cache)
+        shift = getattr(attendance, "cleon_shift_id", False) or assigned_shift
+        integration = self._time_integration_values(attendance, employee, target_date, shift, cache)
+        is_late, late_by, is_early_exit, early_exit_by, is_half_day, status = self._status_for(
+            attendance, employee, target_date, cache, integration
+        )
         if on_leave and not attendance:
             status = "on_leave"
-        shift = attendance.cleon_shift_id if attendance and attendance.cleon_shift_id else assigned_shift
-        hours = max(0.0, (attendance.worked_hours if attendance else 0.0) - ((attendance.cleon_break_minutes if attendance else 0) / 60.0))
+        hours = integration["net_hours"]
         row = {
             "id": attendance.id if attendance else 0,
             "employee_id": employee.id,
@@ -787,7 +730,7 @@ class HrAttendance(models.Model):
             "in_accuracy": attendance.in_accuracy if attendance else 0.0,
             "in_distance_meters": attendance.in_distance_meters if attendance else 0.0,
         }
-        row.update(self._time_integration_values(attendance, employee, target_date, shift))
+        row.update(integration)
         return row
 
     @api.model
@@ -806,6 +749,15 @@ class HrAttendance(models.Model):
         if search:
             employee_domain.append(("name", "ilike", search))
         employees = self.env["hr.employee"].search(employee_domain, order="name")
+        cache = self.env["cleon.time.engine"]._prepare_schedule_cache(employees, start_date, end_date)
+        cache["timesheets"] = {}
+        if employees and "cleon.time.sheet" in self.env:
+            for employee, day, hours in self.env["account.analytic.line"].sudo()._read_group(
+                [("employee_id", "in", employees.ids), ("date", ">=", start_date),
+                 ("date", "<=", end_date)],
+                ["employee_id", "date:day"], ["unit_amount:sum"],
+            ):
+                cache["timesheets"][(employee.id, fields.Date.to_date(day))] = hours
         start_dt, _ = self._day_bounds(start_date)
         _, end_dt = self._day_bounds(end_date)
         attendances = self.search([
@@ -831,7 +783,7 @@ class HrAttendance(models.Model):
             by_employee = {}
             for attendance in attendances:
                 by_employee.setdefault(attendance.employee_id.id, attendance)
-            rows = [self._row(emp, by_employee.get(emp.id), start_date, (emp.id, start_date) in leave_days) for emp in employees]
+            rows = [self._row(emp, by_employee.get(emp.id), start_date, (emp.id, start_date) in leave_days, cache) for emp in employees]
         else:
             # Multi-day view: build matrix for every employee x date in date range
             num_days = (end_date - start_date).days + 1
@@ -844,7 +796,7 @@ class HrAttendance(models.Model):
                 for emp in employees:
                     att = att_map.get((emp.id, d))
                     on_leave = (emp.id, d) in leave_days
-                    rows.append(self._row(emp, att, d, on_leave=on_leave))
+                    rows.append(self._row(emp, att, d, on_leave=on_leave, cache=cache))
 
         counts = {key: len([row for row in rows if row["status"] == key]) for key in ("present", "late", "early_exit", "late_and_early", "half_day", "absent", "rest_day", "rest_day_worked", "on_leave")}
         
@@ -858,7 +810,7 @@ class HrAttendance(models.Model):
             "counts": counts,
             "attendance_rate": attendance_rate,
             "departments": self.env["hr.department"].search_read([], ["name"], order="name"),
-            "shifts": self.env["cleon.hr.shift"].search_read([("company_id", "=", self.env.company.id)], ["name"]),
+            "shifts": self.env["cleon.hr.shift"].search_read([("company_id", "=", self.env.company.id)], ["name"]) if "cleon.hr.shift" in self.env else [],
         }
 
     def cleon_update_attendance(self, values, reason):
@@ -876,7 +828,7 @@ class HrAttendance(models.Model):
             self.env["cleon.time.period.lock"].check_period_lock(c_id, local_date, _("Attendance Record Edit"), reason)
 
         allowed = {"check_in", "check_out", "cleon_break_minutes", "cleon_status_override", "cleon_shift_id"}
-        clean = {key: value for key, value in values.items() if key in allowed}
+        clean = {key: value for key, value in values.items() if key in allowed and key in self._fields}
         if not clean:
             raise UserError(_("No editable attendance values were provided."))
         def audit_value(key):
