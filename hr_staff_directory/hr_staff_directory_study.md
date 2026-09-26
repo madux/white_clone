@@ -1,107 +1,360 @@
 # hr_staff_directory Module Study Notes
 
+Verified against the live module (v17.0.1.0.4). Earlier drafts of this note were stale in several places; those are corrected here.
+
+**Design rule:** the frontend should render; the backend is the single source of truth (SSOT). That is only partly true today. Several charts and team/project surfaces still fabricate or fall back to mock data.
+
+---
+
 ## 1. Overview
-The hr_staff_directory module is a custom Odoo 17 addon designed to provide a comprehensive **Staff Directory Dashboard** alongside workforce analytics. It acts as an interactive, highly visual frontend for exploring and analyzing employee data within the CleonHR suite.
 
-## 2. Frontend Architecture (OWL / UI Components)
-This module relies heavily on Odoo's web framework (OWL) to render a modern dashboard. The assets are modularized in static/src/ and grouped into specific visualization components:
+`hr_staff_directory` is an OWL **client action**, not a classic Odoo list/form app. It hijacks the HR Admin “Staff Directory” menu and serves as the CleonHR workforce directory: people table, profile drawer, org visualizations, saved segments, and HR admin actions (lifecycle, transfer, promote, permissions, etc.).
 
-*   **geographic_map**: Renders employee locations on a map (this is where map_bg.svg resides).
-*   **org_chart**: Visualizes the reporting structure (managers and direct reports).
-*   **heatmap**: Used for cross-sectional data visualization (e.g., skills distribution).
-*   **bar_chart**: Displays headcount trends and department distribution.
-*   **people_list & profile_panel**: Handles the individual employee cards and detailed views.
-*   **toast**: Service-driven reusable toast container, mounted globally (see §7).
-*   **staff_directory_dashboard.js**: The main orchestrator that fetches data and mounts these sub-components.
+| | |
+|---|---|
+| Name | CLEONHR Staff Directory |
+| Version | 17.0.1.0.4 |
+| Client action tag | `hr_staff_directory.dashboard` |
+| Menu | Overrides `hr_administration.hr_admin_staff_directory` |
+| Depends | `base`, `hr`, `hr_holidays`, `hr_contract`, `hr_skills`, `mail`, `web`, `hr_administration` |
+| License | LGPL-3 |
 
-## 3. Backend Architecture (Python Models)
-### Extending hr.employee
-The module extends the base hr.employee model (models/hr_employee.py). Its most significant addition is the @api.model method _get_staff_directory_data. 
+---
 
-This method acts as the primary data provider for the frontend dashboard. It queries the employee records and constructs a dense dictionary of formatted data for each person, including:
-*   **Core Info:** Name, Job Title, Department, Manager, Direct Reports count.
-*   **Computed Tenure:** Dynamically calculates how long an employee has been with the company (e.g., 2y 3m or < 1m).
-*   **Pinning System:** It checks emp.pinned_by_user_ids to determine if the current user has bookmarked/pinned an employee (is_pinned).
-*   **Temporary Mock Data:** Interestingly, the method currently generates **mock data** for certain analytics to ensure the dashboard looks populated:
-    *   progress_score: A pseudo-random integer.
-    *   skills: Uses a deterministic helper method (_mock_skills_for_employee) to assign skills like "AWS", "B2B Sales", or "Operational Risk" based on the employee's ID and department. This is explicitly marked with a TODO to wire up to real performance/skill fields later.
+## 2. How a user gets here
 
-### Job Title (`job_title`) vs Job Position (`job_id`)
-We deliberately use `hr_employee.job_title` (a Char field) instead of `hr_employee.job_id` (a Many2one to `hr.job`) as the **Single Source of Truth** for the employee's role in the directory.
-* **Why:** In Odoo, `job_id` is a structural field used heavily by the Recruitment app for managing open headcount and formal job descriptions. Many companies leave it empty or use highly generic categories (e.g., all developers share the "Software Engineer" `job_id`). 
-* **The Solution:** The free-text `job_title` field acts as the exact "Business Card" title. By relying on it, the Staff Directory ensures it displays exactly what the person is actually called internally, circumventing missing or rigid structural data.
+```
+HR Administration → Staff Directory
+        ↓
+ir.actions.client  tag=hr_staff_directory.dashboard
+        ↓
+StaffDirectoryDashboard  (staff_directory_dashboard.js + .xml)
+        ↓
+JSON  POST /hr_staff_directory/people   (sudo)
+        ↓
+hr.employee.get_staff_directory_people_data()
+```
 
-### Lifecycle Status (`sdir_lifecycle_status`)
-We deliberately use a custom Selection field `sdir_lifecycle_status` on `hr.employee` as the **Single Source of Truth** for the employee's lifecycle state (Active, Probation, On Leave, Suspended, Terminated, Exiting, Alumni) rather than relying on native Odoo structures like `hr.contract` and `hr.leave`.
-* **Why:** While Odoo normally derives states like "Probation" from a Contract's trial dates, or "On Leave" from active Time Off requests, generating full legal contracts and leave requests just to update a visual dashboard badge is poor UX for an HR Admin managing the directory. 
-* **The Solution:** The Staff Directory relies solely on `sdir_lifecycle_status`. When an admin changes the status to "Terminated" or "Alumni" via the directory modal, the backend automatically flips the native Odoo `active = False` field so they are properly hidden from standard Odoo views, maintaining system-wide consistency while offering a streamlined interface.
+---
 
-### Employee Profile Photo (`image_1920`)
-Unlike other metadata fields where we've created custom variables (like `job_title` instead of `job_id`), the **Single Source of Truth** for the employee's profile photo remains Odoo's native `image_1920` field.
-* **Why:** Odoo's `image.mixin` natively handles uploading a high-resolution image to `image_1920` and automatically generates scaled-down optimized variants (`avatar_128`, `image_512`, etc.) behind the scenes.
-* **The Solution:** By writing the base64 image data directly to `image_1920` from the Staff Directory's "Update Profile Photo" modal, the photo instantly propagates across all Odoo apps, chatter, and standard forms without any extra logic required.
+## 3. File map
 
-### Contact Information
-The "Edit Contact Information" modal updates the employee's contact details adhering to a mix of native Odoo fields and custom SSOT fields depending on complexity:
-* **Native Fields:** We strictly use the native `work_email`, `work_phone`, `emergency_contact`, and `emergency_phone` fields as the SSOT. They map 1:1 with Odoo's standard design.
-* **Custom Field - `sdir_home_address` (Text):** Base Odoo natively manages home addresses via a complex Many2one relationship to a `res.partner` (`address_home_id`). To keep the Staff Directory streamlined, we bypass this by using a simple `sdir_home_address` Text field.
-* **Custom Field - `sdir_emergency_relationship` (Char):** Base Odoo is entirely missing a field to store the relationship of the emergency contact (e.g. "Spouse"). We created `sdir_emergency_relationship` to serve as this SSOT.
+```
+hr_staff_directory/
+├── models/
+│   ├── hr_employee.py                 # SSOT fields + all dashboard / HR APIs (~2000 lines)
+│   ├── staff_directory_sync.py        # bus broadcast mixin on 8 models
+│   ├── hr_staff_directory_segment.py  # saved people segments + smart-search filters
+│   ├── sdir_employee_event.py         # activity / performance ledger
+│   └── hr_work_location.py            # lat/lng + Nominatim geocode
+├── controllers/main.py                # /data, /people, /toggle_pin  (all sudo)
+├── views/                             # client action, menu, DM Sans font, mail branding
+├── security/                          # segment ACL + personal ir.rule
+├── data/hr_work_location_cron.xml     # daily geocode cron
+└── static/src/
+    ├── js/staff_directory_dashboard.js       # orchestrator (~2970 lines)
+    ├── xml/staff_directory_dashboard.xml     # tabs + org / smart-search shell
+    └── components/
+        people_list, profile_panel, full_profile
+        org_chart, org_analysis, geographic_map, relationship_graph
+        heatmap, bar_chart
+        toast, message, mail_modal
+        chat_window + composer patches
+```
 
-### Transfer Employee
-The "Transfer Employee" modal is designed to move an employee to a new department and location.
-* **Department and Location (`department_id`, `work_location_id`):** We strictly use Odoo's native `department_id` and `work_location_id` (Many2one) fields as the SSOT. The frontend dynamically fetches all active departments and work locations from the backend so the user selects actual Odoo records, ensuring absolute data integrity.
-* **Transfer Metadata:** Base Odoo does not natively track the "reason" or "effective date" of a department transfer directly on the employee model. We created two custom fields `sdir_transfer_date` (Date) and `sdir_transfer_reason` (Text) to store this metadata as the SSOT. A rich automated message is also posted to the employee's chatter log detailing the old vs new department/location for historical audit trails.
+`post_init_hook` geocodes unmapped work locations on install.
 
-### Promote Employee
-The "Promote Employee" modal allows an administrator to quickly elevate an employee's title and level.
-* **Job Title (`job_title`):** We explicitly update the free-text `job_title` field as the SSOT, rather than the structural `job_id` field.
-* **Promotion Metadata (`sdir_grade`, `sdir_salary_adjustment`):** Base Odoo natively isolates salary and grade logic into the `hr.contract` model. Consistent with the module's simplified approach, we bypass `hr.contract` and instead store `sdir_grade` (Char), `sdir_salary_adjustment` (Integer), `sdir_promotion_date` (Date), and `sdir_promotion_reason` (Text) directly on `hr.employee`. 
-* **Team Announcements:** When the "Announce to team" flag is checked, the backend automatically looks up the employee's department manager and all co-workers in the same department, tagging them via their `partner_id` in the chatter log to generate an instant Odoo notification.
+---
 
-### Other Models
-*   hr_work_location.py: Likely extends the work location model, possibly adding coordinate data (latitude/longitude) required by the geographic_map component.
+## 4. Tabs — what is real vs empty
 
-## 4. Development & Seed Data
-The directory contains scripts like dev_seed.sql, dev_gender_update.sql, and dev_generate_seed_all.py. This indicates that the developers built a robust scaffolding system to generate realistic dummy data (names, hierarchies, skills) to test the complex dashboard visualizations during development.
+| Tab | `activeTab` | State |
+|---|---|---|
+| **People** | `people` | Live. Table, filters, segments, selection, profile drawer, full profile. |
+| **Organizational Structure** | `org` | Live. Org chart + view switcher (org / bar / heatmap / geo / graph), Smart Search sidebar, Org Analysis overlay. |
+| **Workforce Intelligence** | `workforce` | Placeholder: “Coming Soon”. |
+| **Organizational Intelligence** | `network` | Placeholder: “Coming Soon”. |
 
-## 5. Relationship Network Graph Physics & Architecture
-The **relationship_graph** component uses d3.js (specifically d3-force) to simulate a force-directed network layout. This layout provides an interactive, physical simulation where nodes naturally float and adjust themselves.
+Default tab is `people`. Smart Search lives on the **org** tab sidebar, not the people tab.
 
-### Linkage Strategies
-*   **Reporting Lines:** Represented as direct links from an Employee to their Manager (based on manager_id). These act as standard tension lines in the physics simulation.
-*   **Peer / Team Lines (Chain Optimization):** Instead of creating a complete graph (a clique) where every team member is connected to every other team member—which creates an (N^2)$ explosion of intersecting lines that crushes browser physics engines—peers are grouped by their shared manager and linked sequentially in a **single continuous chain** (A ➔ B ➔ C). This (N)$ optimization keeps the physics simulation incredibly lightweight while still ensuring the forces pull the entire team into a distinct, cohesive visual cluster on the canvas.
-* If you ever want to change this logic (for instance, if you want peers to mean "people in the same Department" instead of "people with the same Manager"), that logic lives right inside the buildGraphData() function in **relationship_graph.js**
+---
 
-## 6. Organization Analysis KPIs
-1. Total Teams
-The Logic: I count the number of unique managers across the currently filtered list of employees.
-The Rationale: In most organizational structures, a "team" is defined by a group of people reporting to a single manager. By counting how many distinct manager_ids exist in the current data, we get a highly accurate proxy for the number of active teams.
-2. Avg. Span of Control
-The Logic: I divide the Total Headcount by the Total Teams (the unique manager count from above).
-The Rationale: "Span of control" is an HR metric that represents the average number of direct reports a manager is responsible for. For example, if you have 100 employees and 20 managers (teams), the average span of control is 100 / 20 = 5.0. This gives leadership a quick pulse on whether managers are stretched too thin or if the organization is too top-heavy.
-If your organization has a different specific definition for what constitutes a "Team" (for example, if you have a dedicated team_id field on the employee record that differs from their manager), or if you want "Span of Control" calculated differently, we can easily tweak that logic before we move on to the charts!
+## 5. Data flow and APIs
 
-3. Employment Type Mix (Backend Note)
-Currently, the backend Python model simply passes the raw `employee_type` field directly to the frontend. If `employee_type` is empty or lacks robust contract/employment status checking, the frontend is forced to guess using fallback logic (e.g., checking if `contract_id` exists). 
-**Note for Backend Developer:** Please ensure that any business logic for calculating the exact "Employment Type" (Permanent, Contract, Intern, etc.) is implemented in the `models/hr_employee.py` backend model. The `hr_staff_directory` module strictly relies on the **Single Source of Truth** approach—the frontend should only be responsible for rendering the data, not deducing it.
+### Live entry point
 
-## 7. Reusable Toast Mechanism (Service-Driven)
-The module ships a shared, animated toast notification system that **any component can raise from anywhere** — no prop-drilling, no local state, no per-template wiring. It is modeled directly on Odoo core's `notification_service` pattern (reactive state inside a service + a container registered in the `main_components` registry).
+On mount the dashboard:
 
-### Files
+1. RPC `/hr_staff_directory/people`
+2. Joins bus channel `hr_staff_directory`
+3. Subscribes once (module-level singleton — Odoo 17 `bus_service.subscribe` has no unsubscribe)
+4. Polls again every 60s as a fallback
+5. Reloads on websocket reconnect
+
+`get_staff_directory_people_data()` returns:
+
+```python
+{
+  stats,                 # KPI cards
+  people,                # one fat dict per employee (incl. archived)
+  segments,              # personal people-segments
+  smart_search_filters,  # personal smart-search saves
+  departments,
+}
+```
+
+`_sd_people_list()` uses `active_test=False`, so terminated/alumni still appear. Each row is a large dict: identity, org, lifecycle, location/coords, skills, leave, permissions snapshot, activity timeline, pin state, etc.
+
+### Dead / leftover API
+
+`/hr_staff_directory/data` → `get_staff_directory_dashboard_data()` still builds the original KPI overview (headcount trend, compliance, training, diversity, alerts, …). **The current OWL dashboard never calls it.** That Python block is leftover from an earlier analytics homepage.
+
+### HTTP routes (`controllers/main.py`)
+
+| Route | Method | Notes |
+|---|---|---|
+| `/hr_staff_directory/people` | `get_staff_directory_people_data` | Used |
+| `/hr_staff_directory/toggle_pin` | `toggle_employee_pin` | Used |
+| `/hr_staff_directory/data` | `get_staff_directory_dashboard_data` | Unused by current UI |
+
+All three use `request.env['hr.employee'].sudo()`. Any logged-in user who can hit the JSON route sees every employee the superuser can. That is a real access hole if this ships to mixed-role tenants.
+
+HR writes go through `orm.call` / `orm.write` on `hr.employee` from `profile_panel.js`. Those writes hit the sync mixin → bus → silent reload.
+
+---
+
+## 6. Real-time sync
+
+`staff_directory.sync.mixin` (`models/staff_directory_sync.py`) broadcasts on create/write/unlink for:
+
+`hr.employee`, `hr.contract`, `hr.leave`, `hr.department`, `hr.work.location`, `hr.employee.skill`, `hr.job`, `hr.skill`, plus `hr.staff.directory.segment`.
+
+- Channel: `hr_staff_directory`
+- Event: `hr_staff_directory_update`
+- Context key `sdir_no_notify` suppresses the broadcast (used for segment cache and imports).
+- Unlink notifies **before** `super().unlink()` so a failed unlink rolls back and never reaches clients.
+
+The OWL side keeps a single page-level subscription and a 50ms debounce so N open dashboards do not each subscribe.
+
+---
+
+## 7. Frontend architecture (OWL)
+
+The dashboard is the orchestrator. Child components receive the same `people` payload (already filtered client-side).
+
+| Component | Role |
+|---|---|
+| `staff_directory_dashboard.js` | Tabs, load, filters, smart search, bus, selection, CSV/email |
+| `people_list` | People table, segments, column picker, pagination |
+| `profile_panel` | Side drawer + all HR action modals |
+| `full_profile` | Full-page profile (overview / activity / leave / CleonAI chrome) |
+| `org_chart` | Reporting tree; pan/zoom; depth > 2 collapsed |
+| `org_analysis` | Chart.js overlay: headcount, teams, span of control |
+| `geographic_map` | Nominatim coords on SVG world background (`map_bg.svg`) |
+| `relationship_graph` | D3 force layout (loaded from `https://d3js.org/d3.v7.min.js`) |
+| `heatmap` / `bar_chart` | Skills × location |
+| `toast` / `message` / `mail_modal` | Global services via `main_components` |
+| chat/composer patches | Visual restyle of native Discuss |
+
+DM Sans is loaded via a `web.layout` inherit (`views/assets.xml`). Do **not** `@import` Google Fonts inside bundled CSS — that corrupts `web.assets_backend`.
+
+---
+
+## 8. Backend models
+
+### 8.1 `hr.employee` inherit (`models/hr_employee.py`)
+
+All dashboard aggregation and HR actions live here as `@api.model` methods (a few action methods are missing the decorator; JS still calls them as model methods).
+
+### 8.2 SSOT field map (what the people list actually uses)
+
+| Concept | Field / source | Notes |
+|---|---|---|
+| Display name | `name` | Native |
+| Role | `job_title` (Char) | **Not** `job_id` |
+| Department / manager | `department_id`, `parent_id` | Transfer also sets manager to the new dept manager |
+| Photo | `image_1920` | Written directly from the photo modal |
+| Work email / phone | `work_email`, `work_phone` | Native |
+| Emergency contact | `emergency_contact`, `emergency_phone` | Native |
+| Home address | `sdir_home_address` | Bypasses `address_home_id` |
+| Emergency relationship | `sdir_emergency_relationship` | Missing in core HR |
+| Lifecycle | `sdir_lifecycle_status` | `terminated` / `alumni` also set `active=False` |
+| Pin | `pinned_by_user_ids` | Per-user M2M |
+| Employment type | `sdir_employment_type`, fallback `employee_type` | |
+| Work mode | `work_mode`, fallback location type | Defaults to “Hybrid” if empty |
+| Location | `work_location_id` + lat/lng | Geocoded via Nominatim |
+| Staff ID | `employee_number` → barcode → `EMP-####` | |
+| Tenure / anniversary | contract `date_start`, else `create_date` | Leap-year safe |
+| Performance | latest `sdir.employee.event` of type `performance_review` | **Not** the `performance_score` Integer field |
+| Skills | `skills` Char, else `_mock_skills_for_employee()` | Still mocked when empty |
+| Leave | real `hr.leave` / `hr.leave.allocation` | |
+| Permissions | mapped `res.groups` on `user_id` | Needs a linked user |
+| Grade in the table | `grade_id.name` or mock `grade` / `band` | **Not** `sdir_grade` |
+| Promotion grade | `sdir_grade` | Written by promote; the table does not read it |
+| Transfer metadata | `sdir_transfer_date`, `sdir_transfer_reason` | |
+| Promotion metadata | `sdir_promotion_date`, `sdir_promotion_reason`, `sdir_salary_adjustment` | |
+| Availability / flight risk / last active | `availability`, `flight_risk`, `last_active` | Directory-only fields |
+| Retention priority (field) | `retention_priority` | People-list KPI of the same name is **not** this field |
+
+Also present but unused by the live people table: mock `grade` Selection (`L1 · Junior Associate` …), Integer `performance_score`.
+
+### 8.3 Why some fields are custom (SSOT rationale)
+
+**Job title (`job_title`) vs job position (`job_id`).** `job_id` is a structural recruitment/headcount field and is often empty or generic. The free-text `job_title` is the “business card” title the directory displays and promote updates.
+
+**Lifecycle (`sdir_lifecycle_status`).** Values: `active`, `probation`, `onleave`, `suspended`, `terminated`, `exiting`, `alumni`. We do not derive this from contracts or time-off, so an HR admin can badge someone without fabricating legal records. Terminated/Alumni also set native `active=False`. Native archive on the employee form does **not** write back to this field (see §19).
+
+**Photo (`image_1920`).** Native `image.mixin` already generates `image_128` / `avatar_128` / etc. The photo modal writes base64 to `image_1920` so the image propagates across Odoo.
+
+**Contact.** Native: `work_email`, `work_phone`, `emergency_contact`, `emergency_phone`. Custom: `sdir_home_address` (avoids `address_home_id` partner linkage) and `sdir_emergency_relationship` (core HR has no relationship field).
+
+**Transfer.** Native `department_id` + `work_location_id`. Metadata: `sdir_transfer_date`, `sdir_transfer_reason`. Also reassigns `parent_id` to the new department’s manager. Optional chatter pings to old/new managers.
+
+**Promote.** Updates `job_title` + `sdir_grade` / `sdir_salary_adjustment` / dates / reason. Does **not** write `hr.contract`. Optional “announce to team” tags the dept manager and coworkers. Does **not** create an `sdir.employee.event` (see §12).
+
+### 8.4 Other models
+
+| Model | Role |
+|---|---|
+| `hr.staff.directory.segment` | Personal saved filters. `kind`: `people` or `smart_search`. `conditions` is JSON. `member_ids` is a materialized cache refreshed on open/email (`sdir_no_notify`). Record rule: `user_id = user.id`. |
+| `sdir.employee.event` | Milestone / performance ledger. Types: hire, promotion, transfer, performance_review, anniversary, other. |
+| `hr.work.location` inherit | `latitude`, `longitude`. Geocode via Nominatim on create / name / address change, daily cron, and post-init. |
+
+`views/hr_work_location_views.xml` (Get Coordinates button + lat/lng on the form) exists but is **not listed in `__manifest__.py` `data`**, so that UI never loads.
+
+---
+
+## 9. HR actions (profile panel)
+
+All of these sit in `profile_panel.js` and write through `hr.employee`. Every successful write posts chatter — that is the audit trail.
+
+| Action | Backend | Side effects |
+|---|---|---|
+| Edit basics | `orm.write` name, title, location, work_mode, type, grade | |
+| Lifecycle | `update_lifecycle_status` | Archives on terminated/alumni; chatter |
+| Photo | `write({image_1920})` | Native image mixin |
+| Contact | `update_contact_info` | Chatter |
+| Transfer / change dept | `transfer_employee` | Sets `parent_id` to new dept manager; optional manager notify |
+| Promote | `promote_employee` | Updates `job_title` + `sdir_*`; optional team announce |
+| Reassign manager | `reassign_manager` | Tags old/new manager |
+| Grant / revoke perms | `grant_permissions` / `revoke_permissions` | Native groups; implied-group quirks |
+| Reset password | `reset_user_password` | Email link or temp password via `sudo` |
+| Suspend | `suspend_account` | `active=False` on employee **and** user |
+| Confirm probation | `confirm_probation` | Sets lifecycle `active` if pass; chatter only (no event row) |
+| Rehire | `rehire_employee` | Unarchives employee + user |
+
+`confirm_probation`, `suspend_account`, `revoke_permissions`, and `promote_employee` lack `@api.model`. Several other methods have duplicated `@api.model` decorators.
+
+---
+
+## 10. People tab
+
+`StaffDirectoryPeopleList` owns:
+
+- Stat cards from `_sd_people_stats()`: total, active, on leave, probation (open contract with future `trial_date_end`), “retention priority” (contracts ending in 60 days — **not** the `retention_priority` field)
+- Search, column picker, sort, pagination
+- Filter modal (department, grade, location, gender, performance, type, lifecycle, manager, flight risk, …)
+- Saved **people segments** (AND conditions, preview audience, persist, delete)
+- Row selection → CSV export, bulk email, bulk chat
+- Pin via `/hr_staff_directory/toggle_pin`
+- Click row → profile drawer
+
+### Segment engine
+
+- Conditions JSON. Fields include `dept`, `role`, `gradeLevel`, `location`, `workMode`, `employmentType`, `lifecycleState`, `flightRisk`, `retentionPriority`, `lineManager`, `tenureBucket`, `gender`, `id`, `skills`, `languages`, `performanceScore` (numeric `eq` / `gte` / `lte` / `between`).
+- Operators: `is`, `isNot`, `contains`, `notContains`.
+- Smart-search payloads are dicts and are never treated as people-segment condition lists.
+- Email: `action_email_members` recomputes members then sends `mail.mail`; people-list selection uses `email_employees` (`message_post` to `work_contact_id`).
+
+ACL: `base.group_user` full CRUD on segments and events. Segments are personal only.
+
+---
+
+## 11. Org tab
+
+Same people payload, filtered client-side.
+
+**Views**
+
+- **Org chart** — tree from `manager_id` / `direct_report_ids`; pan/zoom; depth > 2 collapsed by default
+- **Bar chart** — skills × location
+- **Heatmap** — skills × location intensity
+- **Geographic map** — Nominatim coords on an SVG world background
+- **Relationship graph** — D3 force layout
+- **Org analysis** — Chart.js overlay
+
+**Smart Search** is a second filter engine (OR within a category, AND across). Saved as `hr.staff.directory.segment` with `kind='smart_search'`. Sidebar tabs: Overview / Teams / Calendar / Analytics. Teams comparison and “current projects” still invent names like “Platform v3 Rebuild” when project data is missing. CleonAI chat chrome is in the template; it is UI, not a backend.
+
+### Relationship graph physics
+
+`relationship_graph.js` uses d3-force.
+
+- **Reporting lines:** employee → manager (`manager_id`). Standard tension edges.
+- **Peer / team lines (chain optimization):** peers who share a manager are linked in a single chain (A → B → C), **O(N)** not a clique **O(N²)**. Change that in `buildGraphData()` if “peer” should mean same department instead.
+
+D3 is loaded from `https://d3js.org/d3.v7.min.js`. The graph needs that CDN.
+
+### Organization analysis KPIs
+
+1. **Total Teams** — count of unique managers in the currently filtered list. A team is “people who report to the same manager.”
+2. **Avg. Span of Control** — headcount / teams. Example: 100 employees and 20 managers → 5.0.
+3. **Employment type** — backend now prefers `sdir_employment_type` and falls back to native `employee_type`. The frontend should still only render, not guess.
+
+---
+
+## 12. Employee event history (`sdir.employee.event`)
+
+Lightweight ledger for hire, promotion, transfer, performance_review, anniversary, other.
+
+**What is true**
+
+- Performance shown in the directory (latest rating / `progress_score`) is derived from the most recent `performance_review` event, **not** from `hr.employee.performance_score`.
+- The Activity tab accordion is grouped by year from `_get_activity_timeline()`.
+
+**What the older notes got wrong**
+
+Promote and transfer do **not** create `sdir.employee.event` rows. They only post chatter and write `sdir_*` metadata. The timeline stays empty unless something else inserts events.
+
+---
+
+## 13. Work anniversary calculation
+
+Handled in `_sd_people_list` (and similarly in leftover `_sd_upcoming_anniversaries`).
+
+1. **Start date:** active contract `date_start`, else employee `create_date`.
+2. **Projection:** anniversary in the current year; if already passed, bump to next year and increment `years`.
+3. **Leap year:** Feb 29 in a non-leap year → Feb 28 (`ValueError` from `.replace()`).
+4. **Render:** card only if `anniv_display` is set, and only for employees with more than 0 years.
+
+Tenure label uses the same hire date: `2y 3m`, `2y`, `3m`, or `< 1m`.
+
+---
+
+## 14. Geocoding
+
+`hr.work.location`: `latitude` / `longitude`.
+
+- Query: location name with words like HQ/office/branch stripped, plus partner city/zip/country.
+- Provider: Nominatim (`User-Agent: OdooHRStaffDirectory/1.0`), 1.1s sleep between calls, 429 → sleep 2s.
+- Triggers: create, write of `name`/`address_id`, daily cron `ir_cron_geocode_work_locations`, `post_init_hook`.
+- Form inherit is **not installed** (missing from manifest `data`).
+
+---
+
+## 15. Reusable toast (`hr_staff_directory.toast`)
+
+Service-driven, no prop-drilling. Modeled on core `notification_service`: reactive state in a service + container in `main_components`.
+
 | File | Owns |
 |---|---|
-| `static/src/components/toast/toast.js` | `hr_staff_directory.toast` **service** (reactive state + `show()` API + container registration) and the `StaffDirectoryToast` OWL component |
-| `static/src/components/toast/toast.xml` | Template `hr_staff_directory.Toast` (icon + message markup) |
-| `static/src/components/toast/toast.css` | All `.sdir-toast*` rules + the `slideUpToast` keyframes (moved out of staff_directory.css) |
+| `static/src/components/toast/toast.js` | Service + `StaffDirectoryToast` |
+| `toast.xml` | Template `hr_staff_directory.Toast` |
+| `toast.css` | `.sdir-toast*` + `slideUpToast` |
 
-### How It Works
-1. The service's `start()` creates a module-wide **reactive singleton**: `reactive({ isVisible, type, message })`.
-2. The same `start()` registers the container once in the **`main_components` registry** (`SDIRToastContainer`, sequence 100). The webclient mounts main components at its **root**, so exactly one toast container exists for the whole session — independent of which client action is open. This is also why the toast reliably renders *above* in-page modals: it is `position: fixed; z-index: 10001` at the webclient root, while e.g. the New Segment modal overlay sits at `z-index: 9999`.
-3. The reactive state object is passed to the container **as a prop** (the core-proven reactivity path — same as `props: { notifications }` in core's notification service). Mutating it re-renders the container.
-4. Calling `show()` mutates the state (`isVisible = true`, type, message) and (re)starts the auto-hide timer.
+1. `start()` creates `reactive({ isVisible, type, message })`.
+2. Registers `SDIRToastContainer` in `main_components` (sequence 100) at the webclient root — one container for the whole session, `z-index: 10001` (above in-page modals at 9999).
+3. `show()` mutates state and (re)starts the auto-hide timer.
 
-### Usage (copy-paste for developers)
 ```js
 import { useService } from "@web/core/utils/hooks";
 
@@ -115,154 +368,30 @@ this.toast.show("error",   "Failed to send email. Please try again.");
 this.toast.show("warning", "Slow operation finished", 5000);  // optional duration, default 3000ms
 ```
 
-### Toast Types
 | Type | Look | Icon |
 |---|---|---|
 | `success` | Green (`#EAFBF1` / `#10b981`) | check |
 | `warning` | Red (`#FDECEC` / `#E53E3E`) | exclamation |
-| `error`   | Strong red (`#FEF2F2` / `#DC2626`) | circle-x |
+| `error` | Strong red (`#FEF2F2` / `#DC2626`) | circle-x |
 
-Behavior: fixed bottom-right, 360px, slides up (`slideUpToast`), auto-dismisses after 3s; a rapid second call replaces the message and restarts the timer.
+Fixed bottom-right, 360px, slides up, auto-dismiss 3s. A second call replaces the message and restarts the timer.
 
-### Current Consumers
-*   **staff_directory_dashboard.js** — pin/unpin results, CSV export, email send results (`_reportEmailResult`).
-*   **people_list.js** — Compare-Segments placeholder toast and the two save-segment validation guards ("Give the segment a name" / "Fill in all condition values").
+**Consumers:** dashboard (pin, CSV, email results), people_list (segment validation / compare placeholder), profile_panel (HR action results), message service (missing partner).
 
-### Extending
-Adding a new toast type requires **no JS changes**: add `.sdir-toast-{type}` color rules in `toast.css` and one icon branch (`<svg t-if="state.type === '...'" .../>`) in `toast.xml`.
+**Extend:** add `.sdir-toast-{type}` in CSS and one icon branch in XML. No JS change.
 
-### Design Note — why `main_components`?
-An earlier revision mounted the container inside the dashboard's template. That couples the toast to a single client action (it disappears when the action unmounts) and relies on a child component subscribing to service state through a getter. Registering in `main_components` — exactly what core's `notification_service` does — guarantees one always-mounted container at the webclient root, making `show()` truly global and the reactivity path identical to core.
+An earlier revision mounted the toast inside the dashboard template. That dies when the client action unmounts. `main_components` is the correct pattern.
 
+---
 
-## 8. Reusable Message and Mail Modals (Service-Driven)
-The module provides reusable UI components for sending Direct Messages and Emails. Just like the Toast component, these are mounted as global services in the `main_components` registry. Any component can trigger them without prop-drilling or template wiring.
+## 16. Global toast override (notification service patch)
 
-### The Message Component (`hr_staff_directory.message`)
-This provides a custom, pixel-perfect floating message box (similar to standard Odoo Discuss UI but customized for this module).
-*   **Usage**:
-    ```js
-    import { useService } from "@web/core/utils/hooks";
-    
-    // in setup():
-    this.messageModal = useService("hr_staff_directory.message");
-    
-    // anywhere (pass the employee's profile object):
-    this.messageModal.show(activeProfile);
-    ```
+`static/src/components/toast/notification_patch.js` patches core `notificationService.start()` and intercepts `add()`.
 
-### The Mail Modal Component (`hr_staff_directory.mail_modal`)
-This provides a sleek, slide-up-from-bottom email composer modal.
-*   **Usage**:
-    ```js
-    import { useService } from "@web/core/utils/hooks";
-    
-    // in setup():
-    this.mailModal = useService("hr_staff_directory.mail_modal");
-    
-    // anywhere (pass the employee's profile object):
-    this.mailModal.show(activeProfile);
-    ```
+- Maps `success` / `warning` / `danger` → `success` / `warning` / `error`.
+- Sticky or button toasts fall back to the native notification (our toast cannot host actions).
+- Loaded in `web.assets_backend`.
 
-### How They Work
-1. The services `start()` create reactive singletons and register containers (`SDIRMessageContainer` and `SDIRMailModalContainer`) in the `main_components` registry.
-2. The UI logic handles toggling `isVisible` and pre-filling the target recipient's details based on the `profile` object passed to `.show(profile)`.
-3. (Planned) The actual sending of the message/email will execute headless RPC calls to Odoo's `discuss.channel` backend.
-
-
-## 9. Local Development: Testing Outgoing Emails
-
-When developing modules that send real emails in Odoo, it is critical to use a mock SMTP server to prevent accidentally emailing real users or crashing the email queue with "Connection Refused" exceptions.
-
-**Mailpit** is the recommended tool. It runs a local SMTP server and provides a web interface to inspect all sent emails.
-
-### Setting up Mailpit in WSL/Linux:
-
-1. **Install Mailpit:**
-   ```bash
-   sudo bash -c "$(curl -sL https://raw.githubusercontent.com/axllent/mailpit/refs/heads/master/install.sh)"
-   ```
-
-2. **Run Mailpit:**
-   Start the server by running `mailpit` in your terminal. It will occupy port `1025` for SMTP and `8025` for the web UI.
-
-3. **Configure Odoo:**
-   - Enable **Developer Mode**.
-   - Navigate to **Settings -> Technical -> Outgoing Mail Servers**.
-   - Create a new record:
-     - **Description:** Local Mailpit
-     - **SMTP Server:** `localhost`
-     - **SMTP Port:** `1025`
-     - **Connection Security:** None
-   - Leave the username and password blank.
-   - Click **Test Connection** to verify.
-
-Once configured, all emails routed via `mail.mail` or `message_post` will be delivered to Mailpit. You can view the full HTML emails at `http://localhost:8025`.
-
-
-## 10. Chat Window UI Redesign & Service Proxy
-
-The module deeply redesigns the native Odoo `mail.ChatWindow` component to look incredibly modern and premium, while carefully preserving all underlying WebRTC, Discuss, and Thread logic.
-
-### 10.1 UI Customization via XPath and CSS
-Instead of reinventing the complex Odoo messaging and WebRTC wheel, we extended the native `mail.ChatWindow` using `xpath` (in `chat_window_patch.xml`) and injected a highly specific CSS layer (`chat_window_redesign.css`).
-*   **The Overrides**: We aggressively override the native layout, stripping out Odoo's default borders and box-shadows. We force the chat window to be 450px wide, floating, with 12px border radii and a clean `rgb(240, 242, 245)` background.
-*   **Action Buttons**: The native Odoo action icons (Call, Settings) were missing or misplaced. We patched the XML `t-if` condition to correctly map the `"call"`, `"settings"`, and `"search"` native Odoo action IDs so they seamlessly render in our custom header. Crucially, we bind these clicks to `action.onSelect()` rather than `action.action()`, ensuring Odoo's internal JS continues to route WebRTC requests properly.
-*   **Composer Gaps**: We targeted deep internal DOM elements (`.o-mail-Composer-actions .d-flex.flex-grow-1.align-items-center`) to inject `gap: 8px !important;` alongside forced flexbox layouts, making the emoji, attachment, and voice recorder buttons perfectly spaced.
-
-### 10.2 The Proxy Service (`hr_staff_directory.message`)
-To control the lifecycle of this redesigned chat window and prevent UI overlapping, we built a proxy service: `hr_staff_directory.message`.
-
-When a user clicks "Message", "Call", or "Video Call", they do not trigger Odoo directly. Instead, they call our service, which safely orchestrates the launch:
-1.  **Mutual Exclusivity**: It aggressively sweeps `chatWindowService.visible` and closes any currently open chat boxes, ensuring only one chat is open at a time. It also forces the `mailModalService` (Email Box) to hide.
-2.  **1-on-1 Chats**: For a single target, it invokes the native `mailThread.openChat({ partnerId: ID })`.
-3.  **Group/Bulk Chats**: When triggered from the "Message All" button on the table or inside a Segment, the service's `showBulk(profiles)` method intercepts. If multiple users are passed, it seamlessly proxies the array of `partner_id`s to Odoo's native `discuss.core.common.createGroupChat({ partners_to: partnerIds })`. This spins up a native group chat without any backend RPC boilerplate on our end.
-4.  **Auto-Video Call Integration**: If triggered with the `{ startVideoCall: true }` option (e.g., from the Video Call button), the service awaits the chat window, resolves the `thread`, and automatically triggers `rtc.toggleCall(thread, { video: true })` via `discuss.rtc`, dropping the user directly into a live camera feed.
-
-### 10.3 How Other Devs Can Trigger It
-Other modules or custom components in Odoo 17 can easily leverage this proxy to trigger our redesigned chat window or initiate a native WebRTC video call.
-
-**Triggering a 1-on-1 Chat / Video Call:**
-```javascript
-import { useService } from "@web/core/utils/hooks";
-
-// In your setup():
-this.messageService = useService("hr_staff_directory.message");
-
-// Trigger a normal chat:
-this.messageService.show({ partner_id: 123 });
-
-// Trigger an instant WebRTC Video Call:
-this.messageService.show({ partner_id: 123 }, { startVideoCall: true });
-```
-
-**Triggering a Bulk Group Chat:**
-```javascript
-import { useService } from "@web/core/utils/hooks";
-
-this.messageService = useService("hr_staff_directory.message");
-
-// Pass an array of objects containing partner_ids
-const selectedUsers = [
-    { partner_id: 10 },
-    { partner_id: 11 },
-    { partner_id: 12 }
-];
-this.messageService.showBulk(selectedUsers);
-```
-
-## 11. Global Toast Override (Notification Service Patch)
-
-To ensure visual consistency across the entire dashboard and module, we surgically overridden Odoo's native `notification_service`. This guarantees that if any underlying Odoo core components (like the ORM or Discuss module) throw a standard toast notification, they are instantly hijacked and rendered using our custom, premium `.sdir-toast` component instead.
-
-### 11.1 How It Works
-We leverage Odoo's native `@web/core/utils/patch` utility in a dedicated file `static/src/components/toast/notification_patch.js`.
-
-1. **Monkey Patching**: We hook into `notificationService.start()` and intercept its `add()` method.
-2. **Type Mapping**: Odoo's native `type` attributes (`success`, `warning`, `danger`, `info`) are dynamically mapped to our custom toast styles (`success`, `warning`, `error`, `info`).
-3. **Smart Fallback**: The native Odoo notification system supports interactive toasts (with buttons) or "sticky" toasts that require explicit dismissal. Because our custom toast is designed for simple, auto-dismissing visual alerts, the patch intelligently inspects the incoming arguments. If a toast requires buttons or is sticky, the patch seamlessly falls back to the native Odoo notification component, ensuring that critical functionality never breaks.
-
-### 11.2 The Implementation
 ```javascript
 import { patch } from "@web/core/utils/patch";
 import { notificationService } from "@web/core/notifications/notification_service";
@@ -271,97 +400,148 @@ patch(notificationService, {
     start(env) {
         const result = super.start(env);
         const originalAdd = result.add;
-        
+
         result.add = (message, options = {}) => {
-            // Fallback for sticky or actionable toasts since our custom toast is simple auto-closing
             if (options.buttons || options.sticky) {
                 return originalAdd(message, options);
             }
-            
-            // Map Odoo's native types to our custom toast
+
             let type = "info";
             if (options.type === "danger") type = "error";
             else if (options.type === "warning") type = "warning";
             else if (options.type === "success") type = "success";
-            
+
             const customToast = env.services["hr_staff_directory.toast"];
             if (customToast) {
                 customToast.show(type, message);
-                return () => {}; // return dummy close function
+                return () => {};
             }
-            
+
             return originalAdd(message, options);
         };
-        
+
         return result;
     }
 });
 ```
-This patch script is then registered directly into the `__manifest__.py` under the `web.assets_backend` bundle so it loads seamlessly with the Odoo webclient.
-
-### Grant Permissions
-The "Grant Permissions" modal is mapped directly to native Odoo 17 User Groups (`res.groups`), diverging from the custom SSOT fields used for other metadata. This is because Odoo's native permissions are intrinsically linked to system login accounts (`res.users`), not HR profiles.
-* **User Account Guard:** If an employee does not have a linked `user_id`, the system blocks the grant action and prompts the HR admin to create a system account first.
-* **Supported Mappings:**
-  * View Employee Records ➔ `hr.group_hr_user`
-  * Edit Employee Records ➔ `hr.group_hr_manager`
-  * Manage Leave ➔ `hr_holidays.group_hr_holidays_user`
-  * View Budgets ➔ `account.group_account_readonly`
-  * System Settings ➔ `base.group_system`
-* **Unsupported Mappings (Greyed Out):** Toggles requiring missing/uninstalled modules (e.g., Payroll, Expenses, Projects) or those without standard equivalents (HR Reports) are made uncheckable on the UI to prevent false-positive permission assignments.
-
-### Known Issue: Implied Groups Reverting Toggles
-- **Issue:** Due to Odoo's native `res.groups` hierarchy, certain groups imply others (e.g., `hr.group_hr_manager` implies `hr_holidays.group_hr_holidays_user`). If a user attempts to uncheck a lower-level permission (like "Manage Leave") while keeping a higher-level permission (like "Edit Employee Records") checked, Odoo's backend automatically re-grants the implied group. This causes the UI to show the permission as re-checked upon reloading.
-- **Status:** Temporarily deferred. Needs a more robust solution to handle `implied_ids` in Odoo groups, possibly by unlinking implied groups or fully decoupling the UI toggles from exact 1-to-1 Odoo group mappings.
-
-### Revoke Permissions
-The "Revoke Permissions" modal extends the same group-mapping logic from the Grant modal but adds reverse-implied validation.
-* **Modes:** Supports both "Specific" (cherry-picked revocation) and "All" (complete access termination).
-* **Audit Trail:** Any revoked access prompts the admin for a mandatory "Reason for revocation", which is securely logged to the employee's chatter history alongside the exact permissions removed.
-* **Reverse Implied Validation:** If a high-level permission implies a low-level permission (e.g., HR Manager implies Time Off Officer), the UI forces the admin to revoke the high-level permission if they attempt to revoke the low-level permission, aligning perfectly with Odoo's backend constraints.
-
-### Known Issue: "Manage Leave" Checked By Default
-- **Issue:** When granting or revoking permissions, the "Manage Leave" toggle frequently appears checked by default and refuses to stay unchecked. This is not a UI bug, but rather Odoo's native security engine asserting dominance. When an employee is given a system account (Internal User), Odoo often automatically grants basic leave management privileges (Time Off Officer) depending on the installed modules. Furthermore, if the user holds "Edit Employee Records" (HR Manager), Odoo structurally forces "Manage Leave" to be true via `implied_ids`.
-- **Status:** Documented. Modifying this would require fundamentally altering Odoo's native internal user default configurations and group implications.
-
-### Reset Password Modal
-The "Reset Password" modal is deeply integrated with Odoo's native authentication system (`res.users`), allowing HR administrators to securely manage system access for employees. It supports two distinct operational modes:
-* **Email Reset Link:** Leverages Odoo's native secure password reset system by invoking `user.sudo().action_reset_password()`. This automatically generates a temporary secure token and sends the standard Odoo password reset email directly to the employee's inbox.
-* **Temporary Password:** Generates a secure, 12-character alphanumeric password dynamically on the frontend via JavaScript. Administrators can easily copy this password using the native browser clipboard API (`navigator.clipboard.writeText`). Upon submission, the backend forces a direct password update (`user.sudo().write({'password': temp_password})`).
-* **Audit Trail:** Both the Email Link dispatch and the application of a Temporary Password are synchronously logged to the employee's chatter history for complete auditability.
-* **User Account Guard:** Similar to the permissions modals, the backend actively guards against attempting to reset a password for an HR profile that lacks a linked `res.users` account, bubbling up an appropriate Toast error if triggered.
 
 ---
 
-## Future Build Notes: Lifecycle Synchronization
-If a user bypasses the custom modals and manually archives an employee via the native Odoo 17 Employee backend form (`active = False`), the "Staff Directory" should dynamically sync this. 
-We need to implement an `override` on the native Odoo archiving process (or an automated watcher) so that when an employee is natively archived, their `sdir_lifecycle_status` automatically changes to either "Suspended" or "Terminated" based on the reason for archiving.
-Currently, archiving/suspending via the custom Staff Directory modals handles this elegantly and keeps them out of the active directory, but natively archiving an employee could cause status desync if not properly caught.
+## 17. Message and mail services
+
+Both are global (`main_components`). Sending is implemented (not “planned”).
+
+### `hr_staff_directory.message`
+
+Proxy onto native Discuss / WebRTC. Closes other chat windows and hides the mail modal first.
+
+```js
+this.messageService = useService("hr_staff_directory.message");
+
+this.messageService.show({ partner_id: 123 });
+this.messageService.show({ partner_id: 123 }, { startVideoCall: true });
+this.messageService.showBulk([{ partner_id: 10 }, { partner_id: 11 }]);
+```
+
+- 1:1 → `mailThread.openChat({ partnerId })`
+- Bulk → `discuss.core.common.createGroupChat({ partners_to })`
+- Video → `discuss.rtc.toggleCall(thread, { video: true })`
+- Missing `partner_id` → warning toast
+
+### `hr_staff_directory.mail_modal`
+
+Slide-up email composer. `show(profile)` pre-fills the recipient. Sends via `hr.employee.message_post`.
 
 ---
 
-## Work Anniversary Calculation Logic
-The Staff Directory profile panel displays an upcoming Work Anniversary card dynamically. The calculation logic (handled within `_sd_people_list` in `hr_employee.py`) works as follows:
+## 18. Chat window redesign
 
-1. **Source of Truth for Start Date**:
-   - The system first attempts to read `date_start` from the employee's active `hr.contract`.
-   - If no contract exists or `date_start` is missing, it gracefully falls back to the employee record's `create_date`.
-2. **Anniversary Date Calculation**:
-   - It calculates the number of years between the current year and the join year.
-   - It projects the anniversary date into the current year (using `.replace(year=today.year)`).
-   - If the anniversary date has already passed in the current year (`anniv < today`), the target year is bumped to the next year (`today.year + 1`), and the `years` counter is incremented by 1.
-3. **Leap Year Handling**:
-   - If the employee joined on February 29th and the target year is not a leap year, Python's `.replace()` will throw a `ValueError`. This exception is explicitly caught, and the anniversary date gracefully defaults to February 28th for that year.
-4. **Card Rendering**:
-   - The card only renders if `anniv_display` is present (meaning a valid join date was found).
-   - It only calculates for employees who have been at the company for more than 0 years (their first anniversary or beyond).
+We restyle native `mail.ChatWindow`; we do not rewrite Discuss.
 
-## 12. Employee Event History (sdir.employee.event)
+- `chat_window_patch.xml` + `chat_window_redesign.css`: 450px floating window, 12px radius, `rgb(240, 242, 245)` background.
+- Header actions map native IDs `"call"`, `"settings"`, `"search"` and bind `action.onSelect()` (not `action.action()`) so WebRTC still routes.
+- Composer spacing: forced flex + `gap: 8px` on `.o-mail-Composer-actions …`.
 
-To support the Activity Tab's Performance History timeline, the module introduces a dedicated custom model `sdir.employee.event` rather than relying on complex native apps like `hr_appraisal`.
+---
 
-### Design Philosophy & SSOT
-* **Lightweight Ledger:** This model acts as a simple historical ledger for employee milestones (Promotions, Transfers, Performance Reviews, Anniversaries).
-* **Automated Generation:** When an HR Administrator uses the module's custom "Promote Employee" or "Transfer Employee" modals, the backend automatically generates a corresponding `sdir.employee.event` record to persist the history, alongside the standard chatter logging.
-* **Performance Scores:** The `sdir.employee.event` model is the **Single Source of Truth** for an employee's performance ratings. The "Latest Rating" and progress scores shown in the directory are dynamically derived from the most recent event of type `performance_review`.
-* **Activity Timeline:** The frontend Accordion UI strictly parses the chronological output of this model, grouping events dynamically by year.
+## 19. Permissions, password, lifecycle sync
+
+Permissions map to native `res.groups`, not custom SSOT fields, because access lives on `res.users`.
+
+**Guard:** no `user_id` → block grant/revoke/reset and toast.
+
+| UI toggle | Group |
+|---|---|
+| View Employee Records | `hr.group_hr_user` |
+| Edit Employee Records | `hr.group_hr_manager` |
+| Manage Leave | `hr_holidays.group_hr_holidays_user` |
+| View Budgets | `account.group_account_readonly` |
+| System Settings | `base.group_system` |
+
+Payroll / Expenses / Projects / HR Reports toggles are greyed out when there is no standard group.
+
+**Implied groups.** HR Manager implies Time Off Officer. Unchecking “Manage Leave” while keeping “Edit Employee Records” re-grants Leave on reload. Deferred; would need `implied_ids` handling or a decoupled mapping.
+
+**“Manage Leave” checked by default.** Internal User plus HR Manager structurally forces the holidays user group. Not a UI bug.
+
+**Revoke.** Modes: specific or all. Reason is mandatory and posted to chatter. UI reverse-implied validation: revoking a low-level group while a high-level implied parent is still granted forces the parent off too.
+
+**Reset password.**
+
+- Email: `user.sudo().action_reset_password()`
+- Temporary: frontend generates a 12-char password; backend `user.sudo().write({'password': temp_password})`
+- Both post chatter. No user account → toast.
+
+**Lifecycle vs native archive.** Directory modals keep `sdir_lifecycle_status` and `active` in sync. Archiving on the native employee form (`active=False`) does **not** update lifecycle. Future work: override archive (or a write watcher) to set Suspended/Terminated.
+
+---
+
+## 20. What is real vs still fake
+
+**Real (Odoo records):** people, org tree, leave balances/history, pins, lifecycle/contact/transfer/promote/suspend/rehire, segments, geocode, Discuss/email, permission groups.
+
+**Fake or approximated**
+
+- `_mock_skills_for_employee()` when `skills` is empty (heatmap/bar depend on this)
+- `_sd_training()` 60/25/15 split of resume lines (unused by current UI)
+- Unset work modes redistributed 60/30/10 in leftover `_sd_work_location()`
+- Performance fallback scores if no `sdir.employee.event` / `hr.appraisal`
+- Smart Search team projects / some calendar copy
+- CleonAI panel (chrome only)
+- Workforce / Org Intelligence tabs
+
+---
+
+## 21. Known issues and traps
+
+1. Promote/transfer do **not** write `sdir.employee.event` (older notes claimed they did).
+2. `performance_score` and `sdir_grade` are not what the people table shows. Table uses event reviews and `grade_id`.
+3. `/hr_staff_directory/data` overview is dead from the current frontend.
+4. JSON controllers `sudo()` — no HR-group gate.
+5. Missing / duplicated `@api.model` on several action methods.
+6. Native archive does not update `sdir_lifecycle_status`.
+7. Implied groups make Grant/Revoke toggles bounce.
+8. People-list “retention priority” KPI ≠ `retention_priority` field.
+9. Geocode form view not in the manifest.
+10. Relationship graph depends on the d3js.org CDN.
+11. Employment-type mix in leftover `_sd_employment_gender()` still counts native `employee_type` (`employee` / `student` / `freelance`), not `sdir_employment_type`.
+
+---
+
+## 22. Local development
+
+### Seed data
+
+`.gitignore` excludes `dev_seed.sql`, `dev_gender_update.sql`, `dev_generate_seed_all.py`, `seed_data/`, `*.csv`, `*.sql`. Those were used to populate realistic hierarchies for the visualizations; they are not shipped.
+
+### Testing outgoing email (Mailpit)
+
+Use a mock SMTP server so directory emails do not hit real inboxes.
+
+1. Install: `sudo bash -c "$(curl -sL https://raw.githubusercontent.com/axllent/mailpit/refs/heads/master/install.sh)"`
+2. Run `mailpit` — SMTP `1025`, UI `8025`.
+3. Odoo → Settings → Technical → Outgoing Mail Servers:
+   - SMTP Server: `localhost`, Port: `1025`, Connection Security: None, no auth.
+4. Inspect mail at `http://localhost:8025`.
+
+`views/mail_templates.xml` strips “Powered by Odoo” from `mail.mail_notification_layout` and the light layout.
