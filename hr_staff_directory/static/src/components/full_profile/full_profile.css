@@ -725,7 +725,8 @@
     font-weight: 900;
     color: rgb(17, 24, 39);
     margin: 0px;
-    line-height: 1;
+    line-height: 1.15;
+    word-break: break-word;
 }
 
 .sdir-fp-org-stat-label {
@@ -929,6 +930,9 @@
     box-sizing: border-box;
     overflow: hidden;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .sdir-fp-org-avatar-normal {
@@ -940,6 +944,16 @@
     box-sizing: border-box;
     overflow: hidden;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sdir-fp-org-avatar-initials {
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
 }
 
 .sdir-fp-org-avatar-img {
@@ -1014,6 +1028,13 @@
     flex-wrap: wrap;
     justify-content: center;
     padding-top: 24px;
+}
+
+.sdir-fp-org-empty-reports {
+    margin: 20px 0 0;
+    font-size: 12px;
+    color: rgb(156, 163, 175);
+    text-align: center;
 }
 
 .sdir-fp-org-legend {
@@ -1107,6 +1128,10 @@
     position: relative;
     margin-bottom: 0px;
     transition: 0.15s;
+}
+
+.sdir-fp-org-history-item + .sdir-fp-org-history-item {
+    margin-top: 16px;
 }
 
 .sdir-fp-org-history-dot {

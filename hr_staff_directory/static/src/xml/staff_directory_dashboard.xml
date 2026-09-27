@@ -1779,6 +1779,8 @@
                 <StaffDirectoryFullProfile 
                     activeProfile="state.activeProfile" 
                     activeProfileManager="this.activeProfileManager"
+                    activeProfileDirectReports="this.activeProfileDirectReports"
+                    people="state.people"
                     closeFullProfile="this.closeFullProfile.bind(this)"
                     openFullProfileById="this.openFullProfileById.bind(this)"
                 />
