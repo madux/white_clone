@@ -18,7 +18,7 @@
             <article t-foreach="activeRosterLeaves" t-as="leave" t-key="leave.id" t-att-class="leave.can_open_detail ? 'is-openable' : 'is-private'" t-on-click="() => this.openRosterDetail(leave)">
               <span class="o_cdp_dot" t-att-style="'background:' + leave.color_hex"/><div><b t-esc="leave.employee_name"/><small><t t-esc="leave.department_name"/> · <t t-esc="leave.job_title || 'Employee'"/></small></div><div class="o_cdp_leave"><b t-esc="leave.leave_type_name"/><small t-esc="leave.status_label || leave.status"/></div><i t-if="leave.can_open_detail" class="fa fa-chevron-right"/>
             </article>
-            <footer t-if="props.canRequest"><button type="button" class="primary" t-on-click="requestLeave"><i class="fa fa-plus"/> Book Time Off</button></footer>
+            <footer t-if="props.canRequest or (props.canBook and props.isOrganisation)"><button type="button" class="primary" t-on-click="requestLeave"><i class="fa fa-plus"/> Book Time Off</button></footer>
           </section>
         </div>
       </section>

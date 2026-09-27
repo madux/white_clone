@@ -8,10 +8,11 @@ import { LeaveRequestDetailModal } from "../components/leave_request_detail/leav
 import { EmployeeRequestModal } from "../components/employee_request_modal/employee_request_modal";
 import { CalendarDayPanel } from "../components/calendar_day_panel/calendar_day_panel";
 import { SmartDateRecommendationsModal } from "../components/smart_date_modal/smart_date_modal";
+import { AdminBookTimeOffModal } from "../components/admin_book_modal/admin_book_modal";
 
 export class LeaveCalendarPage extends Component {
     static template = "hr_leave_dashboard.LeaveCalendarPage";
-    static components = { CalendarSidebar, LeaveRequestDetailModal, EmployeeRequestModal, CalendarDayPanel, SmartDateRecommendationsModal };
+    static components = { CalendarSidebar, LeaveRequestDetailModal, EmployeeRequestModal, CalendarDayPanel, SmartDateRecommendationsModal, AdminBookTimeOffModal };
     static props = {
         embedded: { type: Boolean, optional: true },
         forceEmployee: { type: Boolean, optional: true },
@@ -88,6 +89,9 @@ export class LeaveCalendarPage extends Component {
             aiSummary: { open: false, loading: false, bullets: [], heading: "", error: null },
             canDateRec: false,
             showDateRecModal: false,
+            adminBookOpen: false,
+            adminBookDateFrom: "",
+            adminBookDateTo: "",
         });
 
         onWillStart(async () => {
@@ -310,8 +314,14 @@ export class LeaveCalendarPage extends Component {
         this.state.selectionStart = "";
         this.state.selectionCurrent = "";
         if (isRange) {
-            if (this.state.canRequest) this.openRequestRange(values[0], values[1]);
-            else this.openDayPanel(values[0], values[1]);
+            // In organisation view, date-range drag opens admin booking
+            if (!this.state.employeeView && this.state.canBook) {
+                this.openAdminBooking(values[0], values[1]);
+            } else if (this.state.canRequest) {
+                this.openRequestRange(values[0], values[1]);
+            } else {
+                this.openDayPanel(values[0], values[1]);
+            }
             return;
         }
         const hasEntries = this.getDayLeaves(ymd).length || this.getDayHolidays(ymd).length;
@@ -326,6 +336,17 @@ export class LeaveCalendarPage extends Component {
     closeEmployeeRequest() {
         this.state.employeeRequestOpen = false;
         this.state.employeeRequestInitial = {};
+    }
+    openAdminBooking(dateFrom = "", dateTo = "") {
+        this.state.dayPanelOpen = false;
+        this.state.adminBookDateFrom = dateFrom;
+        this.state.adminBookDateTo = dateTo || dateFrom;
+        this.state.adminBookOpen = true;
+    }
+    closeAdminBooking() {
+        this.state.adminBookOpen = false;
+        this.state.adminBookDateFrom = "";
+        this.state.adminBookDateTo = "";
     }
 
     navigate(direction) {

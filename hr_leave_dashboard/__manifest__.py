@@ -80,6 +80,8 @@
             'hr_leave_dashboard/static/src/components/employee_request_modal/employee_request_modal.js',
             'hr_leave_dashboard/static/src/components/employee_request_modal/employee_request_modal.xml',
             'hr_leave_dashboard/static/src/components/employee_request_modal/employee_request_modal.css',
+            'hr_leave_dashboard/static/src/components/admin_book_modal/admin_book_modal.js',
+            'hr_leave_dashboard/static/src/components/admin_book_modal/admin_book_modal.xml',
             'hr_leave_dashboard/static/src/components/smart_date_modal/smart_date_modal.js',
             'hr_leave_dashboard/static/src/components/smart_date_modal/smart_date_modal.xml',
             'hr_leave_dashboard/static/src/components/smart_date_modal/smart_date_modal.css',

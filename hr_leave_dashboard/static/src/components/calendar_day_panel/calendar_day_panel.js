@@ -10,7 +10,10 @@ export class CalendarDayPanel extends Component {
         leaves: Array,
         holidays: Array,
         canRequest: Boolean,
+        canBook: { type: Boolean, optional: true },
+        isOrganisation: { type: Boolean, optional: true },
         openRequest: Function,
+        openAdminBooking: { type: Function, optional: true },
         openDetail: Function,
         close: Function,
     };
@@ -67,6 +70,12 @@ export class CalendarDayPanel extends Component {
     }
 
     requestLeave() {
+        // When in Organisation view with admin privileges, open the admin
+        // booking modal instead of the personal leave request.
+        if (this.props.isOrganisation && this.props.canBook && this.props.openAdminBooking) {
+            this.props.openAdminBooking(this.props.dateFrom, this.props.dateTo);
+            return;
+        }
         this.props.openRequest(this.props.dateFrom, this.props.dateTo);
     }
 

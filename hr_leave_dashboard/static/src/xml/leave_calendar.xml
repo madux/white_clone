@@ -86,7 +86,7 @@
 
                             <!-- Download Dropdown Button -->
                             <button t-if="state.canRequest and state.employeeView" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="openEmployeeRequest"><i class="fa fa-plus"/> Request Leave</button>
-                            <button t-if="state.canRequest and state.calendarScope === 'organisation'" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="openEmployeeRequest"><i class="fa fa-plus"/> Book Time Off</button>
+                            <button t-if="state.canBook and state.calendarScope === 'organisation'" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="() => this.openAdminBooking()"><i class="fa fa-plus"/> Book Time Off</button>
                             <div t-if="state.canExport" class="dropdown d-inline-block">
                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleDownloadDropdown">
                                     <i class="fa fa-download me-1"/> Download
@@ -581,7 +581,8 @@
                     onChanged.bind="loadCalendarData"/>
             </t>
             <EmployeeRequestModal t-if="state.employeeRequestOpen" close.bind="closeEmployeeRequest" submitted.bind="loadCalendarData" initial="state.employeeRequestInitial"/>
-            <CalendarDayPanel t-if="state.dayPanelOpen" dateFrom="state.dayPanelDateFrom" dateTo="state.dayPanelDateTo" leaves="dayPanelLeaves" holidays="dayPanelHolidays" canRequest="state.canRequest" openRequest.bind="openRequestRange" openDetail.bind="openLeaveDetail" close.bind="closeDayPanel"/>
+            <CalendarDayPanel t-if="state.dayPanelOpen" dateFrom="state.dayPanelDateFrom" dateTo="state.dayPanelDateTo" leaves="dayPanelLeaves" holidays="dayPanelHolidays" canRequest="state.canRequest" canBook="state.canBook" isOrganisation="state.calendarScope === 'organisation'" openRequest.bind="openRequestRange" openAdminBooking.bind="openAdminBooking" openDetail.bind="openLeaveDetail" close.bind="closeDayPanel"/>
+            <AdminBookTimeOffModal t-if="state.adminBookOpen" close.bind="closeAdminBooking" submitted.bind="loadCalendarData" initialDateFrom="state.adminBookDateFrom" initialDateTo="state.adminBookDateTo"/>
             <SmartDateRecommendationsModal t-if="state.showDateRecModal" close="() => this.state.showDateRecModal = false" onSelect="(item) => this.onSelectRecommendedDate(item)" types="state.leaveTypes"/>
 
         </div>
