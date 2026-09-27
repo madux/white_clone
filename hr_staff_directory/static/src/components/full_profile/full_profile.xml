@@ -86,6 +86,10 @@
                             <button t-attf-class="sdir-fp-tab {{ state.activeTab === 'activity' ? 'active' : '' }}" t-on-click="() => this.state.activeTab = 'activity'"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"></path></svg>Activity</button>
                             <button t-attf-class="sdir-fp-tab {{ state.activeTab === 'org_chart' ? 'active' : '' }}" t-on-click="() => this.state.activeTab = 'org_chart'"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>Org Chart</button>
                             <button t-attf-class="sdir-fp-tab {{ state.activeTab === 'time_off' ? 'active' : '' }}" t-on-click="() => this.state.activeTab = 'time_off'"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Time Off</button>
+                            <button t-attf-class="sdir-fp-tab {{ state.activeTab === 'relationships' ? 'active' : '' }}" t-on-click="() => this.state.activeTab = 'relationships'"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1"></rect><rect x="2" y="16" width="6" height="6" rx="1"></rect><rect x="9" y="2" width="6" height="6" rx="1"></rect><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path><path d="M12 12V8"></path></svg>Relationships</button>
+                            <button t-attf-class="sdir-fp-tab {{ state.activeTab === 'calendar' ? 'active' : '' }}" t-on-click="() => this.state.activeTab = 'calendar'"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>Calendar</button>
+                            <button t-attf-class="sdir-fp-tab {{ state.activeTab === 'assets' ? 'active' : '' }}" t-on-click="() => this.state.activeTab = 'assets'"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"></path><path d="M12 22V12"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><path d="m7.5 4.27 9 5.15"></path></svg>Assets</button>
+                            <button t-attf-class="sdir-fp-tab {{ state.activeTab === 'connect' ? 'active' : '' }}" t-on-click="() => this.state.activeTab = 'connect'"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"></line><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"></line></svg>Connect</button>
                         </div>
                         <div style="position: relative; flex-shrink: 0;">
                             <button class="sdir-fp-visibility-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"></path><path d="M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg> Visibility</button>
@@ -678,6 +682,107 @@
                                         </div>
                                     </div>
 
+                                </div>
+                            </t>
+                            <t t-if="state.activeTab === 'time_off'">
+                                <div class="sdir-fp-to-tab">
+                                    <div class="sdir-fp-to-kpis">
+                                        <t t-foreach="this.timeOffKpis" t-as="kpi" t-key="kpi.key">
+                                            <div class="sdir-fp-to-kpi">
+                                                <p class="sdir-fp-to-kpi-label"><t t-esc="kpi.label"/></p>
+                                                <p class="sdir-fp-to-kpi-value" t-att-style="'color:' + kpi.color"><t t-esc="kpi.value"/></p>
+                                                <p class="sdir-fp-to-kpi-sub"><t t-esc="kpi.subtitle"/></p>
+                                            </div>
+                                        </t>
+                                    </div>
+
+                                    <div class="sdir-fp-to-switch">
+                                        <button type="button" t-att-class="'sdir-fp-to-switch-btn' + (state.timeOffSubTab === 'balance' ? ' active' : '')" t-on-click="() => this.setTimeOffSubTab('balance')">Leave Balance</button>
+                                        <button type="button" t-att-class="'sdir-fp-to-switch-btn' + (state.timeOffSubTab === 'history' ? ' active' : '')" t-on-click="() => this.setTimeOffSubTab('history')">Leave History</button>
+                                        <button type="button" t-att-class="'sdir-fp-to-switch-btn' + (state.timeOffSubTab === 'upcoming' ? ' active' : '')" t-on-click="() => this.setTimeOffSubTab('upcoming')">Upcoming</button>
+                                    </div>
+
+                                    <t t-if="state.timeOffSubTab === 'balance'">
+                                        <div class="sdir-fp-to-list">
+                                            <t t-if="this.timeOffBalanceRows.length">
+                                                <t t-foreach="this.timeOffBalanceRows" t-as="row" t-key="row.key">
+                                                    <div class="sdir-fp-to-balance-card">
+                                                        <p class="sdir-fp-to-balance-title"><t t-esc="row.type"/></p>
+                                                        <div>
+                                                            <div class="sdir-fp-to-balance-meta">
+                                                                <span class="sdir-fp-to-balance-used"><t t-esc="row.usedLabel"/></span>
+                                                                <span class="sdir-fp-to-balance-remaining" t-att-style="'color:' + row.color"><t t-esc="row.remainingLabel"/></span>
+                                                            </div>
+                                                            <div class="sdir-fp-to-progress">
+                                                                <div class="sdir-fp-to-progress-fill" t-att-style="'width:' + row.width + '; background-color:' + row.color"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                            </t>
+                                            <t t-else="">
+                                                <div class="sdir-fp-reporting-empty">
+                                                    <p class="sdir-fp-reporting-empty-title">No leave balances</p>
+                                                    <p class="sdir-fp-reporting-empty-subtitle"><t t-esc="this.firstName"/> has no validated leave allocations yet</p>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </t>
+
+                                    <t t-if="state.timeOffSubTab === 'history'">
+                                        <div class="sdir-fp-to-list">
+                                            <t t-if="this.leaveHistory.length">
+                                                <t t-foreach="this.leaveHistory" t-as="item" t-key="item.id || item_index">
+                                                    <div class="sdir-fp-to-event-card">
+                                                        <div class="sdir-fp-to-event-info">
+                                                            <p class="sdir-fp-to-event-title"><t t-esc="item.type"/></p>
+                                                            <p class="sdir-fp-to-event-meta"><t t-esc="item.date"/> · <t t-esc="item.duration"/></p>
+                                                        </div>
+                                                        <span class="sdir-fp-to-status approved"><t t-esc="item.status"/></span>
+                                                    </div>
+                                                </t>
+                                            </t>
+                                            <t t-else="">
+                                                <div class="sdir-fp-reporting-empty">
+                                                    <p class="sdir-fp-reporting-empty-title">No leave history</p>
+                                                    <p class="sdir-fp-reporting-empty-subtitle"><t t-esc="this.firstName"/> has no past approved leave</p>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </t>
+
+                                    <t t-if="state.timeOffSubTab === 'upcoming'">
+                                        <div class="sdir-fp-to-list">
+                                            <t t-if="this.upcomingLeaves.length">
+                                                <t t-foreach="this.upcomingLeaves" t-as="item" t-key="item.id || item_index">
+                                                    <div class="sdir-fp-to-event-card">
+                                                        <div class="sdir-fp-to-event-info">
+                                                            <p class="sdir-fp-to-event-title"><t t-esc="item.type"/></p>
+                                                            <p class="sdir-fp-to-event-meta"><t t-esc="item.date"/> · <t t-esc="item.duration"/></p>
+                                                        </div>
+                                                        <span t-att-class="'sdir-fp-to-status ' + (item.status === 'Pending' ? 'pending' : 'approved')"><t t-esc="item.status"/></span>
+                                                    </div>
+                                                </t>
+                                            </t>
+                                            <t t-else="">
+                                                <div class="sdir-fp-reporting-empty">
+                                                    <p class="sdir-fp-reporting-empty-title">No upcoming time off</p>
+                                                    <p class="sdir-fp-reporting-empty-subtitle"><t t-esc="this.firstName"/> has no upcoming or pending leave</p>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                            <t t-if="state.activeTab === 'relationships' or state.activeTab === 'calendar' or state.activeTab === 'assets' or state.activeTab === 'connect'">
+                                <div class="sdir-fp-tab-placeholder">
+                                    <p class="sdir-fp-reporting-empty-title">
+                                        <t t-if="state.activeTab === 'relationships'">Relationships</t>
+                                        <t t-if="state.activeTab === 'calendar'">Calendar</t>
+                                        <t t-if="state.activeTab === 'assets'">Assets</t>
+                                        <t t-if="state.activeTab === 'connect'">Connect</t>
+                                    </p>
+                                    <p class="sdir-fp-reporting-empty-subtitle">This view is coming soon.</p>
                                 </div>
                             </t>
                         </div>

@@ -12,7 +12,9 @@ export class StaffDirectoryFullProfile extends Component {
             activeTab: 'overview',
             expandedYears: {},
             orgSearchQuery: '',
+            timeOffSubTab: 'balance',
         });
+        this.TIME_OFF_BAR_COLORS = ['#E91E8C', '#F59E0B', '#7C3AED', '#10B981'];
         this.messageService = useService("hr_staff_directory.message");
         this.mailModalService = useService("hr_staff_directory.mail_modal");
         this.AVATAR_COLORS = [
@@ -122,6 +124,95 @@ export class StaffDirectoryFullProfile extends Component {
 
     onOrgSearchInput(ev) {
         this.state.orgSearchQuery = ev.target.value;
+    }
+
+    formatLeaveDays(days) {
+        const value = Number(days);
+        if (!Number.isFinite(value)) {
+            return '0';
+        }
+        return Number.isInteger(value) ? String(value) : String(Math.round(value * 10) / 10);
+    }
+
+    _matchLeaveType(balances, keywords) {
+        return (balances || []).find((item) => {
+            const name = String(item.type || '').toLowerCase();
+            return keywords.some((keyword) => name.includes(keyword));
+        }) || null;
+    }
+
+    get timeOffBalances() {
+        return this.profile.time_off_balances || [];
+    }
+
+    get timeOffSummary() {
+        return this.profile.time_off_summary || {};
+    }
+
+    get timeOffKpis() {
+        const balances = this.timeOffBalances;
+        const summary = this.timeOffSummary;
+        const annual = this._matchLeaveType(balances, ['annual', 'vacation', 'pto', 'paid time off', 'legal leave']);
+        const sick = this._matchLeaveType(balances, ['sick']);
+        return [
+            {
+                key: 'annual',
+                label: 'Annual Balance',
+                value: `${this.formatLeaveDays(annual ? annual.remaining : 0)}d`,
+                subtitle: `${this.formatLeaveDays(annual ? annual.taken : 0)} used`,
+                color: '#E91E8C',
+            },
+            {
+                key: 'sick',
+                label: 'Sick Leave',
+                value: `${this.formatLeaveDays(sick ? sick.remaining : 0)}d`,
+                subtitle: `${this.formatLeaveDays(sick ? sick.taken : 0)} used`,
+                color: '#F59E0B',
+            },
+            {
+                key: 'holidays',
+                label: 'Public Holidays',
+                value: `${this.formatLeaveDays(summary.public_holidays_total || 0)}d`,
+                subtitle: `${this.formatLeaveDays(summary.public_holidays_remaining || 0)} remaining`,
+                color: '#10B981',
+            },
+            {
+                key: 'pending',
+                label: 'Pending Requests',
+                value: this.formatLeaveDays(summary.pending_count || 0),
+                subtitle: 'awaiting approval',
+                color: '#7C3AED',
+            },
+        ];
+    }
+
+    get timeOffBalanceRows() {
+        return this.timeOffBalances.map((item, index) => {
+            const allowance = Number(item.allowance) || 0;
+            const taken = Number(item.taken) || 0;
+            const remaining = Number(item.remaining) || 0;
+            const pct = allowance > 0 ? Math.min(100, Math.max(0, (taken / allowance) * 100)) : 0;
+            return {
+                key: item.type || index,
+                type: item.type,
+                usedLabel: `${this.formatLeaveDays(taken)} used of ${this.formatLeaveDays(allowance)} days`,
+                remainingLabel: `${this.formatLeaveDays(remaining)} remaining`,
+                width: `${pct}%`,
+                color: this.TIME_OFF_BAR_COLORS[index % this.TIME_OFF_BAR_COLORS.length],
+            };
+        });
+    }
+
+    get leaveHistory() {
+        return this.profile.leave_history || [];
+    }
+
+    get upcomingLeaves() {
+        return this.profile.upcoming_leaves || [];
+    }
+
+    setTimeOffSubTab(tab) {
+        this.state.timeOffSubTab = tab;
     }
 
     onOrgNodeClick(person) {

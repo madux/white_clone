@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-from datetime import timedelta
+from datetime import date, timedelta
 
 from odoo import api, fields, models
 from odoo.fields import Date
@@ -1755,6 +1755,7 @@ class HrEmployeeStaffDirectory(models.Model):
                 'time_off_balances':  self._get_time_off_balances(emp),
                 'upcoming_leaves':    self._get_upcoming_leaves(emp),
                 'leave_history':      self._get_leave_history(emp),
+                'time_off_summary':   self._get_time_off_summary(emp),
                 'activity_timeline':  timeline_data,
                 'promotions_count':   self.env['sdir.employee.event'].search_count([('employee_id', '=', emp.id), ('event_type', '=', 'promotion')]),
                 'anniv_display':      anniv_display,
@@ -1862,6 +1863,31 @@ class HrEmployeeStaffDirectory(models.Model):
         return ", ".join(emp_skills)
 
     @api.model
+    def _sd_leave_days(self, days):
+        """Normalize Odoo float day counts for UI (12, not 12.0)."""
+        try:
+            value = float(days or 0)
+        except (TypeError, ValueError):
+            value = 0.0
+        if value == int(value):
+            return int(value)
+        return round(value, 1)
+
+    @api.model
+    def _sd_leave_duration_label(self, days):
+        value = self._sd_leave_days(days)
+        unit = 'day' if value == 1 else 'days'
+        return f'{value} {unit}'
+
+    @api.model
+    def _sd_leave_date_range(self, leave, month_fmt='%b %d'):
+        if leave.date_from and leave.date_to:
+            return f"{leave.date_from.strftime(month_fmt)} - {leave.date_to.strftime(month_fmt)}"
+        if leave.date_from:
+            return leave.date_from.strftime(month_fmt)
+        return ''
+
+    @api.model
     def _get_time_off_balances(self, emp):
         """Fetch time off balances dynamically using hr.leave / hr.leave.allocation
         to maintain Single Source of Truth without needing new static fields."""
@@ -1891,12 +1917,70 @@ class HrEmployeeStaffDirectory(models.Model):
                 type_balances[lt.name]['taken'] += leave.number_of_days
             
             for b in type_balances.values():
-                b['remaining'] = b['allowance'] - b['taken']
+                b['allowance'] = self._sd_leave_days(b['allowance'])
+                b['taken'] = self._sd_leave_days(b['taken'])
+                b['remaining'] = self._sd_leave_days(b['allowance'] - b['taken'])
                 if b['allowance'] > 0:
                     balances.append(b)
         except Exception:
             pass
         return balances
+
+    @api.model
+    def _get_pending_leave_count(self, emp):
+        try:
+            return self.env['hr.leave'].search_count([
+                ('employee_id', '=', emp.id),
+                ('state', 'in', ['confirm', 'validate1']),
+            ])
+        except Exception:
+            return 0
+
+    @api.model
+    def _get_public_holidays_summary(self, emp):
+        """Count company-wide public holidays on the employee calendar this year."""
+        today = Date.context_today(self)
+        year = today.year
+        year_start = date(year, 1, 1)
+        year_end = date(year, 12, 31)
+        total = 0
+        remaining = 0
+        try:
+            calendar = emp.resource_calendar_id or self.env.company.resource_calendar_id
+            domain = [
+                ('resource_id', '=', False),
+                ('company_id', 'in', [False, self.env.company.id]),
+                ('date_from', '<=', f'{year}-12-31 23:59:59'),
+                ('date_to', '>=', f'{year}-01-01 00:00:00'),
+            ]
+            if calendar:
+                domain.append(('calendar_id', 'in', [calendar.id, False]))
+            holidays = self.env['resource.calendar.leaves'].search(domain)
+            for rec in holidays:
+                start = rec.date_from.date() if rec.date_from else None
+                end = rec.date_to.date() if rec.date_to else start
+                if not start:
+                    continue
+                start = max(start, year_start)
+                end = min(end, year_end)
+                curr = start
+                while curr <= end:
+                    total += 1
+                    if curr >= today:
+                        remaining += 1
+                    curr += timedelta(days=1)
+        except Exception as e:
+            _logger.warning("Staff Directory public holidays error: %s", e)
+        return {'total': total, 'remaining': remaining}
+
+    @api.model
+    def _get_time_off_summary(self, emp):
+        holidays = self._get_public_holidays_summary(emp)
+        return {
+            'pending_count': self._get_pending_leave_count(emp),
+            'public_holidays_total': holidays['total'],
+            'public_holidays_remaining': holidays['remaining'],
+        }
 
     @api.model
     def _get_leave_history(self, emp):
@@ -1908,13 +1992,14 @@ class HrEmployeeStaffDirectory(models.Model):
                 ('employee_id', '=', emp.id),
                 ('state', '=', 'validate'),
                 ('date_to', '<', today.strftime('%Y-%m-%d 00:00:00'))
-            ], order='date_from desc', limit=5)
+            ], order='date_from desc', limit=20)
             for leave in leaves:
                 history.append({
+                    'id': leave.id,
                     'type': leave.holiday_status_id.name if leave.holiday_status_id else 'Leave',
-                    'duration': f"{leave.number_of_days} days" if leave.number_of_days > 1 else f"{leave.number_of_days} day",
-                    'date': f"{leave.date_from.strftime('%b %d')} - {leave.date_to.strftime('%b %d')}" if leave.date_to else leave.date_from.strftime('%b %d'),
-                    'status': 'Approved'
+                    'duration': self._sd_leave_duration_label(leave.number_of_days),
+                    'date': self._sd_leave_date_range(leave),
+                    'status': 'Approved',
                 })
         except Exception:
             pass
@@ -1922,20 +2007,22 @@ class HrEmployeeStaffDirectory(models.Model):
 
     @api.model
     def _get_upcoming_leaves(self, emp):
-        """Fetch upcoming approved leaves."""
+        """Fetch upcoming or in-progress leaves, including pending requests."""
         upcoming = []
         try:
             today = Date.context_today(self)
             leaves = self.env['hr.leave'].search([
                 ('employee_id', '=', emp.id),
-                ('state', '=', 'validate'),
-                ('date_from', '>=', today.strftime('%Y-%m-%d 00:00:00'))
-            ], order='date_from asc', limit=3)
+                ('state', 'in', ['confirm', 'validate1', 'validate']),
+                ('date_to', '>=', today.strftime('%Y-%m-%d 00:00:00')),
+            ], order='date_from asc', limit=20)
             for leave in leaves:
                 upcoming.append({
+                    'id': leave.id,
                     'type': leave.holiday_status_id.name if leave.holiday_status_id else 'Leave',
-                    'duration': f"{leave.number_of_days} days",
-                    'date': f"{leave.date_from.strftime('%d %b')} - {leave.date_to.strftime('%d %b')}" if leave.date_to else leave.date_from.strftime('%d %b')
+                    'duration': self._sd_leave_duration_label(leave.number_of_days),
+                    'date': self._sd_leave_date_range(leave, '%d %b'),
+                    'status': 'Pending' if leave.state in ('confirm', 'validate1') else 'Approved',
                 })
         except Exception:
             pass
