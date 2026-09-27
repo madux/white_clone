@@ -519,10 +519,10 @@
                     <label class="full">
                       <span>Approval Workflow</span>
                       <select t-model.number="state.form.approval.workflow_type_id">
-                        <option value="">Default Approval Workflow (2 levels: Manager → HR)</option>
+                        <option value="">— No specific workflow —</option>
                         <option t-foreach="state.options.approval_workflow_types || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
                       </select>
-                      <small class="text-muted mt-1">Multi-stage approvers, fallback routing, and SLA escalations are managed in Workflow Configuration.</small>
+                      <small class="text-muted mt-1">Optional. Leave this blank to use the default Leave Request workflow. Routes and SLA escalations are managed in Approval Settings.</small>
                     </label>
                   </div>
                 </div>
@@ -767,9 +767,10 @@
                   <label class="full">
                     <span>Approval Workflow</span>
                     <select t-model.number="state.form.approval.workflow_type_id">
-                      <option value="">Leave Request (Default 2-stage approval)</option>
+                      <option value="">— No specific workflow —</option>
                       <option t-foreach="state.options.approval_workflow_types || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
                     </select>
+                    <small class="text-muted mt-1">Optional. Leave this blank to use the default Leave Request workflow.</small>
                   </label>
                 </div>
 
@@ -846,7 +847,7 @@
                       <span>Priority:</span>
                       <strong t-esc="state.form.carry.priority === 'current' ? 'Current balance first' : 'Carried forward first'"/>
                     </div>
-                    <div class="o_lp_review_row"><span>Approval:</span> <strong t-esc="state.form.approval.required ? 'Required (Default 2-stage)' : 'Not Required'"/></div>
+                    <div class="o_lp_review_row"><span>Approval:</span> <strong t-esc="state.form.approval.required ? 'Required' : 'Not Required'"/></div>
                     <div class="o_lp_review_row"><span>AI Insights:</span> <strong t-esc="state.form.ai_enabled ? 'Enabled' : 'Disabled'"/></div>
                   </div>
 

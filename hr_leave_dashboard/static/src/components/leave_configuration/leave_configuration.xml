@@ -18,7 +18,7 @@
           <LeaveBalancesPage t-elif="state.activeTab === 'balances'" embedded="true"/>
           <OfficialHolidaysPage t-elif="state.activeTab === 'holidays'"/>
           <BlackoutWindowsPage t-elif="state.activeTab === 'blackouts'"/>
-          <WorkflowsApp t-elif="state.activeTab === 'approvals'"/>
+          <WorkflowsApp t-elif="state.activeTab === 'approvals'" targetModel="'hr.leave'"/>
           <LeaveSettingsPage t-elif="state.activeTab === 'general'" embedded="true" onOpenLeaveTypes.bind="openLeaveTypes"/>
         </t>
       </main>

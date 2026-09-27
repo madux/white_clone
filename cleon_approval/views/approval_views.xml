@@ -11,7 +11,7 @@
                 <field name="event_trigger"/>
                 <field name="approval_requirement"/>
                 <field name="default_chain_id"/>
-                <field name="model_id"/>
+                <field name="model_id" domain="context.get('approval_target_model') and [('model', '=', context.get('approval_target_model'))] or []"/>
                 <field name="active"/>
             </tree>
         </field>
@@ -29,7 +29,7 @@
                             <field name="name"/>
                         </group>
                         <group>
-                            <field name="model_id"/>
+                            <field name="model_id" domain="context.get('approval_target_model') and [('model', '=', context.get('approval_target_model'))] or []"/>
                             <field name="active"/>
                         </group>
                     </group>
@@ -51,7 +51,7 @@
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="code"/>
-                <field name="workflow_type_id"/>
+                <field name="workflow_type_id" domain="context.get('approval_target_model') and [('model_name', '=', context.get('approval_target_model'))] or []"/>
                 <field name="route_type"/>
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="is_default"/>
@@ -71,7 +71,7 @@
                     </div>
                     <group>
                         <group>
-                            <field name="workflow_type_id"/>
+                            <field name="workflow_type_id" domain="context.get('approval_target_model') and [('model_name', '=', context.get('approval_target_model'))] or []"/>
                             <field name="code"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
@@ -113,7 +113,7 @@
         <field name="arch" type="xml">
             <tree string="Approval Workflow Instances" create="false" edit="false">
                 <field name="create_date" string="Started"/>
-                <field name="workflow_type_id"/>
+                <field name="workflow_type_id" domain="context.get('approval_target_model') and [('model_name', '=', context.get('approval_target_model'))] or []"/>
                 <field name="employee_id"/>
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="current_step_sequence"/>
@@ -134,7 +134,7 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="workflow_type_id"/>
+                            <field name="workflow_type_id" domain="context.get('approval_target_model') and [('model_name', '=', context.get('approval_target_model'))] or []"/>
                             <field name="source_chain_id"/>
                             <field name="source_rule_id"/>
                             <field name="employee_id"/>
@@ -173,19 +173,19 @@
     <!-- Conditional Rules, Escalations, and Delegation -->
     <record id="view_cleon_approval_rule_tree" model="ir.ui.view">
         <field name="name">cleon.approval.rule.tree</field><field name="model">cleon.approval.rule</field>
-        <field name="arch" type="xml"><tree><field name="priority"/><field name="name"/><field name="workflow_type_id"/><field name="chain_id"/><field name="applies_to"/><field name="active"/></tree></field>
+        <field name="arch" type="xml"><tree><field name="priority"/><field name="name"/><field name="workflow_type_id" domain="context.get('approval_target_model') and [('model_name', '=', context.get('approval_target_model'))] or []"/><field name="chain_id"/><field name="applies_to"/><field name="active"/></tree></field>
     </record>
     <record id="view_cleon_approval_rule_form" model="ir.ui.view">
         <field name="name">cleon.approval.rule.form</field><field name="model">cleon.approval.rule</field>
-        <field name="arch" type="xml"><form string="Approval Rule"><sheet><div class="oe_title"><h1><field name="name" placeholder="e.g. Long Leave — Senior Route"/></h1></div><group><group><field name="company_id" invisible="1"/><field name="workflow_type_id"/><field name="chain_id" domain="[('workflow_type_id', '=', workflow_type_id), ('company_id', '=', company_id), ('active', '=', True)]"/><field name="priority"/><field name="active"/></group><group><field name="applies_to"/><field name="department_ids" widget="many2many_tags" invisible="applies_to != 'departments'"/><field name="employee_ids" widget="many2many_tags" invisible="applies_to != 'employees'"/><field name="description"/></group></group><notebook><page string="Conditions"><field name="condition_ids"><tree editable="bottom"><field name="sequence" widget="handle"/><field name="field_name"/><field name="operator"/><field name="value"/></tree></field></page></notebook></sheet></form></field>
+        <field name="arch" type="xml"><form string="Approval Rule"><sheet><div class="oe_title"><h1><field name="name" placeholder="e.g. Long Leave — Senior Route"/></h1></div><group><group><field name="company_id" invisible="1"/><field name="workflow_type_id" domain="context.get('approval_target_model') and [('model_name', '=', context.get('approval_target_model'))] or []"/><field name="chain_id" domain="[('workflow_type_id', '=', workflow_type_id), ('company_id', '=', company_id), ('active', '=', True)]"/><field name="priority"/><field name="active"/></group><group><field name="applies_to"/><field name="department_ids" widget="many2many_tags" invisible="applies_to != 'departments'"/><field name="employee_ids" widget="many2many_tags" invisible="applies_to != 'employees'"/><field name="description"/></group></group><notebook><page string="Conditions"><field name="condition_ids"><tree editable="bottom"><field name="sequence" widget="handle"/><field name="field_name"/><field name="operator"/><field name="value"/></tree></field></page></notebook></sheet></form></field>
     </record>
     <record id="view_cleon_approval_escalation_rule_tree" model="ir.ui.view">
         <field name="name">cleon.approval.escalation.rule.tree</field><field name="model">cleon.approval.escalation.rule</field>
-        <field name="arch" type="xml"><tree><field name="name"/><field name="workflow_type_id"/><field name="chain_id"/><field name="step_id"/><field name="response_value"/><field name="response_unit"/><field name="escalation_action"/><field name="active"/></tree></field>
+        <field name="arch" type="xml"><tree><field name="name"/><field name="workflow_type_id" domain="context.get('approval_target_model') and [('model_name', '=', context.get('approval_target_model'))] or []"/><field name="chain_id"/><field name="step_id"/><field name="response_value"/><field name="response_unit"/><field name="escalation_action"/><field name="active"/></tree></field>
     </record>
     <record id="view_cleon_approval_escalation_rule_form" model="ir.ui.view">
         <field name="name">cleon.approval.escalation.rule.form</field><field name="model">cleon.approval.escalation.rule</field>
-        <field name="arch" type="xml"><form string="Escalation Rule"><sheet><div class="oe_title"><h1><field name="name" placeholder="e.g. Leave Request — Level 1 Escalation"/></h1></div><group><group><field name="company_id" invisible="1"/><field name="workflow_type_id"/><field name="chain_id" domain="[('workflow_type_id', '=', workflow_type_id), ('company_id', '=', company_id)]"/><field name="step_id" domain="[('chain_id', '=', chain_id)]"/><field name="active"/></group><group><field name="response_value"/><field name="response_unit"/><field name="escalation_action"/><field name="target_group_id" invisible="escalation_action != 'role'"/><field name="target_user_id" invisible="escalation_action != 'employee'"/><field name="notify_scope"/></group></group></sheet></form></field>
+        <field name="arch" type="xml"><form string="Escalation Rule"><sheet><div class="oe_title"><h1><field name="name" placeholder="e.g. Leave Request — Level 1 Escalation"/></h1></div><group><group><field name="company_id" invisible="1"/><field name="workflow_type_id" domain="context.get('approval_target_model') and [('model_name', '=', context.get('approval_target_model'))] or []"/><field name="chain_id" domain="[('workflow_type_id', '=', workflow_type_id), ('company_id', '=', company_id)]"/><field name="step_id" domain="[('chain_id', '=', chain_id)]"/><field name="active"/></group><group><field name="response_value"/><field name="response_unit"/><field name="escalation_action"/><field name="target_group_id" invisible="escalation_action != 'role'"/><field name="target_user_id" invisible="escalation_action != 'employee'"/><field name="notify_scope"/></group></group></sheet></form></field>
     </record>
     <record id="view_cleon_approval_delegation_tree" model="ir.ui.view">
         <field name="name">cleon.approval.delegation.tree</field><field name="model">cleon.approval.delegation</field>

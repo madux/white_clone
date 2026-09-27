@@ -17,95 +17,65 @@ export class WorkflowsApp extends Component {
         this.action = useService("action");
         this.notification = useService("notification");
         this.dialog = useService("dialog");
+        this.targetModel = this.props.targetModel || this.props.action?.params?.targetModel || false;
+        this.targetModelId = false;
 
         this.state = useState({
-            // Approval Settings is opened from Leave Configuration.  Start on
-            // the reusable routes rather than exposing technical type records.
-            activeTab: "templates",
+            // Start on the executable routes used by approval instances.
+            activeTab: "chains",
+            scoped: Boolean(this.targetModel),
             loading: false,
             approvalChains: [],
-            approvalTemplates: [],
             workflowTypes: [],
             expandedChainIds: [],
             approvalRules: [],
             escalations: [],
             delegations: [],
             history: [],
-            templateRows: [], templatePage: 1, templatePages: 1, templateTotal: 0,
-            templateSearch: "", templateStatus: "all", templateAppliesTo: "all",
         });
 
         onWillStart(async () => {
             await this.loadData();
-            await this.loadTemplatePage();
         });
-    }
-
-    async loadTemplatePage(page = this.state.templatePage) {
-        const result = await this.orm.call("hr.leave.approval.template", "get_approval_templates_page", [], {
-            search: this.state.templateSearch, status: this.state.templateStatus,
-            applies_to: this.state.templateAppliesTo, page, page_size: 10,
-        });
-        this.state.templateRows = result.rows;
-        this.state.templatePage = result.page;
-        this.state.templatePages = result.pages;
-        this.state.templateTotal = result.total;
-    }
-
-    async onTemplateSearch(ev) {
-        this.state.templateSearch = ev.target.value;
-        await this.loadTemplatePage(1);
-    }
-
-    async onTemplateFilter(kind, ev) {
-        this.state[kind] = ev.target.value;
-        await this.loadTemplatePage(1);
-    }
-
-    async setTemplatePage(page) {
-        if (page >= 1 && page <= this.state.templatePages) await this.loadTemplatePage(page);
     }
 
     async loadData() {
         this.state.loading = true;
         try {
+            const workflowTypeDomain = this.targetModel ? [["model_name", "=", this.targetModel]] : [];
+            const relatedDomain = this.targetModel ? [["workflow_type_id.model_name", "=", this.targetModel]] : [];
+            if (this.targetModel && !this.targetModelId) {
+                const models = await this.orm.call("ir.model", "search_read", [], {domain: [["model", "=", this.targetModel]], fields: ["id"], limit: 1});
+                this.targetModelId = models[0]?.id || false;
+            }
             const dbChains = await this.orm.call("cleon.approval.chain", "search_read", [], {
                 fields: ["id", "name", "code", "description", "workflow_type_id", "route_type", "lifecycle_state", "active", "is_default", "step_ids", "backup_approver_ids", "escalation_days", "auto_approve_days", "applies_to", "department_ids", "employee_ids", "create_uid", "write_date"],
+                domain: relatedDomain,
             });
 
             const dbSteps = await this.orm.call("cleon.approval.step", "search_read", [], {
                 fields: ["id", "chain_id", "sequence", "name", "completion_mode", "approver_type", "approver_group_id", "specific_user_id", "approver_job_id", "sla_timeout_hours", "sla_action"],
+                domain: this.targetModel ? [["chain_id.workflow_type_id.model_name", "=", this.targetModel]] : [],
             });
 
             const dbTypes = await this.orm.call("cleon.approval.workflow.type", "search_read", [], {
                 fields: ["id", "name", "code", "description", "event_trigger", "module_code", "approval_requirement", "default_behavior", "default_chain_id", "rules_enabled", "escalation_enabled", "model_id", "model_name", "active"],
+                domain: workflowTypeDomain,
             });
             const dbRules = await this.orm.call("cleon.approval.rule", "search_read", [], {
                 fields: ["id", "name", "workflow_type_id", "chain_id", "priority", "applies_to", "department_ids", "employee_ids", "condition_ids", "active"],
+                domain: relatedDomain,
             });
             const dbEscalations = await this.orm.call("cleon.approval.escalation.rule", "search_read", [], {
                 fields: ["id", "name", "workflow_type_id", "chain_id", "step_id", "response_value", "response_unit", "escalation_action", "target_group_id", "target_user_id", "active"],
+                domain: relatedDomain,
             });
             const dbDelegations = await this.orm.call("cleon.approval.delegation", "search_read", [], {
                 fields: ["id", "user_id", "delegate_user_id", "date_from", "date_to", "reason", "active"],
             });
-            const dbHistory = await this.orm.call("cleon.approval.instance", "search_read", [], {
+            const dbHistory = this.targetModel ? [] : await this.orm.call("cleon.approval.instance", "search_read", [], {
                 fields: ["id", "workflow_type_id", "employee_id", "source_chain_id", "source_rule_id", "state", "decision_source", "create_date"], limit: 50, order: "id desc",
             });
-            let dbTemplates = [];
-            try {
-                dbTemplates = await this.orm.call("hr.leave.approval.template", "search_read", [], {
-                    fields: ["id", "name", "description", "template_type", "level_count", "policy_ids", "chain_id", "active", "write_date"],
-                });
-            } catch (_error) {
-                // Approval templates are supplied by Leave Management and are optional for the core engine.
-            }
-            this.state.approvalTemplates = dbTemplates.map(t => ({
-                id: t.id, name: t.name, description: t.description || "", type: t.template_type,
-                levels: t.level_count, assigned: t.policy_ids.length, flow: t.chain_id?.[1] || "", active: t.active,
-                lastUpdated: t.write_date || "",
-            }));
-
             const stepsByChain = {};
             for (const step of dbSteps) {
                 const chainId = step.chain_id ? step.chain_id[0] : false;
@@ -199,6 +169,10 @@ export class WorkflowsApp extends Component {
         }
     }
 
+    scopedActionContext() {
+        return this.targetModel ? {approval_target_model: this.targetModel, default_model_id: this.targetModelId, default_module_code: this.targetModel === "hr.leave" ? "leave" : false} : {};
+    }
+
     addApprovalChain() {
         this.action.doAction({
             type: "ir.actions.act_window",
@@ -206,41 +180,10 @@ export class WorkflowsApp extends Component {
             res_model: "cleon.approval.chain",
             views: [[false, "form"]],
             target: "new",
+            context: this.scopedActionContext(),
         }, {
             onClose: () => this.loadData(),
         });
-    }
-
-    addApprovalTemplate() {
-        this.action.doAction({type: "ir.actions.act_window", name: "Create Approval Template", res_model: "hr.leave.approval.template", views: [[false, "form"]], target: "new"}, {onClose: () => this.loadTemplatePage()});
-    }
-
-    viewApprovalTemplate(templateId) {
-        this.action.doAction({type: "ir.actions.act_window", name: "Approval Template Details", res_model: "hr.leave.approval.template", res_id: templateId, views: [[false, "form"]], target: "new", context: {form_view_initial_mode: "view"}}, {onClose: () => this.loadTemplatePage()});
-    }
-
-    editApprovalTemplate(templateId) {
-        this.action.doAction({type: "ir.actions.act_window", name: "Edit Approval Template", res_model: "hr.leave.approval.template", res_id: templateId, views: [[false, "form"]], target: "new"}, {onClose: () => this.loadTemplatePage()});
-    }
-
-    async duplicateApprovalTemplate(templateId) {
-        const duplicateId = await this.orm.call("hr.leave.approval.template", "action_duplicate_template", [[templateId]]);
-        this.notification.add("Approval template duplicated as inactive.", {type: "success"});
-        await this.loadData(); await this.loadTemplatePage();
-        if (duplicateId) this.editApprovalTemplate(duplicateId);
-    }
-
-    async toggleApprovalTemplate(template) {
-        await this.orm.write("hr.leave.approval.template", [template.id], {active: !template.active});
-        await this.loadTemplatePage();
-    }
-
-    deleteApprovalTemplate(template) {
-        this.dialog.add(ConfirmationDialog, {body: `Delete approval template '${template.name}'?`, confirm: async () => {
-            try { await this.orm.unlink("hr.leave.approval.template", [template.id]); this.notification.add("Approval template deleted.", {type: "success"}); }
-            catch (error) { this.notification.add(error?.data?.message || "This template cannot be deleted; deactivate it instead.", {type: "danger"}); }
-            await this.loadTemplatePage();
-        }});
     }
 
     editApprovalChain(chainId) {
@@ -251,6 +194,7 @@ export class WorkflowsApp extends Component {
             res_id: chainId,
             views: [[false, "form"]],
             target: "new",
+            context: this.scopedActionContext(),
         }, {
             onClose: () => this.loadData(),
         });
@@ -275,6 +219,7 @@ export class WorkflowsApp extends Component {
             res_model: "cleon.approval.workflow.type",
             views: [[false, "form"]],
             target: "new",
+            context: this.scopedActionContext(),
         }, {
             onClose: () => this.loadData(),
         });
@@ -288,16 +233,17 @@ export class WorkflowsApp extends Component {
             res_id: typeId,
             views: [[false, "form"]],
             target: "new",
+            context: this.scopedActionContext(),
         }, {
             onClose: () => this.loadData(),
         });
     }
 
     addApprovalRule() {
-        this.action.doAction({type: "ir.actions.act_window", name: "Create Approval Rule", res_model: "cleon.approval.rule", views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()});
+        this.action.doAction({type: "ir.actions.act_window", name: "Create Approval Rule", res_model: "cleon.approval.rule", views: [[false, "form"]], target: "new", context: this.scopedActionContext()}, {onClose: () => this.loadData()});
     }
 
-    editApprovalRule(ruleId) { this.action.doAction({type: "ir.actions.act_window", name: "Edit Approval Rule", res_model: "cleon.approval.rule", res_id: ruleId, views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()}); }
+    editApprovalRule(ruleId) { this.action.doAction({type: "ir.actions.act_window", name: "Edit Approval Rule", res_model: "cleon.approval.rule", res_id: ruleId, views: [[false, "form"]], target: "new", context: this.scopedActionContext()}, {onClose: () => this.loadData()}); }
 
     addEscalationRule() {
         this.action.doAction({
@@ -306,15 +252,16 @@ export class WorkflowsApp extends Component {
             res_model: "cleon.approval.escalation.rule",
             views: [[false, "form"]],
             target: "new",
+            context: this.scopedActionContext(),
         }, {
             onClose: () => this.loadData(),
         });
     }
 
-    editEscalationRule(ruleId) { this.action.doAction({type: "ir.actions.act_window", name: "Edit Escalation Rule", res_model: "cleon.approval.escalation.rule", res_id: ruleId, views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()}); }
-    addDelegation() { this.action.doAction({type: "ir.actions.act_window", name: "Add Approval Delegation", res_model: "cleon.approval.delegation", views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()}); }
-    editDelegation(id) { this.action.doAction({type: "ir.actions.act_window", name: "Edit Approval Delegation", res_model: "cleon.approval.delegation", res_id: id, views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()}); }
-    openHistory(id) { this.action.doAction({type: "ir.actions.act_window", name: "Approval History", res_model: "cleon.approval.instance", res_id: id, views: [[false, "form"]], target: "new"}); }
+    editEscalationRule(ruleId) { this.action.doAction({type: "ir.actions.act_window", name: "Edit Escalation Rule", res_model: "cleon.approval.escalation.rule", res_id: ruleId, views: [[false, "form"]], target: "new", context: this.scopedActionContext()}, {onClose: () => this.loadData()}); }
+    addDelegation() { this.action.doAction({type: "ir.actions.act_window", name: "Add Approval Delegation", res_model: "cleon.approval.delegation", views: [[false, "form"]], target: "new", context: this.scopedActionContext()}, {onClose: () => this.loadData()}); }
+    editDelegation(id) { this.action.doAction({type: "ir.actions.act_window", name: "Edit Approval Delegation", res_model: "cleon.approval.delegation", res_id: id, views: [[false, "form"]], target: "new", context: this.scopedActionContext()}, {onClose: () => this.loadData()}); }
+    openHistory(id) { this.action.doAction({type: "ir.actions.act_window", name: "Approval History", res_model: "cleon.approval.instance", res_id: id, views: [[false, "form"]], target: "new", context: this.scopedActionContext()}); }
 
     async toggleApprovalChain(chainId) {
         const chain = this.state.approvalChains.find(c => c.id === chainId);
