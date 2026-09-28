@@ -54,7 +54,7 @@
                         </div>
                         <div class="r_graph-legend-row">
                             <div class="r_graph-legend-line r_graph-legend-line-dashed"></div>
-                            <span>Peer / Same Team</span>
+                            <span>Peer / Same Grade</span>
                         </div>
                         <div class="r_graph-legend-note">
                             Node size = connections - color = dept

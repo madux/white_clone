@@ -299,6 +299,7 @@ export class StaffDirectoryRelationshipGraph extends Component {
                 job_title: p.job_title || 'Employee',
                 dept: p.department,
                 location: p.work_location || 'Remote / Unassigned',
+                grade: ((p.grade || p.band || '') + '').trim(),
                 color: this.getColor(p.department),
                 radius: 15, // Base radius
                 connections: 0,
@@ -318,20 +319,20 @@ export class StaffDirectoryRelationshipGraph extends Component {
                 idMap.get(n.manager_id).is_manager = true;
             }
         });
-        
-        // Peers: share the same manager. Create a chain instead of a full clique (O(N) instead of O(N^2))
-        const mgrGroups = {};
+
+        // Peers: same grade level. Chain within each grade (O(N) instead of a full clique O(N^2)).
+        // People without a grade get no peer edges.
+        const gradeGroups = {};
         nodes.forEach(n => {
-            const mid = n.manager_id || 'no_manager';
-            if (!mgrGroups[mid]) mgrGroups[mid] = [];
-            mgrGroups[mid].push(n.id);
+            if (!n.grade) return;
+            if (!gradeGroups[n.grade]) gradeGroups[n.grade] = [];
+            gradeGroups[n.grade].push(n.id);
         });
-        Object.values(mgrGroups).forEach(group => {
-            // Connect peers in a simple line/chain to keep them clustered without freezing the browser
+        Object.values(gradeGroups).forEach(group => {
             for (let i = 0; i < group.length - 1; i++) {
-                links.push({ source: group[i], target: group[i+1], type: 'peer' });
+                links.push({ source: group[i], target: group[i + 1], type: 'peer' });
                 idMap.get(group[i]).connections++;
-                idMap.get(group[i+1]).connections++;
+                idMap.get(group[i + 1]).connections++;
             }
         });
 
