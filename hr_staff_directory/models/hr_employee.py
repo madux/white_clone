@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from odoo import api, fields, models
 from odoo.fields import Date
@@ -1756,6 +1756,8 @@ class HrEmployeeStaffDirectory(models.Model):
                 'upcoming_leaves':    self._get_upcoming_leaves(emp),
                 'leave_history':      self._get_leave_history(emp),
                 'time_off_summary':   self._get_time_off_summary(emp),
+                'calendar':           self._get_calendar_profile(emp),
+                'assets':             self._get_employee_assets(emp),
                 'activity_timeline':  timeline_data,
                 'promotions_count':   self.env['sdir.employee.event'].search_count([('employee_id', '=', emp.id), ('event_type', '=', 'promotion')]),
                 'anniv_display':      anniv_display,
@@ -2027,6 +2029,331 @@ class HrEmployeeStaffDirectory(models.Model):
         except Exception:
             pass
         return upcoming
+
+    @api.model
+    def _sd_format_hour_float(self, value):
+        try:
+            hours = int(value)
+            minutes = int(round((float(value) - hours) * 60))
+            if minutes == 60:
+                hours += 1
+                minutes = 0
+            hours = hours % 24
+            suffix = 'AM' if hours < 12 else 'PM'
+            display = hours % 12 or 12
+            return f"{display}:{minutes:02d} {suffix}"
+        except Exception:
+            return ''
+
+    @api.model
+    def _sd_format_clock(self, dt):
+        if not dt:
+            return ''
+        hour = dt.hour % 12 or 12
+        suffix = 'AM' if dt.hour < 12 else 'PM'
+        return f"{hour}:{dt.strftime('%M')} {suffix}"
+
+    @api.model
+    def _sd_localize(self, dt, tz_name):
+        if not dt:
+            return None
+        try:
+            from pytz import UTC, timezone
+            tz = timezone(tz_name or 'UTC')
+            if getattr(dt, 'tzinfo', None):
+                return dt.astimezone(tz)
+            return UTC.localize(dt).astimezone(tz)
+        except Exception:
+            return dt
+
+    @api.model
+    def _sd_timezone_info(self, emp):
+        tz_name = (
+            getattr(emp, 'tz', None)
+            or (emp.resource_calendar_id.tz if emp.resource_calendar_id else None)
+            or (self.env.company.resource_calendar_id.tz if self.env.company.resource_calendar_id else None)
+            or self.env.user.tz
+            or 'UTC'
+        )
+        label = tz_name
+        try:
+            from pytz import timezone
+            now = datetime.now(timezone(tz_name))
+            abbr = now.tzname() or tz_name
+            offset = now.utcoffset() or timedelta(0)
+            total_min = int(offset.total_seconds() // 60)
+            sign = '+' if total_min >= 0 else '-'
+            hours, mins = divmod(abs(total_min), 60)
+            utc = f"UTC{sign}{hours}" if not mins else f"UTC{sign}{hours}:{mins:02d}"
+            label = f"{abbr} ({utc})"
+        except Exception:
+            pass
+        return tz_name, label
+
+    @api.model
+    def _sd_working_hours_label(self, emp):
+        calendar = emp.resource_calendar_id or self.env.company.resource_calendar_id
+        if not calendar:
+            return '—'
+        day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        by_day = {}
+        for att in calendar.attendance_ids:
+            if getattr(att, 'day_period', '') == 'lunch':
+                continue
+            day = int(att.dayofweek)
+            by_day.setdefault(day, []).append((float(att.hour_from), float(att.hour_to)))
+        if not by_day:
+            return calendar.name or '—'
+        hours_by_day = {}
+        for day, spans in by_day.items():
+            hours_by_day[day] = (min(s[0] for s in spans), max(s[1] for s in spans))
+        days = sorted(hours_by_day)
+        common = max(set(hours_by_day.values()), key=list(hours_by_day.values()).count)
+        start_lbl = self._sd_format_hour_float(common[0])
+        end_lbl = self._sd_format_hour_float(common[1])
+        if days == list(range(days[0], days[-1] + 1)) and days[-1] - days[0] >= 1:
+            day_lbl = f"{day_names[days[0]]}–{day_names[days[-1]]}"
+        else:
+            day_lbl = ', '.join(day_names[d] for d in days)
+        return f"{day_lbl}, {start_lbl} – {end_lbl}"
+
+    @api.model
+    def _sd_meeting_category(self, emp, attendees, event):
+        categ = getattr(event, 'filter_category', None)
+        if categ and categ not in ('all', False):
+            return str(categ).replace('_', ' ').title()
+        names = [a.get('name') for a in attendees if a.get('name')]
+        others = [name for name in names if name != emp.name]
+        if len(others) <= 1:
+            return 'Personal'
+        depts = {a.get('department') for a in attendees if a.get('department')}
+        if emp.department_id and depts and depts <= {emp.department_id.name}:
+            return 'Team'
+        return 'Internal'
+
+    @api.model
+    def _sd_meeting_icon(self, category, event, attendees):
+        location = ' '.join([
+            str(getattr(event, 'location', '') or ''),
+            str(getattr(event, 'videocall_location', '') or ''),
+        ]).lower()
+        if any(token in location for token in ('zoom', 'meet', 'teams', 'http', 'video')):
+            return 'monitor'
+        if category == 'Personal' or len(attendees) <= 2:
+            return 'user'
+        return 'users'
+
+    @api.model
+    def _get_calendar_events(self, emp, tz_name):
+        events = []
+        if 'calendar.event' not in self.env:
+            return events
+        partner = emp.user_id.partner_id if emp.user_id else False
+        if not partner and emp.work_contact_id:
+            partner = emp.work_contact_id
+        if not partner:
+            return events
+        try:
+            domain = [
+                ('stop', '>=', fields.Datetime.now()),
+                ('partner_ids', 'in', [partner.id]),
+            ]
+            if emp.user_id:
+                domain = [
+                    ('stop', '>=', fields.Datetime.now()),
+                    '|',
+                    ('partner_ids', 'in', [partner.id]),
+                    ('user_id', '=', emp.user_id.id),
+                ]
+            records = self.env['calendar.event'].search(domain, order='start asc', limit=20)
+            partner_map = {}
+            extra_partners = records.mapped('partner_ids')
+            if extra_partners:
+                employees = self.env['hr.employee'].search([
+                    '|',
+                    ('user_id.partner_id', 'in', extra_partners.ids),
+                    ('work_contact_id', 'in', extra_partners.ids),
+                ])
+                for rec in employees:
+                    pid = rec.user_id.partner_id.id if rec.user_id and rec.user_id.partner_id else False
+                    if pid:
+                        partner_map[pid] = rec
+                    if rec.work_contact_id:
+                        partner_map[rec.work_contact_id.id] = rec
+            for event in records:
+                attendees = []
+                for att_partner in event.partner_ids:
+                    matched = partner_map.get(att_partner.id)
+                    attendees.append({
+                        'id': matched.id if matched else att_partner.id,
+                        'name': (matched.name if matched else att_partner.name) or '',
+                        'department': matched.department_id.name if matched and matched.department_id else '',
+                        'has_image': bool(matched and (matched.image_128 or matched.avatar_128)),
+                        'avatar_cache_key': str(matched.write_date.timestamp()) if matched and matched.write_date else '0',
+                    })
+                start_local = self._sd_localize(event.start, tz_name)
+                stop_local = self._sd_localize(event.stop, tz_name)
+                category = self._sd_meeting_category(emp, attendees, event)
+                others = [a['name'] for a in attendees if a['name'] and a['name'] != emp.name]
+                location = event.location or ''
+                if category == 'Personal' and len(others) <= 1:
+                    subtitle = 'One-on-one'
+                elif location:
+                    subtitle = location
+                elif others:
+                    subtitle = f"with {others[0]}" if len(others) == 1 else f"with {len(others)} colleagues"
+                else:
+                    subtitle = 'Meeting'
+                events.append({
+                    'id': event.id,
+                    'title': event.name or 'Meeting',
+                    'date': start_local.strftime('%Y-%m-%d') if start_local else '',
+                    'start_time': self._sd_format_clock(start_local),
+                    'end_time': self._sd_format_clock(stop_local),
+                    'subtitle': subtitle,
+                    'category': category,
+                    'icon': self._sd_meeting_icon(category, event, attendees),
+                    'location': location,
+                    'attendees': attendees,
+                })
+        except Exception as e:
+            _logger.warning("Staff Directory calendar events error: %s", e)
+        return events
+
+    @api.model
+    def _get_calendar_profile(self, emp):
+        tz_name, tz_label = self._sd_timezone_info(emp)
+        return {
+            'working_hours': self._sd_working_hours_label(emp),
+            'timezone': tz_name,
+            'timezone_label': tz_label,
+            'events': self._get_calendar_events(emp, tz_name),
+        }
+
+    @api.model
+    def _sd_format_long_date(self, value):
+        if not value:
+            return ''
+        if hasattr(value, 'strftime') and hasattr(value, 'day'):
+            return f"{value.strftime('%b')} {value.day}, {value.year}"
+        return str(value)
+
+    @api.model
+    def _sd_asset_icon(self, name, category):
+        haystack = f"{name or ''} {category or ''}".lower()
+        if any(token in haystack for token in ('laptop', 'macbook', 'notebook', 'computer', 'pc')):
+            return '💻'
+        if any(token in haystack for token in ('phone', 'mobile', 'iphone', 'android')):
+            return '📱'
+        if any(token in haystack for token in ('id card', 'badge', 'employee id')):
+            return '🪪'
+        if any(token in haystack for token in ('access', 'key', 'card')):
+            return '🔑'
+        if any(token in haystack for token in ('monitor', 'display', 'screen')):
+            return '🖥️'
+        if any(token in haystack for token in ('headset', 'headphone')):
+            return '🎧'
+        return '📦'
+
+    @api.model
+    def _sd_asset_serial_label(self, serial, category):
+        if not serial:
+            return ''
+        haystack = (category or '').lower()
+        if any(token in haystack for token in ('mobile', 'phone')):
+            prefix = 'IMEI'
+        elif any(token in haystack for token in ('card', 'access', 'badge')):
+            prefix = 'Card No'
+        else:
+            prefix = 'Serial'
+        return f"{prefix}: {serial}"
+
+    @api.model
+    def _sd_days_until_label(self, value):
+        if not value:
+            return ''
+        today = Date.context_today(self)
+        delta = (value - today).days
+        if delta < 0:
+            days = abs(delta)
+            return f"{days} day{'s' if days != 1 else ''} ago"
+        if delta == 0:
+            return 'Today'
+        return f"In {delta} day{'s' if delta != 1 else ''}"
+
+    @api.model
+    def _get_employee_assets(self, emp):
+        items = []
+        last_updated = ''
+        last_updated_by = ''
+        if 'maintenance.equipment' not in self.env:
+            return {'items': items, 'last_updated': last_updated, 'last_updated_by': last_updated_by}
+        try:
+            Equipment = self.env['maintenance.equipment'].with_context(active_test=False)
+            domain = []
+            if 'employee_id' in Equipment._fields:
+                domain = [('employee_id', '=', emp.id)]
+            elif emp.user_id:
+                domain = [('owner_user_id', '=', emp.user_id.id)]
+            else:
+                return {'items': items, 'last_updated': last_updated, 'last_updated_by': last_updated_by}
+            records = Equipment.search(domain, order='assign_date desc, id desc')
+            latest = False
+            for rec in records:
+                category = rec.category_id.name if rec.category_id else ''
+                serial = rec.serial_no or rec.partner_ref or ''
+                scrap = rec.scrap_date
+                today = Date.context_today(self)
+                open_maint = 0
+                next_date = False
+                if rec.maintenance_ids:
+                    open_reqs = rec.maintenance_ids.filtered(lambda r: not r.stage_id.done and not getattr(r, 'archive', False))
+                    open_maint = len(open_reqs)
+                    dated = open_reqs.filtered(lambda r: r.schedule_date or r.request_date)
+                    if dated:
+                        dated = dated.sorted(key=lambda r: r.schedule_date.date() if r.schedule_date else r.request_date)
+                        first = dated[0]
+                        next_date = first.schedule_date.date() if first.schedule_date else first.request_date
+                if not next_date and getattr(rec, 'estimated_next_failure', False):
+                    next_date = rec.estimated_next_failure
+                if scrap and scrap <= today:
+                    status = 'Retired'
+                elif not rec.active:
+                    status = 'Retired'
+                elif open_maint:
+                    status = 'Maintenance'
+                else:
+                    status = 'Active'
+                assigned_on = rec.assign_date or rec.effective_date
+                assigned_by = rec.write_uid.name if rec.write_uid else (rec.create_uid.name if rec.create_uid else '')
+                if rec.write_date and (not latest or rec.write_date > latest):
+                    latest = rec.write_date
+                    last_updated_by = assigned_by
+                items.append({
+                    'id': rec.id,
+                    'name': rec.name or 'Asset',
+                    'manufacturer': rec.partner_id.name if rec.partner_id else '',
+                    'serial': serial,
+                    'serial_label': self._sd_asset_serial_label(serial, category),
+                    'category': category or 'Uncategorized',
+                    'asset_id': serial or f'EQ-{rec.id}',
+                    'status': status,
+                    'assigned_on': self._sd_format_long_date(assigned_on) if assigned_on else '—',
+                    'assigned_by': assigned_by,
+                    'condition': '—',
+                    'next_maintenance': self._sd_format_long_date(next_date) if next_date else '—',
+                    'next_maintenance_sub': self._sd_days_until_label(next_date),
+                    'icon': self._sd_asset_icon(rec.name, category),
+                })
+            if latest:
+                last_updated = self._sd_format_long_date(latest.date())
+        except Exception as e:
+            _logger.warning("Staff Directory assets error: %s", e)
+        return {
+            'items': items,
+            'last_updated': last_updated,
+            'last_updated_by': last_updated_by,
+        }
 
     @api.model
     def _get_activity_timeline(self, emp):
