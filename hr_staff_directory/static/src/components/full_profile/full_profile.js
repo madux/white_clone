@@ -1,11 +1,31 @@
 /** @odoo-module **/
 
-import { Component, onMounted, onWillUnmount, useState } from "@odoo/owl";
+import { Component, onMounted, onWillStart, onWillUnmount, onWillUpdateProps, useExternalListener, useRef, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
+
+const DEFAULT_TAB_VISIBILITY = {
+    org_chart: true,
+    time_off: true,
+    relationships: true,
+    activity: true,
+    calendar: true,
+    assets: true,
+    connect: true,
+};
 
 export class StaffDirectoryFullProfile extends Component {
     static template = "hr_staff_directory.StaffDirectoryFullProfile";
     static props = ["*"];
+
+    colleagueTabs = [
+        { key: 'org_chart', label: 'Org Chart', desc: 'Reporting line, peers & embedded org chart' },
+        { key: 'time_off', label: 'Time Off', desc: 'Leave balances, requests & absence calendar' },
+        { key: 'relationships', label: 'Relationships', desc: 'Relationship network & collaborator groups' },
+        { key: 'activity', label: 'Activity', desc: 'Projects, role history & timeline feed' },
+        { key: 'calendar', label: 'Calendar', desc: 'Availability, working hours & time zone' },
+        { key: 'assets', label: 'Assets', desc: 'Assigned equipment & hardware' },
+        { key: 'connect', label: 'Connect', desc: 'Contact methods & communication channels' },
+    ];
 
     setup() {
         const now = new Date();
@@ -23,7 +43,14 @@ export class StaffDirectoryFullProfile extends Component {
             localTime: '',
             assetQuery: '',
             assetPage: 1,
+            showVisibilityMenu: false,
+            visibilityMenuStyle: { top: '0px', right: '0px' },
+            tabVisibility: Object.assign({}, DEFAULT_TAB_VISIBILITY, this.props.profileTabVisibility || {}),
         });
+        this.visibilityRef = useRef("visibilityMenu");
+        this._ignoreNextVisibilityOutside = false;
+        useExternalListener(window, "click", this._onWindowClick);
+        useExternalListener(window, "keydown", this._onWindowKeydown);
         this.TIME_OFF_BAR_COLORS = ['#E91E8C', '#F59E0B', '#7C3AED', '#10B981'];
         this.messageService = useService("hr_staff_directory.message");
         this.mailModalService = useService("hr_staff_directory.mail_modal");
@@ -34,6 +61,15 @@ export class StaffDirectoryFullProfile extends Component {
             '#F59E0B', '#0EA5E9', '#EF4444', '#14B8A6'
         ];
         this.state.localTime = this._formatLocalTime();
+        onWillStart(async () => {
+            await this.loadTabVisibility();
+        });
+        onWillUpdateProps((nextProps) => {
+            if (nextProps.profileTabVisibility) {
+                Object.assign(this.state.tabVisibility, nextProps.profileTabVisibility);
+                this._ensureActiveTabVisible();
+            }
+        });
         onMounted(() => {
             this._clockTimer = setInterval(() => {
                 this.state.localTime = this._formatLocalTime();
@@ -44,6 +80,153 @@ export class StaffDirectoryFullProfile extends Component {
                 clearInterval(this._clockTimer);
             }
         });
+    }
+
+    isTabVisible(key) {
+        if (key === 'overview') {
+            return true;
+        }
+        return this.state.tabVisibility[key] !== false;
+    }
+
+    _ensureActiveTabVisible() {
+        if (!this.isTabVisible(this.state.activeTab)) {
+            this.state.activeTab = 'overview';
+        }
+    }
+
+    async loadTabVisibility() {
+        let data = null;
+        try {
+            data = await this.orm.call('hr.employee', 'get_staff_directory_tab_visibility', []);
+        } catch (e) {
+            data = await this._loadTabVisibilityFallback();
+        }
+        if (data) {
+            Object.assign(this.state.tabVisibility, data);
+        } else if (this.props.profileTabVisibility) {
+            Object.assign(this.state.tabVisibility, this.props.profileTabVisibility);
+        }
+        this._ensureActiveTabVisible();
+    }
+
+    async _loadTabVisibilityFallback() {
+        try {
+            const raw = await this.orm.call(
+                'ir.config_parameter',
+                'get_param',
+                ['hr_staff_directory.profile_tab_visibility']
+            );
+            if (!raw) {
+                return null;
+            }
+            const stored = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            return stored && typeof stored === 'object' ? stored : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async _persistTabVisibility(key, visible, payload) {
+        try {
+            return await this.orm.call(
+                'hr.employee',
+                'set_staff_directory_tab_visibility',
+                [key, visible]
+            );
+        } catch (e) {
+            await this.orm.call(
+                'ir.config_parameter',
+                'set_param',
+                ['hr_staff_directory.profile_tab_visibility', JSON.stringify(payload)]
+            );
+            return payload;
+        }
+    }
+
+    toggleVisibilityMenu(ev) {
+        if (ev) {
+            ev.stopPropagation();
+            ev.preventDefault();
+        }
+        const next = !this.state.showVisibilityMenu;
+        this.state.showVisibilityMenu = next;
+        if (next) {
+            this._ignoreNextVisibilityOutside = true;
+            this._positionVisibilityMenu();
+        }
+    }
+
+    _positionVisibilityMenu() {
+        const root = this.visibilityRef.el;
+        const btn = root && root.querySelector('.sdir-fp-visibility-btn');
+        const rect = (btn || root) && (btn || root).getBoundingClientRect();
+        if (!rect) {
+            return;
+        }
+        this.state.visibilityMenuStyle = {
+            top: `${Math.round(rect.bottom + 8)}px`,
+            right: `${Math.round(window.innerWidth - rect.right)}px`,
+        };
+    }
+
+    _onWindowClick(ev) {
+        if (this._ignoreNextVisibilityOutside) {
+            this._ignoreNextVisibilityOutside = false;
+            return;
+        }
+        if (!this.state.showVisibilityMenu) {
+            return;
+        }
+        const root = this.visibilityRef.el;
+        if (root && root.contains(ev.target)) {
+            return;
+        }
+        this.state.showVisibilityMenu = false;
+    }
+
+    _onWindowKeydown(ev) {
+        if (ev.key === 'Escape' && this.state.showVisibilityMenu) {
+            this.state.showVisibilityMenu = false;
+        }
+    }
+
+    async toggleColleagueTab(key, ev) {
+        if (ev) {
+            ev.stopPropagation();
+        }
+        if (!(key in DEFAULT_TAB_VISIBILITY)) {
+            return;
+        }
+        const next = !this.isTabVisible(key);
+        this.state.tabVisibility[key] = next;
+        this._ensureActiveTabVisible();
+        if (this.props.onTabVisibilityChange) {
+            this.props.onTabVisibilityChange(Object.assign({}, this.state.tabVisibility));
+        }
+        try {
+            const data = await this._persistTabVisibility(
+                key,
+                next,
+                Object.assign({}, this.state.tabVisibility)
+            );
+            if (data) {
+                Object.assign(this.state.tabVisibility, data);
+                this._ensureActiveTabVisible();
+                if (this.props.onTabVisibilityChange) {
+                    this.props.onTabVisibilityChange(Object.assign({}, this.state.tabVisibility));
+                }
+            }
+        } catch (e) {
+            this.state.tabVisibility[key] = !next;
+            this._ensureActiveTabVisible();
+            if (this.props.onTabVisibilityChange) {
+                this.props.onTabVisibilityChange(Object.assign({}, this.state.tabVisibility));
+            }
+            if (this.toast) {
+                this.toast.show('error', 'Could not update tab visibility');
+            }
+        }
     }
 
     avatarColor(name) {

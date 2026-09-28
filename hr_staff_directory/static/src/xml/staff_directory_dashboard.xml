@@ -1781,6 +1781,8 @@
                     activeProfileManager="this.activeProfileManager"
                     activeProfileDirectReports="this.activeProfileDirectReports"
                     people="state.people"
+                    profileTabVisibility="state.profileTabVisibility"
+                    onTabVisibilityChange="this.setProfileTabVisibility.bind(this)"
                     closeFullProfile="this.closeFullProfile.bind(this)"
                     openFullProfileById="this.openFullProfileById.bind(this)"
                 />

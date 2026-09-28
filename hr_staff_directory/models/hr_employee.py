@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import logging
 from datetime import date, datetime, timedelta
 
@@ -7,6 +8,17 @@ from odoo.fields import Date
 from markupsafe import Markup
 
 _logger = logging.getLogger(__name__)
+
+SDIR_TAB_VISIBILITY_PARAM = 'hr_staff_directory.profile_tab_visibility'
+SDIR_TAB_VISIBILITY_DEFAULT = {
+    'org_chart': True,
+    'time_off': True,
+    'relationships': True,
+    'activity': True,
+    'calendar': True,
+    'assets': True,
+    'connect': True,
+}
 
 
 class HrEmployeeStaffDirectory(models.Model):
@@ -1513,7 +1525,36 @@ class HrEmployeeStaffDirectory(models.Model):
                 {'id': dept.id, 'name': dept.complete_name}
                 for dept in self.env['hr.department'].search([])
             ],
+            'profile_tab_visibility': self.get_staff_directory_tab_visibility(),
         }
+
+    @api.model
+    def get_staff_directory_tab_visibility(self):
+        """Directory-wide colleague tab visibility. Overview is always visible."""
+        data = dict(SDIR_TAB_VISIBILITY_DEFAULT)
+        raw = self.env['ir.config_parameter'].sudo().get_param(SDIR_TAB_VISIBILITY_PARAM, '')
+        if raw:
+            try:
+                stored = json.loads(raw)
+                if isinstance(stored, dict):
+                    for key in data:
+                        if key in stored:
+                            data[key] = bool(stored[key])
+            except (ValueError, TypeError):
+                _logger.warning('Invalid staff directory tab visibility setting')
+        return data
+
+    @api.model
+    def set_staff_directory_tab_visibility(self, tab, visible):
+        data = self.get_staff_directory_tab_visibility()
+        if tab not in data:
+            return data
+        data[tab] = bool(visible)
+        self.env['ir.config_parameter'].sudo().set_param(
+            SDIR_TAB_VISIBILITY_PARAM,
+            json.dumps(data),
+        )
+        return data
 
     # ─── People Tab: Stat Cards ───────────────────────────────────────────────
 

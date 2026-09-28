@@ -251,6 +251,15 @@ export class StaffDirectoryDashboard extends Component {
             people:      [],
             departments: [],
             segments:    [],
+            profileTabVisibility: {
+                org_chart: true,
+                time_off: true,
+                relationships: true,
+                activity: true,
+                calendar: true,
+                assets: true,
+                connect: true,
+            },
             stats: {
                 total:              0,
                 active:             0,
@@ -357,6 +366,13 @@ export class StaffDirectoryDashboard extends Component {
             this.state.departments = d.departments || [];
             this.state.segments = d.segments || [];
             this.state.orgSavedFilters = d.smart_search_filters || [];
+            if (d.profile_tab_visibility) {
+                this.state.profileTabVisibility = Object.assign(
+                    {},
+                    this.state.profileTabVisibility,
+                    d.profile_tab_visibility
+                );
+            }
             this._applyPeopleData(d.people || []);
             await this._migrateLocalSmartSearchFiltersIfNeeded();
         } catch (e) {
@@ -383,6 +399,17 @@ export class StaffDirectoryDashboard extends Component {
             .filter(p => existingIds.has(p.id));
 
         this.state.people = people;
+    }
+
+    setProfileTabVisibility(visibility) {
+        if (!visibility || typeof visibility !== 'object') {
+            return;
+        }
+        this.state.profileTabVisibility = Object.assign(
+            {},
+            this.state.profileTabVisibility,
+            visibility
+        );
     }
 
     // ─── Pagination Computed Properties ─────────────────────────────────
