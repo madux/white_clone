@@ -11,18 +11,18 @@ export class StaffDirectoryHeatmap extends Component {
 
     setup() {
         this.state = useState({
-            heatmapActiveSkill: null,
+            heatmapActiveDepartment: null,
             heatmapActiveLocation: null,
         });
     }
 
-    onHeatmapCellClick(skill, location) {
-        this.state.heatmapActiveSkill = skill;
+    onHeatmapCellClick(department, location) {
+        this.state.heatmapActiveDepartment = department;
         this.state.heatmapActiveLocation = location;
     }
 
     clearHeatmapFilter() {
-        this.state.heatmapActiveSkill = null;
+        this.state.heatmapActiveDepartment = null;
         this.state.heatmapActiveLocation = null;
     }
 
@@ -38,52 +38,45 @@ export class StaffDirectoryHeatmap extends Component {
 
     get heatmapData() {
         const locations = new Set();
-        const skills = new Set();
-        const matrix = {}; 
+        const departments = new Set();
+        const matrix = {};
         const colTotals = {};
         const rowTotals = {};
         let grandTotal = 0;
         let maxCount = 0;
 
-        const people = this.props.people;
-        people.forEach(p => {
-            const pSkillsStr = p.skills || '';
-            const pSkills = pSkillsStr.split(',').map(s => s.trim()).filter(Boolean);
-            const pLoc = p.work_location || 'Unknown';
-            locations.add(pLoc);
-            
-            pSkills.forEach(skill => {
-                skills.add(skill);
-                if (!matrix[skill]) matrix[skill] = {};
-                matrix[skill][pLoc] = (matrix[skill][pLoc] || 0) + 1;
-                
-                colTotals[pLoc] = (colTotals[pLoc] || 0) + 1;
-                rowTotals[skill] = (rowTotals[skill] || 0) + 1;
-                grandTotal++;
-                
-                if (matrix[skill][pLoc] > maxCount) {
-                    maxCount = matrix[skill][pLoc];
-                }
-            });
+        (this.props.people || []).forEach((p) => {
+            const dept = (p.department || '').trim() || 'Unknown';
+            const loc = (p.work_location || '').trim() || 'Unknown';
+            locations.add(loc);
+            departments.add(dept);
+            if (!matrix[dept]) matrix[dept] = {};
+            matrix[dept][loc] = (matrix[dept][loc] || 0) + 1;
+            colTotals[loc] = (colTotals[loc] || 0) + 1;
+            rowTotals[dept] = (rowTotals[dept] || 0) + 1;
+            grandTotal++;
+            if (matrix[dept][loc] > maxCount) {
+                maxCount = matrix[dept][loc];
+            }
         });
 
         const sortedLocations = Array.from(locations).sort();
-        const sortedSkills = Array.from(skills).sort();
+        const sortedDepartments = Array.from(departments).sort();
 
-        sortedSkills.forEach(skill => {
-            sortedLocations.forEach(loc => {
-                if (!matrix[skill]) matrix[skill] = {};
-                if (matrix[skill][loc] === undefined) matrix[skill][loc] = 0;
+        sortedDepartments.forEach((dept) => {
+            sortedLocations.forEach((loc) => {
+                if (!matrix[dept]) matrix[dept] = {};
+                if (matrix[dept][loc] === undefined) matrix[dept][loc] = 0;
             });
         });
 
-        sortedLocations.forEach(loc => {
+        sortedLocations.forEach((loc) => {
             if (colTotals[loc] === undefined) colTotals[loc] = 0;
         });
 
         return {
             locations: sortedLocations,
-            skills: sortedSkills,
+            departments: sortedDepartments,
             matrix,
             colTotals,
             rowTotals,
@@ -93,14 +86,14 @@ export class StaffDirectoryHeatmap extends Component {
     }
 
     get heatmapDrilldownData() {
-        const skill = this.state.heatmapActiveSkill;
+        const department = this.state.heatmapActiveDepartment;
         const location = this.state.heatmapActiveLocation;
-        if (!skill || !location) return [];
+        if (!department || !location) return [];
 
-        return this.props.people.filter(p => {
-            const pSkills = (p.skills || '').split(',').map(s => s.trim());
-            const pLoc = p.work_location || 'Unknown';
-            return pSkills.includes(skill) && pLoc === location;
+        return (this.props.people || []).filter((p) => {
+            const dept = (p.department || '').trim() || 'Unknown';
+            const loc = (p.work_location || '').trim() || 'Unknown';
+            return dept === department && loc === location;
         });
     }
 }

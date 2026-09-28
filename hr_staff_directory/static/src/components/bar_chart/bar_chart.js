@@ -10,15 +10,15 @@ export class StaffDirectoryBarChart extends Component {
 
     setup() {
         this.state = useState({
-            barActiveSkill: null
+            barActiveDepartment: null
         });
     }
 
-    onBarSkillClick(skill) {
-        if (this.state.barActiveSkill === skill) {
-            this.state.barActiveSkill = null;
+    onBarDepartmentClick(department) {
+        if (this.state.barActiveDepartment === department) {
+            this.state.barActiveDepartment = null;
         } else {
-            this.state.barActiveSkill = skill;
+            this.state.barActiveDepartment = department;
         }
     }
 
@@ -40,48 +40,37 @@ export class StaffDirectoryBarChart extends Component {
 
     get barChartData() {
         const locationsSet = new Set();
-        const skillTotals = {}; // skill -> total count
-        const matrix = {};      // skill -> { location -> count }
-        
-        const people = this.props.people;
-        people.forEach(p => {
-            const pSkillsStr = p.skills || '';
-            const pSkills = pSkillsStr.split(',').map(s => s.trim()).filter(Boolean);
-            const pLoc = p.work_location || 'Unknown';
-            locationsSet.add(pLoc);
-            
-            pSkills.forEach(skill => {
-                if (!matrix[skill]) matrix[skill] = {};
-                matrix[skill][pLoc] = (matrix[skill][pLoc] || 0) + 1;
-                skillTotals[skill] = (skillTotals[skill] || 0) + 1;
-            });
+        const deptTotals = {};
+        const matrix = {};
+
+        (this.props.people || []).forEach((p) => {
+            const dept = (p.department || '').trim() || 'Unknown';
+            const loc = (p.work_location || '').trim() || 'Unknown';
+            locationsSet.add(loc);
+            if (!matrix[dept]) matrix[dept] = {};
+            matrix[dept][loc] = (matrix[dept][loc] || 0) + 1;
+            deptTotals[dept] = (deptTotals[dept] || 0) + 1;
         });
 
         const locations = Array.from(locationsSet).sort();
-        
-        // Sort skills by total descending
-        const sortedSkills = Object.keys(skillTotals).sort((a, b) => skillTotals[b] - skillTotals[a]);
-        
-        // Top 30
-        const top30 = sortedSkills.slice(0, 30);
-        
-        const maxTotal = top30.length > 0 ? skillTotals[top30[0]] : 1;
-        
-        const rows = top30.map(skill => {
-            // build segments
+        const sortedDepts = Object.keys(deptTotals).sort((a, b) => deptTotals[b] - deptTotals[a]);
+        const rowsSource = sortedDepts.slice(0, 30);
+        const maxTotal = rowsSource.length > 0 ? deptTotals[rowsSource[0]] : 1;
+
+        const rows = rowsSource.map((dept) => {
             const segments = locations.map((loc, idx) => {
-                const count = matrix[skill][loc] || 0;
+                const count = matrix[dept][loc] || 0;
                 return {
                     location: loc,
                     count: count,
                     color: this.getLocationColor(idx),
                     widthPercent: (count / maxTotal) * 100
                 };
-            }).filter(s => s.count > 0);
-            
+            }).filter((s) => s.count > 0);
+
             return {
-                skill: skill,
-                total: skillTotals[skill],
+                department: dept,
+                total: deptTotals[dept],
                 segments: segments
             };
         });

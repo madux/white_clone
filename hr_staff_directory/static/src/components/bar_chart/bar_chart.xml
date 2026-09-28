@@ -4,8 +4,8 @@
         <div class="sdir-bar-view-container">
             <!-- Title Bar -->
             <div class="sdir-bar-title-bar">
-                <div class="sdir-bar-title">SKILLS × LOCATION BAR CHART</div>
-                <div class="sdir-bar-subtitle">Top 30 skills by location distribution — click a skill to highlight</div>
+                <div class="sdir-bar-title">DEPARTMENT × LOCATION BAR CHART</div>
+                <div class="sdir-bar-subtitle">Departments by location distribution — click a department to highlight</div>
             </div>
             
             <t t-set="barData" t-value="this.barChartData"/>
@@ -22,11 +22,11 @@
             
             <!-- Chart Body -->
             <div class="sdir-bar-body">
-                <t t-foreach="barData.rows" t-as="row" t-key="row.skill">
-                    <div t-att-class="'sdir-bar-row ' + (state.barActiveSkill === row.skill ? 'sdir-bar-row-active' : '')"
-                         t-on-click="() => this.onBarSkillClick(row.skill)">
+                <t t-foreach="barData.rows" t-as="row" t-key="row.department">
+                    <div t-att-class="'sdir-bar-row ' + (state.barActiveDepartment === row.department ? 'sdir-bar-row-active' : '')"
+                         t-on-click="() => this.onBarDepartmentClick(row.department)">
                         
-                        <div class="sdir-bar-label" t-esc="row.skill"></div>
+                        <div class="sdir-bar-label" t-esc="row.department"></div>
                         
                         <div class="sdir-bar-track">
                             <t t-foreach="row.segments" t-as="seg" t-key="seg.location">
@@ -40,9 +40,9 @@
                     </div>
                     
                     <!-- Location Breakdown Detail Card -->
-                    <div t-if="state.barActiveSkill === row.skill" class="sdir-bar-detail-card">
+                    <div t-if="state.barActiveDepartment === row.department" class="sdir-bar-detail-card">
                         <div class="sdir-bar-detail-header">
-                            <t t-esc="row.skill"/> — by location
+                            <t t-esc="row.department"/> — by location
                         </div>
                         <div class="sdir-bar-detail-body">
                             <t t-foreach="row.segments" t-as="seg" t-key="seg.location">
