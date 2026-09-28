@@ -1,12 +1,14 @@
 /** @odoo-module **/
 
-import { Component, useState, useRef, onWillUpdateProps } from "@odoo/owl";
+import { Component, useState, useRef, onMounted, onWillUpdateProps } from "@odoo/owl";
 
 export class StaffDirectoryOrgChart extends Component {
     static template = "hr_staff_directory.OrgChart";
     static props = {
         people: { type: Array },
-        openProfile: { type: Function }
+        openProfile: { type: Function },
+        locateQuery: { type: String, optional: true },
+        locatePersonId: { optional: true },
     };
 
     setup() {
@@ -15,6 +17,7 @@ export class StaffDirectoryOrgChart extends Component {
             orgCollapsedNodes: {},
             orgActiveNodeId: null,
             orgSearchQuery: "",
+            locatePersonId: null,
             isDraggingOrg: false,
             isDraggingPopup: false,
             orgSidebarOpen: false,
@@ -37,11 +40,27 @@ export class StaffDirectoryOrgChart extends Component {
 
         this.initializeCollapsedState(this.props.people);
 
+        onMounted(() => {
+            if (this.props.locateQuery || this.props.locatePersonId) {
+                this._applyLocate(this.props.locateQuery, this.props.locatePersonId, this.props.people);
+            }
+        });
+
         onWillUpdateProps((nextProps) => {
-            if (this.props.people !== nextProps.people) {
-                // When people change (filters applied), re-initialize collapsed states 
+            const peopleChanged = this.props.people !== nextProps.people;
+            const locChanged = nextProps.locateQuery !== this.props.locateQuery
+                || nextProps.locatePersonId !== this.props.locatePersonId;
+            if (peopleChanged) {
+                // When people change (filters applied), re-initialize collapsed states
                 // for any newly discovered roots/nodes.
                 this.initializeCollapsedState(nextProps.people);
+            }
+            if (nextProps.locateQuery || nextProps.locatePersonId) {
+                if (peopleChanged || locChanged) {
+                    this._applyLocate(nextProps.locateQuery, nextProps.locatePersonId, nextProps.people);
+                }
+            } else if (locChanged) {
+                this.state.locatePersonId = null;
             }
         });
     }
@@ -86,6 +105,12 @@ export class StaffDirectoryOrgChart extends Component {
     }
     
     get orgSearchMatches() {
+        if (this.state.locatePersonId) {
+            const id = this.state.locatePersonId;
+            if ((this.props.people || []).some((p) => p.id === id)) {
+                return new Set([id]);
+            }
+        }
         const query = (this.state.orgSearchQuery || "").trim().toLowerCase();
         if (!query) return null; // null means no active search
         
@@ -99,6 +124,54 @@ export class StaffDirectoryOrgChart extends Component {
             }
         });
         return matches;
+    }
+
+    _applyLocate(query, personId, peopleList) {
+        const people = peopleList || this.props.people || [];
+        const q = (query || "").trim();
+        this.state.locatePersonId = personId || null;
+        this.state.orgSearchQuery = q;
+        if (!q && !personId) {
+            return;
+        }
+        const targetIds = [];
+        if (personId && people.some((p) => p.id === personId)) {
+            targetIds.push(personId);
+        } else {
+            const needle = q.toLowerCase();
+            people.forEach((p) => {
+                const name = (p.name || "").toLowerCase();
+                const role = (p.job_title || "").toLowerCase();
+                const dept = (p.department || "").toLowerCase();
+                if (needle && (name.includes(needle) || role.includes(needle) || dept.includes(needle))) {
+                    targetIds.push(p.id);
+                }
+            });
+        }
+        this._uncollapseAncestors(targetIds, people);
+        if (this._searchPanTimeout) clearTimeout(this._searchPanTimeout);
+        this._searchPanTimeout = setTimeout(() => this.panToSearchMatches(), 350);
+    }
+
+    _uncollapseAncestors(ids, peopleList) {
+        let currentNodes = (ids || [])
+            .map((id) => peopleList.find((p) => p.id === id))
+            .filter(Boolean);
+        currentNodes.forEach((node) => {
+            this.state.orgCollapsedNodes[node.id] = false;
+        });
+        while (currentNodes.length > 0) {
+            const parentIds = new Set();
+            currentNodes.forEach((node) => {
+                if (node.manager_id) {
+                    this.state.orgCollapsedNodes[node.manager_id] = false;
+                    parentIds.add(node.manager_id);
+                }
+            });
+            currentNodes = Array.from(parentIds)
+                .map((id) => peopleList.find((p) => p.id === id))
+                .filter(Boolean);
+        }
     }
 
     getOrgChildren(personId, peopleList = this.props.people) {
@@ -119,6 +192,7 @@ export class StaffDirectoryOrgChart extends Component {
     // ─── Event Handlers ──────────────────────────────────────────────────────
 
     onOrgSearchInput(ev) {
+        this.state.locatePersonId = null;
         this.state.orgSearchQuery = ev.target.value;
         const matches = this.orgSearchMatches;
         
@@ -151,6 +225,7 @@ export class StaffDirectoryOrgChart extends Component {
 
     clearOrgSearch() {
         this.state.orgSearchQuery = "";
+        this.state.locatePersonId = null;
     }
 
     toggleOrgChangesPanel() {

@@ -1047,6 +1047,10 @@
 .org-chart-dimmed {
     opacity: 0.3;
 }
+.org-chart-located {
+    box-shadow: 0 0 0 2px #E91E8C, 0 8px 18px rgba(233, 30, 140, 0.18);
+    z-index: 2;
+}
 /* Header Row */
 .org-chart-node-header {
     width: 100%;

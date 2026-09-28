@@ -59,7 +59,7 @@
                             </svg>
                         </div>
                         <div class="sdir-stat-body">
-                            <div class="sdir-stat-val sdir-stat-val-purple" t-esc="this.num(props.stats.total)"/>
+                            <div class="sdir-stat-val sdir-stat-val-purple" t-esc="this.num(this.displayStats.total)"/>
                             <div class="sdir-stat-lbl">Total People</div>
                         </div>
                     </div>
@@ -70,7 +70,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-check"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
                         </div>
                         <div class="sdir-stat-body">
-                            <div class="sdir-stat-val sdir-stat-val-green" t-esc="this.num(props.stats.active)"/>
+                            <div class="sdir-stat-val sdir-stat-val-green" t-esc="this.num(this.displayStats.active)"/>
                             <div class="sdir-stat-lbl">Active</div>
                         </div>
                     </div>
@@ -81,7 +81,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plane"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg>
                         </div>
                         <div class="sdir-stat-body">
-                            <div class="sdir-stat-val sdir-stat-val-blue" t-esc="this.num(props.stats.on_leave)"/>
+                            <div class="sdir-stat-val sdir-stat-val-blue" t-esc="this.num(this.displayStats.on_leave)"/>
                             <div class="sdir-stat-lbl">On Leave</div>
                         </div>
                     </div>
@@ -96,7 +96,7 @@
                             </svg>
                         </div>
                         <div class="sdir-stat-body">
-                            <div class="sdir-stat-val sdir-stat-val-red" t-esc="this.num(props.stats.retention_priority)"/>
+                            <div class="sdir-stat-val sdir-stat-val-red" t-esc="this.num(this.displayStats.retention_priority)"/>
                             <div class="sdir-stat-lbl">Retention Priority</div>
                         </div>
                     </div>
@@ -109,7 +109,7 @@
                             </svg>
                         </div>
                         <div class="sdir-stat-body">
-                            <div class="sdir-stat-val sdir-stat-val-amber" t-esc="this.num(props.stats.probation)"/>
+                            <div class="sdir-stat-val sdir-stat-val-amber" t-esc="this.num(this.displayStats.probation)"/>
                             <div class="sdir-stat-lbl">Probation</div>
                         </div>
                     </div>
@@ -387,8 +387,8 @@
                                     </div>
                                 </div>
                                 <div class="sdir-filter-footer">
-                                    <input type="text" class="sdir-filter-save-input" placeholder="Save as segment..."/>
-                                    <button type="button" class="sdir-btn sdir-btn-magenta">Save</button>
+                                    <input type="text" class="sdir-filter-save-input" placeholder="Save as segment..." t-model="state.funnelSegmentName"/>
+                                    <button type="button" class="sdir-btn sdir-btn-magenta" t-on-click="() => this.saveFunnelAsSegment()">Save</button>
                                 </div>
                             </div>
                         </div>
@@ -657,7 +657,10 @@
                                                     </button>
                                                 </div>
                                                 <!-- Always-visible 3-dot menu -->
-                                                <button type="button" class="sdir-action-btn sdir-action-more" t-att-title="'More options for ' + person.name">
+                                                <button type="button"
+                                                        t-att-class="'sdir-action-btn sdir-action-more' + (this.isRowMenuOpen(person.id) ? ' sdir-action-more-open' : '')"
+                                                        t-att-title="'More options for ' + person.name"
+                                                        t-on-click.stop="(ev) => this.toggleRowMenu(ev, person)">
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                                                         <circle cx="12" cy="5"  r="1.5"/>
                                                         <circle cx="12" cy="12" r="1.5"/>
@@ -704,13 +707,16 @@
                                     <span t-att-class="'sd-badge sd-badge-' + person.lifecycle_state">
                                         <t t-esc="props.lifecycleLabel(person.lifecycle_state)"/>
                                     </span>
-                                    <div class="sd-overflow-menu">
+                                    <button type="button"
+                                            t-att-class="'sd-overflow-menu' + (this.isRowMenuOpen(person.id) ? ' sdir-action-more-open' : '')"
+                                            t-att-title="'More options for ' + person.name"
+                                            t-on-click.stop="(ev) => this.toggleRowMenu(ev, person)">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <circle cx="5" cy="12" r="1"/>
                                             <circle cx="12" cy="12" r="1"/>
                                             <circle cx="19" cy="12" r="1"/>
                                         </svg>
-                                    </div>
+                                    </button>
                                 </div>
                                 
                                 <!-- Avatar Row -->
@@ -865,6 +871,261 @@
                 </div>
 
             </footer><!-- /.sdir-footer -->
+
+            <t t-if="state.rowMenu and this.rowMenuPerson">
+                <div class="sdir-row-menu" t-att-style="rowMenuStyle">
+                    <div class="sdir-row-menu-label">Profile</div>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuViewProfile(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                        </span>
+                        <span>View Profile</span>
+                    </button>
+                    <div class="sdir-row-menu-label">Communicate</div>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuMessage(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        </span>
+                        <span>Message</span>
+                    </button>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuCall(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        </span>
+                        <span>Call</span>
+                    </button>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuEmail(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        </span>
+                        <span>Email</span>
+                    </button>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuVideoChat(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+                        </span>
+                        <span>Start Teams / Slack Chat</span>
+                    </button>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuSchedule(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                        </span>
+                        <span>Schedule Meeting</span>
+                    </button>
+                    <div class="sdir-row-menu-label">Navigate</div>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuRelationships()">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                        </span>
+                        <span>View Relationships</span>
+                    </button>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuOrgChart(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg>
+                        </span>
+                        <span>Locate on Org Chart</span>
+                    </button>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuViewTeam(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </span>
+                        <span>View Team</span>
+                    </button>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuViewDepartment(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+                        </span>
+                        <span>View Department</span>
+                    </button>
+                    <div class="sdir-row-menu-label">More</div>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuFavorite(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                        </span>
+                        <span t-esc="this.rowMenuPerson.is_pinned ? 'Remove from Favorites' : 'Add to Favorites'"/>
+                    </button>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuShare(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+                        </span>
+                        <span>Share Profile</span>
+                    </button>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuVcard(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        </span>
+                        <span>Export Contact (vCard)</span>
+                    </button>
+                    <button type="button" class="sdir-row-menu-item" t-on-click="() => this.onRowMenuPrint(this.rowMenuPerson)">
+                        <span class="sdir-row-menu-ic">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+                        </span>
+                        <span>Print Profile</span>
+                    </button>
+                </div>
+            </t>
+        </t>
+
+        <t t-if="state.rowAction and this.rowActionPerson">
+            <div class="sdir-row-dlg-overlay" t-on-click="() => this.closeRowAction()">
+
+                <!-- Start Chat -->
+                <t t-if="state.rowAction.type === 'chat'">
+                    <div class="sdir-row-dlg sdir-row-dlg-chat" t-on-click.stop="">
+                        <div class="sdir-row-dlg-head">
+                            <div>
+                                <p class="sdir-row-dlg-title">Start Chat</p>
+                                <p class="sdir-row-dlg-sub">with <t t-esc="this.rowActionPerson.name"/></p>
+                            </div>
+                            <button type="button" class="sdir-row-dlg-x" t-on-click="() => this.closeRowAction()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                        <div class="sdir-row-dlg-body">
+                            <div class="sdir-row-dlg-providers">
+                                <button type="button"
+                                        t-att-class="'sdir-row-dlg-provider' + (state.chatProvider === 'teams' ? ' sdir-row-dlg-provider-teams' : '')"
+                                        t-on-click="() => this.setChatProvider('teams')">🟦 Microsoft Teams</button>
+                                <button type="button"
+                                        t-att-class="'sdir-row-dlg-provider' + (state.chatProvider === 'slack' ? ' sdir-row-dlg-provider-slack' : '')"
+                                        t-on-click="() => this.setChatProvider('slack')">🟪 Slack</button>
+                            </div>
+                            <div class="sdir-row-dlg-person">
+                                <div class="sdir-row-dlg-avatar sdir-row-dlg-avatar-indigo"
+                                     t-att-style="this.rowActionPerson.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + this.rowActionPerson.id + '&amp;unique=' + this.rowActionPerson.avatar_cache_key + '); background-size: cover;') : ''">
+                                    <t t-if="!this.rowActionPerson.has_image" t-esc="this.initials(this.rowActionPerson.name)"/>
+                                </div>
+                                <div>
+                                    <p class="sdir-row-dlg-pname" t-esc="this.rowActionPerson.name"/>
+                                    <p class="sdir-row-dlg-prole" t-esc="this.rowActionPerson.job_title or '—'"/>
+                                </div>
+                            </div>
+                            <textarea class="sdir-row-dlg-textarea" rows="3" t-model="state.chatMessage"/>
+                            <div class="sdir-row-dlg-foot">
+                                <button type="button" class="sdir-row-dlg-cancel" t-on-click="() => this.closeRowAction()">Cancel</button>
+                                <button type="button" t-att-class="'sdir-row-dlg-primary-indigo' + (state.chatProvider === 'slack' ? ' sdir-row-dlg-primary-slack' : '')" t-on-click="() => this.submitChatModal()">
+                                    <t t-esc="state.chatProvider === 'slack' ? 'Open Slack' : 'Open Teams'"/>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Schedule Meeting -->
+                <t t-if="state.rowAction.type === 'meeting'">
+                    <div class="sdir-row-dlg sdir-row-dlg-meeting" t-on-click.stop="">
+                        <div class="sdir-row-dlg-head">
+                            <div>
+                                <p class="sdir-row-dlg-title">Schedule Meeting</p>
+                                <p class="sdir-row-dlg-sub">with <t t-esc="this.rowActionPerson.name"/></p>
+                            </div>
+                            <button type="button" class="sdir-row-dlg-x" t-on-click="() => this.closeRowAction()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                        <div class="sdir-row-dlg-body">
+                            <div class="sdir-row-dlg-field">
+                                <p class="sdir-row-dlg-label">Title</p>
+                                <input type="text" class="sdir-row-dlg-input" t-model="state.meetingForm.title"/>
+                            </div>
+                            <div class="sdir-row-dlg-grid3">
+                                <div class="sdir-row-dlg-field">
+                                    <p class="sdir-row-dlg-label">Date</p>
+                                    <input type="date" class="sdir-row-dlg-input sdir-row-dlg-input-sm" t-model="state.meetingForm.date"/>
+                                </div>
+                                <div class="sdir-row-dlg-field">
+                                    <p class="sdir-row-dlg-label">Time</p>
+                                    <input type="time" class="sdir-row-dlg-input sdir-row-dlg-input-sm" t-model="state.meetingForm.time"/>
+                                </div>
+                                <div class="sdir-row-dlg-field">
+                                    <p class="sdir-row-dlg-label">Duration</p>
+                                    <select class="sdir-row-dlg-input sdir-row-dlg-input-sm" t-model="state.meetingForm.duration">
+                                        <option value="15">15 min</option>
+                                        <option value="30">30 min</option>
+                                        <option value="45">45 min</option>
+                                        <option value="60">60 min</option>
+                                        <option value="90">90 min</option>
+                                        <option value="120">120 min</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="sdir-row-dlg-field sdir-row-dlg-field-mb16">
+                                <p class="sdir-row-dlg-label">Location / Link</p>
+                                <select class="sdir-row-dlg-input" t-model="state.meetingForm.location">
+                                    <option>Google Meet</option>
+                                    <option>Microsoft Teams</option>
+                                    <option>Zoom</option>
+                                    <option>In Person</option>
+                                    <option>Phone Call</option>
+                                </select>
+                            </div>
+                            <div class="sdir-row-dlg-invite" t-if="this.rowActionPerson.work_email or this.rowActionPerson.email">
+                                📅 Invite will be sent to <strong t-esc="this.rowActionPerson.work_email or this.rowActionPerson.email"/>
+                            </div>
+                            <div class="sdir-row-dlg-invite sdir-row-dlg-invite-warn" t-else="">
+                                No work email on this profile — the invite will not include a guest.
+                            </div>
+                            <div class="sdir-row-dlg-foot">
+                                <button type="button" class="sdir-row-dlg-cancel" t-on-click="() => this.closeRowAction()">Cancel</button>
+                                <button type="button" class="sdir-row-dlg-primary-pink" t-on-click="() => this.submitMeetingModal()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                                    Book Meeting
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Share Profile -->
+                <t t-if="state.rowAction.type === 'share'">
+                    <div class="sdir-row-dlg sdir-row-dlg-share" t-on-click.stop="">
+                        <div class="sdir-row-dlg-head">
+                            <div>
+                                <p class="sdir-row-dlg-title">Share Profile</p>
+                                <p class="sdir-row-dlg-sub"><t t-esc="this.rowActionPerson.name"/> · <t t-esc="this.rowActionPerson.job_title or '—'"/></p>
+                            </div>
+                            <button type="button" class="sdir-row-dlg-x" t-on-click="() => this.closeRowAction()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                        <div class="sdir-row-dlg-share-body">
+                            <p class="sdir-row-dlg-label">Share with</p>
+                            <div class="sdir-row-dlg-search">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                <input type="text" placeholder="Search employees…" t-model="state.shareQuery"/>
+                            </div>
+                            <div class="sdir-row-dlg-share-list">
+                                <t t-foreach="this.shareDirectoryPeople" t-as="sp" t-key="sp.id">
+                                    <button type="button"
+                                            t-att-class="'sdir-row-dlg-share-item' + (this.isShareSelected(sp.id) ? ' sdir-row-dlg-share-item-on' : '')"
+                                            t-on-click="() => this.toggleSharePerson(sp.id)">
+                                        <div class="sdir-row-dlg-avatar sdir-row-dlg-avatar-sm sdir-row-dlg-avatar-pink"
+                                             t-att-style="sp.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + sp.id + '&amp;unique=' + sp.avatar_cache_key + '); background-size: cover;') : ''">
+                                            <t t-if="!sp.has_image" t-esc="this.initials(sp.name)"/>
+                                        </div>
+                                        <div class="sdir-row-dlg-share-meta">
+                                            <p class="sdir-row-dlg-pname" t-esc="sp.name"/>
+                                            <p class="sdir-row-dlg-prole" t-esc="sp.job_title or '—'"/>
+                                        </div>
+                                    </button>
+                                </t>
+                                <div t-if="!this.shareDirectoryPeople.length" class="sdir-row-dlg-share-empty">No matching employees</div>
+                            </div>
+                        </div>
+                        <div class="sdir-row-dlg-share-foot">
+                            <button type="button" class="sdir-row-dlg-cancel" t-on-click="() => this.closeRowAction()">Cancel</button>
+                            <button type="button"
+                                    t-att-class="state.shareSelectedIds.length ? 'sdir-row-dlg-primary-pink' : 'sdir-row-dlg-primary-disabled'"
+                                    t-att-disabled="!state.shareSelectedIds.length"
+                                    t-on-click="() => this.submitShareModal()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+                                Share
+                            </button>
+                        </div>
+                    </div>
+                </t>
+
+            </div>
         </t>
 
         <t t-if="state.activeView === 'segments'">
@@ -1193,12 +1454,18 @@
                             </div>
                             <!-- Value (searchable options, or digits-only for Performance Score) -->
                             <div class="sdir-pl-valuewrap">
-                                <t t-if="cond.field === 'performanceScore'">
+                                <t t-if="cond.field === 'performanceScore' and this.isNumericPerfOp(cond.operator)">
                                     <input type="text" inputmode="numeric"
                                            t-att-value="cond.value"
                                            t-on-input="(ev) => this.onPerfScoreInput(cond_index, ev)"
                                            t-att-placeholder="cond.operator === 'between' ? 'e.g. 60-80' : 'e.g. 75'"
                                            class="sdir-pl-value-input sdir-pl-numinput"/>
+                                </t>
+                                <t t-elif="this.isDateField(cond.field)">
+                                    <input type="date"
+                                           t-att-value="cond.value"
+                                           t-on-change="(ev) => this.onDateConditionInput(cond_index, ev)"
+                                           class="sdir-pl-value-input"/>
                                 </t>
                                 <t t-else="">
                                     <div class="sdir-pl-relative sdir-pl-picker-wrap sdir-pl-valuecell">
@@ -1206,7 +1473,7 @@
                                                 t-att-class="'sdir-pl-fieldselect-btn' + (isOpenPop('value', cond_index) ? ' sdir-pl-fieldselect-btn-on' : '')"
                                                 t-att-data-sdir-poptrigger="'value-' + cond_index"
                                                 t-on-click="(ev) => this.toggleSelectPop('value', cond_index, ev)">
-                                            <span t-esc="cond.value || '— select —'"/>
+                                            <span t-esc="this.conditionValueLabel(cond)"/>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
                                         </button>
                                         <div t-if="isOpenPop('value', cond_index)" class="sdir-pl-pop" t-att-style="popStyle">
@@ -1218,7 +1485,7 @@
                                             <div class="sdir-pl-pop-list">
                                                 <t t-foreach="filteredValueOptions" t-as="val" t-key="val">
                                                     <button type="button"
-                                                            t-att-class="'sdir-pl-fieldopt' + (cond.value === val ? ' sdir-pl-fieldopt-on' : '')"
+                                                            t-att-class="'sdir-pl-fieldopt' + (this.isValueSelected(cond, val) ? ' sdir-pl-fieldopt-on' : '')"
                                                             t-on-click="() => this.selectValue(cond_index, val)">
                                                         <t t-esc="val"/>
                                                     </button>
@@ -1344,7 +1611,7 @@
                             <div class="sdir-pl-act-btn-desc">Ask anything about people in your organisation</div>
                         </div>
                     </button>
-                    <button class="sdir-pl-act-btn sdir-pl-act-btn-default" t-on-click="() => { this.toast.show('warning', 'Exporting segments is coming soon!'); }">
+                    <button class="sdir-pl-act-btn sdir-pl-act-btn-default" t-on-click="() => this.exportSegmentCsv()">
                         <div class="sdir-pl-act-icon-wrap sdir-pl-act-icon-green">
                             <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
                         </div>

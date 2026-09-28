@@ -2,6 +2,15 @@
 
 import { Component, useState, onMounted, onPatched, onWillUnmount, useRef } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
+import {
+    funnelFiltersToConditions,
+    computeFilteredStats,
+    formatConditionValue,
+    parseTenureMonths,
+    tenureBucket,
+    personScore,
+    performanceBucket,
+} from "../../js/people_query";
 
 export class StaffDirectoryPeopleList extends Component {
     static template = "hr_staff_directory.PeopleList";
@@ -18,6 +27,10 @@ export class StaffDirectoryPeopleList extends Component {
         expandedFilters: { type: Object },
         filterDefinitions: { type: Array },
         openProfile: { type: Function },
+        openFullProfile: { type: Function, optional: true },
+        locateOnOrgChart: { type: Function, optional: true },
+        filterOrgDepartment: { type: Function, optional: true },
+        allPeople: { type: Array, optional: true },
         togglePin: { type: Function },
         activeFilters: { type: Object },
         clearSearch: { type: Function },
@@ -27,6 +40,7 @@ export class StaffDirectoryPeopleList extends Component {
         removeFilter: { type: Function },
         clearAllFilters: { type: Function },
         applySegmentConditions: { type: Function, optional: true },
+        exportPeople: { type: Function, optional: true },
         toggleFilterAccordion: { type: Function },
         setDateFilter: { type: Function },
         toggleFilterOption: { type: Function },
@@ -101,6 +115,20 @@ export class StaffDirectoryPeopleList extends Component {
             compareTable: [],
             segments: [],
             currentSegmentData: null,
+            funnelSegmentName: '',
+            rowMenu: null,
+            rowAction: null, // { type: 'chat'|'meeting'|'share', personId }
+            chatProvider: 'teams',
+            chatMessage: '',
+            meetingForm: {
+                title: '',
+                date: '',
+                time: '10:00',
+                duration: '30',
+                location: 'Google Meet',
+            },
+            shareQuery: '',
+            shareSelectedIds: [],
             segmentForm: {
                 name: '',
                 color: '#3B82F6',
@@ -186,6 +214,10 @@ export class StaffDirectoryPeopleList extends Component {
             { id: 'skills', label: 'Skills' },
             { id: 'languages', label: 'Languages' },
             { id: 'performanceScore', label: 'Performance Score' },
+            { id: 'availability', label: 'Availability' },
+            { id: 'reportingDepth', label: 'Reporting Depth' },
+            { id: 'startDateFrom', label: 'Start from' },
+            { id: 'startDateTo', label: 'Start to' },
         ];
 
         // Operator sets per field kind. "includes"/"does not include" are
@@ -193,6 +225,8 @@ export class StaffDirectoryPeopleList extends Component {
         // the backend segment engine implements.
         this.operatorSets = {
             setOps: [
+                { id: 'is', label: 'is' },
+                { id: 'in', label: 'is any of' },
                 { id: 'contains', label: 'includes' },
                 { id: 'notContains', label: 'does not include' },
             ],
@@ -201,10 +235,20 @@ export class StaffDirectoryPeopleList extends Component {
                 { id: 'gte', label: '≥ at least' },
                 { id: 'lte', label: '≤ at most' },
                 { id: 'between', label: 'between' },
+                { id: 'is', label: 'is' },
+                { id: 'in', label: 'is any of' },
             ],
             text: [
                 { id: 'is', label: 'is' },
                 { id: 'isNot', label: 'is not' },
+                { id: 'in', label: 'is any of' },
+                { id: 'notIn', label: 'is none of' },
+            ],
+            dateFrom: [
+                { id: 'gte', label: 'on or after' },
+            ],
+            dateTo: [
+                { id: 'lte', label: 'on or before' },
             ],
         };
 
@@ -216,17 +260,26 @@ export class StaffDirectoryPeopleList extends Component {
             gradeLevel: p => p.grade,
             location: p => p.work_location,
             workMode: p => p.work_mode,
-            employmentType: p => p.employment_type,
+            employmentType: p => p.employment_type || p.employee_type,
             lifecycleState: p => p.lifecycle_state,
             flightRisk: p => p.flight_risk,
             retentionPriority: p => p.retention_priority,
             lineManager: p => p.manager_name,
-            tenureBucket: p => p.tenure,
+            tenureBucket: p => tenureBucket(parseTenureMonths(p.tenure)),
             gender: p => p.gender,
             id: p => p.emp_ref,
             skills: p => p.skills,
             languages: p => p.languages,
+            performanceScore: p => performanceBucket(personScore(p)),
+            availability: p => p.availability,
+            reportingDepth: p => (p.direct_report_ids && p.direct_report_ids.length)
+                ? 'Has Direct Reports'
+                : 'Individual Contributor',
         };
+    }
+
+    get displayStats() {
+        return computeFilteredStats(this.props.people || []);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -300,6 +353,7 @@ export class StaffDirectoryPeopleList extends Component {
     gridSetPage(p) { this.goToPage(p); }
 
     toggleView(viewMode) {
+        this.closeRowMenu();
         this.state.activeView = viewMode;
         this.state.currentOffset = 0;
     }
@@ -335,7 +389,7 @@ export class StaffDirectoryPeopleList extends Component {
         return this.savedSegments.length;
     }
     get workforceCount() {
-        return (this.props.people || []).length;
+        return this.num(this.props.stats && this.props.stats.total);
     }
     get highRiskCount() {
         // flight_risk is not populated on the backend yet — reads 0 until then
@@ -367,7 +421,7 @@ export class StaffDirectoryPeopleList extends Component {
         this.state.showSavedSegments = false;
         if (this.props.applySegmentConditions && seg.conditions) {
             let conditions = typeof seg.conditions === 'string' ? JSON.parse(seg.conditions) : seg.conditions;
-            this.props.applySegmentConditions(conditions);
+            this.props.applySegmentConditions(conditions, seg.name);
         }
     }
 
@@ -470,20 +524,47 @@ export class StaffDirectoryPeopleList extends Component {
     }
 
     toggleNewSegmentModal() {
-        this.state.showNewSegmentModal = !this.state.showNewSegmentModal;
+        if (this.state.showNewSegmentModal) {
+            this.state.showNewSegmentModal = false;
+            this._closeDialogPopups();
+            return;
+        }
+        this.openNewSegmentFromFunnel('', [{ field: 'dept', operator: 'is', value: '' }]);
+    }
+
+    openNewSegmentFromFunnel(name, conditions) {
         this._closeDialogPopups();
         this.state.popSearch = '';
-        if (this.state.showNewSegmentModal) {
-            this.state.segmentForm = {
-                name: '',
-                color: '#3B82F6',
-                icon: 'users',
-                conditions: [{field: 'dept', operator: 'is', value: ''}],
-                audienceSize: 0,
-                loadingPreview: false
-            };
-            this._previewSegment();
+        const conds = (conditions && conditions.length)
+            ? conditions.map((c) => ({
+                field: c.field,
+                operator: c.operator,
+                value: Array.isArray(c.value) ? [...c.value] : c.value,
+            }))
+            : [{ field: 'dept', operator: 'is', value: '' }];
+        this.state.segmentForm = {
+            name: name || '',
+            color: '#3B82F6',
+            icon: 'users',
+            conditions: conds,
+            audienceSize: 0,
+            loadingPreview: false,
+        };
+        this.state.showNewSegmentModal = true;
+        this._previewSegment();
+    }
+
+    saveFunnelAsSegment() {
+        const conditions = funnelFiltersToConditions(this.props.activeFilters);
+        if (!conditions.length) {
+            this.toast.show('warning', 'Select at least one filter to save as a segment');
+            return;
         }
+        const name = (this.state.funnelSegmentName || '').trim();
+        if (this.props.showFilterModal) {
+            this.props.toggleFilterModal();
+        }
+        this.openNewSegmentFromFunnel(name, conditions);
     }
 
     // ─── Appearance pickers (color / icon) ───────────────────────────────────
@@ -590,6 +671,14 @@ export class StaffDirectoryPeopleList extends Component {
     }
 
     _onDialogKeyDown(ev) {
+        if (ev.key === 'Escape' && this.state.rowAction) {
+            this.closeRowAction();
+            return;
+        }
+        if (ev.key === 'Escape' && this.state.rowMenu) {
+            this.closeRowMenu();
+            return;
+        }
         if (ev.key === 'Escape'
             && (this.state.showColorPicker || this.state.showIconPicker || this.state.openPop)) {
             this._closeDialogPopups();
@@ -619,9 +708,37 @@ export class StaffDirectoryPeopleList extends Component {
     }
 
     operatorsFor(fieldId) {
+        if (fieldId === 'startDateFrom') return this.operatorSets.dateFrom;
+        if (fieldId === 'startDateTo') return this.operatorSets.dateTo;
         if (fieldId === 'skills' || fieldId === 'languages') return this.operatorSets.setOps;
         if (fieldId === 'performanceScore') return this.operatorSets.numeric;
         return this.operatorSets.text;
+    }
+
+    isNumericPerfOp(op) {
+        return ['eq', 'gte', 'lte', 'between'].includes(op);
+    }
+
+    isDateField(fieldId) {
+        return fieldId === 'startDateFrom' || fieldId === 'startDateTo';
+    }
+
+    isMultiValueOp(op) {
+        return op === 'in' || op === 'notIn' || op === 'isAnyOf';
+    }
+
+    conditionValueLabel(cond) {
+        if (Array.isArray(cond.value)) {
+            return cond.value.length ? formatConditionValue(cond.value) : '— select —';
+        }
+        return cond.value || '— select —';
+    }
+
+    isValueSelected(cond, val) {
+        if (Array.isArray(cond.value)) {
+            return cond.value.includes(val);
+        }
+        return cond.value === val;
     }
 
     opLabel(fieldId, opId) {
@@ -654,8 +771,20 @@ export class StaffDirectoryPeopleList extends Component {
 
     selectValue(index, val) {
         const cond = this.state.segmentForm.conditions[index];
-        this._closeSelectPop();
         if (!cond) return;
+        if (this.isMultiValueOp(cond.operator)) {
+            const current = Array.isArray(cond.value) ? [...cond.value] : (cond.value ? [cond.value] : []);
+            const idx = current.indexOf(val);
+            if (idx === -1) {
+                current.push(val);
+            } else {
+                current.splice(idx, 1);
+            }
+            cond.value = current;
+            this._previewSegment();
+            return;
+        }
+        this._closeSelectPop();
         cond.value = val;
         this._previewSegment();
     }
@@ -668,6 +797,13 @@ export class StaffDirectoryPeopleList extends Component {
             : ev.target.value.replace(/[^\d]/g, '');
         ev.target.value = cleaned;
         cond.value = cleaned;
+    }
+
+    onDateConditionInput(index, ev) {
+        const cond = this.state.segmentForm.conditions[index];
+        if (!cond) return;
+        cond.value = ev.target.value;
+        this._previewSegment();
     }
 
     get filteredFieldOptions() {
@@ -740,10 +876,20 @@ export class StaffDirectoryPeopleList extends Component {
         this._previewSegment();
     }
 
+    _isCompleteCondition(cond) {
+        if (!cond || !cond.field || !cond.operator) {
+            return false;
+        }
+        if (Array.isArray(cond.value)) {
+            return cond.value.length > 0;
+        }
+        return cond.value !== '' && cond.value !== undefined && cond.value !== null;
+    }
+
     async _previewSegment() {
         this.state.segmentForm.loadingPreview = true;
         try {
-            const validConds = this.state.segmentForm.conditions.filter(c => c.field && c.operator && c.value);
+            const validConds = this.state.segmentForm.conditions.filter((c) => this._isCompleteCondition(c));
             const data = await this.rpc("/web/dataset/call_kw/hr.employee/preview_segment", {
                 model: "hr.employee",
                 method: "preview_segment",
@@ -765,7 +911,7 @@ export class StaffDirectoryPeopleList extends Component {
             return;
         }
         const conditions = this.state.segmentForm.conditions;
-        const validConds = conditions.filter(c => c.field && c.operator && c.value);
+        const validConds = conditions.filter((c) => this._isCompleteCondition(c));
         if (validConds.length === 0 || validConds.length !== conditions.length) {
             this.toast.show('warning', 'Fill in all condition values');
             return;
@@ -828,6 +974,400 @@ export class StaffDirectoryPeopleList extends Component {
         this.props.openSegmentMessageBox(seg);
     }
 
+    exportSegmentCsv() {
+        const seg = this.state.currentSegmentData;
+        const members = (seg && seg.members) || [];
+        if (!members.length) {
+            this.toast.show('warning', 'No members to export');
+            return;
+        }
+        const dateStr = new Date().toISOString().split('T')[0];
+        const slug = String(seg.name || 'segment').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+        if (this.props.exportPeople) {
+            this.props.exportPeople(members, `segment_${slug}_${dateStr}.csv`);
+        }
+        this.closeActOnSegmentModal();
+    }
+
+    closeRowMenu() {
+        this.state.rowMenu = null;
+    }
+
+    toggleRowMenu(ev, person) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        if (this.state.rowMenu && this.state.rowMenu.personId === person.id) {
+            this.closeRowMenu();
+            return;
+        }
+        const rect = ev.currentTarget.getBoundingClientRect();
+        const MENU_W = 230;
+        const MENU_EST = 540;
+        const GAP = 4;
+        const margin = 8;
+        let left = rect.right - MENU_W;
+        if (left < margin) {
+            left = margin;
+        }
+        if (left + MENU_W > window.innerWidth - margin) {
+            left = window.innerWidth - margin - MENU_W;
+        }
+        let top = rect.bottom + GAP;
+        const spaceBelow = window.innerHeight - top - margin;
+        if (spaceBelow < 240 && rect.top > spaceBelow) {
+            top = Math.max(margin, rect.top - Math.min(MENU_EST, rect.top - margin) - GAP);
+        }
+        this.state.rowMenu = {
+            personId: person.id,
+            top: Math.round(top),
+            left: Math.round(left),
+            maxHeight: Math.max(180, Math.round(window.innerHeight - top - margin)),
+        };
+    }
+
+    get rowMenuPerson() {
+        const id = this.state.rowMenu && this.state.rowMenu.personId;
+        if (!id) {
+            return null;
+        }
+        return (this.props.people || []).find((p) => p.id === id) || null;
+    }
+
+    get rowMenuStyle() {
+        const m = this.state.rowMenu;
+        if (!m) {
+            return '';
+        }
+        return `position: fixed; top: ${m.top}px; left: ${m.left}px; z-index: 9999; width: 230px; max-height: ${m.maxHeight}px;`;
+    }
+
+    isRowMenuOpen(personId) {
+        return !!(this.state.rowMenu && this.state.rowMenu.personId === personId);
+    }
+
+    onRowMenuViewProfile(person) {
+        this.closeRowMenu();
+        this.props.openProfile(person.id);
+    }
+
+    onRowMenuMessage(person) {
+        this.closeRowMenu();
+        this.messageService.show(person);
+    }
+
+    onRowMenuCall(person) {
+        this.closeRowMenu();
+        const phone = person.work_phone || person.phone || person.mobile_phone || '';
+        if (!phone) {
+            this.toast.show('warning', 'No phone number on this profile');
+            return;
+        }
+        window.location.href = `tel:${phone}`;
+    }
+
+    onRowMenuEmail(person) {
+        this.closeRowMenu();
+        this.mailModalService.show(person);
+    }
+
+    onRowMenuVideoChat(person) {
+        this.closeRowMenu();
+        this.openChatModal(person);
+    }
+
+    onRowMenuSchedule(person) {
+        this.closeRowMenu();
+        this.openMeetingModal(person);
+    }
+
+    onRowMenuRelationships() {
+        this.closeRowMenu();
+        this.toast.show('info', 'Coming soon');
+    }
+
+    onRowMenuOrgChart(person) {
+        this.closeRowMenu();
+        if (this.props.locateOnOrgChart) {
+            this.props.locateOnOrgChart(person);
+        }
+    }
+
+    onRowMenuViewTeam(person) {
+        this.closeRowMenu();
+        if (this.props.locateOnOrgChart) {
+            this.props.locateOnOrgChart(person);
+        }
+    }
+
+    onRowMenuViewDepartment(person) {
+        this.closeRowMenu();
+        if (!person.department) {
+            this.toast.show('warning', 'No department on this profile');
+            return;
+        }
+        if (this.props.filterOrgDepartment) {
+            this.props.filterOrgDepartment(person.department);
+        }
+    }
+
+    onRowMenuFavorite(person) {
+        this.closeRowMenu();
+        this.props.togglePin(person);
+    }
+
+    onRowMenuShare(person) {
+        this.closeRowMenu();
+        this.openShareModal(person);
+    }
+
+    onRowMenuVcard(person) {
+        this.closeRowMenu();
+        const esc = (val) => String(val || '')
+            .replace(/\\/g, '\\\\')
+            .replace(/,/g, '\\,')
+            .replace(/;/g, '\\;')
+            .replace(/\n/g, '\\n');
+        const lines = [
+            'BEGIN:VCARD',
+            'VERSION:3.0',
+            `FN:${esc(person.name)}`,
+            `N:${esc(person.name)}`,
+            person.job_title ? `TITLE:${esc(person.job_title)}` : '',
+            person.department ? `ORG:${esc(person.department)}` : '',
+            (person.work_email || person.email) ? `EMAIL;TYPE=WORK:${esc(person.work_email || person.email)}` : '',
+            (person.work_phone || person.phone) ? `TEL;TYPE=WORK:${esc(person.work_phone || person.phone)}` : '',
+            'END:VCARD',
+        ].filter(Boolean);
+        const blob = new Blob([lines.join('\r\n')], { type: 'text/vcard;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const slug = String(person.name || 'contact').replace(/[^a-zA-Z0-9]+/g, '_');
+        link.href = url;
+        link.download = `${slug}.vcf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        this.toast.show('success', `Exported ${person.name} as vCard`);
+    }
+
+    onRowMenuPrint(person) {
+        this.closeRowMenu();
+        const w = window.open('', '_blank', 'noopener,noreferrer');
+        if (!w) {
+            this.toast.show('warning', 'Allow pop-ups to print this profile');
+            return;
+        }
+        const escHtml = (val) => String(val || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        const rows = [
+            ['Name', person.name],
+            ['Role', person.job_title],
+            ['Department', person.department],
+            ['Location', person.work_location],
+            ['Manager', person.manager_name],
+            ['Email', person.work_email || person.email],
+            ['Phone', person.work_phone || person.phone],
+            ['Employee ID', person.emp_ref || person.employee_id],
+        ].filter((row) => row[1]);
+        const body = rows.map(([k, v]) => `<tr><th>${escHtml(k)}</th><td>${escHtml(v)}</td></tr>`).join('');
+        w.document.write(`<!DOCTYPE html><html><head><title>${escHtml(person.name || 'Profile')}</title>
+            <style>body{font-family:DM Sans,sans-serif;padding:32px;color:#111827}
+            h1{font-size:20px;margin:0 0 16px}table{border-collapse:collapse;width:100%}
+            th{text-align:left;color:#6B7280;font-size:12px;padding:6px 12px 6px 0;width:140px}
+            td{font-size:13px;padding:6px 0}</style></head>
+            <body><h1>${person.name || 'Profile'}</h1><table>${body}</table></body></html>`);
+        w.document.close();
+        w.focus();
+        w.print();
+    }
+
+    closeRowAction() {
+        this.state.rowAction = null;
+        this.state.shareQuery = '';
+        this.state.shareSelectedIds = [];
+    }
+
+    get rowActionPerson() {
+        const id = this.state.rowAction && this.state.rowAction.personId;
+        if (!id) {
+            return null;
+        }
+        const pool = this.props.allPeople || this.props.people || [];
+        return pool.find((p) => p.id === id) || (this.props.people || []).find((p) => p.id === id) || null;
+    }
+
+    _firstName(person) {
+        return String((person && person.name) || '').trim().split(/\s+/)[0] || 'there';
+    }
+
+    _todayIso() {
+        const d = new Date();
+        const p = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
+
+    openChatModal(person) {
+        this.state.chatProvider = 'teams';
+        this.state.chatMessage = `Hi ${this._firstName(person)}, I wanted to connect with you.`;
+        this.state.rowAction = { type: 'chat', personId: person.id };
+    }
+
+    setChatProvider(provider) {
+        this.state.chatProvider = provider;
+    }
+
+    submitChatModal() {
+        const person = this.rowActionPerson;
+        if (!person) {
+            this.closeRowAction();
+            return;
+        }
+        const email = person.work_email || person.email || '';
+        const msg = this.state.chatMessage || '';
+        const provider = this.state.chatProvider;
+        if (provider === 'teams') {
+            if (!email) {
+                this.toast.show('warning', 'No work email on this profile');
+                return;
+            }
+            const url = `https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(email)}&message=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank', 'noopener');
+            this.toast.show('success', `Opening Teams chat with ${person.name}`);
+        } else {
+            if (!email) {
+                this.toast.show('warning', 'No work email on this profile');
+                return;
+            }
+            const url = `https://slack.com/app_redirect?channel=${encodeURIComponent(email)}`;
+            window.open(url, '_blank', 'noopener');
+            this.toast.show('info', `Opening Slack — look up ${email}`);
+        }
+        this.closeRowAction();
+    }
+
+    openMeetingModal(person) {
+        this.state.meetingForm = {
+            title: `Meeting with ${person.name || ''}`.trim(),
+            date: this._todayIso(),
+            time: '10:00',
+            duration: '30',
+            location: 'Google Meet',
+        };
+        this.state.rowAction = { type: 'meeting', personId: person.id };
+    }
+
+    submitMeetingModal() {
+        const person = this.rowActionPerson;
+        const form = this.state.meetingForm;
+        if (!person) {
+            this.closeRowAction();
+            return;
+        }
+        const title = (form.title || '').trim();
+        if (!title) {
+            this.toast.show('warning', 'Enter a meeting title');
+            return;
+        }
+        if (!form.date) {
+            this.toast.show('warning', 'Pick a meeting date');
+            return;
+        }
+        const email = person.work_email || person.email || '';
+        const duration = parseInt(form.duration, 10) || 30;
+        const dates = this._gcalDates(form.date, form.time || '10:00', duration);
+        const params = new URLSearchParams({
+            action: 'TEMPLATE',
+            text: title,
+            dates,
+            location: form.location || '',
+        });
+        if (email) {
+            params.set('add', email);
+        }
+        window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, '_blank', 'noopener');
+        this.toast.show('success', `"${title}" booked · ${form.date} at ${form.time || '10:00'} (${duration} min)`);
+        this.closeRowAction();
+    }
+
+    _gcalDates(date, time, durationMin) {
+        const [y, m, d] = String(date).split('-').map(Number);
+        const [hh, mm] = String(time || '10:00').split(':').map(Number);
+        const start = new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0);
+        const end = new Date(start.getTime() + durationMin * 60000);
+        const fmt = (dt) => {
+            const p = (n) => String(n).padStart(2, '0');
+            return `${dt.getFullYear()}${p(dt.getMonth() + 1)}${p(dt.getDate())}T${p(dt.getHours())}${p(dt.getMinutes())}00`;
+        };
+        return `${fmt(start)}/${fmt(end)}`;
+    }
+
+    openShareModal(person) {
+        this.state.shareQuery = '';
+        this.state.shareSelectedIds = [];
+        this.state.rowAction = { type: 'share', personId: person.id };
+    }
+
+    get shareDirectoryPeople() {
+        const src = this.props.allPeople || this.props.people || [];
+        const exclude = this.state.rowAction && this.state.rowAction.personId;
+        const q = (this.state.shareQuery || '').toLowerCase().trim();
+        return src.filter((p) => {
+            if (p.id === exclude) {
+                return false;
+            }
+            if (!q) {
+                return true;
+            }
+            return (p.name || '').toLowerCase().includes(q)
+                || (p.job_title || '').toLowerCase().includes(q)
+                || (p.department || '').toLowerCase().includes(q);
+        });
+    }
+
+    isShareSelected(id) {
+        return this.state.shareSelectedIds.includes(id);
+    }
+
+    toggleSharePerson(id) {
+        const ids = [...this.state.shareSelectedIds];
+        const idx = ids.indexOf(id);
+        if (idx === -1) {
+            ids.push(id);
+        } else {
+            ids.splice(idx, 1);
+        }
+        this.state.shareSelectedIds = ids;
+    }
+
+    async submitShareModal() {
+        const person = this.rowActionPerson;
+        const ids = this.state.shareSelectedIds;
+        if (!person || !ids.length) {
+            return;
+        }
+        const pool = this.props.allPeople || this.props.people || [];
+        const targets = pool.filter((p) => ids.includes(p.id));
+        const subject = `Shared profile: ${person.name}`;
+        const body = [
+            `<p>${person.name} · ${person.job_title || ''}</p>`,
+            person.department ? `<p>Department: ${person.department}</p>` : '',
+            (person.work_email || person.email) ? `<p>Email: ${person.work_email || person.email}</p>` : '',
+            (person.work_phone || person.phone) ? `<p>Phone: ${person.work_phone || person.phone}</p>` : '',
+        ].filter(Boolean).join('');
+        this.closeRowAction();
+        if (this.mailModalService && targets.length) {
+            await this.mailModalService.showBulk(targets);
+            this.mailModalService.state.subject = subject;
+            this.mailModalService.state.body = body;
+        } else {
+            this.toast.show('success', `Shared ${person.name}'s profile with ${targets.length} colleague${targets.length === 1 ? '' : 's'}`);
+        }
+    }
+
     toggleSavedSegments() {
         this.state.showSavedSegments = !this.state.showSavedSegments;
     }
@@ -835,6 +1375,14 @@ export class StaffDirectoryPeopleList extends Component {
 
 
     _onWindowClick(ev) {
+        if (this.state.rowMenu) {
+            if (ev.target.closest('.sdir-row-menu')
+                || ev.target.closest('.sdir-action-more')
+                || ev.target.closest('.sd-overflow-menu')) {
+                return;
+            }
+            this.closeRowMenu();
+        }
         if (this.state.showSavedSegments) {
             const btn = document.getElementById('sdirPlBtnSavedSegmentsGroup');
             const dropdown = document.querySelector('.sdir-segments-modal');

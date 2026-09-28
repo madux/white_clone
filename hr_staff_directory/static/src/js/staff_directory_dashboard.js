@@ -13,6 +13,18 @@ import { StaffDirectoryGeographicMap } from "./../components/geographic_map/geog
 import { StaffDirectoryRelationshipGraph } from "./../components/relationship_graph/relationship_graph";
 import { StaffDirectoryFullProfile } from "./../components/full_profile/full_profile";
 import { StaffDirectoryOrgAnalysis } from "./../components/org_analysis/org_analysis";
+import {
+    applySegmentConditions as applySegmentEngine,
+    matchFunnelFilters,
+    asList,
+    personSkills,
+    personLanguages,
+    personEmploymentType,
+    personScore,
+    performanceBucket,
+    parseTenureMonths,
+    tenureBucket,
+} from "./people_query";
 
 // ─── Real-Time Sync: Singleton Subscription ───────────────────────────────────
 // bus_service.subscribe() has no unsubscribe in Odoo 17, so subscribing on every
@@ -192,6 +204,7 @@ export class StaffDirectoryDashboard extends Component {
             showOrgFilterDropdown: false,
             activeOrgView: 'org',
             showFilterModal: false,
+            appliedSegment: null, // { name, conditions } — engine is SSOT; not translated to checkboxes
             activeFilters: {
                 department: [],
                 grade: [],
@@ -229,6 +242,9 @@ export class StaffDirectoryDashboard extends Component {
                 languages: true,
                 reporting_depth: true
             },
+            fullProfileTab: 'overview',
+            orgLocateQuery: '',
+            orgLocatePersonId: null,
             showProfileModal: false,
             showFullProfile: false,
             showTeamPersonDrawer: false,
@@ -2175,43 +2191,11 @@ export class StaffDirectoryDashboard extends Component {
             });
         }
 
-        // Apply active filters
-        for (const [key, selectedValues] of Object.entries(this.state.activeFilters)) {
-            // Handle date range filters separately
-            if (key === 'start_date_from' || key === 'start_date_to') {
-                if (key === 'start_date_from' && selectedValues) {
-                    result = result.filter(p => p.create_date && new Date(p.create_date) >= new Date(selectedValues));
-                } else if (key === 'start_date_to' && selectedValues) {
-                    result = result.filter(p => p.create_date && new Date(p.create_date) <= new Date(selectedValues));
-                }
-                continue;
-            }
-
-            if (selectedValues.length > 0) {
-                const normSelected = selectedValues.map(v => String(v).replace(/[^a-zA-Z0-9]/g, '').toLowerCase());
-                
-                result = result.filter(p => {
-                    let pVal = p[key];
-                    if (key === 'lifecycle') pVal = p.lifecycle_state;
-                    if (key === 'location') pVal = p.work_location;
-                    if (key === 'grade') pVal = p.band || p.grade; // TODO(sdir): 'band' key doesn't exist; 'grade' is the live key — keep band for forward-compat.
-                    if (key === 'role') pVal = p.job_title;
-                    if (key === 'manager') pVal = p.manager_name;
-                    if (key === 'gender') pVal = p.gender;
-                    if (key === 'employment_type') pVal = p.employee_type || 'Permanent Full-Time'; // fallback for Odoo employee type mapping
-                    if (key === 'reporting_depth') {
-                        pVal = (p.direct_report_ids && p.direct_report_ids.length > 0) ? 'Has Direct Reports' : 'Individual Contributor';
-                    }
-                    if (key === 'performance') {
-                        let s = p.progress_score || 0;
-                        pVal = s < 60 ? '0–59' : (s < 80 ? '60–79' : '80–100');
-                    }
-                    
-                    if (pVal === undefined || pVal === null) return false;
-                    const normPVal = String(pVal).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                    return normSelected.includes(normPVal);
-                });
-            }
+        const applied = this.state.appliedSegment && this.state.appliedSegment.conditions;
+        if (applied && applied.length) {
+            result = applySegmentEngine(result, applied);
+        } else {
+            result = result.filter((person) => matchFunnelFilters(person, this.state.activeFilters));
         }
 
         // Final Sort: Pinned first, then by selected sort column
@@ -2239,68 +2223,70 @@ export class StaffDirectoryDashboard extends Component {
     // ─── Filters ─────────────────────────────────────────────────────────────
 
     get filterDefinitions() {
-        const dynamicValues = (field, isList = false) => {
-            if (!this.state.people || this.state.people.length === 0) return [];
+        const collect = (getter) => {
             const values = new Set();
-            this.state.people.forEach(p => {
-                const val = p[field];
-                if (!val) return;
-                if (isList) {
-                    val.split(',').forEach(v => {
-                        const trimmed = v.trim();
-                        if (trimmed) values.add(trimmed);
-                    });
-                } else {
-                    values.add(val.trim());
+            for (const person of this.state.people || []) {
+                for (const item of asList(getter(person))) {
+                    values.add(item);
                 }
-            });
-            const arr = Array.from(values).sort();
-            return arr.length > 0 ? arr : [];
+            }
+            return Array.from(values).sort((a, b) => a.localeCompare(b));
         };
 
-        const deptOpts = [...new Set([
-            ...(this.state.departments || []).map(d => d.name).filter(Boolean),
-            ...dynamicValues('department'),
-        ])].sort();
-        const gradeOpts = dynamicValues('grade');
-        const locOpts = dynamicValues('work_location');
-        const empTypeOpts = dynamicValues('employment_type');
-        const mgrOpts = dynamicValues('manager_name');
-        const skillOpts = dynamicValues('skills', true);
-        // TODO(sdir): 'languages' payload is always '' — hr.employee has no 'languages' field
-        // (see hr_employee.py payload builder); seed a computed field later so this filter works.
-        const langOpts = dynamicValues('languages', true);
+        const deptOpts = collect((p) => p.department);
+        const gradeOpts = collect((p) => p.grade || p.band);
+        const locOpts = collect((p) => p.work_location);
+        const empTypeOpts = collect((p) => personEmploymentType(p));
+        const mgrOpts = collect((p) => p.manager_name);
+        const skillOpts = collect((p) => personSkills(p));
+        const langOpts = collect((p) => personLanguages(p));
+        const genderOpts = collect((p) => p.gender);
+        const lifecycleOpts = collect((p) => p.lifecycle_state);
+        const flightOpts = collect((p) => p.flight_risk);
+        const availOpts = collect((p) => p.availability);
+        const workModeOpts = collect((p) => p.work_mode);
+        const tenureOpts = [...new Set(
+            (this.state.people || []).map((p) => tenureBucket(parseTenureMonths(p.tenure)))
+        )].sort();
+        const perfOpts = [...new Set(
+            (this.state.people || []).map((p) => performanceBucket(personScore(p)))
+        )].sort();
+        const depthOpts = collect((p) => (
+            (p.direct_report_ids && p.direct_report_ids.length)
+                ? 'Has Direct Reports'
+                : 'Individual Contributor'
+        ));
 
         return [
-            // Column 1
             [
-                { id: 'department', label: 'DEPARTMENT', options: deptOpts.length ? deptOpts : ['Compliance & Risk', 'Customer Service', 'Design', 'Engineering', 'Finance', 'Human Resources'] },
-                { id: 'grade', label: 'GRADE / BAND', options: gradeOpts.length ? gradeOpts : ['L1 · Individual Contributor', 'L3 · Team Lead', 'L4 · Manager', 'L6 · Executive'] },
-                { id: 'location', label: 'LOCATION', options: locOpts.length ? locOpts : ['Abuja Nigeria', 'Lagos HQ', 'Remote — Global'] },
-                { id: 'gender', label: 'GENDER', options: ['Female', 'Male', 'Other/None'] },
-                { id: 'performance', label: 'PERFORMANCE SCORE', options: ['0–59', '60–79', '80–100'] },
+                { id: 'department', label: 'DEPARTMENT', options: deptOpts },
+                { id: 'grade', label: 'GRADE / BAND', options: gradeOpts },
+                { id: 'location', label: 'LOCATION', options: locOpts },
+                { id: 'gender', label: 'GENDER', options: genderOpts },
+                { id: 'performance', label: 'PERFORMANCE SCORE', options: perfOpts },
             ],
-            // Column 2
             [
-                { id: 'employment_type', label: 'EMPLOYMENT TYPE', options: empTypeOpts.length ? empTypeOpts : ['Contract', 'Part-Time', 'Permanent Full-Time'] },
-                { id: 'lifecycle', label: 'LIFECYCLE STATE', hasDots: true, options: ['Active', 'Probation', 'OnLeave', 'Exiting', 'Suspended', 'Terminated', 'Alumni'] },
-                { id: 'manager', label: 'MANAGER', options: mgrOpts.length ? mgrOpts : [] },
-                { id: 'flight_risk', label: 'FLIGHT RISK', options: ['Low', 'Medium', 'High'] },
-                { id: 'availability', label: 'AVAILABILITY', options: ['Online', 'Busy', 'On Leave', 'Out of Office'] },
+                { id: 'employment_type', label: 'EMPLOYMENT TYPE', options: empTypeOpts },
+                { id: 'lifecycle', label: 'LIFECYCLE STATE', hasDots: true, options: lifecycleOpts },
+                { id: 'manager', label: 'MANAGER', options: mgrOpts },
+                { id: 'flight_risk', label: 'FLIGHT RISK', options: flightOpts },
+                { id: 'availability', label: 'AVAILABILITY', options: availOpts },
                 { id: 'start_date', label: 'START DATE', isDate: true },
             ],
-            // Column 3
             [
-                { id: 'work_mode', label: 'WORK MODE', options: ['Office', 'Hybrid', 'Remote'] },
-                { id: 'tenure', label: 'TENURE', options: ['0–1y', '1–3y', '3–5y', '5y+'] },
-                { id: 'skills', label: 'SKILLS', options: skillOpts.length ? skillOpts : ['AWS', 'Account Management', 'Brand Strategy', 'CRM Tools'] },
-                { id: 'languages', label: 'LANGUAGES', options: langOpts.length ? langOpts : ['English', 'French'] },
-                { id: 'reporting_depth', label: 'REPORTING DEPTH', options: ['Has Direct Reports', 'Individual Contributor'] },
+                { id: 'work_mode', label: 'WORK MODE', options: workModeOpts },
+                { id: 'tenure', label: 'TENURE', options: tenureOpts },
+                { id: 'skills', label: 'SKILLS', options: skillOpts },
+                { id: 'languages', label: 'LANGUAGES', options: langOpts },
+                { id: 'reporting_depth', label: 'REPORTING DEPTH', options: depthOpts },
             ]
         ];
     }
 
     get activeFilterCount() {
+        if (this.state.appliedSegment) {
+            return 1;
+        }
         let count = 0;
         for (const [key, val] of Object.entries(this.state.activeFilters)) {
             if (key === 'start_date_from' || key === 'start_date_to') {
@@ -2313,6 +2299,9 @@ export class StaffDirectoryDashboard extends Component {
     }
 
     get activeFilterChips() {
+        if (this.state.appliedSegment) {
+            return [{ key: '_segment', val: this.state.appliedSegment.name || 'Saved segment' }];
+        }
         const chips = [];
         for (const [key, values] of Object.entries(this.state.activeFilters)) {
             if (key === 'start_date_from') {
@@ -2340,11 +2329,13 @@ export class StaffDirectoryDashboard extends Component {
     }
 
     setDateFilter(type, value) {
+        this.state.appliedSegment = null;
         this.state.activeFilters = { ...this.state.activeFilters, [type]: value };
-            }
+    }
 
     toggleFilterOption(categoryId, optionValue) {
-        const arr = this.state.activeFilters[categoryId];
+        this.state.appliedSegment = null;
+        const arr = this.state.activeFilters[categoryId] || [];
         let newArr;
         if (arr.includes(optionValue)) {
             newArr = arr.filter(v => v !== optionValue);
@@ -2352,57 +2343,29 @@ export class StaffDirectoryDashboard extends Component {
             newArr = [...arr, optionValue];
         }
         this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: newArr };
-            }
+    }
 
     removeFilter(categoryId, optionValue) {
+        if (categoryId === '_segment') {
+            this.state.appliedSegment = null;
+            return;
+        }
         if (categoryId === 'start_date_from' || categoryId === 'start_date_to') {
             this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: '' };
-                        return;
+            return;
         }
-        const newArr = this.state.activeFilters[categoryId].filter(v => v !== optionValue);
+        const newArr = (this.state.activeFilters[categoryId] || []).filter(v => v !== optionValue);
         this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: newArr };
-            }
+    }
 
-    
-    applySegmentConditions(conditions) {
+    applySegmentConditions(conditions, name) {
         this.clearAllFilters();
-        
-        const fieldMap = {
-            'dept': 'department',
-            'gradeLevel': 'grade',
-            'location': 'location',
-            'workMode': 'work_mode',
-            'employmentType': 'employment_type',
-            'lifecycleState': 'lifecycle',
-            'flightRisk': 'flight_risk',
-            'lineManager': 'manager',
-            'tenureBucket': 'tenure',
-            'gender': 'gender',
-            'skills': 'skills',
-            'languages': 'languages',
-            'performanceScore': 'performance'
-        };
-
-        // For now, treat all conditions as standard inclusion filters
-        conditions.forEach(cond => {
-            if (!cond.field || !cond.value) return;
-            
-            const filterKey = fieldMap[cond.field];
-            if (filterKey && this.state.activeFilters[filterKey] !== undefined) {
-                // If it's a comma-separated list of values (e.g., from an IN operator or tags), handle appropriately
-                let values = Array.isArray(cond.value) ? cond.value : [cond.value];
-                
-                // Add unique values
-                values.forEach(val => {
-                    if (!this.state.activeFilters[filterKey].includes(val)) {
-                        this.state.activeFilters[filterKey].push(val);
-                    }
-                });
-            }
-        });
-        
-        // Trigger reactivity
-        this.state.activeFilters = { ...this.state.activeFilters };
+        const list = Array.isArray(conditions)
+            ? conditions.filter((c) => c && c.field && c.operator && c.value !== '' && c.value !== undefined)
+            : [];
+        this.state.appliedSegment = list.length
+            ? { name: name || 'Saved segment', conditions: list }
+            : null;
     }
 
     clearAllFilters() {
@@ -2417,7 +2380,8 @@ export class StaffDirectoryDashboard extends Component {
         }
         this.state.activeFilters = reset;
         this.state.activeFilters.start_date_to = '';
-            }
+        this.state.appliedSegment = null;
+    }
 
     getLifecycleDotClass(val) {
         const lower = val.toLowerCase();
@@ -2479,7 +2443,7 @@ export class StaffDirectoryDashboard extends Component {
         // Build CSV Rows
         const rows = data.map(person => {
             return cols.map(c => {
-                let val = person[c.id];
+                let val = this._exportPersonValue(person, c.id);
                 if (val === undefined || val === null) val = '';
                 val = String(val);
                 val = val.replace(/"/g, '""');
@@ -2533,6 +2497,27 @@ export class StaffDirectoryDashboard extends Component {
 
     get selectedPeopleCount() {
         return this.state.selectedPeople.length;
+    }
+
+    _exportPersonValue(person, colId) {
+        switch (colId) {
+            case 'role':
+                return person.job_title || '';
+            case 'location':
+                return person.work_location || '';
+            case 'manager':
+                return person.manager_name || person.reports_to || '';
+            case 'lifecycle':
+                return person.lifecycle_state || '';
+            case 'performance':
+                return person.performance_score || person.progress_score || '';
+            default:
+                return person[colId];
+        }
+    }
+
+    exportPeople(data, filename) {
+        this.exportToCSV(data, filename);
     }
 
     exportAll() {
@@ -2697,6 +2682,7 @@ export class StaffDirectoryDashboard extends Component {
             this.state.activeProfile = person;
             this.state.profileActiveTab = 'overview';
             this.state.showProfileModal = true;
+            this.state.showFullProfile = false;
             this.state.showTeamPersonDrawer = false;
             this.closeMessageBox();
             
@@ -2832,11 +2818,53 @@ export class StaffDirectoryDashboard extends Component {
         }
     }
 
-    openFullProfile(profile) {
+    openFullProfile(profile, tab) {
         this.state.activeProfile = profile;
+        this.state.fullProfileTab = tab || 'overview';
         this.state.showFullProfile = true;
         this.state.showProfileModal = false;
         this.state.showTeamPersonDrawer = false;
+    }
+
+    locateOnOrgChart(person) {
+        this.state.searchQuery = '';
+        this.clearAllFilters();
+        this.state.smartSearchSelected = {};
+        this.state.smartSearchPinnedIds = [];
+        this._clearAppliedSmartSearchFilter();
+        this.state.orgSidebarOpen = false;
+        this.state.activeTab = 'org';
+        this.state.activeOrgView = 'org';
+        this.state.isOrgChartVisible = true;
+        this.state.showFullProfile = false;
+        this.state.showProfileModal = false;
+        this.state.showTeamPersonDrawer = false;
+        this.state.orgLocateQuery = person && person.name ? person.name : '';
+        this.state.orgLocatePersonId = person && person.id ? person.id : null;
+    }
+
+    filterOrgDepartment(department) {
+        if (!department) {
+            return;
+        }
+        this.state.searchQuery = '';
+        this.clearAllFilters();
+        this.state.activeTab = 'org';
+        this.state.activeOrgView = 'org';
+        this.state.isOrgChartVisible = true;
+        this.state.orgSidebarOpen = true;
+        this.state.showFullProfile = false;
+        this.state.showProfileModal = false;
+        this.state.orgLocateQuery = '';
+        this.state.orgLocatePersonId = null;
+        const options = this._getSmartSearchOptionsFor('department') || [];
+        const key = String(department).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const match = options.find((o) => String(o).replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === key) || department;
+        this.state.smartSearchPinnedIds = ['department'];
+        this.state.smartSearchSelected = { department: [match] };
+        this.state.smartSearchTab = 'analytics';
+        this.state.smartSearchView = 'org';
+        this._clearAppliedSmartSearchFilter();
     }
 
     openFullProfileById(personId) {

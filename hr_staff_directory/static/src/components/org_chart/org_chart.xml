@@ -229,6 +229,7 @@
         <li>
             <div t-att-class="'org-chart-node-card ' + 
                                (state.orgActiveNodeId === person.id ? 'org-chart-node-active ' : '') + 
+                               (this.orgSearchMatches &amp;&amp; this.orgSearchMatches.has(person.id) ? 'org-chart-located ' : '') +
                                (this.orgSearchMatches &amp;&amp; !this.orgSearchMatches.has(person.id) ? 'org-chart-dimmed' : '')"
                  t-att-data-person-id="person.id"
                  t-on-click="(ev) => this.openOrgNodePopup(person.id, ev)">

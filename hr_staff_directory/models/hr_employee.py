@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+import re
+from collections import Counter
 from datetime import date, datetime, timedelta
 
 from odoo import api, fields, models
@@ -1186,10 +1188,127 @@ class HrEmployeeStaffDirectory(models.Model):
 
 
     # ─── Segment Engine ──────────────────────────────────────────────────────
+    # Keep matching in sync with static/src/js/people_query.js
+
+    @api.model
+    def _sd_norm_token(self, val):
+        return re.sub(r'[^a-zA-Z0-9]', '', str(val or '')).lower()
+
+    @api.model
+    def _sd_as_list(self, val):
+        if isinstance(val, (list, tuple)):
+            return [str(item).strip() for item in val if str(item).strip()]
+        if val is None or val == '':
+            return []
+        return [part.strip() for part in str(val).split(',') if part.strip()]
+
+    @api.model
+    def _sd_values_equal(self, left, right):
+        return self._sd_norm_token(left) == self._sd_norm_token(right)
+
+    @api.model
+    def _sd_list_has(self, haystack, needle):
+        items = self._sd_as_list(haystack)
+        if not items:
+            return (
+                self._sd_values_equal(haystack, needle)
+                or self._sd_norm_token(needle) in self._sd_norm_token(haystack)
+            )
+        return any(
+            self._sd_values_equal(item, needle)
+            or self._sd_norm_token(needle) in self._sd_norm_token(item)
+            for item in items
+        )
+
+    @api.model
+    def _sd_tenure_months(self, label):
+        text = str(label or '').lower()
+        if not text or '<' in text:
+            return 0
+        years = re.search(r'(\d+)\s*y', text)
+        months = re.search(r'(\d+)\s*m', text)
+        return ((int(years.group(1)) * 12) if years else 0) + (int(months.group(1)) if months else 0)
+
+    @api.model
+    def _sd_tenure_bucket(self, label):
+        months = self._sd_tenure_months(label)
+        if months < 12:
+            return '0-1y'
+        if months < 36:
+            return '1-3y'
+        if months < 60:
+            return '3-5y'
+        return '5y+'
+
+    @api.model
+    def _sd_person_score(self, person):
+        raw = person.get('progress_score')
+        if raw not in (None, ''):
+            try:
+                return float(raw)
+            except (TypeError, ValueError):
+                pass
+        text = str(person.get('performance_score') or '').replace('%', '')
+        match = re.search(r'(\d+(?:\.\d+)?)', text)
+        return float(match.group(1)) if match else 0.0
+
+    @api.model
+    def _sd_performance_bucket(self, score):
+        if score < 60:
+            return '0-59'
+        if score < 80:
+            return '60-79'
+        return '80-100'
+
+    @api.model
+    def _sd_person_hire_date(self, person):
+        return person.get('start_date') or person.get('create_date') or ''
+
+    @api.model
+    def _sd_person_field_value(self, person, field):
+        if field == 'dept':
+            return person.get('department') or ''
+        if field == 'role':
+            return person.get('job_title') or ''
+        if field == 'gradeLevel':
+            return person.get('grade') or person.get('band') or ''
+        if field == 'location':
+            return person.get('work_location') or ''
+        if field == 'workMode':
+            return person.get('work_mode') or ''
+        if field == 'employmentType':
+            return person.get('employment_type') or person.get('employee_type') or ''
+        if field == 'lifecycleState':
+            return person.get('lifecycle_state') or ''
+        if field == 'flightRisk':
+            return person.get('flight_risk') or ''
+        if field == 'retentionPriority':
+            return person.get('retention_priority') or ''
+        if field == 'lineManager':
+            return person.get('manager_name') or person.get('reports_to') or ''
+        if field == 'tenureBucket':
+            return self._sd_tenure_bucket(person.get('tenure'))
+        if field == 'gender':
+            return person.get('gender') or ''
+        if field == 'id':
+            return person.get('emp_ref') or person.get('employee_id') or ''
+        if field == 'skills':
+            return ','.join(self._sd_as_list(person.get('skills')))
+        if field == 'languages':
+            return ','.join(self._sd_as_list(person.get('languages')))
+        if field == 'performanceScore':
+            return self._sd_person_score(person)
+        if field == 'availability':
+            return person.get('availability') or ''
+        if field == 'reportingDepth':
+            reports = person.get('direct_report_ids') or []
+            return 'Has Direct Reports' if reports else 'Individual Contributor'
+        if field in ('startDate', 'startDateFrom', 'startDateTo'):
+            return self._sd_person_hire_date(person)
+        return person.get(field) or ''
 
     @api.model
     def _apply_segment_conditions(self, people, conditions):
-        import json
         if isinstance(conditions, str):
             try:
                 conditions = json.loads(conditions)
@@ -1198,23 +1317,31 @@ class HrEmployeeStaffDirectory(models.Model):
         # Smart Search payloads are dicts — never treat them as People conditions.
         if isinstance(conditions, dict):
             return []
-        if not conditions:
+        valid = [
+            cond for cond in (conditions or [])
+            if isinstance(cond, dict)
+            and cond.get('field')
+            and cond.get('operator')
+            and cond.get('value') not in (None, '')
+        ]
+        if not valid:
             return []
 
         def match_condition(person, cond):
-            if not isinstance(cond, dict):
-                return False
             field = cond.get('field')
             op = cond.get('operator')
-            val = cond.get('value', '')
-            if not field or not op or not val:
-                return False
+            val = cond.get('value')
 
-            # Numeric operators (Performance Score) — evaluated before the
-            # generic string matching below. "between" takes "min-max".
+            if field == 'startDateFrom' or (field == 'startDate' and op == 'gte'):
+                hire = self._sd_person_hire_date(person)
+                return bool(hire) and hire >= str(val)
+            if field == 'startDateTo' or (field == 'startDate' and op == 'lte'):
+                hire = self._sd_person_hire_date(person)
+                return bool(hire) and hire <= str(val)
+
             if field == 'performanceScore' and op in ('eq', 'gte', 'lte', 'between'):
                 try:
-                    score = float(str(person.get('performance_score', '')).replace('%', '').strip())
+                    score = self._sd_person_score(person)
                     if op == 'eq':
                         return score == float(val)
                     if op == 'gte':
@@ -1226,65 +1353,40 @@ class HrEmployeeStaffDirectory(models.Model):
                 except (TypeError, ValueError):
                     return False
 
-            p_val = ''
-            if field == 'dept':
-                p_val = person.get('department', '')
-            elif field == 'role':
-                p_val = person.get('job_title', '')
-            elif field == 'gradeLevel':
-                p_val = person.get('grade', '')
-            elif field == 'location':
-                p_val = person.get('work_location', '')
-            elif field == 'workMode':
-                p_val = person.get('work_mode', '')
-            elif field == 'employmentType':
-                p_val = person.get('employment_type', '')
-            elif field == 'lifecycleState':
-                p_val = person.get('lifecycle_state', '')
-            elif field == 'flightRisk':
-                p_val = person.get('flight_risk', '')
-            elif field == 'retentionPriority':
-                p_val = person.get('retention_priority', '')
-            elif field == 'lineManager':
-                p_val = person.get('reports_to', '')
-            elif field == 'tenureBucket':
-                p_val = person.get('tenure', '')
-                # Extract numbers for comparison if possible, or just exact match
-            elif field == 'gender':
-                p_val = person.get('gender', '')
-            elif field == 'id':
-                p_val = person.get('emp_ref', '')
-            elif field == 'skills':
-                skills = person.get('skills', [])
-                if isinstance(skills, list):
-                    p_val = ','.join(skills)
-                else:
-                    p_val = skills
-            elif field == 'languages':
-                p_val = person.get('languages', '')
-            elif field == 'performanceScore':
-                p_val = person.get('performance_score', '')
+            if field == 'performanceScore' and op in ('is', 'in', 'isNot', 'notIn'):
+                bucket = self._sd_performance_bucket(self._sd_person_score(person))
+                selected = self._sd_as_list(val)
+                hit = any(self._sd_values_equal(item, bucket) for item in selected)
+                return (not hit) if op in ('isNot', 'notIn') else hit
 
-            p_val = str(p_val).lower().strip()
-            val = str(val).lower().strip()
+            p_val = self._sd_person_field_value(person, field)
+            selected = self._sd_as_list(val)
+            is_multi = field in ('skills', 'languages')
 
+            if op in ('in', 'isAnyOf'):
+                return any(
+                    self._sd_list_has(p_val, item) if is_multi else self._sd_values_equal(p_val, item)
+                    for item in selected
+                )
+            if op == 'notIn':
+                return all(
+                    (not self._sd_list_has(p_val, item)) if is_multi else (not self._sd_values_equal(p_val, item))
+                    for item in selected
+                )
             if op == 'is':
-                return p_val == val
-            elif op == 'isNot':
-                return p_val != val
-            elif op == 'contains':
-                return val in p_val
-            elif op == 'notContains':
-                return val not in p_val
+                return self._sd_list_has(p_val, val) if is_multi else self._sd_values_equal(p_val, val)
+            if op == 'isNot':
+                return (not self._sd_list_has(p_val, val)) if is_multi else (not self._sd_values_equal(p_val, val))
+            if op == 'contains':
+                return self._sd_norm_token(val) in self._sd_norm_token(p_val) or self._sd_list_has(p_val, val)
+            if op == 'notContains':
+                return self._sd_norm_token(val) not in self._sd_norm_token(p_val) and not self._sd_list_has(p_val, val)
             return False
 
-        filtered = []
-        for person in people:
-            # AND logic: all conditions must match
-            if all(match_condition(person, cond) for cond in conditions):
-                filtered.append(person)
-                
-        return filtered
+        return [
+            person for person in (people or [])
+            if all(match_condition(person, cond) for cond in valid)
+        ]
 
     @api.model
     def _apply_smart_search_filters(self, people, payload):
@@ -1435,19 +1537,16 @@ class HrEmployeeStaffDirectory(models.Model):
         
         high_risk = sum(1 for p in filtered if str(p.get('flight_risk')).lower() == 'high')
         
-        # Tenure
-        def parse_tenure(t):
-            import re
-            m = re.findall(r'\d+', str(t))
-            if m: return float(m[0])
-            return 0.0
-            
         avg_tenure = 0
         if filtered:
-            avg_tenure = round(sum(parse_tenure(p.get('tenure')) for p in filtered) / len(filtered), 1)
-            
-        # Grade (just grabbing most common or a simple string for now)
-        avg_grade = "N/A"
+            years = [
+                self._sd_tenure_months(p.get('tenure')) / 12.0
+                for p in filtered
+            ]
+            avg_tenure = round(sum(years) / len(years), 1)
+
+        grades = [str(p.get('grade') or '').strip() for p in filtered if p.get('grade')]
+        avg_grade = Counter(grades).most_common(1)[0][0] if grades else 'N/A'
         
         import json
         cond_obj = []
@@ -1677,9 +1776,9 @@ class HrEmployeeStaffDirectory(models.Model):
                 pass
 
             # ── Tenure ───────────────────────────────────────────────────────
+            hire_date = None
             tenure_label = ''
             try:
-                hire_date = None
                 if emp.contract_id and emp.contract_id.date_start:
                     hire_date = emp.contract_id.date_start
                 if not hire_date and emp.create_date:
@@ -1777,10 +1876,10 @@ class HrEmployeeStaffDirectory(models.Model):
                 'gender':            getattr(emp, 'gender', ''),
                 'employment_type':   dict(self.env['hr.employee'].fields_get(['sdir_employment_type'], 'selection')['sdir_employment_type']['selection']).get(getattr(emp, 'sdir_employment_type', ''), getattr(emp, 'employee_type', '')) if getattr(emp, 'sdir_employment_type', False) else getattr(emp, 'employee_type', ''),
                 'create_date':       str(emp.create_date.date()) if getattr(emp, 'create_date', False) else '',
-                'start_date':        str(emp.create_date.date()) if getattr(emp, 'create_date', False) else '',
+                'start_date':        str(hire_date) if hire_date else (str(emp.create_date.date()) if getattr(emp, 'create_date', False) else ''),
                 'retention_priority': getattr(emp, 'retention_priority', ''),
                 'skills':             getattr(emp, 'skills', '') or self._mock_skills_for_employee(emp),
-                'languages':          getattr(emp, 'languages', ''),
+                'languages':          self._sd_employee_languages(emp),
                 'certifications':     self._get_certifications(emp),
                 'current_projects':   self._get_current_projects(emp),
                 'availability':       getattr(emp, 'availability', ''),
@@ -1874,6 +1973,23 @@ class HrEmployeeStaffDirectory(models.Model):
                             'status_class': 'active'
                         })
         return projects
+
+    @api.model
+    def _sd_employee_languages(self, emp):
+        raw = (getattr(emp, 'languages', None) or '').strip()
+        if raw:
+            return raw
+        names = []
+        try:
+            for skill in getattr(emp, 'employee_skill_ids', []):
+                type_name = skill.skill_type_id.name if skill.skill_type_id else ''
+                if type_name and 'lang' in type_name.lower():
+                    name = skill.skill_id.name if skill.skill_id else ''
+                    if name and name not in names:
+                        names.append(name)
+        except Exception:
+            pass
+        return ', '.join(names)
 
     @api.model
     def _mock_skills_for_employee(self, emp):

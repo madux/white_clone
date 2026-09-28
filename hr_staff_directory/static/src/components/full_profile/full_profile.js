@@ -30,7 +30,7 @@ export class StaffDirectoryFullProfile extends Component {
     setup() {
         const now = new Date();
         this.state = useState({
-            activeTab: 'overview',
+            activeTab: this.props.initialTab || 'overview',
             expandedYears: {},
             orgSearchQuery: '',
             timeOffSubTab: 'balance',
@@ -67,6 +67,13 @@ export class StaffDirectoryFullProfile extends Component {
         onWillUpdateProps((nextProps) => {
             if (nextProps.profileTabVisibility) {
                 Object.assign(this.state.tabVisibility, nextProps.profileTabVisibility);
+                this._ensureActiveTabVisible();
+            }
+            if (nextProps.activeProfile && nextProps.activeProfile.id !== this.props.activeProfile?.id) {
+                this.state.activeTab = nextProps.initialTab || 'overview';
+                this._ensureActiveTabVisible();
+            } else if (nextProps.initialTab && nextProps.initialTab !== this.props.initialTab) {
+                this.state.activeTab = nextProps.initialTab;
                 this._ensureActiveTabVisible();
             }
         });

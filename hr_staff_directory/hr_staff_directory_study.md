@@ -42,7 +42,7 @@ hr.employee.get_staff_directory_people_data()
 ```
 hr_staff_directory/
 ├── models/
-│   ├── hr_employee.py                 # SSOT fields + all dashboard / HR APIs (~2000 lines)
+│   ├── hr_employee.py                 # SSOT fields + all dashboard / HR APIs
 │   ├── staff_directory_sync.py        # bus broadcast mixin on 8 models
 │   ├── hr_staff_directory_segment.py  # saved people segments + smart-search filters
 │   ├── sdir_employee_event.py         # activity / performance ledger
@@ -52,7 +52,8 @@ hr_staff_directory/
 ├── security/                          # segment ACL + personal ir.rule
 ├── data/hr_work_location_cron.xml     # daily geocode cron
 └── static/src/
-    ├── js/staff_directory_dashboard.js       # orchestrator (~2970 lines)
+    ├── js/staff_directory_dashboard.js       # orchestrator
+    ├── js/people_query.js                    # shared People funnel + segment matcher
     ├── xml/staff_directory_dashboard.xml     # tabs + org / smart-search shell
     └── components/
         people_list, profile_panel, full_profile
@@ -95,11 +96,12 @@ On mount the dashboard:
 
 ```python
 {
-  stats,                 # KPI cards
-  people,                # one fat dict per employee (incl. archived)
-  segments,              # personal people-segments
-  smart_search_filters,  # personal smart-search saves
+  stats,                    # unfiltered workforce total (toolbar N / total)
+  people,                   # one fat dict per employee (incl. archived)
+  segments,                 # personal people-segments (kind='people' only)
+  smart_search_filters,     # personal smart-search saves (kind='smart_search')
   departments,
+  profile_tab_visibility,   # directory-wide colleague tab flags
 }
 ```
 
@@ -145,7 +147,8 @@ The dashboard is the orchestrator. Child components receive the same `people` pa
 | Component | Role |
 |---|---|
 | `staff_directory_dashboard.js` | Tabs, load, filters, smart search, bus, selection, CSV/email |
-| `people_list` | People table, segments, column picker, pagination |
+| `people_query.js` | Shared People matcher (funnel + segment engine). Keep in sync with `_apply_segment_conditions` |
+| `people_list` | People table, funnel Save, segments, column picker, pagination |
 | `profile_panel` | Side drawer + all HR action modals |
 | `full_profile` | Full-page profile (overview / activity / leave / CleonAI chrome) |
 | `org_chart` | Reporting tree; pan/zoom; depth > 2 collapsed |
@@ -184,9 +187,10 @@ All dashboard aggregation and HR actions live here as `@api.model` methods (a fe
 | Work mode | `work_mode`, fallback location type | Defaults to “Hybrid” if empty |
 | Location | `work_location_id` + lat/lng | Geocoded via Nominatim |
 | Staff ID | `employee_number` → barcode → `EMP-####` | |
-| Tenure / anniversary | contract `date_start`, else `create_date` | Leap-year safe |
+| Tenure / anniversary / start date | contract `date_start`, else `create_date` | Same hire date on `tenure`, `start_date`, and anniversary. Leap-year safe |
 | Performance | latest `sdir.employee.event` of type `performance_review` | **Not** the `performance_score` Integer field |
-| Skills | `skills` Char, else `_mock_skills_for_employee()` | Still mocked when empty |
+| Skills | `skills` Char, else `_mock_skills_for_employee()` | Still mocked when empty; funnel/segment treat as a list |
+| Languages | `languages` Char, else language-typed `employee_skill_ids` | Empty when neither is set — funnel shows no language options |
 | Leave | real `hr.leave` / `hr.leave.allocation` | |
 | Permissions | mapped `res.groups` on `user_id` | Needs a linked user |
 | Grade in the table | `grade_id.name` or mock `grade` / `band` | **Not** `sdir_grade` |
@@ -194,7 +198,7 @@ All dashboard aggregation and HR actions live here as `@api.model` methods (a fe
 | Transfer metadata | `sdir_transfer_date`, `sdir_transfer_reason` | |
 | Promotion metadata | `sdir_promotion_date`, `sdir_promotion_reason`, `sdir_salary_adjustment` | |
 | Availability / flight risk / last active | `availability`, `flight_risk`, `last_active` | Directory-only fields |
-| Retention priority (field) | `retention_priority` | People-list KPI of the same name is **not** this field |
+| Retention priority (field) | `retention_priority` | People-tab KPI cards now count this field on the **visible filtered list** (not contracts ending in 60 days). `_sd_people_stats()` still uses the contract heuristic for the unfiltered `stats.total` used in the `12 / 40` counter |
 
 Also present but unused by the live people table: mock `grade` Selection (`L1 · Junior Associate` …), Integer `performance_score`.
 
@@ -251,22 +255,78 @@ All of these sit in `profile_panel.js` and write through `hr.employee`. Every su
 
 `StaffDirectoryPeopleList` owns:
 
-- Stat cards from `_sd_people_stats()`: total, active, on leave, probation (open contract with future `trial_date_end`), “retention priority” (contracts ending in 60 days — **not** the `retention_priority` field)
+- Stat cards from the **visible filtered list** (`computeFilteredStats` in `people_query.js`): total, active, on leave, probation, retention priority
 - Search, column picker, sort, pagination
-- Filter modal (department, grade, location, gender, performance, type, lifecycle, manager, flight risk, …)
-- Saved **people segments** (AND conditions, preview audience, persist, delete)
+- Filter modal (live options only — no hardcoded English/French/Lagos HQ fallbacks)
+- Saved **people segments** (AND conditions, preview audience, persist, delete, compare, CSV)
 - Row selection → CSV export, bulk email, bulk chat
 - Pin via `/hr_staff_directory/toggle_pin`
 - Click row → profile drawer
 
-### Segment engine
+The `12 / 40` counter is filtered length / unfiltered `_sd_people_stats().total`. KPI cards themselves follow the current filter (and the current search query, because `people` passed into the list is already `filteredPeople()`).
 
-- Conditions JSON. Fields include `dept`, `role`, `gradeLevel`, `location`, `workMode`, `employmentType`, `lifecycleState`, `flightRisk`, `retentionPriority`, `lineManager`, `tenureBucket`, `gender`, `id`, `skills`, `languages`, `performanceScore` (numeric `eq` / `gte` / `lte` / `between`).
-- Operators: `is`, `isNot`, `contains`, `notContains`.
-- Smart-search payloads are dicts and are never treated as people-segment condition lists.
+### Funnel vs segment engine — design choice
+
+Two paths used to disagree. The funnel was OR-within-category / AND-across-categories in `filteredPeople()`. Saved segments used `_apply_segment_conditions` (AND of JSON conditions). Applying a segment **translated** conditions into checkboxes, which dropped `isNot` / `contains` / numeric / date ops and mapped tenure/skills/dates incorrectly. Funnel “Save as segment” was dead UI.
+
+**The segment engine is SSOT on apply. The funnel saves into that engine.**
+
+Why this codebase:
+
+- Preview, email (`action_email_members`), compare, and the `member_ids` cache already run `_apply_segment_conditions`. One matcher means Save, Apply, Preview, and Export see the same people.
+- Translating a segment back into funnel checkboxes is lossy and will always disagree with audience size.
+- Funnel multi-select becomes engine `in` (OR within a field). Single-select becomes `is`. Dates become `startDateFrom`/`startDateTo` with `gte`/`lte`. AND across fields is unchanged.
+
+Do **not** apply a segment by ticking checkboxes. Do **not** run the funnel matcher on saved-segment JSON.
+
+Smart Search is a third engine (`kind='smart_search'`, dict payload, `_apply_smart_search_filters`). It shares the model but is **split on load** and must not appear in the People Saved Segments dropdown. Leave that split as-is.
+
+### Shared matcher
+
+Keep these in sync:
+
+| Layer | File |
+|---|---|
+| JS | `static/src/js/people_query.js` |
+| Python | `hr.employee._apply_segment_conditions` (+ `_sd_*` helpers) |
+
+OR within a field (`is` / `in` / `isAnyOf`), AND across conditions. Token compare strips non-alphanumerics so `0–59` and `0-59` match.
+
+| Funnel category | Engine field | How it matches |
+|---|---|---|
+| department | `dept` | `department` |
+| grade | `gradeLevel` | `grade` or `band` |
+| location | `location` | `work_location` |
+| gender | `gender` | live values only |
+| performance | `performanceScore` | buckets `0-59` / `60-79` / `80-100` from `progress_score`, or numeric `eq`/`gte`/`lte`/`between` in the New Segment modal |
+| employment_type | `employmentType` | `employment_type` then `employee_type` — **no** fake “Permanent Full-Time” default |
+| lifecycle | `lifecycleState` | `sdir_lifecycle_status` payload (`active`, `onleave`, …) |
+| manager | `lineManager` | `manager_name` or `reports_to` |
+| flight_risk / availability / work_mode | same names | live values only |
+| tenure | `tenureBucket` | parse `2y 3m` → `0-1y` / `1-3y` / `3-5y` / `5y+` |
+| skills / languages | `skills` / `languages` | split lists; `is`/`in`/`contains` on any item |
+| reporting_depth | `reportingDepth` | Has Direct Reports vs Individual Contributor |
+| start date | `startDateFrom` / `startDateTo` | hire date (`start_date`, else `create_date`) |
+
+`start_date` in the people payload is the same hire date as tenure (contract `date_start`, else `create_date`). It is **not** always `create_date`.
+
+Applying a segment stores `state.appliedSegment = { name, conditions }` and filters with `applySegmentEngine`. A single chip shows the name. Changing a funnel checkbox or date clears the applied segment and returns to funnel matching. Clear all / remove the chip clears both.
+
+**Funnel Save:** footer input + Save maps `funnelFiltersToConditions(activeFilters)` and opens the New Segment modal with those conditions (name prefilled if typed). Empty funnel → warning toast.
+
+Filter option lists are derived from live people only. A field with no values shows an empty accordion, not seeded mock labels.
+
+### Segment engine (JSON)
+
+- Stored on `hr.staff.directory.segment` with `kind='people'`. `conditions` is a JSON list. Smart-search payloads are dicts and are never treated as people-segment condition lists.
+- Fields: `dept`, `role`, `gradeLevel`, `location`, `workMode`, `employmentType`, `lifecycleState`, `flightRisk`, `retentionPriority`, `lineManager`, `tenureBucket`, `gender`, `id`, `skills`, `languages`, `performanceScore`, `availability`, `reportingDepth`, `startDateFrom`, `startDateTo`.
+- Operators: `is`, `isNot`, `in`, `notIn`, `isAnyOf`, `contains`, `notContains`, plus numeric `eq` / `gte` / `lte` / `between` and date `gte` / `lte`.
+- Preview: `preview_segment` → `{ audience_size }`. Create/delete: `create_segment` / `delete_segment`. Open/compare: `get_segment_data` (refreshes `member_ids`).
+- Compare “Avg Grade” is the **most common** `grade` in the member set (categorical), not a numeric mean. Tenure average uses parsed years from the tenure label.
+- Take Action → Export to CSV downloads `currentSegmentData.members` through the dashboard CSV helper (column keys mapped: `role`→`job_title`, `location`→`work_location`, etc.).
 - Email: `action_email_members` recomputes members then sends `mail.mail`; people-list selection uses `email_employees` (`message_post` to `work_contact_id`).
 
-ACL: `base.group_user` full CRUD on segments and events. Segments are personal only.
+ACL: `base.group_user` full CRUD on segments and events. Segments are personal only (`user_id = user.id`).
 
 ---
 
@@ -376,7 +436,7 @@ this.toast.show("warning", "Slow operation finished", 5000);  // optional durati
 
 Fixed bottom-right, 360px, slides up, auto-dismiss 3s. A second call replaces the message and restarts the timer.
 
-**Consumers:** dashboard (pin, CSV, email results), people_list (segment validation / compare placeholder), profile_panel (HR action results), message service (missing partner).
+**Consumers:** dashboard (pin, CSV, email results), people_list (segment validation, funnel save, export), profile_panel (HR action results), message service (missing partner).
 
 **Extend:** add `.sdir-toast-{type}` in CSS and one icon branch in XML. No JS change.
 
@@ -521,10 +581,11 @@ Payroll / Expenses / Projects / HR Reports toggles are greyed out when there is 
 5. Missing / duplicated `@api.model` on several action methods.
 6. Native archive does not update `sdir_lifecycle_status`.
 7. Implied groups make Grant/Revoke toggles bounce.
-8. People-list “retention priority” KPI ≠ `retention_priority` field.
+8. People-tab KPI cards follow the filtered list (lifecycle / `retention_priority` field). They no longer use `_sd_people_stats()` contract heuristics. The toolbar `N / total` still uses `_sd_people_stats().total` as the unfiltered denominator.
 9. Geocode form view not in the manifest.
 10. Relationship graph depends on the d3js.org CDN.
 11. Employment-type mix in leftover `_sd_employment_gender()` still counts native `employee_type` (`employee` / `student` / `freelance`), not `sdir_employment_type`.
+12. Funnel and people-segment matching share `people_query.js` / `_apply_segment_conditions`. Do not reintroduce checkbox translation on apply, and do not put `kind='smart_search'` rows in the People Saved Segments dropdown.
 
 ---
 
