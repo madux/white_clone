@@ -151,7 +151,7 @@ export default function ComplianceRunDetailPage() {
 
   if (!runId) {
     return (
-      <div className="mx-auto max-w-[1650px] p-6">
+      <div className="app-page">
         <p className="text-sm text-red-600">No run selected.</p>
         <Link href="/pages/compliance" className="mt-4 inline-flex text-sm font-semibold text-brand-pink">
           Back to compliance
@@ -161,7 +161,7 @@ export default function ComplianceRunDetailPage() {
   }
 
   return (
-    <div className="mx-auto min-h-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
+    <div className="app-page space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link
@@ -333,7 +333,7 @@ export default function ComplianceRunDetailPage() {
             </BulkActionBar>
             <div className="overflow-x-auto">
               <SortableTable className="w-full min-w-[900px] text-left">
-                <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                <thead>
                   <tr>
                     <th className="w-10 px-5 py-4">
                       <input
@@ -625,7 +625,7 @@ function ViewEmployeeModal({
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
+              <thead>
                 <tr>
                   <th className="px-4 py-3">Document type</th>
                   <th className="px-4 py-3">Requirement</th>

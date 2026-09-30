@@ -3,8 +3,6 @@
 import {
   ChevronDown,
   ChevronRight,
-  FileText,
-  FolderOpen,
   Search,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -14,6 +12,9 @@ import type {
 } from "../../../lib/types";
 import AcknowledgementDocumentPanel from "./AcknowledgementDocumentPanel";
 import AnimatedTreeCollapse from "./AnimatedTreeCollapse";
+import { folderRowStyle } from "../../../lib/folderColor";
+import OrgFolderIcon, { DMS_FOLDER_ICON_CLASS } from "./OrgFolderIcon";
+import { FileTypeIcon } from "./FileTypeIcon";
 
 type PercentFilter = "below100" | "below90" | "below80" | "above80";
 
@@ -170,6 +171,7 @@ export default function AcknowledgementPendingTree({
                 <button
                   type="button"
                   className="ack-tree-row ack-tree-row-folder"
+                  style={folderRowStyle(folder.color_hex)}
                   onClick={() => toggleFolder(folder.folder_id)}
                 >
                   {folderExpanded ? (
@@ -177,7 +179,14 @@ export default function AcknowledgementPendingTree({
                   ) : (
                     <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" />
                   )}
-                  <FolderOpen className="h-4 w-4 shrink-0 text-brand-pink" />
+                  <OrgFolderIcon
+                    className={DMS_FOLDER_ICON_CLASS}
+                    hasContent={folder.documents.length > 0}
+                    documents={folder.documents.map((doc) => ({
+                      name: doc.document_name,
+                      document_type: doc.document_type,
+                    }))}
+                  />
                   <span className="min-w-0 flex-1 text-left font-semibold text-slate-800">
                     {folder.folder_name}
                   </span>
@@ -207,7 +216,11 @@ export default function AcknowledgementPendingTree({
                             }`}
                             onClick={() => toggleDocument(document)}
                           >
-                            <FileText className="h-4 w-4 shrink-0 text-slate-400" />
+                            <FileTypeIcon
+                              name={document.document_name}
+                              document_type={document.document_type}
+                              className="h-8 w-6 shrink-0"
+                            />
                             <span className="min-w-0 flex-1 text-left">
                               <span className="block truncate font-medium text-slate-800">
                                 {document.document_name}

@@ -22,6 +22,11 @@ class Document(models.Model):
 
     description = fields.Text(string="Description")
 
+    source_url = fields.Char(
+        string="Source URL",
+        help="External link when this record is a linked file rather than an uploaded attachment.",
+    )
+
     is_policy = fields.Boolean(
         string="Is Policy",
         default=False,
@@ -123,6 +128,79 @@ class Document(models.Model):
         "document_id",
         "user_id",
         string="Allowed Users",
+    )
+
+    org_use_folder_access = fields.Boolean(
+        string="Use folder access",
+        default=True,
+        help="When enabled, document visibility follows the parent folder.",
+    )
+    org_access_scope = fields.Selection(
+        [
+            ("all_staff", "All Staff"),
+            ("department", "By Department"),
+            ("grade", "By Grade Level"),
+            ("individual", "Individual Employees"),
+        ],
+        string="Document access scope",
+    )
+    org_department_ids = fields.Many2many(
+        "hr.department",
+        "doc_document_org_department_rel",
+        "document_id",
+        "department_id",
+    )
+    org_grade_ids = fields.Many2many(
+        "hr.grade",
+        "doc_document_org_grade_rel",
+        "document_id",
+        "grade_id",
+    )
+    org_employee_ids = fields.Many2many(
+        "hr.employee",
+        "doc_document_org_employee_rel",
+        "document_id",
+        "employee_id",
+    )
+    linked_policy_id = fields.Many2one(
+        "doc.compliance.policy",
+        string="Linked policy",
+        ondelete="set null",
+    )
+    linked_template_document_id = fields.Many2one(
+        "doc.document",
+        string="Linked template",
+        ondelete="set null",
+        domain="[('folder_id.folder_type', '=', 'organizational')]",
+    )
+    is_template = fields.Boolean(string="Master template", default=False, index=True)
+    is_shortcut = fields.Boolean(string="Shortcut", default=False)
+    shortcut_of_id = fields.Many2one(
+        "doc.document",
+        string="Shortcut of",
+        ondelete="cascade",
+        index=True,
+    )
+    link_status = fields.Selection(
+        [
+            ("none", "Not a link"),
+            ("ok", "Reachable"),
+            ("broken", "Broken"),
+            ("unchecked", "Unchecked"),
+        ],
+        default="none",
+        index=True,
+    )
+    imported_from = fields.Selection(
+        [
+            ("native", "Native"),
+            ("google_drive", "Google Drive"),
+            ("onedrive", "OneDrive"),
+            ("sharepoint", "SharePoint"),
+            ("dropbox", "Dropbox"),
+            ("scan", "Scan"),
+        ],
+        default="native",
     )
 
     allowed_group_ids = fields.Many2many(
@@ -364,6 +442,10 @@ class Document(models.Model):
     def write(self, vals):
         if self.env.context.get("ask_indexing"):
             return super().write(vals)
+        if vals.get("folder_id"):
+            destination = self.env["doc.folder"].browse(int(vals["folder_id"])).exists()
+            if destination:
+                destination.assert_unlocked(for_upload=True)
         if self.env.su:
             result = super().write(vals)
             if "state" in vals and vals["state"] in ("approved", "signed"):
@@ -400,6 +482,15 @@ class Document(models.Model):
                 service = self.env["doc.employee.files.service"].sudo()
                 for document in self:
                     service.reconcile_document_employee_file(document)
+        Automation = self.env["doc.document.automation"]
+        if "attachment_id" in vals:
+            Automation.search([("document_id", "in", self.ids)]).execute("new_version")
+        if "approval_state" in vals and vals["approval_state"] == "approved":
+            Automation.search([("document_id", "in", self.ids)]).execute("document_approved")
+        if "approval_state" in vals and vals["approval_state"] == "rejected":
+            Automation.search([("document_id", "in", self.ids)]).execute("document_rejected")
+        if {"name", "description", "folder_id"}.intersection(vals):
+            Automation.search([("document_id", "in", self.ids)]).execute("document_updated")
         return result
 
     def unlink(self):
@@ -471,6 +562,11 @@ class Document(models.Model):
 
     def _user_can_replace_file(self):
         self.ensure_one()
+        folder = self.folder_id
+        if folder.folder_type == "organizational":
+            return self.env["doc.organizational.files.permission"].user_can_upload_org(
+                self.env.user
+            )
         if self._is_document_manager():
             return True
         return self._user_owns_document()
@@ -510,9 +606,11 @@ class Document(models.Model):
 
     def _should_bypass_upload_approval(self):
         self.ensure_one()
+        folder = self.folder_id
+        if folder.folder_type == "organizational":
+            return True
         if self.document_type_id.require_upload_approval:
             return False
-        folder = self.folder_id
         employee = self.employee_id
         return (
             self._is_document_manager()
@@ -520,6 +618,21 @@ class Document(models.Model):
             and employee
             and not folder.is_pending_uploads
         )
+
+    def _mark_upload_approved_without_review(self):
+        """Publish the file without an approval task (organizational / bypassed uploads)."""
+        self.ensure_one()
+        if self.pending_attachment_id:
+            self._commit_pending_replacement()
+        values = {
+            "state": "approved",
+            "approval_state": "not_required",
+            "rejection_reason": False,
+            "review_decision_unread": False,
+        }
+        if self.approval_ids:
+            values["approval_ids"] = [fields.Command.clear()]
+        self.sudo().write(values)
 
     def _resolve_approval_requirements(self):
         """Return (require_approval, approvers, approval_flow) from the document type."""
@@ -727,6 +840,8 @@ class Document(models.Model):
         self.ensure_one()
         if not self._user_can_replace_file():
             raise AccessError(_("You do not have permission to update this document."))
+        if self.folder_id.is_locked:
+            raise UserError(self.folder_id.LOCKED_UPLOAD_ERROR)
         if not self.active or self.deleted_at:
             raise ValidationError(_("Cannot version an inactive or deleted document."))
         if not file_bytes:
@@ -860,26 +975,33 @@ class Document(models.Model):
                 if not folder or not folder._user_can_access():
                     raise AccessError(_("You do not have access to upload into this folder."))
 
-            document_type = (
-                self.env["doc.document.type"]
-                .sudo()
-                .browse(vals.get("document_type_id"))
-                .exists()
-            )
+            if folder and folder.is_locked:
+                raise UserError(folder.LOCKED_UPLOAD_ERROR)
+
             if (
                 folder
                 and folder.folder_type == "organizational"
-                and not folder.require_upload_approval
-                and not document_type.require_upload_approval
+                and not self.env.su
+                and not self.env.context.get("org_document_copy")
             ):
+                org_perm = self.env["doc.organizational.files.permission"]
+                if not org_perm.user_can_upload_org(self.env.user):
+                    raise AccessError(
+                        _(
+                            "You do not have permission to upload into organizational folders."
+                        )
+                    )
+
+            if folder and folder.folder_type == "organizational":
                 vals.setdefault("state", "approved")
                 vals.setdefault("approval_state", "not_required")
 
         documents = super().create(vals_list)
         for document in documents:
-            document.sudo().attachment_id.write(
-                {"res_model": self._name, "res_id": document.id}
-            )
+            if document.attachment_id:
+                document.sudo().attachment_id.write(
+                    {"res_model": self._name, "res_id": document.id}
+                )
             document._apply_upload_approval_workflow()
             if (not self.env.user.has_group("cleon_document_management.group_document_manager")
                     and document.approval_state == "pending"):
@@ -918,12 +1040,7 @@ class Document(models.Model):
         approval_flow = "any"
 
         if self._should_bypass_upload_approval():
-            self.sudo().write(
-                {
-                    "state": "approved",
-                    "approval_state": "not_required",
-                }
-            )
+            self._mark_upload_approved_without_review()
             return
 
         require_approval, approvers, approval_flow = self._resolve_approval_requirements()
@@ -1054,6 +1171,117 @@ class Document(models.Model):
             "current_version_number": latest_snapshot + 1,
         }
 
+    def _organizational_user_can_access(self, user=None):
+        self.ensure_one()
+        user = user or self.env.user
+        folder = self.folder_id
+        if folder.folder_type != "organizational":
+            return True
+        if not folder._user_can_access(user):
+            return False
+        if self.org_use_folder_access or not self.org_access_scope:
+            return True
+        employee = user.employee_id
+        scope = self.org_access_scope
+        perm = self.env["doc.organizational.files.permission"]
+        if perm.user_is_platform_admin(user) or perm.user_has_legacy_manager(user):
+            return True
+        if scope == "all_staff":
+            return True
+        if not employee:
+            return False
+        if scope == "department":
+            return employee.department_id in self.org_department_ids
+        if scope == "grade":
+            return employee.grade_id in self.org_grade_ids
+        if scope == "individual":
+            return employee in self.org_employee_ids
+        return False
+
+    @api.model
+    def _prepare_organizational_access_values(
+        self,
+        org_use_folder_access,
+        org_access_scope=None,
+        department_ids=None,
+        grade_ids=None,
+        employee_ids=None,
+        folder=None,
+    ):
+        values = {
+            "org_use_folder_access": bool(org_use_folder_access),
+            "org_access_scope": False,
+            "org_department_ids": [fields.Command.clear()],
+            "org_grade_ids": [fields.Command.clear()],
+            "org_employee_ids": [fields.Command.clear()],
+        }
+        if values["org_use_folder_access"]:
+            return values
+        scope = org_access_scope or "all_staff"
+        values["org_access_scope"] = scope
+        Department = self.env["hr.department"]
+        Grade = self.env["hr.grade"]
+        Employee = self.env["hr.employee"]
+        if scope == "department":
+            values["org_department_ids"] = [
+                fields.Command.set(Department.browse(department_ids or []).exists().ids)
+            ]
+        elif scope == "grade":
+            values["org_grade_ids"] = [
+                fields.Command.set(Grade.browse(grade_ids or []).exists().ids)
+            ]
+        elif scope == "individual":
+            values["org_employee_ids"] = [
+                fields.Command.set(Employee.browse(employee_ids or []).exists().ids)
+            ]
+        if scope == "department" and not (department_ids or []):
+            raise ValidationError(_("Select at least one department for document access."))
+        if scope == "grade" and not (grade_ids or []):
+            raise ValidationError(_("Select at least one grade for document access."))
+        if scope == "individual" and not (employee_ids or []):
+            raise ValidationError(_("Select at least one employee for document access."))
+        return values
+
+    def _access_preview(self):
+        self.ensure_one()
+        User = self.env["res.users"]
+        Employee = self.env["hr.employee"]
+        named = User
+        if self.owner_id:
+            named |= self.owner_id
+        extra_employees = Employee
+        extra_count = 0
+        folder = self.folder_id
+        if folder.folder_type == "organizational":
+            use_folder = self.org_use_folder_access or not self.org_access_scope
+            scope = folder.access_scope if use_folder else self.org_access_scope
+            departments = folder.department_ids if use_folder else self.org_department_ids
+            grades = folder.grade_ids if use_folder else self.org_grade_ids
+            individuals = folder.employee_ids if use_folder else self.org_employee_ids
+            if scope == "individual":
+                extra_employees = individuals.filtered("active")
+                extra_count = len(extra_employees)
+            elif scope == "department" and departments:
+                domain = [
+                    ("active", "=", True),
+                    ("department_id", "in", departments.ids),
+                ]
+                extra_employees = Employee.search(domain, limit=8)
+                extra_count = Employee.search_count(domain)
+            elif scope == "grade" and grades:
+                domain = [("active", "=", True), ("grade_id", "in", grades.ids)]
+                extra_employees = Employee.search(domain, limit=8)
+                extra_count = Employee.search_count(domain)
+        extra_users = extra_employees.mapped("user_id").filtered(
+            lambda user: user and user.active
+        )
+        users = (named | extra_users).filtered("active")
+        preview = users[:3]
+        return {
+            "access_users": [{"id": user.id, "name": user.name} for user in preview],
+            "access_user_count": max(len(users), extra_count),
+        }
+
     def serialize_for_api(self, user=None, **extra):
         self.ensure_one()
         user = user or self.env.user
@@ -1063,6 +1291,7 @@ class Document(models.Model):
             "description": self.description or "",
             "folder_id": self.folder_id.id,
             "folder_name": self.folder_id.folder_name,
+            "folder_color_hex": self.folder_id.color_hex or "",
             "employee_id": self.employee_id.id or False,
             "employee_name": self.employee_id.name or "N/A",
             "document_type_id": self.document_type_id.id,
@@ -1092,14 +1321,40 @@ class Document(models.Model):
             "last_review_decision": self.last_review_decision or None,
             "mime_type": self.mime_type,
             "file_size": self.file_size,
+            "source_url": self.source_url or "",
+            "link_status": self.link_status or ("unchecked" if self.source_url else "none"),
+            "is_policy": bool(self.is_policy),
+            "is_template": bool(self.is_template),
+            "is_shortcut": bool(self.is_shortcut),
+            "shortcut_of_id": self.shortcut_of_id.id or False,
+            "shortcut_of_name": self.shortcut_of_id.name if self.shortcut_of_id else "",
+            "shortcut_of_folder_id": (
+                self.shortcut_of_id.folder_id.id
+                if self.shortcut_of_id and self.shortcut_of_id.folder_id
+                else False
+            ),
+            "imported_from": self.imported_from or "native",
+            "owner_id": self.owner_id.id if self.owner_id else False,
+            "owner_name": self.owner_id.name if self.owner_id else "",
+            "folder_path": self.folder_id._breadcrumb_labels() if self.folder_id else [],
             "attachment_id": self.attachment_id.id,
             "created_at": self.create_date,
             "write_date": self.write_date,
             "active": self.active,
             "distribution_status": self.distribution_status,
+            "org_use_folder_access": self.org_use_folder_access,
+            "org_access_scope": self.org_access_scope or "",
+            "org_department_ids": self.org_department_ids.ids,
+            "org_grade_ids": self.org_grade_ids.ids,
+            "org_employee_ids": self.org_employee_ids.ids,
+            "linked_policy_id": self.linked_policy_id.id or False,
+            "linked_policy_name": self.linked_policy_id.name or "",
+            "linked_template_document_id": self.linked_template_document_id.id or False,
+            "linked_template_document_name": self.linked_template_document_id.name or "",
         }
         payload.update(self._version_metadata())
         payload.update(self.get_review_context(user))
+        payload.update(self._access_preview())
         payload.update(extra)
         return payload
 

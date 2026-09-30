@@ -1,7 +1,13 @@
 import DocumentListPage from "@/app/components/DocumentListPage";
-import AdminOnly from "@/app/components/AdminOnly";
+import OrganizationalLibraryGate from "@/app/components/OrganizationalLibraryGate";
 import { Suspense } from "react";
 
 export default function OrganizationFilesPage() {
-  return <AdminOnly><Suspense fallback={null}><DocumentListPage kind="organization" /></Suspense></AdminOnly>;
+  return (
+    <OrganizationalLibraryGate>
+      <Suspense fallback={null}>
+        <DocumentListPage kind="organization" />
+      </Suspense>
+    </OrganizationalLibraryGate>
+  );
 }

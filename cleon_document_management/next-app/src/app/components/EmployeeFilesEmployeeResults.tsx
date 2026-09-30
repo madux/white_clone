@@ -3,8 +3,12 @@
 import Link from "next/link";
 import type { EmployeeFileSummary } from "../../../lib/types";
 import type { EmployeeFilesEmployeeColumnId } from "../../../lib/employeeFilesBrowsePreferences";
+import EmptyState from "./EmptyState";
 import ListPagination from "./ListPagination";
+import PersonCell from "./PersonCell";
+import { tableSortMark, toggleTableSortKey } from "../../../lib/tableSortKey";
 import SortableTable from "./SortableTable";
+import StatusPill from "./StatusPill";
 
 type Props = {
   items: EmployeeFileSummary[];
@@ -33,8 +37,9 @@ export default function EmployeeFilesEmployeeResults({
 }: Props) {
   const show = (col: EmployeeFilesEmployeeColumnId) => visibleColumns.includes(col);
 
-  const toggleNameSort = () =>
-    onSortChange(sortKey === "name asc" ? "name desc" : "name asc");
+  const toggleSort = (
+    field: "name" | "identification" | "department" | "documents" | "attention",
+  ) => onSortChange(toggleTableSortKey(sortKey, field));
 
   if (isLoading) {
     return (
@@ -46,9 +51,10 @@ export default function EmployeeFilesEmployeeResults({
 
   if (!items.length) {
     return (
-      <p className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center text-sm text-slate-500">
-        No employee files match your search.
-      </p>
+      <EmptyState
+        title="No matching employees"
+        description="No employee files match your search."
+      />
     );
   }
 
@@ -84,52 +90,101 @@ export default function EmployeeFilesEmployeeResults({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="dms-table-wrap">
-        <SortableTable className="min-w-[800px]">
+    <div>
+      <div className="overflow-x-auto">
+        <SortableTable className="ef-table min-w-[800px]" managedSort>
           <thead>
             <tr>
               {show("name") ? (
-                <th>
-                  <button type="button" onClick={toggleNameSort}>
+                <th className="dms-col-name">
+                  <button type="button" onClick={() => toggleSort("name")}>
                     Employee
-                    {sortKey.startsWith("name") ? (sortKey.includes("desc") ? " ↓" : " ↑") : ""}
+                    {tableSortMark(sortKey, "name")}
                   </button>
                 </th>
               ) : null}
-              {show("employeeId") ? <th>Employee ID</th> : null}
-              {show("department") ? <th>Department</th> : null}
-              {show("jobTitle") ? <th>Job title</th> : null}
-              {show("documents") ? <th className="dms-col-num">Documents</th> : null}
-              {show("attention") ? (
-                <th className="dms-col-num dms-col-num--wide">Needs attention</th>
+              {show("employeeId") ? (
+                <th className="dms-col-id">
+                  <button type="button" onClick={() => toggleSort("identification")}>
+                    Employee ID
+                    {tableSortMark(sortKey, "identification")}
+                  </button>
+                </th>
               ) : null}
-              <th className="dms-col-actions">Open</th>
+              {show("department") ? (
+                <th className="dms-col-dept">
+                  <button type="button" onClick={() => toggleSort("department")}>
+                    Department
+                    {tableSortMark(sortKey, "department")}
+                  </button>
+                </th>
+              ) : null}
+              {show("jobTitle") ? <th>Job title</th> : null}
+              {show("documents") ? (
+                <th className="dms-col-center">
+                  <button type="button" onClick={() => toggleSort("documents")}>
+                    Documents
+                    {tableSortMark(sortKey, "documents")}
+                  </button>
+                </th>
+              ) : null}
+              {show("attention") ? (
+                <th>
+                  <button type="button" onClick={() => toggleSort("attention")}>
+                    Status
+                    {tableSortMark(sortKey, "attention")}
+                  </button>
+                </th>
+              ) : null}
+              <th className="dms-col-actions" aria-label="Open employee file" />
             </tr>
           </thead>
           <tbody>
             {items.map((file) => (
               <tr key={file.id}>
                 {show("name") ? (
-                  <td className="font-medium text-slate-800">{file.employee_name}</td>
+                  <td className="dms-col-name">
+                    <PersonCell
+                      name={file.employee_name}
+                      subtitle={
+                        show("employeeId")
+                          ? undefined
+                          : file.employee_identification || undefined
+                      }
+                      href={`/pages/employee/profile?employee=${file.employee_id}`}
+                    />
+                  </td>
                 ) : null}
                 {show("employeeId") ? (
-                  <td className="text-slate-600">
-                    {file.employee_identification || file.employee_id}
+                  <td className="dms-col-id">
+                    <Link
+                      href={`/pages/employee/profile?employee=${file.employee_id}`}
+                      className="dms-id-link"
+                    >
+                      {file.employee_identification || file.employee_id}
+                    </Link>
                   </td>
                 ) : null}
                 {show("department") ? (
-                  <td className="text-slate-600">{file.department_name || "—"}</td>
+                  <td className="dms-col-dept text-slate-600">
+                    {file.department_name || "—"}
+                  </td>
                 ) : null}
                 {show("jobTitle") ? (
                   <td className="text-slate-600">{file.job_title || "—"}</td>
                 ) : null}
                 {show("documents") ? (
-                  <td className="dms-col-num text-slate-600">{file.document_count}</td>
+                  <td className="dms-col-center text-slate-600">{file.document_count}</td>
                 ) : null}
                 {show("attention") ? (
-                  <td className="dms-col-num dms-col-num--wide text-slate-600">
-                    {file.attention_count}
+                  <td data-sort-value={String(file.attention_count ?? 0)}>
+                    <StatusPill
+                      label={
+                        file.attention_count
+                          ? `${file.attention_count} need attention`
+                          : "OK"
+                      }
+                    />
                   </td>
                 ) : null}
                 <td className="dms-col-actions">

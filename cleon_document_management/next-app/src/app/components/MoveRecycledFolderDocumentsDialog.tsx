@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useMoveRecycledFolderDocuments } from "../../../hooks/useDocuments";
 import type { DocFolder } from "../../../lib/types";
+import AppSelect from "./AppSelect";
 import ModalDialog from "./ModalDialog";
 
 type RecycledFolder = {
@@ -101,21 +102,16 @@ export default function MoveRecycledFolderDocumentsDialog({
       ) : (
         <label className="block">
           <span className="label">Destination folder</span>
-          <select
+          <AppSelect
             value={destinationId}
-            onChange={(event) => setDestinationId(event.target.value)}
-            className="field"
+            onChange={setDestinationId}
             disabled={move.isPending || !destinations.length}
-          >
-            {!destinations.length && (
-              <option value="">No compatible folders available</option>
-            )}
-            {destinations.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.folder_name}
-              </option>
-            ))}
-          </select>
+            placeholder="No compatible folders available"
+            options={destinations.map((item) => ({
+              value: String(item.id),
+              label: item.folder_name,
+            }))}
+          />
         </label>
       )}
 

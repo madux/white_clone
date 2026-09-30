@@ -8,9 +8,12 @@ from odoo.http import request
 from odoo.tools.misc import file_path
 
 from .access import (
+    user_can_access_org_library,
+    user_can_access_workspace_activity,
     user_employee_files_permissions,
     user_is_document_admin,
     user_is_document_manager,
+    user_organizational_files_permissions,
 )
 from .main import _expiring_documents_domain, _serialize_expiring_document
 from .onboarding_state import ONBOARDING_STEPS, serialize_for_api, update_state
@@ -18,6 +21,20 @@ from .onboarding_state import ONBOARDING_STEPS, serialize_for_api, update_state
 _logger = logging.getLogger(__name__)
 
 MODULE = "cleon_document_management"
+
+
+def _activity_occurred_at_text(value):
+    """Normalize activity timestamps so mixed datetime/str values can be sorted."""
+    if value in (None, False, ""):
+        return ""
+    if isinstance(value, str):
+        return value
+    converted = fields.Datetime.to_string(value)
+    if isinstance(converted, str):
+        return converted
+    return str(value)
+
+
 NEXTAPP_STATIC_DIR = "static/src/nextapp"
 NEXTAPP_ASSET_EXT = {
     ".png",
@@ -89,6 +106,9 @@ class NextAppController(http.Controller):
                 "is_document_manager": user_is_document_manager(user, request.env),
                 "is_document_admin": user_is_document_admin(user),
                 "employee_files_permissions": user_employee_files_permissions(
+                    user, request.env
+                ),
+                "organizational_files_permissions": user_organizational_files_permissions(
                     user, request.env
                 ),
             }
@@ -164,6 +184,9 @@ class NextAppController(http.Controller):
                     "employee_files_permissions": user_employee_files_permissions(
                         user, request.env
                     ),
+                    "organizational_files_permissions": user_organizational_files_permissions(
+                        user, request.env
+                    ),
                     "groups": user.groups_id.mapped("name"),
                 },
             }
@@ -190,6 +213,9 @@ class NextAppController(http.Controller):
         for approval in approvals:
             document = approval.document_id
             if not document.exists():
+                continue
+            if document.folder_id.folder_type == "organizational":
+                document._mark_upload_approved_without_review()
                 continue
             employee = document.employee_id.name if document.employee_id else "an employee"
             message = f"{employee} submitted {document.name} for your approval."
@@ -222,6 +248,9 @@ class NextAppController(http.Controller):
         for approval in approvals:
             document = approval.document_id
             if not document.exists():
+                continue
+            if document.folder_id.folder_type == "organizational":
+                document._mark_upload_approved_without_review()
                 continue
             employee = document.employee_id.name if document.employee_id else "Organization"
             items.append(
@@ -411,13 +440,15 @@ class NextAppController(http.Controller):
     )
     def api_workspace_activity(self, **kwargs):
         user = request.env.user
-        if not user_is_document_manager(user, request.env):
+        if not user_can_access_workspace_activity(user, request.env):
             return {
                 "success": False,
-                "message": "Document manager access is required.",
+                "message": "You do not have permission to view workspace activity.",
             }
-
-        env = request.env
+        org_only = user_can_access_org_library(
+            user, request.env
+        ) and not user_is_document_manager(user, request.env)
+        env = request.env(su=True)
         Document = env["doc.document"]
         Ack = env["doc.document.acknowledgement"]
 
@@ -432,22 +463,28 @@ class NextAppController(http.Controller):
                 ("message_type", "in", ["comment", "notification"]),
             ],
             order="date desc",
-            limit=40,
+            limit=200,
         )
         for message in messages:
             document = Document.browse(message.res_id).exists()
             if not document or not document.active or document.deleted_at:
+                continue
+            if org_only and document.folder_id.folder_type != "organizational":
                 continue
             text = _plain_message(message.body)
             if not text:
                 continue
             lowered = text.lower()
             if "acknowledged" in lowered:
-                kind = "acknowledgement"
-            elif "submitted" in lowered and "review" in lowered:
-                kind = "approval"
-            elif "approved" in lowered or "rejected" in lowered:
-                kind = "approval"
+                continue
+            if "rejected" in lowered:
+                kind = "rejected"
+            elif "submitted" in lowered:
+                kind = "submitted"
+            elif "approved" in lowered:
+                kind = "approved"
+            elif "uploaded" in lowered or lowered.startswith("added ") or " added " in lowered:
+                kind = "upload"
             else:
                 kind = "update"
             activity_log.append(
@@ -462,9 +499,38 @@ class NextAppController(http.Controller):
                     "folder_type": document.folder_id.folder_type,
                     "employee_id": document.employee_id.id or False,
                     "actor_name": message.author_id.name or "System",
-                    "occurred_at": message.date,
+                    "occurred_at": _activity_occurred_at_text(message.date),
                 }
             )
+
+        acknowledgements = Ack.search([], order="acknowledged_at desc", limit=150)
+        for acknowledgement in acknowledgements:
+            document = acknowledgement.document_id
+            if not document or not document.active or document.deleted_at:
+                continue
+            if org_only and document.folder_id.folder_type != "organizational":
+                continue
+            entry = acknowledgement.serialize_for_activity()
+            entry["occurred_at"] = _activity_occurred_at_text(entry.get("occurred_at"))
+            activity_log.append(entry)
+
+        lock_audits = []
+        if "doc.folder.lock.audit" in env:
+            lock_audits = env["doc.folder.lock.audit"].sudo().search(
+                [],
+                order="occurred_at desc",
+                limit=200,
+            )
+        for audit in lock_audits:
+            folder = audit.folder_id
+            if not folder:
+                continue
+            if org_only and folder.folder_type != "organizational":
+                continue
+            entry = audit.serialize_for_activity()
+            entry["id"] = 10_000_000 + audit.id
+            entry["occurred_at"] = _activity_occurred_at_text(entry.get("occurred_at"))
+            activity_log.append(entry)
 
         recent_documents = Document.search(
             [
@@ -472,11 +538,17 @@ class NextAppController(http.Controller):
                 ("deleted_at", "=", False),
             ],
             order="create_date desc",
-            limit=10,
+            limit=80,
         )
-        existing_doc_ids = {item["document_id"] for item in activity_log}
+        existing_upload_ids = {
+            item["document_id"]
+            for item in activity_log
+            if item.get("kind") == "upload" and item.get("document_id")
+        }
         for document in recent_documents:
-            if document.id in existing_doc_ids:
+            if document.id in existing_upload_ids:
+                continue
+            if org_only and document.folder_id.folder_type != "organizational":
                 continue
             activity_log.append(
                 {
@@ -490,11 +562,17 @@ class NextAppController(http.Controller):
                     "folder_type": document.folder_id.folder_type,
                     "employee_id": document.employee_id.id or False,
                     "actor_name": document.uploaded_by.name or "System",
-                    "occurred_at": document.create_date,
+                    "occurred_at": _activity_occurred_at_text(document.create_date),
                 }
             )
-        activity_log.sort(key=lambda item: item["occurred_at"], reverse=True)
-        activity_log = activity_log[:40]
+        activity_log.sort(
+            key=lambda item: (
+                _activity_occurred_at_text(item.get("occurred_at")),
+                item.get("id") or 0,
+            ),
+            reverse=True,
+        )
+        activity_log = activity_log[:250]
 
         recent_acknowledgements = [
             {
@@ -509,6 +587,11 @@ class NextAppController(http.Controller):
                 "acknowledged_at": acknowledgement.acknowledged_at,
             }
             for acknowledgement in Ack.search([], order="acknowledged_at desc", limit=30)
+            if (
+                not org_only
+                or acknowledgement.document_id.folder_id.folder_type
+                == "organizational"
+            )
         ]
 
         org_documents = Document.search(
@@ -559,6 +642,7 @@ class NextAppController(http.Controller):
                 {
                     "folder_id": folder.id,
                     "folder_name": folder.folder_name,
+                    "color_hex": folder.color_hex or "",
                     "audience_count": 0,
                     "acknowledged_count": 0,
                     "documents": [],
@@ -640,14 +724,15 @@ class NextAppController(http.Controller):
         **kwargs,
     ):
         user = request.env.user
-        if not user_is_document_manager(user, request.env):
+        if not user_can_access_org_library(user, request.env):
             return {
                 "success": False,
-                "message": "Document manager access is required.",
+                "message": "Organizational Files access is required.",
             }
 
+        env = request.env(su=True)
         doc_id = int(document_id or kwargs.get("document_id") or 0)
-        document = request.env["doc.document"].browse(doc_id).exists()
+        document = env["doc.document"].browse(doc_id).exists()
         if (
             not document
             or not document.active

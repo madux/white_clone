@@ -63,26 +63,24 @@ class DocRoleService(models.AbstractModel):
         }
 
     @api.model
-    def list_members(self, search="", limit=50):
+    def list_members(self, search="", limit=10, offset=0, page=None, page_size=None):
         self._require_platform_admin()
         self.env["doc.role.definition"].sync_registry()
-        domain = self._company_employee_domain()
-        if search:
-            domain = [
-                "&",
-                *domain,
-                "|",
-                "|",
-                ("name", "ilike", search),
-                ("work_email", "ilike", search),
-                ("user_id.login", "ilike", search),
-            ]
-        employees = (
-            self.env["hr.employee"]
-            .sudo()
-            .search(domain, order="name", limit=min(int(limit or 50), 200))
-        )
-        return [self._serialize_member(employee) for employee in employees]
+        if page is not None:
+            page = max(int(page or 1), 1)
+            page_size = min(max(int(page_size or limit or 10), 1), 100)
+            offset = (page - 1) * page_size
+            limit = page_size
+        employees, total, limit, offset = self.env[
+            "doc.employee.files.service"
+        ].search_company_employees(search=search or "", limit=limit, offset=offset)
+        page = (offset // limit) + 1 if limit else 1
+        return {
+            "members": [self._serialize_member(employee) for employee in employees],
+            "total": total,
+            "page": page,
+            "page_size": limit,
+        }
 
     @api.model
     def _definition_for(self, role_key):

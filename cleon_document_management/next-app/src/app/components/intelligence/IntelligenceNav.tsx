@@ -47,6 +47,7 @@ export default function IntelligenceNav() {
         href,
       }))}
       value={activeHref}
+      level="page"
       ariaLabel="Document intelligence sections"
     />
   );

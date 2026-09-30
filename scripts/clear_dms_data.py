@@ -57,10 +57,21 @@ def _clear_folders(env):
     Folder = env["doc.folder"].sudo().with_context(active_test=False)
     pending = Folder.get_pending_upload_folder()
     skip_ids = {pending.id} if pending else set()
-    folders = Folder.search([("id", "not in", list(skip_ids))])
-    count = len(folders)
-    for folder in folders:
-        folder.action_force_permanent_delete()
+    count = Folder.search_count([("id", "not in", list(skip_ids))])
+    while True:
+        folders = Folder.search([("id", "not in", list(skip_ids))])
+        if not folders:
+            break
+        remaining_ids = set(folders.ids)
+        roots = folders.filtered(
+            lambda folder: not folder.parent_id
+            or folder.parent_id.id in skip_ids
+            or folder.parent_id.id not in remaining_ids
+        )
+        if not roots:
+            roots = folders[:1]
+        for folder in roots[:20]:
+            folder.action_force_permanent_delete()
     _log(f"  doc.folder (permanent): {count}")
     return count
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronDown, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
 
 type DocumentTypeOption = { id: number; name: string };
@@ -11,6 +11,7 @@ type PolicyTypeMultiSelectProps = {
   selected: number[];
   onChange: (ids: number[]) => void;
   error?: string;
+  placeholder?: string;
 };
 
 function typeId(value: number | string) {
@@ -22,8 +23,23 @@ export default function PolicyTypeMultiSelect({
   selected,
   onChange,
   error,
+  placeholder = "Select document types",
 }: PolicyTypeMultiSelectProps) {
+  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [open]);
 
   const selectedTypes = useMemo(
     () =>
@@ -35,93 +51,106 @@ export default function PolicyTypeMultiSelect({
 
   const filteredTypes = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return [];
-    return types
-      .filter((type) => !selected.some((id) => typeId(id) === typeId(type.id)))
-      .filter((type) => type.name.toLowerCase().includes(normalized));
-  }, [query, selected, types]);
+    if (!normalized) return types;
+    return types.filter((type) => type.name.toLowerCase().includes(normalized));
+  }, [query, types]);
 
-  const addType = (id: number) => {
-    if (!id || selected.some((item) => typeId(item) === typeId(id))) return;
-    onChange([...selected, id]);
-    setQuery("");
+  const toggle = (id: number) => {
+    if (selected.some((item) => typeId(item) === typeId(id))) {
+      onChange(selected.filter((item) => typeId(item) !== typeId(id)));
+    } else {
+      onChange([...selected, id]);
+    }
   };
 
+  const summary =
+    selectedTypes.length === 0
+      ? placeholder
+      : selectedTypes.length <= 2
+        ? selectedTypes.map((type) => type.name).join(", ")
+        : `${selectedTypes
+            .slice(0, 2)
+            .map((type) => type.name)
+            .join(", ")} +${selectedTypes.length - 2}`;
+
   return (
-    <div className="policy-type-picker max-w-md space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-slate-500">
-          Search, then click a result to add it.
-        </p>
-        <InlineDocumentTypeCreator
-          onCreated={(item) => {
-            if (!selected.some((id) => typeId(id) === typeId(item.id))) {
-              onChange([...selected, item.id]);
-            }
-          }}
-        />
-      </div>
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search document types..."
-          className="field pl-10"
-        />
-      </div>
-      {query.trim() ? (
-        <div className="max-h-44 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-          {filteredTypes.length ? (
-            filteredTypes.map((type) => (
-              <button
-                key={type.id}
-                type="button"
-                onClick={() => addType(typeId(type.id))}
-                className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-pink-50"
-              >
-                <span>{type.name}</span>
-                <span className="text-xs font-semibold text-brand-pink">Add</span>
-              </button>
-            ))
-          ) : (
-            <p className="px-3 py-4 text-sm text-slate-400">No matching document types.</p>
-          )}
-        </div>
-      ) : (
-        <p className="text-xs text-slate-400">
-          Start typing to find document types.
-        </p>
-      )}
-      {selectedTypes.length > 0 ? (
-        <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-          {selectedTypes.map((type) => (
-            <span
-              key={type.id}
-              className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm"
-            >
-              {type.name}
-              <button
-                type="button"
-                onClick={() =>
-                  onChange(selected.filter((id) => typeId(id) !== typeId(type.id)))
+    <div ref={rootRef} className="relative w-full">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen((value) => !value)}
+        className={`flex h-8 w-full items-center justify-between gap-2 rounded-lg border bg-white px-2.5 text-left text-sm outline-none transition-colors ${
+          error
+            ? "border-red-400"
+            : "border-slate-200 hover:border-pink-300 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        } ${selectedTypes.length ? "text-slate-800" : "text-muted-foreground"}`}
+      >
+        <span className="min-w-0 flex-1 truncate">{summary}</span>
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+      </button>
+      {open ? (
+        <div className="mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md">
+          <div className="relative border-b border-slate-100 p-1.5">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search documents..."
+              className="field pl-8"
+            />
+          </div>
+          <div className="max-h-48 overflow-y-auto p-1">
+            {filteredTypes.length ? (
+              filteredTypes.map((type) => {
+                const checked = selected.some(
+                  (id) => typeId(id) === typeId(type.id),
+                );
+                return (
+                  <label
+                    key={type.id}
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-pink-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggle(typeId(type.id))}
+                      className="h-4 w-4 rounded accent-pink-600"
+                    />
+                    <span className="min-w-0 flex-1 truncate">{type.name}</span>
+                  </label>
+                );
+              })
+            ) : (
+              <p className="px-2 py-3 text-center text-xs text-slate-400">
+                No matching documents.
+              </p>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-2 py-1.5">
+            <InlineDocumentTypeCreator
+              onCreated={(item) => {
+                if (!selected.some((id) => typeId(id) === typeId(item.id))) {
+                  onChange([...selected, item.id]);
                 }
-                className="rounded-full p-0.5 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
-                aria-label={`Remove ${type.name}`}
+              }}
+            />
+            {selected.length > 0 ? (
+              <button
+                type="button"
+                className="text-[11px] font-semibold text-slate-400 hover:text-brand-pink"
+                onClick={() => onChange([])}
               >
-                <X className="h-3.5 w-3.5" />
+                Clear
               </button>
-            </span>
-          ))}
+            ) : null}
+          </div>
         </div>
-      ) : (
-        <p className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-sm text-slate-400">
-          No document types selected yet.
-        </p>
-      )}
-      {error && (
-        <p className="text-xs font-medium text-red-600">{error}</p>
-      )}
+      ) : null}
+      {error ? (
+        <p className="mt-1 text-xs font-medium text-red-600">{error}</p>
+      ) : null}
     </div>
   );
 }

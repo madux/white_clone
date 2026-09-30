@@ -22,11 +22,15 @@ class DocumentManagementRolesController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def members(self, search="", limit=50, **kwargs):
+    def members(self, search="", page=1, page_size=10, limit=None, **kwargs):
         service = request.env["doc.role.service"].sudo()
         return {
             "success": True,
-            "data": service.list_members(search=search or "", limit=limit),
+            "data": service.list_members(
+                search=search or "",
+                page=page,
+                page_size=page_size or limit,
+            ),
         }
 
     @http.route(

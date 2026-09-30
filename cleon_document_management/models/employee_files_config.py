@@ -52,7 +52,7 @@ class DocEmployeeFilesConfig(models.Model):
         default=True,
     )
     include_inactive = fields.Boolean(default=False)
-    exclude_test_employees = fields.Boolean(default=True)
+    exclude_test_employees = fields.Boolean(default=False)
     collect_existing_documents = fields.Boolean(default=True)
 
     group_name_display = fields.Selection(
@@ -170,7 +170,6 @@ class DocEmployeeFilesConfig(models.Model):
             "sub_organizing_dimension": self.sub_organizing_dimension or "none",
             "include_all_existing": self.include_all_existing,
             "include_inactive": self.include_inactive,
-            "exclude_test_employees": self.exclude_test_employees,
             "collect_existing_documents": self.collect_existing_documents,
             "group_name_display": self.group_name_display,
             "show_inactive_groups": self.show_inactive_groups,

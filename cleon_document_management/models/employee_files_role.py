@@ -147,6 +147,35 @@ class DocEmployeeFilesRole(models.Model):
         "role_id",
         string="Category permissions",
     )
+    org_access_library = fields.Boolean(
+        string="Organizational library",
+        default=False,
+        help="Browse organizational folders within visibility rules.",
+    )
+    org_create_folder = fields.Boolean(string="Create folders", default=False)
+    org_manage_folders = fields.Boolean(
+        string="Manage folders",
+        default=False,
+        help="Rename, description, colour, lock, duplicate structure.",
+    )
+    org_share_manage_access = fields.Boolean(
+        string="Manage access",
+        default=False,
+        help="Share / manage folder or document audience.",
+    )
+    org_folder_archive = fields.Boolean(string="Archive folders", default=False)
+    org_folder_delete = fields.Boolean(string="Delete folders", default=False)
+    org_upload = fields.Boolean(string="Upload to org folders", default=False)
+    org_document_manage = fields.Boolean(
+        string="Manage documents",
+        default=False,
+        help="Link, copy, assign, version, print, edit description.",
+    )
+    org_document_manage_access = fields.Boolean(
+        string="Document manage access",
+        default=False,
+    )
+    org_document_delete = fields.Boolean(string="Delete org documents", default=False)
     user_ids = fields.Many2many(
         "res.users",
         "doc_employee_files_role_user_rel",
@@ -155,14 +184,69 @@ class DocEmployeeFilesRole(models.Model):
         string="Assigned users",
     )
 
+    def _has_organizational_capabilities(self):
+        self.ensure_one()
+        return any(
+            self[field_name]
+            for field_name in (
+                "org_access_library",
+                "org_create_folder",
+                "org_manage_folders",
+                "org_share_manage_access",
+                "org_folder_archive",
+                "org_folder_delete",
+                "org_upload",
+                "org_document_manage",
+                "org_document_manage_access",
+                "org_document_delete",
+            )
+        )
+
     @api.constrains("line_ids")
     def _check_has_lines(self):
         for role in self:
-            if role.active and not role.line_ids:
-                raise ValidationError(_("Each active role needs at least one category row."))
+            if role.active and not role.line_ids and not role._has_organizational_capabilities():
+                raise ValidationError(
+                    _(
+                        "Each active role needs Employee Files category rows or at least one Organizational Files capability."
+                    )
+                )
+
+    def _serialize_assigned_users(self):
+        self.ensure_one()
+        users = self.user_ids.sudo().filtered(lambda user: user.active)
+        employees = self.env["hr.employee"].sudo().search(
+            [("user_id", "in", users.ids)]
+        )
+        employee_by_user = {employee.user_id.id: employee for employee in employees}
+        metrics_service = self.env["doc.employee.files.service"]
+        assigned = []
+        for user in users:
+            employee = employee_by_user.get(user.id)
+            metrics = (
+                metrics_service._serialize_employee_metrics(employee) if employee else {}
+            )
+            assigned.append(
+                {
+                    "id": user.id,
+                    "name": user.name,
+                    "login": user.login or "",
+                    "employee_id": employee.id if employee else False,
+                    "employee_name": employee.name if employee else user.name,
+                    "department": metrics.get("department_name") or "",
+                    "job_title": metrics.get("job_title") or "",
+                    "employment_type": metrics.get("employment_type") or "",
+                    "work_location": metrics.get("work_location") or "",
+                    "branch": metrics.get("branch") or "",
+                    "grade": metrics.get("grade") or "",
+                }
+            )
+        assigned.sort(key=lambda item: (item["employee_name"] or "").lower())
+        return assigned
 
     def serialize_for_api(self):
         self.ensure_one()
+        assigned_users = self._serialize_assigned_users()
         return {
             "id": self.id,
             "name": self.name,
@@ -172,5 +256,18 @@ class DocEmployeeFilesRole(models.Model):
             "employee_scope": self.employee_scope,
             "is_migration_seed": self.is_migration_seed,
             "lines": [line.serialize_for_api() for line in self.line_ids],
-            "assigned_user_ids": self.user_ids.ids,
+            "assigned_user_ids": [user["id"] for user in assigned_users],
+            "assigned_users": assigned_users,
+            "organizational_actions": {
+                "access_library": self.org_access_library,
+                "create_folder": self.org_create_folder,
+                "manage_folders": self.org_manage_folders,
+                "share_manage_access": self.org_share_manage_access,
+                "folder_archive": self.org_folder_archive,
+                "folder_delete": self.org_folder_delete,
+                "upload": self.org_upload,
+                "document_manage": self.org_document_manage,
+                "document_manage_access": self.org_document_manage_access,
+                "document_delete": self.org_document_delete,
+            },
         }

@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { NavigationHistoryProvider } from "../../hooks/useNavigationHistory";
 import { ToastProvider } from "../../hooks/useToast";
+import { AppDialogProvider } from "../../hooks/useAppDialog";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -22,7 +24,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={null}>
         <ToastProvider>
-          <NavigationHistoryProvider>{children}</NavigationHistoryProvider>
+          <TooltipProvider>
+            <AppDialogProvider>
+              <NavigationHistoryProvider>{children}</NavigationHistoryProvider>
+            </AppDialogProvider>
+          </TooltipProvider>
         </ToastProvider>
       </Suspense>
     </QueryClientProvider>

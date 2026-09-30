@@ -228,10 +228,11 @@ export function useFolderLifecycle(lifecycle: "archived" | "recycle_bin") {
   });
 }
 
-export function useSettings() {
+export function useSettings(enabled = true) {
   return useQuery({
     queryKey: ["document-settings"],
     queryFn: () => api.getSettings().then((result) => result.data),
+    enabled,
   });
 }
 
@@ -697,6 +698,7 @@ export function useAcknowledgeDocument() {
     onSuccess: () => {
       invalidateDocumentQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.myPendingUploads });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-activity"] });
     },
   });
 }

@@ -38,3 +38,8 @@ from . import employee_files_role
 from . import employee_files_permission
 from . import employee_files_role_service
 from . import employee_files_role_audit
+from . import organizational_files_permission
+from . import organizational_openrouter
+from . import folder_lock_audit
+from . import organizational_library
+from . import organizational_cloud_oauth

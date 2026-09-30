@@ -7,6 +7,7 @@ import OnboardingModuleArmer from "./OnboardingModuleArmer";
 
 /** Workspace / personal document areas — not Employee Files, org library, or settings. */
 const WORKSPACE_PATH_PREFIXES = [
+  "/pages/my-workspace",
   "/pages/my-documents",
   "/pages/quick-access",
   "/pages/archived",

@@ -6,6 +6,7 @@ import {
   FilePlus2,
   FileText,
   FolderOpen,
+  Lock,
   Search,
   Sparkles,
   Upload,
@@ -14,54 +15,83 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  useCurrentUser,
   useDocumentTypes,
   useDocuments,
   useFolders,
-  useUploadDocument,
 } from "../../../hooks/useDocuments";
+import {
+  canAccessOrgArchived,
+  canCreateOrgFolder,
+  canUploadOrgDocuments,
+} from "../../../lib/organizationalFilesAccess";
 import DocumentActions from "./DocumentActions";
 import BulkDocumentActions from "./BulkDocumentActions";
-import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
-import ThemedSelect from "./ThemedSelect";
+import BulkFolderActions from "./BulkFolderActions";
 import MoveDocumentsDialog from "./MoveDocumentsDialog";
-import ModalDialog from "./ModalDialog";
-import BackButton from "./BackButton";
 import DocumentViewerDialog from "./DocumentViewerDialog";
-import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
+import { formatDocumentDate } from "../../../lib/formatDocumentDate";
+import { api } from "../../../lib/api";
+import { useAppDialog } from "../../../hooks/useAppDialog";
+import FolderPickerDialog from "./FolderPickerDialog";
+import { folderIdsWithDescendants } from "./FolderTreePicker";
 
 import DocumentFilterBar, {
   FilterState,
   INITIAL_FILTER_STATE,
   applyDocumentFilters,
 } from "./DocumentFilterBar";
-import {
-  missingExpiryDates,
-  typeRequiresExpiry,
-} from "./uploadExpiryHelpers";
+import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
+import LibraryBreadcrumb from "./LibraryBreadcrumb";
+import LibraryFileTable, { type LibraryFileRow } from "./LibraryFileTable";
+import OrganizationalNewMenu from "./OrganizationalNewMenu";
+import FolderActions from "./FolderActions";
+import StatusPill from "./StatusPill";
+import { Button } from "@/components/ui/button";
+import { sortLibraryFileRows } from "../../../lib/libraryTableSort";
+import { isOrgDocumentLinkedToPolicy } from "../../../lib/policyDocumentName";
+
+function folderKindLabel(kind?: string) {
+  if (kind === "project") return "Project";
+  if (kind === "vendor") return "Vendor";
+  return "Folder";
+}
 
 export default function OrganizationFolderPage() {
   const params = useSearchParams();
   const router = useRouter();
   const folderId = Number(params.get("folder"));
-  const guideTarget = params.get("guide");
   const folders = useFolders();
   const documents = useDocuments(folderId || undefined, true);
   const types = useDocumentTypes();
-  const upload = useUploadDocument();
+  const currentUser = useCurrentUser();
+  const { showAlert } = useAppDialog();
+  const canUpload = canUploadOrgDocuments(currentUser.data);
+  const canCreateFolder = canCreateOrgFolder(currentUser.data);
+  const canViewArchived = canAccessOrgArchived(currentUser.data);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTER_STATE);
-  const [showUpload, setShowUpload] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
-  const [typeIds, setTypeIds] = useState<string[]>([]);
-  const [expiryDates, setExpiryDates] = useState<string[]>([]);
-  const [bulkTypeId, setBulkTypeId] = useState("");
+  const [librarySortKey, setLibrarySortKey] = useState("name asc");
   const [viewing, setViewing] = useState<any>(null);
-  const [selected, setSelected] = useState<number[]>([]);
+  const [selectedFolderIds, setSelectedFolderIds] = useState<number[]>([]);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<number[]>([]);
   const [movingIds, setMovingIds] = useState<number[] | null>(null);
-  const [folderExpanded, setFolderExpanded] = useState(true);
+  const [movingFolders, setMovingFolders] = useState(false);
+  const [movingFoldersPending, setMovingFoldersPending] = useState(false);
   const folder = folders.data?.find((item) => item.id === folderId);
+  const folderLocked = Boolean(folder?.locked);
+  const canUploadHere = canUpload && !folderLocked;
   const visibleDocuments = useMemo(
     () => applyDocumentFilters(documents.data ?? [], filters),
     [documents.data, filters],
+  );
+  const childFolders = useMemo(
+    () =>
+      (folders.data ?? []).filter(
+        (item) =>
+          item.folder_type === "organizational" &&
+          Number(item.parent_id || 0) === folderId,
+      ),
+    [folderId, folders.data],
   );
 
   useEffect(() => {
@@ -71,395 +101,278 @@ export default function OrganizationFolderPage() {
     if (match) setViewing(match);
   }, [documents.data, params]);
 
-  useEffect(() => {
-    const rows = Array.from(document.querySelectorAll("tbody tr"));
-    rows.forEach((row) => {
-      const name = row.textContent || "";
-      const record = visibleDocuments.find((item) => name.includes(item.name));
-      const badge = row.querySelector("td:nth-last-child(4) span");
-      if (!record || !badge) return;
-      const status =
-        record.distribution_status ||
-        (record.active === false ? "deactivated" : "active");
-      badge.textContent =
-        status === "archived"
-          ? "Archived"
-          : status === "deactivated"
-            ? "Inactive"
-            : "Active";
-    });
-  }, [visibleDocuments]);
+  const query = filters.search.trim().toLowerCase();
+  const visibleChildFolders = childFolders.filter((item) => {
+    if (!query) return true;
+    return `${item.folder_name} ${item.description || ""}`.toLowerCase().includes(query);
+  });
   const visibleIds = visibleDocuments.map((document) => document.id);
+  const visibleFolderIds = visibleChildFolders.map((item) => item.id);
   const allSelected =
-    visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
-  const toggleSelected = (id: number) =>
-    setSelected((current) =>
+    visibleIds.length + visibleFolderIds.length > 0 &&
+    visibleIds.every((id) => selectedDocumentIds.includes(id)) &&
+    visibleFolderIds.every((id) => selectedFolderIds.includes(id));
+  const toggleSelectedDocument = (id: number) =>
+    setSelectedDocumentIds((current) =>
       current.includes(id)
         ? current.filter((value) => value !== id)
         : [...current, id],
     );
-  const performUpload = async () => {
-    if (
-      !files.length ||
-      !typeIds.length ||
-      typeIds.some((id) => !id) ||
-      !folderId ||
-      missingExpiryDates(typeIds, expiryDates, types.data ?? [])
-    )
-      return;
-    await upload.mutateAsync({
-      files,
-      folder_id: folderId,
-      document_type_ids: typeIds.map(Number),
-      expiry_dates: expiryDates,
-    });
-    setFiles([]);
-    setTypeIds([]);
-    setExpiryDates([]);
-    setBulkTypeId("");
-    setShowUpload(false);
-  };
+  const toggleSelectedFolder = (id: number) =>
+    setSelectedFolderIds((current) =>
+      current.includes(id)
+        ? current.filter((value) => value !== id)
+        : [...current, id],
+    );
 
-  const submitUpload = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (
-      !files.length ||
-      !typeIds.length ||
-      typeIds.some((id) => !id) ||
-      !folderId ||
-      missingExpiryDates(typeIds, expiryDates, types.data ?? [])
-    )
-      return;
-    await performUpload();
-  };
-  return (
-    <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <BackButton variant="page" />
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          {folder?.folder_name ? (
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-              {folder.folder_name}
-            </h1>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/pages/archived"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 hover:border-brand-pink hover:text-brand-pink"
-          >
-            <Archive className="h-4 w-4" />
-            Archived
-          </Link>
-          <button
-            type="button"
-            onClick={() => setShowUpload(true)}
-            className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200 ${guideTarget === "organizational-upload" ? "guide-emphasis" : ""}`}
-          >
-            <FilePlus2 className="h-4 w-4" />
-            Add document
-          </button>
-        </div>
+  const childFolderCountByParent = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const entry of folders.data ?? []) {
+      if (entry.folder_type !== "organizational") continue;
+      const parentId = Number(entry.parent_id || 0);
+      if (!parentId) continue;
+      counts.set(parentId, (counts.get(parentId) ?? 0) + 1);
+    }
+    return counts;
+  }, [folders.data]);
+
+  const folderRows: LibraryFileRow[] = visibleChildFolders.map((item) => {
+    const itemCount =
+      (item.document_count || 0) + (childFolderCountByParent.get(item.id) ?? 0);
+    return {
+      id: `folder-${item.id}`,
+      kind: "folder",
+      folderPreview: { hasContent: itemCount > 0, documents: [] },
+      name: item.folder_name,
+      subtitle: `${folderKindLabel(item.folder_kind)}${item.collection_code ? ` · ${item.collection_code}` : ""} · ${itemCount} items`,
+      href: `/pages/organization/folder?folder=${item.id}`,
+      extra: item.locked ? (
+        <Lock className="size-3.5 text-muted-foreground" />
+      ) : null,
+      selected: selectedFolderIds.includes(item.id),
+      onSelectChange: () => toggleSelectedFolder(item.id),
+      description: item.description || "",
+      documentsCount: itemCount,
+    owner: item.owner_name || "—",
+    modified: formatDocumentDate(item.last_modified),
+    modifiedRaw: item.last_modified || undefined,
+    status: <StatusPill label={item.locked ? "Locked" : "Active"} />,
+      actions: (
+        <FolderActions
+          folderId={item.id}
+          folderName={item.folder_name}
+          description={item.description}
+          locked={item.locked}
+          folderType={item.folder_type}
+          accessScope={item.access_scope}
+          departmentIds={item.department_ids}
+          gradeIds={item.grade_ids}
+          employeeIds={item.employee_ids}
+          colorHex={item.color_hex}
+          folderKind={item.folder_kind}
+          organizeBy={item.organize_by}
+          requireUploadApproval={item.require_upload_approval}
+          approvalFlow={item.approval_flow}
+        />
+      ),
+    };
+  });
+
+  const fileRows: LibraryFileRow[] = visibleDocuments.map((document) => ({
+    id: String(document.id),
+    kind: "file",
+    isShortcut: Boolean(document.is_shortcut),
+    fileMeta: {
+      name: document.name,
+      mime_type: document.mime_type,
+      document_type: document.document_type,
+      source_url: document.source_url,
+    },
+    name: document.name,
+    subtitle: [
+      document.source_url
+        ? `Link · ${document.document_type || "URL"}`
+        : document.document_type || document.description || "",
+      document.linked_policy_name
+        ? `Compliance: ${document.linked_policy_name}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" · ") || undefined,
+    onOpen: () => {
+      if (document.source_url) {
+        window.open(document.source_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+      setViewing(document);
+    },
+    owner: folder?.owner_name || "—",
+    modified: formatDocumentDate(document.write_date),
+    modifiedRaw: document.write_date || undefined,
+    selected: selectedDocumentIds.includes(document.id),
+    onSelectChange: () => toggleSelectedDocument(document.id),
+    extra: folderLocked ? <Lock className="size-3.5 text-muted-foreground" /> : null,
+    description: document.description || "",
+    status: (
+      <div className="flex flex-wrap items-center gap-1">
+        {document.is_shortcut ? (
+          <StatusPill label="Shortcut" tone="info" />
+        ) : null}
+        {isOrgDocumentLinkedToPolicy(document) ? (
+          <StatusPill label="Linked to policy" tone="info" />
+        ) : null}
+        <StatusPill
+          label={
+            document.link_status === "broken"
+              ? "Broken link"
+              : document.active === false
+                ? "Inactive"
+                : "Active"
+          }
+          tone={document.link_status === "broken" ? "danger" : undefined}
+        />
       </div>
-      <DocumentFilterBar
-        filters={filters}
-        onChange={setFilters}
-        availableTypes={types.data ?? []}
-        showDepartmentFilter={false}
-        totalCount={documents.data?.length}
-        filteredCount={visibleDocuments.length}
+    ),
+    actions: (
+      <DocumentActions
+        documentId={document.id}
+        documentName={document.name}
+        document={document}
+        active={document.active !== false}
+        organizational
+        folderId={folderId}
+        folderLocked={folderLocked}
+        sourceUrl={document.source_url}
+        linkStatus={document.link_status}
+        orgUseFolderAccess={document.org_use_folder_access !== false}
+        orgAccessScope={document.org_access_scope}
+        orgDepartmentIds={document.org_department_ids ?? []}
+        orgGradeIds={document.org_grade_ids ?? []}
+        orgEmployeeIds={document.org_employee_ids ?? []}
+        onMove={() => setMovingIds([document.id])}
       />
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="px-4 pt-4">
+    ),
+  }));
+
+  const mixedRows = sortLibraryFileRows(
+    [...folderRows, ...fileRows],
+    librarySortKey,
+  );
+
+  return (
+    <div className="app-page space-y-6">
+      <LibraryBreadcrumb
+        items={[
+          { label: "Organizational Files", href: "/pages/organization" },
+          {
+            label: folder?.collection_code
+              ? `${folder.folder_name} (${folder.collection_code})`
+              : folder?.folder_name || "Folder",
+          },
+        ]}
+      />
+      <section className="app-table-well app-page-body">
+        <DocumentFilterBar
+          filters={filters}
+          onChange={setFilters}
+          availableTypes={types.data ?? []}
+          showDepartmentFilter={false}
+          showOrgPolicyFilter
+          totalCount={(documents.data?.length ?? 0) + childFolders.length}
+          filteredCount={mixedRows.length}
+          leading={
+            <OrganizationalNewMenu
+              parentFolder={folder}
+              folderLocked={folderLocked}
+              canUpload={canUploadHere}
+              canCreateFolder={canCreateFolder && !folderLocked}
+              canCreatePolicy={currentUser.data?.is_document_admin === true}
+              folderDocuments={documents.data ?? []}
+            />
+          }
+          extras={null}
+          actions={
+            canViewArchived ? (
+              <Button variant="outline" render={<Link href={myWorkspaceHref("archived")} />}>
+                Archived
+              </Button>
+            ) : null
+          }
+        />
+        <div className="space-y-2">
+          <BulkFolderActions
+            selected={selectedFolderIds}
+            onClear={() => setSelectedFolderIds([])}
+            organizational
+            onMove={folderLocked ? undefined : () => setMovingFolders(true)}
+          />
           <BulkDocumentActions
-            selected={selected}
-            onClear={() => setSelected([])}
+            selected={selectedDocumentIds}
+            onClear={() => setSelectedDocumentIds([])}
             documents={visibleDocuments}
             organizational
-            onMove={() => setMovingIds(selected)}
+            onMove={folderLocked ? undefined : () => setMovingIds(selectedDocumentIds)}
           />
         </div>
-        {documents.isLoading ? (
-          <div className="space-y-3 p-5">
-            <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
-            <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
-          </div>
-        ) : folder ? (
-          <div className="folder-accordion p-4">
-            <div className="folder-accordion-block">
-              <div className="folder-accordion-header-row">
-                <button
-                  type="button"
-                  className="folder-accordion-header"
-                  onClick={() => setFolderExpanded((current) => !current)}
-                >
-                  <FolderOpen size={15} />
-                  <span>{folder.folder_name}</span>
-                  <small>{visibleDocuments.length} files</small>
-                  <ChevronDown
-                    size={15}
-                    className={
-                      folderExpanded
-                        ? "folder-accordion-chevron expanded"
-                        : "folder-accordion-chevron"
-                    }
-                  />
-                </button>
-              </div>
-              {folderExpanded && (
-                <div className="folder-accordion-body">
-                  {visibleDocuments.length ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[980px] text-left">
-                        <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                          <tr>
-                            <th className="w-12 px-5 py-4">
-                              <input
-                                type="checkbox"
-                                checked={allSelected}
-                                onChange={() =>
-                                  setSelected(allSelected ? [] : visibleIds)
-                                }
-                                aria-label="Select all documents"
-                                className="h-4 w-4 accent-pink-600"
-                              />
-                            </th>
-                            <th className="px-5 py-4">Document</th>
-                            <th className="px-5 py-4">Type</th>
-                            <th className="px-5 py-4">Status</th>
-                            <th className="px-5 py-4">Expiry date</th>
-                            <th className="px-5 py-4">Uploaded</th>
-                            <th className="px-5 py-4">Modified</th>
-                            <th className="px-5 py-4" />
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {visibleDocuments.map((document) => (
-                            <tr
-                              key={document.id}
-                              className="transition hover:bg-pink-50/30"
-                            >
-                              <td className="w-12 px-5 py-4">
-                                <input
-                                  type="checkbox"
-                                  checked={selected.includes(document.id)}
-                                  onChange={() => toggleSelected(document.id)}
-                                  onClick={(event) => event.stopPropagation()}
-                                  aria-label={`Select ${document.name}`}
-                                  className="h-4 w-4 accent-pink-600"
-                                />
-                              </td>
-                              <td className="px-5 py-4">
-                                <button
-                                  type="button"
-                                  onClick={() => setViewing(document)}
-                                  className="flex items-center gap-3 text-left"
-                                >
-                                  <span className="rounded-xl bg-pink-50 p-2.5 text-brand-pink">
-                                    <FileText className="h-5 w-5" />
-                                  </span>
-                                  <span>
-                                    <strong className="block text-sm text-slate-800 hover:text-brand-pink">
-                                      {document.name}
-                                    </strong>
-                                    <small className="mt-1 block text-xs text-slate-400">
-                                      {document.description || "Organizational document"}
-                                    </small>
-                                  </span>
-                                </button>
-                              </td>
-                              <td className="px-5 py-4 text-sm text-slate-600">
-                                {document.document_type}
-                              </td>
-                              <td className="px-5 py-4">
-                                <span
-                                  className={`rounded-full px-2.5 py-1 text-xs font-bold ${document.active === false ? "bg-slate-100 text-slate-500" : "bg-emerald-50 text-emerald-700"}`}
-                                >
-                                  {document.active === false ? "Inactive" : "Active"}
-                                </span>
-                              </td>
-                              <td className="px-5 py-4 text-sm text-slate-500">
-                                {document.expiry_date || "No expiry"}
-                              </td>
-                              <td className="px-5 py-4 text-sm text-slate-500">
-                                {document.created_at?.slice(0, 10) || "Unknown"}
-                              </td>
-                              <td className="px-5 py-4 text-sm text-slate-500">
-                                {formatDocumentDateShort(document.write_date)}
-                              </td>
-                              <td className="px-5 py-4 text-right">
-                                <DocumentActions
-                                  documentId={document.id}
-                                  documentName={document.name}
-                                  active={document.active !== false}
-                                  organizational
-                                  onMove={() => setMovingIds([document.id])}
-                                />
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="folder-accordion-empty">
-                      No documents found in this folder.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        ) : null}
+        <LibraryFileTable
+          rows={mixedRows}
+          sortKey={librarySortKey}
+          onSortChange={setLibrarySortKey}
+          loading={documents.isLoading || folders.isLoading}
+          selectable
+          showOwner
+          allSelected={allSelected}
+          onToggleAll={(checked) => {
+            setSelectedFolderIds(checked ? visibleFolderIds : []);
+            setSelectedDocumentIds(checked ? visibleIds : []);
+          }}
+          showStatus
+          showDescription
+          showDocuments
+          emptyTitle="This folder is empty"
+          emptyDescription="Upload a document, add a link, or create a subfolder."
+          emptyAction={
+            canUploadHere || canCreateFolder ? (
+              <OrganizationalNewMenu
+                parentFolder={folder}
+                folderLocked={folderLocked}
+                canUpload={canUploadHere}
+                canCreateFolder={canCreateFolder && !folderLocked}
+                canCreatePolicy={currentUser.data?.is_document_admin === true}
+                folderDocuments={documents.data ?? []}
+              />
+            ) : undefined
+          }
+        />
       </section>
-      {showUpload && (
-        <ModalDialog
-          title="Add documents"
-          eyebrow="Organizational files"
-          onClose={() => setShowUpload(false)}
-          size="lg"
-          titleClassName="text-xl"
-        >
-          <form onSubmit={submitUpload}>
-            <label className="mt-5 block">
-              <span className="label">Files</span>
-              <span className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-brand-pink/40 bg-pink-50/50 px-4 py-5 text-sm font-semibold text-brand-text">
-                <Upload className="h-5 w-5" />
-                {files.length
-                  ? `${files.length} file${files.length === 1 ? "" : "s"} selected`
-                  : "Choose files from your computer"}
-                <input
-                  required
-                  multiple
-                  type="file"
-                  onChange={(event) => {
-                    const next = Array.from(event.target.files ?? []);
-                    setFiles(next);
-                    setTypeIds(next.map((_, index) => typeIds[index] ?? ""));
-                    setExpiryDates(next.map((_, index) => expiryDates[index] ?? ""));
-                  }}
-                  className="hidden"
-                />
-              </span>
-            </label>
-            {files.length > 0 && (
-              <div className="mt-3 space-y-2">
-                <div className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)_minmax(140px,160px)] gap-3 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                  <span>File name</span>
-                  <span>Document type</span>
-                  <span>Expiry date</span>
-                </div>
-                {files.map((file, index) => (
-                  <div
-                    key={`${file.name}-${index}`}
-                    className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)_minmax(140px,160px)] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2"
-                  >
-                    <span
-                      title={file.name}
-                      className="min-w-0 truncate text-sm font-medium text-slate-700"
-                    >
-                      {file.name}
-                    </span>
-                    <ThemedSelect
-                      value={typeIds[index] ?? ""}
-                      onChange={(value) =>
-                        setTypeIds((current) =>
-                          current.map((item, i) =>
-                            i === index ? value : item,
-                          ),
-                        )
-                      }
-                      placeholder="Document type"
-                      options={(types.data ?? []).map((type: any) => ({
-                        value: String(type.id),
-                        label: type.name,
-                      }))}
-                    />
-                    {typeRequiresExpiry(typeIds[index] ?? "", types.data ?? []) ? (
-                      <input
-                        required
-                        type="date"
-                        className="field"
-                        value={expiryDates[index] ?? ""}
-                        onChange={(event) =>
-                          setExpiryDates((current) =>
-                            current.map((item, i) =>
-                              i === index ? event.target.value : item,
-                            ),
-                          )
-                        }
-                      />
-                    ) : (
-                      <span className="text-xs text-slate-400">Not required</span>
-                    )}
-                  </div>
-                ))}
-                {files.length > 1 ? (
-                  <details className="rounded-xl border border-slate-200 bg-white p-3">
-                    <summary className="cursor-pointer text-xs font-bold text-slate-700">
-                      Advanced configuration
-                    </summary>
-                    <div className="mt-3 flex items-end gap-2">
-                      <label className="min-w-0 flex-1">
-                        <span className="label">
-                          Use one document type for all files
-                        </span>
-                        <ThemedSelect
-                          value={bulkTypeId}
-                          onChange={setBulkTypeId}
-                          placeholder="Select a type"
-                          options={(types.data ?? []).map((type: any) => ({
-                            value: String(type.id),
-                            label: type.name,
-                          }))}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        disabled={!bulkTypeId}
-                        onClick={() => setTypeIds(files.map(() => bulkTypeId))}
-                        className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50"
-                      >
-                        Apply to all
-                      </button>
-                    </div>
-                  </details>
-                ) : null}
-              </div>
-            )}
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowUpload(false)}
-                className="rounded-xl px-4 py-2.5 font-semibold text-slate-500"
-              >
-                Cancel
-              </button>
-              <button
-                disabled={
-                  upload.isPending ||
-                  !files.length ||
-                  typeIds.some((id) => !id) ||
-                  missingExpiryDates(typeIds, expiryDates, types.data ?? [])
-                }
-                className="rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 font-semibold text-white"
-              >
-                {upload.isPending ? "Uploading..." : "Upload documents"}
-              </button>
-            </div>
-          </form>
-        </ModalDialog>
-      )}
       {viewing && (
         <DocumentViewerDialog
           title={viewing.name}
-          description={viewing.document_type}
+          description={[
+            viewing.document_type,
+            viewing.id ? `ID ${viewing.id}` : "",
+            viewing.owner_name || folder?.owner_name,
+            viewing.folder_path?.map((item: { name: string }) => item.name).join(" / "),
+            viewing.source_url ? `Source ${viewing.source_url}` : "",
+            viewing.linked_template_document_id ? "Created from template" : "",
+            viewing.imported_from ? `Imported from ${viewing.imported_from}` : "",
+          ]
+            .filter(Boolean)
+            .join(" · ")}
           onClose={() => setViewing(null)}
           documentId={viewing.id}
+          linkedPolicyId={viewing.linked_policy_id}
+          linkedPolicyName={viewing.linked_policy_name}
+          isShortcut={viewing.is_shortcut}
+          shortcutOfId={viewing.shortcut_of_id}
+          shortcutOfName={viewing.shortcut_of_name}
+          shortcutOfFolderId={viewing.shortcut_of_folder_id}
+          currentVersionNumber={viewing.version_number}
           previewUrl={`${(process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "")}/document-management/document/${viewing.id}/preview`}
           size="5xl"
           backdropClassName="bg-slate-900/40"
           iframeMinHeight="min-h-[65vh]"
+          enableAiSummary
           headerActions={
             <>
               <button
@@ -493,10 +406,42 @@ export default function OrganizationFolderPage() {
           onClose={() => setMovingIds(null)}
           onMoved={() => {
             setMovingIds(null);
-            setSelected([]);
+            setSelectedDocumentIds([]);
           }}
         />
       )}
+      {movingFolders ? (
+        <FolderPickerDialog
+          title="Move folders"
+          folders={folders.data ?? []}
+          excludeIds={folderIdsWithDescendants(folders.data ?? [], selectedFolderIds)}
+          allowRoot
+          confirmLabel="Move"
+          pending={movingFoldersPending}
+          onClose={() => setMovingFolders(false)}
+          onPick={async (parentId) => {
+            setMovingFoldersPending(true);
+            try {
+              for (const id of selectedFolderIds) {
+                const result = await api.moveOrganizationalFolder({
+                  folder_id: id,
+                  parent_id: parentId || false,
+                });
+                if (!result.success) {
+                  await showAlert(result.message || "Unable to move this folder.", {
+                    title: "Move folders",
+                  });
+                  return;
+                }
+              }
+              setMovingFolders(false);
+              setSelectedFolderIds([]);
+            } finally {
+              setMovingFoldersPending(false);
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }

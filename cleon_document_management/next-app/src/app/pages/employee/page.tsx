@@ -1,13 +1,13 @@
 import EmployeeFilesWorkspace from "@/app/components/EmployeeFilesWorkspace";
-import AdminOnly from "@/app/components/AdminOnly";
+import EmployeeFilesGate from "@/app/components/EmployeeFilesGate";
 import { Suspense } from "react";
 
 export default function EmployeeFilesPage() {
   return (
-    <AdminOnly>
+    <EmployeeFilesGate>
       <Suspense fallback={null}>
         <EmployeeFilesWorkspace />
       </Suspense>
-    </AdminOnly>
+    </EmployeeFilesGate>
   );
 }

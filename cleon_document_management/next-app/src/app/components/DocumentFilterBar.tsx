@@ -1,8 +1,11 @@
 "use client";
 
-import React from "react";
-import { Search, Filter, X } from "lucide-react";
+import React, { type ReactNode } from "react";
+import { Filter, X } from "lucide-react";
 import ThemedSelect from "./ThemedSelect";
+import AppToolbar from "./AppToolbar";
+import { Button } from "@/components/ui/button";
+import { isOrgDocumentLinkedToPolicy } from "../../../lib/policyDocumentName";
 
 export interface FilterState {
   search: string;
@@ -15,6 +18,7 @@ export interface FilterState {
   department: string;
   fileFormat: string;
   approvalStatus: string;
+  policyLink: "all" | "linked" | "not_linked";
 }
 
 export const INITIAL_FILTER_STATE: FilterState = {
@@ -28,7 +32,14 @@ export const INITIAL_FILTER_STATE: FilterState = {
   department: "all",
   fileFormat: "all",
   approvalStatus: "all",
+  policyLink: "all",
 };
+
+export const ORG_POLICY_LINK_OPTIONS = [
+  { value: "all", label: "All files" },
+  { value: "linked", label: "Linked to policy" },
+  { value: "not_linked", label: "Not linked to policy" },
+];
 
 interface DocumentFilterBarProps {
   filters: FilterState;
@@ -37,8 +48,12 @@ interface DocumentFilterBarProps {
   availableDepartments?: string[];
   showDepartmentFilter?: boolean;
   showApprovalFilter?: boolean;
+  showOrgPolicyFilter?: boolean;
   totalCount?: number;
   filteredCount?: number;
+  actions?: ReactNode;
+  leading?: ReactNode;
+  extras?: ReactNode;
 }
 
 export const STATUS_OPTIONS = [
@@ -89,8 +104,12 @@ export default function DocumentFilterBar({
   availableDepartments = DEFAULT_DEPARTMENTS,
   showDepartmentFilter = true,
   showApprovalFilter = false,
+  showOrgPolicyFilter = false,
   totalCount,
   filteredCount,
+  actions,
+  leading,
+  extras,
 }: DocumentFilterBarProps) {
   const [expanded, setExpanded] = React.useState(false);
 
@@ -101,6 +120,7 @@ export default function DocumentFilterBar({
     filters.department !== "all" ||
     filters.fileFormat !== "all" ||
     filters.approvalStatus !== "all" ||
+    filters.policyLink !== "all" ||
     Boolean(filters.startDate) ||
     Boolean(filters.endDate);
 
@@ -111,6 +131,7 @@ export default function DocumentFilterBar({
     filters.department !== "all",
     filters.fileFormat !== "all",
     filters.approvalStatus !== "all",
+    filters.policyLink !== "all",
     Boolean(filters.startDate),
     Boolean(filters.endDate),
   ].filter(Boolean).length;
@@ -124,44 +145,25 @@ export default function DocumentFilterBar({
   };
 
   return (
-    <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      {/* Top Main Bar */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <label className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            value={filters.search}
-            onChange={(e) => updateFilter("search", e.target.value)}
-            placeholder="Search documents by name, type, department, or keyword..."
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-brand-pink/40 focus:bg-white focus:ring-4 focus:ring-brand-pink/10"
-          />
-          {filters.search && (
-            <button
-              type="button"
-              onClick={() => updateFilter("search", "")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-slate-600"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </label>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Quick Document Type Select */}
+    <AppToolbar
+      leading={leading}
+      search={filters.search}
+      onSearchChange={(value) => updateFilter("search", value)}
+      searchPlaceholder="Search documents by name, type, department, or keyword..."
+      extras={
+        <>
           <div className="w-48">
             <ThemedSelect
               value={filters.documentType}
               onChange={(val) => updateFilter("documentType", val)}
-              placeholder="Document Type"
+              placeholder="Document type"
               options={[
-                { value: "all", label: "All Document Types" },
+                { value: "all", label: "All document types" },
                 ...availableTypes.map((t) => ({ value: String(t.id), label: t.name })),
               ]}
             />
           </div>
-
-          {/* Quick Status Select */}
-          <div className="w-44">
+          <div className="w-40">
             <ThemedSelect
               value={filters.status}
               onChange={(val) => updateFilter("status", val)}
@@ -169,185 +171,117 @@ export default function DocumentFilterBar({
               options={STATUS_OPTIONS}
             />
           </div>
-
-          {/* Expand Filters Toggle Button */}
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={() => setExpanded(!expanded)}
-            className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-xs font-bold transition ${
-              expanded || activeCount > 0
-                ? "border-brand-pink/40 bg-pink-50 text-brand-pink"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-            }`}
           >
-            <Filter className="h-4 w-4" />
-            <span>Filters</span>
-            {activeCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-pink text-[10px] font-extrabold text-white">
-                {activeCount}
-              </span>
-            )}
-          </button>
-
-          {/* Reset Filters Button */}
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-            >
-              <X className="h-3.5 w-3.5" />
+            <Filter data-icon="inline-start" />
+            Filters
+            {activeCount > 0 ? (
+              <span className="text-xs">{activeCount}</span>
+            ) : null}
+          </Button>
+          {hasActiveFilters ? (
+            <Button type="button" variant="ghost" onClick={resetFilters}>
+              <X data-icon="inline-start" />
               Reset
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Expanded Multi-Dimensional Filter Panel */}
-      {expanded && (
-        <div className="mt-3 grid gap-3 border-t border-slate-100 pt-3 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Department Filter */}
-          {showDepartmentFilter && (
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Department
-              </label>
+            </Button>
+          ) : null}
+          {extras}
+        </>
+      }
+      actions={actions}
+      footer={
+        <>
+          {expanded ? (
+            <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {showDepartmentFilter ? (
+                <ThemedSelect
+                  value={filters.department}
+                  onChange={(val) => updateFilter("department", val)}
+                  placeholder="All departments"
+                  options={[
+                    { value: "all", label: "All departments" },
+                    ...availableDepartments.map((d) => ({ value: d, label: d })),
+                  ]}
+                />
+              ) : null}
               <ThemedSelect
-                value={filters.department}
-                onChange={(val) => updateFilter("department", val)}
-                placeholder="All Departments"
+                value={filters.fileFormat}
+                onChange={(val) => updateFilter("fileFormat", val)}
+                placeholder="All formats"
+                options={FILE_FORMAT_OPTIONS}
+              />
+              <ThemedSelect
+                value={filters.timeframe}
+                onChange={(val) => updateFilter("timeframe", val)}
+                placeholder="Any timeframe"
+                options={TIMEFRAME_OPTIONS}
+              />
+              <ThemedSelect
+                value={filters.dateField}
+                onChange={(val) => updateFilter("dateField", val as FilterState["dateField"])}
+                placeholder="Date field"
                 options={[
-                  { value: "all", label: "All Departments" },
-                  ...availableDepartments.map((d) => ({ value: d, label: d })),
+                  { value: "created_at", label: "Upload date" },
+                  { value: "expiry_date", label: "Expiration date" },
+                  { value: "write_date", label: "Last modified date" },
                 ]}
               />
+              {filters.timeframe === "custom" ? (
+                <div className="col-span-full flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-1.5 text-sm text-slate-600">
+                    From
+                    <input
+                      type="date"
+                      value={filters.startDate || ""}
+                      onChange={(e) => updateFilter("startDate", e.target.value)}
+                      className="field"
+                    />
+                  </label>
+                  <label className="flex items-center gap-1.5 text-sm text-slate-600">
+                    To
+                    <input
+                      type="date"
+                      value={filters.endDate || ""}
+                      onChange={(e) => updateFilter("endDate", e.target.value)}
+                      className="field"
+                    />
+                  </label>
+                </div>
+              ) : null}
+              {showOrgPolicyFilter ? (
+                <div className="col-span-full border-t border-slate-100 pt-3">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                    Other
+                  </p>
+                  <div className="max-w-xs">
+                    <ThemedSelect
+                      value={filters.policyLink}
+                      onChange={(val) =>
+                        updateFilter(
+                          "policyLink",
+                          val as FilterState["policyLink"],
+                        )
+                      }
+                      placeholder="Policy link"
+                      options={ORG_POLICY_LINK_OPTIONS}
+                      ariaLabel="Policy link filter"
+                    />
+                  </div>
+                </div>
+              ) : null}
             </div>
-          )}
-
-          {/* File Format Filter */}
-          <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              File Format
-            </label>
-            <ThemedSelect
-              value={filters.fileFormat}
-              onChange={(val) => updateFilter("fileFormat", val)}
-              placeholder="All Formats"
-              options={FILE_FORMAT_OPTIONS}
-            />
-          </div>
-
-          {/* Timeframe Filter */}
-          <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Timeframe
-            </label>
-            <ThemedSelect
-              value={filters.timeframe}
-              onChange={(val) => updateFilter("timeframe", val)}
-              placeholder="Any Timeframe"
-              options={TIMEFRAME_OPTIONS}
-            />
-          </div>
-
-          {/* Targeted Date Field */}
-          <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Evaluate Date By
-            </label>
-            <ThemedSelect
-              value={filters.dateField}
-              onChange={(val) => updateFilter("dateField", val as any)}
-              placeholder="Date Field"
-              options={[
-                { value: "created_at", label: "Upload Date" },
-                { value: "expiry_date", label: "Expiration Date" },
-                { value: "write_date", label: "Last Modified Date" },
-              ]}
-            />
-          </div>
-
-          {/* Custom Date Range Controls */}
-          {filters.timeframe === "custom" && (
-            <div className="col-span-full flex flex-wrap items-center gap-3 rounded-xl bg-slate-50 p-3">
-              <span className="text-xs font-bold text-slate-600">Custom Date Range:</span>
-              <label className="flex items-center gap-1.5 text-xs text-slate-500">
-                From:
-                <input
-                  type="date"
-                  value={filters.startDate || ""}
-                  onChange={(e) => updateFilter("startDate", e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-pink"
-                />
-              </label>
-              <label className="flex items-center gap-1.5 text-xs text-slate-500">
-                To:
-                <input
-                  type="date"
-                  value={filters.endDate || ""}
-                  onChange={(e) => updateFilter("endDate", e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-pink"
-                />
-              </label>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Active Filter Pills Bar */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Active Filters:
-          </span>
-          {filters.documentType !== "all" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-semibold text-brand-pink">
-              Type: {availableTypes.find((t) => String(t.id) === filters.documentType)?.name || filters.documentType}
-              <button type="button" onClick={() => updateFilter("documentType", "all")}>
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          )}
-          {filters.status !== "all" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-semibold text-brand-pink">
-              Status: {STATUS_OPTIONS.find((s) => s.value === filters.status)?.label}
-              <button type="button" onClick={() => updateFilter("status", "all")}>
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          )}
-          {filters.timeframe !== "all" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-semibold text-brand-pink">
-              Timeframe: {TIMEFRAME_OPTIONS.find((t) => t.value === filters.timeframe)?.label}
-              <button type="button" onClick={() => updateFilter("timeframe", "all")}>
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          )}
-          {filters.department !== "all" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-semibold text-brand-pink">
-              Dept: {filters.department}
-              <button type="button" onClick={() => updateFilter("department", "all")}>
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          )}
-          {filters.fileFormat !== "all" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-semibold text-brand-pink">
-              Format: {FILE_FORMAT_OPTIONS.find((f) => f.value === filters.fileFormat)?.label}
-              <button type="button" onClick={() => updateFilter("fileFormat", "all")}>
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          )}
-          {typeof filteredCount === "number" && typeof totalCount === "number" && (
-            <span className="ml-auto text-xs font-medium text-slate-400">
+          ) : null}
+          {hasActiveFilters && typeof filteredCount === "number" && typeof totalCount === "number" ? (
+            <p className="text-xs text-slate-500">
               Showing {filteredCount} of {totalCount} documents
-            </span>
-          )}
-        </div>
-      )}
-    </div>
+            </p>
+          ) : null}
+        </>
+      }
+    />
   );
 }
 
@@ -432,7 +366,14 @@ export function applyDocumentFilters(documents: any[], filters: FilterState): an
       }
     }
 
-    // 6. File Format
+    // 6. Organizational policy link
+    if (filters.policyLink !== "all") {
+      const linked = isOrgDocumentLinkedToPolicy(doc);
+      if (filters.policyLink === "linked" && !linked) return false;
+      if (filters.policyLink === "not_linked" && linked) return false;
+    }
+
+    // 7. File Format
     if (filters.fileFormat !== "all") {
       const name = (doc.name || "").toLowerCase();
       const mime = (doc.mimetype || "").toLowerCase();

@@ -9,12 +9,14 @@ import {
   FileText,
   X,
 } from "lucide-react";
+import { FileTypeIcon } from "./FileTypeIcon";
 import { useDocumentVersions } from "../../../hooks/useDocuments";
 import type { DocDocument } from "../../../lib/types";
 import { approvalDisplayLabel, canReviewDocument } from "../../../lib/approvalHelpers";
 import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 import { documentVersionPreviewUrl } from "../../../lib/documentPreviewUrls";
 import DocumentActions from "./DocumentActions";
+import ShortcutIcon from "./ShortcutIcon";
 
 function TreeChildCell({
   title,
@@ -50,7 +52,7 @@ function DocumentHistoryRows({
 
   if (versions.isLoading) {
     return (
-      <tr className="bg-slate-50/60">
+      <tr className="bg-white">
         <td colSpan={7} className="px-5 py-3 pl-14 text-xs text-slate-400">
           Loading version history…
         </td>
@@ -60,7 +62,7 @@ function DocumentHistoryRows({
 
   if (!items.length && !relatedDocuments.length) {
     return (
-      <tr className="bg-slate-50/60">
+      <tr className="bg-white">
         <td colSpan={7} className="px-5 py-3 pl-14 text-xs text-slate-400">
           No previous versions yet.
         </td>
@@ -73,7 +75,7 @@ function DocumentHistoryRows({
       {items.map((version) => (
         <tr
           key={`version-${version.id}`}
-          className="bg-slate-50/60 hover:bg-slate-50"
+          className="bg-white"
           data-version-child={documentId}
         >
           <td className="w-12 px-5 py-3" />
@@ -111,7 +113,7 @@ function DocumentHistoryRows({
       {relatedDocuments.map((document) => (
         <tr
           key={`copy-${document.id}`}
-          className="bg-slate-50/60 hover:bg-slate-50"
+          className="bg-white"
           data-related-document={document.id}
         >
           <td className="w-12 px-5 py-3" />
@@ -218,9 +220,17 @@ export default function EmployeeDocumentTreeRow({
               )}
             </button>
             <div className="flex min-w-0 items-center gap-3">
-              <FileText className="h-5 w-5 shrink-0 text-brand-pink" />
+              <FileTypeIcon
+                name={document.name}
+                mime_type={document.mime_type}
+                document_type={document.document_type}
+                source_url={document.source_url}
+              />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
+                  {document.is_shortcut ? (
+                    <ShortcutIcon className="h-3.5 w-3.5 shrink-0" />
+                  ) : null}
                   <button
                     type="button"
                     onClick={onView}
@@ -310,6 +320,7 @@ export default function EmployeeDocumentTreeRow({
             <DocumentActions
               documentId={document.id}
               documentName={document.name}
+              document={document}
               active={document.active !== false}
             />
           </div>

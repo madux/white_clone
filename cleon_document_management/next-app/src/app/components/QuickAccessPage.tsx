@@ -1,12 +1,21 @@
 "use client";
 
-import { FileText, Folder, Pin, Search } from "lucide-react";
+import { Pin, Search } from "lucide-react";
+import OrgFolderIcon from "./OrgFolderIcon";
+import { FileTypeIcon } from "./FileTypeIcon";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useCurrentUser, useQuickAccess } from "../../../hooks/useDocuments";
 import type { DocDocument, DocFolder } from "../../../lib/types";
+import { folderCardStyle } from "../../../lib/folderColor";
+import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
 import SectionTabs from "./SectionTabs";
 import ThemedSelect from "./ThemedSelect";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 
 type SortKey = "name" | "date";
 
@@ -58,8 +67,8 @@ function folderHref(folder: DocFolder, isManager: boolean) {
       : `/pages/organization/folder?folder=${folder.id}`;
   }
   return folder.folder_type === "employee"
-    ? "/pages/my-documents?tab=files"
-    : "/pages/my-documents?tab=shared";
+    ? myWorkspaceHref("documents", { scope: "files" })
+    : myWorkspaceHref("documents", { scope: "shared" });
 }
 
 function documentHref(document: DocDocument, isManager: boolean) {
@@ -68,10 +77,14 @@ function documentHref(document: DocDocument, isManager: boolean) {
       ? `/pages/employee/profile?employee=${document.employee_id}`
       : `/pages/organization/folder?folder=${document.folder_id}`;
   }
-  return `/pages/my-documents?doc=${document.id}`;
+  return myWorkspaceHref("documents", { doc: String(document.id) });
 }
 
-export default function QuickAccessPage() {
+export default function QuickAccessPage({
+  embedded = false,
+}: {
+  embedded?: boolean;
+}) {
   const quickAccess = useQuickAccess();
   const currentUser = useCurrentUser();
   const isManager = currentUser.data?.is_document_manager === true;
@@ -101,47 +114,37 @@ export default function QuickAccessPage() {
   );
 
   return (
-    <div className="mx-auto min-h-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
+    <div className={embedded ? "space-y-6" : "app-page space-y-6"}>
       {quickAccess.isLoading ? (
-        <div className="h-48 animate-pulse rounded-2xl bg-white" />
+        <div className="h-48 animate-pulse bg-white" />
       ) : (
         <>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <SectionTabs
-              items={[
-                {
-                  id: "folders",
-                  label: "Pinned Folders",
-                  icon: Folder,
-                  count: folders.length,
-                },
-                {
-                  id: "documents",
-                  label: "Pinned Documents",
-                  icon: FileText,
-                  count: documents.length,
-                },
-              ]}
-              value={tab}
-              onChange={setTab}
-              className="!w-auto"
-              ariaLabel="Quick access sections"
-            />
+          <SectionTabs
+            level="nested"
+            ariaLabel="Quick access sections"
+            value={tab}
+            onChange={(value) => setTab(value as "folders" | "documents")}
+            items={[
+              { id: "folders", label: "Pinned folders", count: folders.length },
+              { id: "documents", label: "Pinned documents", count: documents.length },
+            ]}
+          />
+          <div className="app-page-toolbar">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <label className="relative block min-w-[220px] flex-1 sm:max-w-xs">
-                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
+              <InputGroup className="min-w-[220px] flex-1 sm:max-w-xs">
+                <InputGroupAddon>
+                  <Search />
+                </InputGroupAddon>
+                <InputGroupInput
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder={`Search ${tab}...`}
-                  className="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-pink/40 focus:ring-4 focus:ring-brand-pink/10"
                 />
-              </label>
+              </InputGroup>
               <ThemedSelect
                 value={sort}
                 onChange={(value) => setSort(value as SortKey)}
                 ariaLabel="Sort pinned items"
-                className="min-w-[180px] rounded-full border border-slate-200 bg-white px-3 py-2.5 text-sm"
                 options={[
                   { value: "name", label: "Sort by name" },
                   { value: "date", label: "Sort by date pinned" },
@@ -150,7 +153,7 @@ export default function QuickAccessPage() {
             </div>
           </div>
           {tab === "folders" && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <section className="app-page-body p-4">
               <div className="flex items-center gap-2">
                 <Pin className="h-4 w-4 text-brand-pink" />
                 <h2 className="font-bold text-slate-900">Pinned folders</h2>
@@ -161,8 +164,12 @@ export default function QuickAccessPage() {
                     key={folder.id}
                     href={folderHref(folder, isManager)}
                     className="rounded-2xl border border-slate-100 p-4 transition hover:border-pink-200 hover:bg-pink-50/40"
+                    style={folderCardStyle(folder.color_hex)}
                   >
-                    <Folder className="h-6 w-6 text-brand-pink" />
+                    <OrgFolderIcon
+                      className="h-10 w-10"
+                      hasContent={(folder.document_count ?? 0) > 0}
+                    />
                     <p className="mt-3 font-bold text-slate-800">
                       {folder.folder_name}
                     </p>
@@ -182,7 +189,7 @@ export default function QuickAccessPage() {
             </section>
           )}
           {tab === "documents" && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <section className="app-page-body p-4">
               <div className="flex items-center gap-2">
                 <Pin className="h-4 w-4 text-brand-pink" />
                 <h2 className="font-bold text-slate-900">Pinned documents</h2>
@@ -194,7 +201,12 @@ export default function QuickAccessPage() {
                     href={documentHref(document, isManager)}
                     className="flex items-center gap-3 py-3 hover:text-brand-pink"
                   >
-                    <FileText className="h-5 w-5 text-brand-pink" />
+                    <FileTypeIcon
+                      name={document.name}
+                      mime_type={document.mime_type}
+                      document_type={document.document_type}
+                      source_url={document.source_url}
+                    />
                     <span className="min-w-0 flex-1">
                       <strong className="block truncate text-sm text-slate-800">
                         {document.name}

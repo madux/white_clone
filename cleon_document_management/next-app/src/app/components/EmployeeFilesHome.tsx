@@ -16,12 +16,12 @@ import {
 } from "../../../hooks/useDocuments";
 import SectionTabs from "./SectionTabs";
 import EmployeeFilesGroupExplorer from "./EmployeeFilesGroupExplorer";
-import EmployeeFilesGroupCardGrid from "./EmployeeFilesGroupCardGrid";
 import EmployeeFilesBrowseToolbar from "./EmployeeFilesBrowseToolbar";
 import EmployeeFilesDocumentResults from "./EmployeeFilesDocumentResults";
 import EmployeeFilesEmployeeResults from "./EmployeeFilesEmployeeResults";
 import { employeeFileDimensionLabel } from "../../../lib/employeeFileDimensions";
 import type { EmployeeFileGroup } from "../../../lib/types";
+import EmptyState from "./EmptyState";
 import EmployeeFilesIssuesPage from "./EmployeeFilesIssuesPage";
 import EmployeeFilesPendingApprovalsPanel from "./EmployeeFilesPendingApprovalsPanel";
 import { EMPLOYEE_FILE_LIST_PAGE_SIZE } from "../../../lib/employeeFileListPageSize";
@@ -65,13 +65,21 @@ export default function EmployeeFilesHome() {
   const [browsePrefs, setBrowsePrefs] = useState(() =>
     loadEmployeeFilesBrowsePreferences(),
   );
-  const [view, setView] = useState<HomeView>("groups");
-  const [search, setSearch] = useState("");
+  const [view, setView] = useState<HomeView>(() => {
+    const value = searchParams.get("view");
+    if (value === "employees" || value === "documents") return value;
+    return "groups";
+  });
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [dimension, setDimension] = useState("");
   const [documentFilters, setDocumentFilters] = useState<EmployeeFilesBrowseFilters>(
     DEFAULT_EMPLOYEE_FILES_BROWSE_FILTERS,
   );
   const [employeeDepartmentId, setEmployeeDepartmentId] = useState("all");
+  const [employeeAttentionFilter, setEmployeeAttentionFilter] = useState(() => {
+    const value = searchParams.get("attention");
+    return value === "needs_attention" || value === "ok" ? value : "all";
+  });
   const [employeePage, setEmployeePage] = useState(1);
   const [documentPage, setDocumentPage] = useState(1);
 
@@ -119,6 +127,7 @@ export default function EmployeeFilesHome() {
     pageSize: EMPLOYEE_FILE_LIST_PAGE_SIZE,
     departmentId: employeeDepartmentId,
     order: browsePrefs.employeeSort,
+    attentionFilter: employeeAttentionFilter,
     enabled: view === "employees" && !!stats.data?.employee_files_initialized,
   });
 
@@ -138,28 +147,42 @@ export default function EmployeeFilesHome() {
   const attention = stats.data?.needs_attention ?? 0;
   const pendingApprovalCount = useMemo(() => {
     const uploadItems = pendingUploads.data?.items ?? [];
-    const inboxDocumentIds = new Set(
-      (approvalInbox.data?.items ?? []).map((item) => item.document_id),
+    const inboxItems = (approvalInbox.data?.items ?? []).filter(
+      (item) => item.folder_type !== "organizational",
     );
+    const inboxDocumentIds = new Set(inboxItems.map((item) => item.document_id));
     const rows = uploadItems.filter(
       (item) =>
         !inboxDocumentIds.has(item.id) || item.status !== "pending_review",
     );
-    return rows.length + (approvalInbox.data?.count ?? 0);
-  }, [
-    pendingUploads.data?.items,
-    approvalInbox.data?.items,
-    approvalInbox.data?.count,
-  ]);
+    return rows.length + inboxItems.length;
+  }, [pendingUploads.data?.items, approvalInbox.data?.items]);
 
-  const dimensionTabs = useMemo(
-    () =>
-      (config.data?.organizing_dimensions ?? []).map((key) => ({
+  const dimensionTabs = useMemo(() => {
+    const keys = [...(config.data?.organizing_dimensions ?? [])];
+    const primary =
+      config.data?.primary_organizing_dimension || keys[0] || "";
+    const sub = config.data?.sub_organizing_dimension;
+    const adHoc = keys.filter((key) => key && key !== primary);
+    if (sub && sub !== "none" && sub !== primary && !adHoc.includes(sub)) {
+      adHoc.push(sub);
+    }
+    if (!primary) return [];
+    return [
+      {
+        id: primary,
+        label: employeeFileDimensionLabel(primary),
+      },
+      ...adHoc.map((key) => ({
         id: key,
-        label: `By ${employeeFileDimensionLabel(key)}`,
+        label: employeeFileDimensionLabel(key),
       })),
-    [config.data?.organizing_dimensions],
-  );
+    ];
+  }, [
+    config.data?.organizing_dimensions,
+    config.data?.primary_organizing_dimension,
+    config.data?.sub_organizing_dimension,
+  ]);
 
   const setWorkspaceTab = (tab: WorkspaceTab) => {
     if (tab === "browse") {
@@ -170,11 +193,21 @@ export default function EmployeeFilesHome() {
   };
 
   useEffect(() => {
+    const value = searchParams.get("view");
+    if (value === "employees" || value === "documents") {
+      setView(value);
+    } else if (!value) {
+      setView("groups");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     setEmployeePage(1);
     setDocumentPage(1);
   }, [
     debouncedSearch,
     employeeDepartmentId,
+    employeeAttentionFilter,
     documentFilters,
     view,
   ]);
@@ -183,7 +216,7 @@ export default function EmployeeFilesHome() {
     view === "documents"
       ? "Search by document name, employee, or employee ID…"
       : view === "employees"
-        ? "Search by employee name, ID, or department…"
+        ? "Search by employee name, ID, department, grade, or location…"
         : "Search groups…";
 
   const typeOptions = useMemo(
@@ -196,9 +229,10 @@ export default function EmployeeFilesHome() {
   );
 
   return (
-    <div className="min-h-full mx-auto w-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
+    <div className="app-page space-y-6">
       <SectionTabs
         ariaLabel="Employee Files sections"
+        level="page"
         value={workspaceTab}
         onChange={(value) => setWorkspaceTab(value as WorkspaceTab)}
         items={[
@@ -227,135 +261,191 @@ export default function EmployeeFilesHome() {
       {workspaceTab === "browse" ? (
         <>
           {stats.data ? (
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              <MiniStat label="EMS employees" value={stats.data.ems_employees} />
-              <MiniStat label="Expected files" value={stats.data.expected_employee_files} />
-              <MiniStat label="Initialized" value={stats.data.employee_files_initialized} />
-              <MiniStat label="Synced" value={stats.data.successfully_synced} />
-              <MiniStat label="Needs attention" value={stats.data.needs_attention} />
-              <MiniStat label="Excluded" value={stats.data.excluded} />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              {[
+                {
+                  label: "EMS employees",
+                  value: stats.data.ems_employees,
+                  context: "Source headcount",
+                },
+                {
+                  label: "Expected files",
+                  value: stats.data.expected_employee_files,
+                  context: `${stats.data.expected_employee_files} of ${stats.data.ems_employees}`,
+                },
+                {
+                  label: "Initialized",
+                  value: stats.data.employee_files_initialized,
+                  context: `${stats.data.employee_files_initialized} of ${stats.data.expected_employee_files}`,
+                },
+                {
+                  label: "Synced",
+                  value: stats.data.successfully_synced,
+                  context: "Initialized minus open issues",
+                },
+                {
+                  label: "Needs attention",
+                  value: stats.data.needs_attention,
+                  context: "Open issues only",
+                  href: "/pages/employee?tab=issues",
+                },
+                {
+                  label: "Excluded",
+                  value: stats.data.excluded,
+                  context: "Not in Employee Files",
+                  href: "/pages/employee?tab=issues&category=excluded",
+                },
+              ].map((card) => {
+                const className =
+                  "rounded-lg border border-border bg-background p-3 text-left";
+                if (!card.href) {
+                  return (
+                    <div key={card.label} className={className}>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {card.label}
+                      </span>
+                      <strong className="mt-1 block text-2xl">{card.value}</strong>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {card.context}
+                      </span>
+                    </div>
+                  );
+                }
+                return (
+                  <button
+                    key={card.label}
+                    type="button"
+                    onClick={() => router.push(card.href!)}
+                    className={`${className} transition-colors hover:bg-muted/40`}
+                  >
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {card.label}
+                    </span>
+                    <strong className="mt-1 block text-2xl">{card.value}</strong>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {card.context}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           ) : null}
 
           <SectionTabs
-            ariaLabel="Employee Files views"
+            level="nested"
+            ariaLabel="Browse view"
             value={view}
-            onChange={(value) => setView(value as HomeView)}
+            onChange={(value) => {
+              const next = value as HomeView;
+              setView(next);
+              const params = new URLSearchParams(searchParams.toString());
+              if (next === "groups") params.delete("view");
+              else params.set("view", next);
+              const query = params.toString();
+              router.replace(query ? `/pages/employee?${query}` : "/pages/employee");
+            }}
             items={[
               { id: "groups", label: "Employee files" },
               { id: "employees", label: "Employees" },
               { id: "documents", label: "Documents" },
             ]}
           />
-
-          <EmployeeFilesBrowseToolbar
-            search={search}
-            onSearchChange={setSearch}
-            searchPlaceholder={searchPlaceholder}
-            layoutMode={browsePrefs.layoutMode}
-            onLayoutModeChange={(mode) => persistPrefs({ layoutMode: mode })}
-            showDocumentFilters={view === "documents"}
-            showEmployeeFilters={view === "employees"}
-            documentFilters={documentFilters}
-            onDocumentFiltersChange={setDocumentFilters}
-            employeeDepartmentId={employeeDepartmentId}
-            onEmployeeDepartmentChange={setEmployeeDepartmentId}
-            documentTypes={typeOptions}
-            departments={departments}
-            documentColumns={browsePrefs.documentColumns}
-            onDocumentColumnsChange={(cols) =>
-              persistPrefs({ documentColumns: cols })
-            }
-            employeeColumns={browsePrefs.employeeColumns}
-            onEmployeeColumnsChange={(cols) =>
-              persistPrefs({ employeeColumns: cols })
-            }
-            resultCount={
-              view === "documents"
-                ? documentSearch.data?.items.length
-                : view === "employees"
-                  ? employeeList.data?.items.length
-                  : undefined
-            }
-            totalCount={
-              view === "documents"
-                ? documentSearch.data?.total
-                : view === "employees"
-                  ? employeeList.data?.total
-                  : undefined
-            }
-          />
-
-          {view === "groups" ? (
-            <div className="space-y-4">
-              {dimensionTabs.length > 1 ? (
-                <SectionTabs
-                  ariaLabel="Organizing dimension"
-                  value={primaryDimension}
-                  onChange={setDimension}
-                  items={dimensionTabs}
-                />
-              ) : null}
-              {browsePrefs.layoutMode === "card" ? (
-                <EmployeeFilesGroupCardGrid
-                  groups={homeGroups.data ?? []}
-                  search={search}
-                />
-              ) : (
-                <EmployeeFilesGroupExplorer
-                  groups={homeGroups.data ?? []}
-                  search={search}
-                />
-              )}
-            </div>
-          ) : null}
-
-          {view === "employees" ? (
-            stats.data?.employee_files_initialized ? (
-              <EmployeeFilesEmployeeResults
-                items={employeeList.data?.items ?? []}
-                total={employeeList.data?.total ?? 0}
-                page={employeePage}
-                pageSize={EMPLOYEE_FILE_LIST_PAGE_SIZE}
-                onPageChange={setEmployeePage}
-                layoutMode={browsePrefs.layoutMode}
-                visibleColumns={browsePrefs.employeeColumns}
-                sortKey={browsePrefs.employeeSort}
-                onSortChange={(order) => persistPrefs({ employeeSort: order })}
-                isLoading={employeeList.isLoading}
-              />
-            ) : !stats.isLoading ? (
-              <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-                No employee files have been initialized yet.
-              </p>
-            ) : null
-          ) : null}
-
-          {view === "documents" ? (
-            <EmployeeFilesDocumentResults
-              items={documentSearch.data?.items ?? []}
-              total={documentSearch.data?.total ?? 0}
-              page={documentPage}
-              pageSize={DOCUMENT_PAGE_SIZE}
-              onPageChange={setDocumentPage}
+          <div className="app-table-well app-page-body">
+            <EmployeeFilesBrowseToolbar
+              search={search}
+              onSearchChange={setSearch}
+              searchPlaceholder={searchPlaceholder}
               layoutMode={browsePrefs.layoutMode}
-              visibleColumns={browsePrefs.documentColumns}
-              sortKey={browsePrefs.documentSort}
-              onSortChange={(order) => persistPrefs({ documentSort: order })}
-              isLoading={documentSearch.isLoading}
+              onLayoutModeChange={(mode) => persistPrefs({ layoutMode: mode })}
+              showLayoutToggle={view !== "groups"}
+              showDocumentFilters={view === "documents"}
+              showEmployeeFilters={view === "employees"}
+              groupByOptions={view === "groups" ? dimensionTabs : undefined}
+              groupByValue={primaryDimension}
+              onGroupByChange={setDimension}
+              documentFilters={documentFilters}
+              onDocumentFiltersChange={setDocumentFilters}
+              employeeDepartmentId={employeeDepartmentId}
+              onEmployeeDepartmentChange={setEmployeeDepartmentId}
+              employeeAttentionFilter={employeeAttentionFilter}
+              onEmployeeAttentionFilterChange={setEmployeeAttentionFilter}
+              documentTypes={typeOptions}
+              departments={departments}
+              documentColumns={browsePrefs.documentColumns}
+              onDocumentColumnsChange={(cols) =>
+                persistPrefs({ documentColumns: cols })
+              }
+              employeeColumns={browsePrefs.employeeColumns}
+              onEmployeeColumnsChange={(cols) =>
+                persistPrefs({ employeeColumns: cols })
+              }
+              resultCount={
+                view === "documents"
+                  ? documentSearch.data?.items.length
+                  : view === "employees"
+                    ? employeeList.data?.items.length
+                    : undefined
+              }
+              totalCount={
+                view === "documents"
+                  ? documentSearch.data?.total
+                  : view === "employees"
+                    ? employeeList.data?.total
+                    : undefined
+              }
             />
-          ) : null}
+
+            {view === "groups" ? (
+              <EmployeeFilesGroupExplorer
+                groups={homeGroups.data ?? []}
+                search={search}
+                memberSort={browsePrefs.employeeSort}
+                onMemberSortChange={(order) => persistPrefs({ employeeSort: order })}
+                groupSort={browsePrefs.groupSort}
+                onGroupSortChange={(order) => persistPrefs({ groupSort: order })}
+                memberAttentionFilter={employeeAttentionFilter}
+              />
+            ) : null}
+
+            {view === "employees" ? (
+              stats.data?.employee_files_initialized ? (
+                <EmployeeFilesEmployeeResults
+                  items={employeeList.data?.items ?? []}
+                  total={employeeList.data?.total ?? 0}
+                  page={employeePage}
+                  pageSize={EMPLOYEE_FILE_LIST_PAGE_SIZE}
+                  onPageChange={setEmployeePage}
+                  layoutMode={browsePrefs.layoutMode}
+                  visibleColumns={browsePrefs.employeeColumns}
+                  sortKey={browsePrefs.employeeSort}
+                  onSortChange={(order) => persistPrefs({ employeeSort: order })}
+                  isLoading={employeeList.isLoading}
+                />
+              ) : !stats.isLoading ? (
+                <EmptyState
+                  title="No employee files yet"
+                  description="Initialize employee files from Settings to start browsing records."
+                />
+              ) : null
+            ) : null}
+
+            {view === "documents" ? (
+              <EmployeeFilesDocumentResults
+                items={documentSearch.data?.items ?? []}
+                total={documentSearch.data?.total ?? 0}
+                page={documentPage}
+                pageSize={DOCUMENT_PAGE_SIZE}
+                onPageChange={setDocumentPage}
+                layoutMode={browsePrefs.layoutMode}
+                visibleColumns={browsePrefs.documentColumns}
+                sortKey={browsePrefs.documentSort}
+                onSortChange={(order) => persistPrefs({ documentSort: order })}
+                isLoading={documentSearch.isLoading}
+              />
+            ) : null}
+          </div>
         </>
       ) : null}
-    </div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-      <p className="text-[11px] uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="text-lg font-bold text-slate-900">{value}</p>
     </div>
   );
 }

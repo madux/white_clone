@@ -1,13 +1,13 @@
-import AdminOnly from "@/app/components/AdminOnly";
+import EmployeeFilesGate from "@/app/components/EmployeeFilesGate";
 import EmployeeGroupPage from "@/app/components/EmployeeGroupPage";
 import { Suspense } from "react";
 
 export default function EmployeeGroupRoute() {
   return (
-    <AdminOnly>
+    <EmployeeFilesGate>
       <Suspense fallback={null}>
         <EmployeeGroupPage />
       </Suspense>
-    </AdminOnly>
+    </EmployeeFilesGate>
   );
 }

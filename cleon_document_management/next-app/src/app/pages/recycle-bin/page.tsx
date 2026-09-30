@@ -1,5 +1,10 @@
-import DocumentLifecyclePage from "@/app/components/DocumentLifecyclePage";
+"use client";
+
+import QueryRedirect from "@/app/components/QueryRedirect";
+import { myWorkspaceHref } from "../../../../lib/workspaceRoutes";
 
 export default function RecycleBinRoute() {
-  return <DocumentLifecyclePage lifecycle="recycle_bin" />;
+  return (
+    <QueryRedirect href={() => myWorkspaceHref("recycle")} />
+  );
 }

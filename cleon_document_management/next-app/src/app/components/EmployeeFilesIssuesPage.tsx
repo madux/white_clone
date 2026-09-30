@@ -1,9 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, Download, Loader2, Search } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import ListPagination from "./ListPagination";
+import SectionTabs from "./SectionTabs";
+import AppToolbar from "./AppToolbar";
+import EmptyState from "./EmptyState";
+import PersonCell from "./PersonCell";
+import StatusPill from "./StatusPill";
+import EmployeeFileIssueCell from "./EmployeeFileIssueCell";
 import { api } from "../../../lib/api";
 import { EMPLOYEE_FILE_LIST_PAGE_SIZE } from "../../../lib/employeeFileListPageSize";
 import {
@@ -11,33 +18,23 @@ import {
   useEmployeeFileIssues,
   useEmployeeFilesHomeStats,
 } from "../../../hooks/useEmployeeFiles";
-import SectionTabs from "./SectionTabs";
 
 const PAGE_CLASS =
-  "min-h-full mx-auto w-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10";
+  "app-page space-y-6";
 
 const TABS = [
   { id: "all", label: "All" },
+  { id: "excluded", label: "Excluded" },
   { id: "inactive", label: "Inactive" },
-  { id: "test_employee", label: "Test employee" },
-  { id: "manually_excluded", label: "Manually excluded" },
   { id: "initialization_failed", label: "Initialization failed" },
   { id: "unresolved_data", label: "Unresolved data issue" },
 ];
 
-function classificationBadge(classification: string) {
-  switch (classification) {
-    case "inactive":
-    case "test_employee":
-    case "manually_excluded":
-      return "border-slate-200 bg-slate-50 text-slate-700";
-    case "initialization_failed":
-      return "border-red-200 bg-red-50 text-red-800";
-    case "unresolved_data":
-      return "border-amber-200 bg-amber-50 text-amber-900";
-    default:
-      return "border-slate-200 bg-slate-50 text-slate-700";
+function categoryFromParams(value: string | null) {
+  if (value && TABS.some((tab) => tab.id === value)) {
+    return value;
   }
+  return "all";
 }
 
 export default function EmployeeFilesIssuesPage({
@@ -45,7 +42,24 @@ export default function EmployeeFilesIssuesPage({
 }: {
   embedded?: boolean;
 }) {
-  const [category, setCategory] = useState("all");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [category, setCategory] = useState(() =>
+    categoryFromParams(searchParams.get("category")),
+  );
+
+  const setCategoryAndUrl = (next: string) => {
+    setCategory(next);
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "all") {
+      params.delete("category");
+    } else {
+      params.set("category", next);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -63,6 +77,10 @@ export default function EmployeeFilesIssuesPage({
   );
 
   useEffect(() => {
+    setCategory(categoryFromParams(searchParams.get("category")));
+  }, [searchParams]);
+
+  useEffect(() => {
     setPage(1);
   }, [category, search]);
   const stats = useEmployeeFilesHomeStats();
@@ -70,7 +88,6 @@ export default function EmployeeFilesIssuesPage({
 
   const rows = issues.data?.data ?? [];
   const listTotal = issues.data?.total ?? 0;
-  const totalOpen = issues.data?.summary.total ?? stats.data?.needs_attention ?? 0;
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of issues.data?.summary.categories ?? []) {
@@ -81,110 +98,81 @@ export default function EmployeeFilesIssuesPage({
 
   return (
     <div className={embedded ? "space-y-6" : PAGE_CLASS}>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        {!embedded ? (
-          <Link
-            href="/pages/employee"
-            className="text-sm font-semibold text-brand-pink hover:underline"
-          >
-            ← Back
-          </Link>
-        ) : (
-          <span />
-        )}
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => api.downloadEmployeeFileIssuesReport()}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-pink-200 hover:bg-pink-50/50 hover:text-brand-text"
-          >
-            <Download className="h-4 w-4" />
-            Download report
-          </button>
-          {totalOpen > 0 ? (
-            <div
-              className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/90 to-white px-5 py-3 shadow-sm"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm">
-                <AlertTriangle className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-amber-800/80">
-                  Open items
-                </p>
-                <p className="text-2xl font-bold tabular-nums text-amber-950">{totalOpen}</p>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
       {stats.data ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <MiniStat label="EMS employees" value={stats.data.ems_employees} />
-          <MiniStat label="Employee files" value={stats.data.employee_files_initialized} />
-          <MiniStat label="Synced" value={stats.data.successfully_synced} highlight />
-          <MiniStat label="Needs attention" value={stats.data.needs_attention} warn />
+        <div className="app-page-metrics">
+          <div className="app-page-metric">
+            <span>EMS employees</span>
+            <strong>{stats.data.ems_employees}</strong>
+          </div>
+          <div className="app-page-metric">
+            <span>Employee files</span>
+            <strong>{stats.data.employee_files_initialized}</strong>
+          </div>
+          <div className="app-page-metric">
+            <span>Synced</span>
+            <strong>{stats.data.successfully_synced}</strong>
+          </div>
+          <div className="app-page-metric">
+            <span>Needs attention</span>
+            <strong>{stats.data.needs_attention}</strong>
+          </div>
         </div>
       ) : null}
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <label className="relative block">
-          <Search
-            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            aria-hidden
-          />
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search by employee name, issue title, or employee ID…"
-            className="field w-full pl-10 text-sm"
-          />
-        </label>
-        <SectionTabs
-          ariaLabel="Issue classifications"
-          value={category}
-          onChange={setCategory}
-          items={TABS.map((tab) => ({
-            ...tab,
-            label:
-              tab.id === "all"
-                ? tab.label
-                : `${tab.label}${categoryCounts.get(tab.id) ? ` (${categoryCounts.get(tab.id)})` : ""}`,
-          }))}
+      <SectionTabs
+        level="nested"
+        ariaLabel="Issue classifications"
+        value={category}
+        onChange={setCategoryAndUrl}
+        items={TABS.map((tab) => ({
+          id: tab.id,
+          label: tab.label,
+          count: tab.id === "all" ? undefined : categoryCounts.get(tab.id),
+        }))}
+      />
+      <div className="app-table-well app-page-body">
+        <AppToolbar
+          search={searchInput}
+          onSearchChange={setSearchInput}
+          searchPlaceholder="Search by employee name, issue title, department, or employee ID…"
+          actions={
+            <button
+              type="button"
+              onClick={() => api.downloadEmployeeFileIssuesReport()}
+              className="app-btn app-btn-secondary"
+            >
+              <Download className="h-4 w-4" />
+              Download report
+            </button>
+          }
         />
-      </section>
-
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {issues.isLoading ? (
           <div className="flex items-center justify-center gap-2 px-6 py-16 text-sm text-slate-500">
             <Loader2 className="h-5 w-5 animate-spin text-brand-pink" />
             Loading issues…
           </div>
         ) : rows.length === 0 ? (
-          <div className="px-6 py-16 text-center">
-            <p className="text-sm font-semibold text-slate-800">No open items in this category</p>
-            <p className="mt-1 text-sm text-slate-500">
-              {search.trim()
+          <EmptyState
+            title="No open items in this category"
+            description={
+              search.trim()
                 ? "No issues match your search in this category."
                 : category === "all"
                   ? "Everything reconciled for now."
-                  : "Try another category or return after the next EMS sync."}
-            </p>
-            {!embedded ? (
-              <Link
-                href="/pages/employee"
-                className="mt-6 inline-flex rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(232,62,140,0.18)]"
-              >
-                Open Employee Files
-              </Link>
-            ) : null}
-          </div>
+                  : "Try another category or return after the next EMS sync."
+            }
+            action={
+              !embedded ? (
+                <Link href="/pages/employee" className="app-btn app-btn-primary">
+                  Open Employee Files
+                </Link>
+              ) : null
+            }
+          />
         ) : (
           <>
-            <div className="dms-table-wrap overflow-x-auto">
-              <table className="dms-table min-w-full">
+            <div className="overflow-x-auto">
+              <table className="ef-table ef-table--issues min-w-full" data-no-sort="true">
                 <thead>
                   <tr>
                     <th>Issue</th>
@@ -193,62 +181,57 @@ export default function EmployeeFilesIssuesPage({
                     <th className="dms-col-actions">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody>
                   {rows.map((issue) => {
                     const classification =
-                      issue.classification ?? issue.category ?? "unresolved_data";
+                      issue.source === "exclusion"
+                        ? "excluded"
+                        : issue.classification ??
+                          issue.category ??
+                          "unresolved_data";
                     const classificationLabel =
-                      issue.classification_label ??
-                      TABS.find((t) => t.id === classification)?.label ??
-                      classification.replace(/_/g, " ");
+                      issue.source === "exclusion"
+                        ? "Excluded"
+                        : issue.classification_label ??
+                          TABS.find((t) => t.id === classification)?.label ??
+                          classification.replace(/_/g, " ");
                     const rowKey = `${issue.source ?? "issue"}-${issue.id}`;
 
                     return (
-                      <tr key={rowKey} className="transition hover:bg-pink-50/20">
-                        <td className="px-5 py-4 align-top">
-                          <p className="font-semibold text-slate-900">{issue.name}</p>
-                          {issue.issue_type_label ? (
-                            <p className="mt-1 text-xs font-medium text-slate-500">
-                              {issue.issue_type_label}
-                            </p>
-                          ) : null}
-                          <span
-                            className={`mt-2 inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${classificationBadge(classification)}`}
-                          >
-                            {classificationLabel}
-                          </span>
+                      <tr key={rowKey}>
+                        <td className="ef-issue-col">
+                          <EmployeeFileIssueCell
+                            issue={issue}
+                            classificationLabel={classificationLabel}
+                          />
                         </td>
-                        <td className="px-5 py-4 align-top text-slate-700">
+                        <td className="ef-issue-employee align-top">
                           {issue.employee_id ? (
-                            <Link
+                            <PersonCell
+                              name={
+                                issue.employee_name || `Employee #${issue.employee_id}`
+                              }
                               href={`/pages/employee/profile?employee=${issue.employee_id}`}
-                              className="font-medium text-brand-pink hover:underline"
-                            >
-                              {issue.employee_name || `Employee #${issue.employee_id}`}
-                            </Link>
+                            />
                           ) : (
                             <span className="text-slate-400">—</span>
                           )}
                         </td>
-                        <td className="max-w-md px-5 py-4 align-top text-slate-600">
-                          <p className="line-clamp-3 leading-relaxed">{issue.details || "—"}</p>
+                        <td className="ef-issue-details align-top text-slate-600">
+                          <p>{issue.details || "—"}</p>
                         </td>
-                        <td className="dms-col-actions align-top">
+                        <td className="dms-col-actions">
                           {issue.source === "exclusion" ? (
-                            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500">
-                              Excluded
-                            </span>
+                            <StatusPill label="Excluded" />
                           ) : issue.recommended_action === "view_in_ems" ? (
-                            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                              View in EMS
-                            </span>
+                            <StatusPill label="View in EMS" />
                           ) : issue.recommended_action === "none" ? (
                             <span className="text-slate-400">—</span>
                           ) : (
                             <button
                               type="button"
                               disabled={action.isPending}
-                              className="inline-flex rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-xs font-semibold text-brand-text transition hover:bg-pink-100 disabled:opacity-50"
+                              className="app-btn app-btn-secondary"
                               onClick={() =>
                                 action.mutate({
                                   id: issue.id,
@@ -280,34 +263,7 @@ export default function EmployeeFilesIssuesPage({
             </div>
           </>
         )}
-      </section>
-    </div>
-  );
-}
-
-function MiniStat({
-  label,
-  value,
-  highlight,
-  warn,
-}: {
-  label: string;
-  value: number;
-  highlight?: boolean;
-  warn?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-xl border px-4 py-3 ${
-        warn && value > 0
-          ? "border-amber-200 bg-amber-50/60"
-          : highlight
-            ? "border-pink-100 bg-pink-50/40"
-            : "border-slate-200 bg-white"
-      }`}
-    >
-      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">{value}</p>
+      </div>
     </div>
   );
 }

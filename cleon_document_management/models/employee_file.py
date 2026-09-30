@@ -5,7 +5,7 @@ from odoo import api, fields, models, _
 class DocEmployeeFile(models.Model):
     _name = "doc.employee.file"
     _description = "Employee File (one per EMS employee)"
-    _inherit = ["mail.thread"]
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _rec_name = "display_name"
     _order = "employee_id"
 
@@ -117,6 +117,35 @@ class DocEmployeeFile(models.Model):
             "department_id": employee.department_id.id if employee.department_id else False,
             "department_name": employee.department_id.name if employee.department_id else "",
             "job_title": employee.job_id.name if employee.job_id else "",
+            "employment_type": (
+                (
+                    getattr(employee, "employment_type_id", False)
+                    or getattr(employee, "employee_type_id", False)
+                ).name
+                if (
+                    getattr(employee, "employment_type_id", False)
+                    or getattr(employee, "employee_type_id", False)
+                )
+                else ""
+            ),
+            "work_location": (
+                (
+                    getattr(employee, "work_location_id", False)
+                    or getattr(employee, "address_id", False)
+                ).name
+                if (
+                    getattr(employee, "work_location_id", False)
+                    or getattr(employee, "address_id", False)
+                )
+                else ""
+            ),
+            "status": "Active" if employee.active else "Inactive",
+            "branch": employee.branch_id.name
+            if getattr(employee, "branch_id", False)
+            else "",
+            "grade": employee.grade_id.name
+            if getattr(employee, "grade_id", False)
+            else "",
             "document_count": self.document_count,
             "attention_count": self.attention_count,
             "state": self.state,

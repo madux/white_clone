@@ -1,187 +1,150 @@
 "use client";
 import {
-  Activity,
-  Archive,
-  ArchiveRestore,
   Brain,
   Building2,
-  ChevronLeft,
-  ChevronRight,
-  Clock3,
   FileStack,
   LayoutDashboard,
+  Menu,
   Users,
-  Trash2,
-  Pin,
   Settings,
-  ShieldCheck,
+  Briefcase,
+  Shield,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { canAccessEmployeeFilesAdmin } from "../../../lib/employeeFilesAccess";
+import { canAccessOrgLibrary } from "../../../lib/organizationalFilesAccess";
+import { isWorkspacePath } from "../../../lib/workspaceRoutes";
 import { useCurrentUser } from "../../../hooks/useDocuments";
 
-type Links = { name: string; link: string; icon: any };
-
-const SIDEBAR_COLLAPSED_KEY = "cleon-sidebar-collapsed";
+type NavLink = { name: string; link: string; icon: any };
+type NavGroup = { id: string; label: string; links: NavLink[] };
 
 export default function Sidebar() {
   const pathname = usePathname();
   const currentUser = useCurrentUser();
-  const isManager = currentUser.data?.is_document_manager === true;
   const isDocAdmin = currentUser.data?.is_document_admin === true;
-  const [collapsed, setCollapsed] = useState(false);
+  const canEmployeeFiles = canAccessEmployeeFilesAdmin(currentUser.data);
+  const canOrgFiles = canAccessOrgLibrary(currentUser.data);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const routePath =
     pathname?.replace(/^\/document-management(?=\/|$)/, "") || "/";
 
-  useEffect(() => {
-    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-    if (saved === "1") setCollapsed(true);
-  }, []);
+  const groups: NavGroup[] = useMemo(() => {
+    const showHome = canEmployeeFiles || (!canEmployeeFiles && !canOrgFiles);
+    const primary: NavLink[] = [
+      ...(showHome
+        ? [{ name: "Home", link: "/pages/dashboard", icon: LayoutDashboard }]
+        : []),
+      ...(canEmployeeFiles
+        ? [{ name: "Employee Files", link: "/pages/employee", icon: Users }]
+        : []),
+      ...(canOrgFiles
+        ? [
+            {
+              name: "Organizational Files",
+              link: "/pages/organization",
+              icon: Building2,
+            },
+            {
+              name: "Templates & Forms",
+              link: "/pages/organization/templates-forms",
+              icon: FileStack,
+            },
+          ]
+        : []),
+      ...(isDocAdmin
+        ? [
+            {
+              name: "Policies",
+              link: "/pages/compliance",
+              icon: Shield,
+            },
+          ]
+        : []),
+      {
+        name: "My Workspace",
+        link: "/pages/my-workspace",
+        icon: Briefcase,
+      },
+      {
+        name: "Document Intelligence",
+        link: "/pages/document-intelligence",
+        icon: Brain,
+      },
+    ];
+    const admin: NavLink[] = isDocAdmin
+      ? [{ name: "Settings", link: "/pages/settings", icon: Settings }]
+      : [];
+    return [
+      { id: "primary", label: "Workspace", links: primary },
+      ...(admin.length ? [{ id: "admin", label: "Admin", links: admin }] : []),
+    ];
+  }, [canEmployeeFiles, canOrgFiles, isDocAdmin]);
 
-  const toggleCollapsed = () => {
-    setCollapsed((current) => {
-      const next = !current;
-      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
-      return next;
-    });
-  };
-
-  const coreLinks: Links[] = [
-    { name: "Dashboard", link: "/pages/dashboard", icon: LayoutDashboard },
-    { name: "Employee Files", link: "/pages/employee", icon: Users },
-    {
-      name: "Organizational Files",
-      link: "/pages/organization",
-      icon: Building2,
-    },
-    {
-      name: "Templates & Forms",
-      link: "/pages/organization/templates-forms",
-      icon: FileStack,
-    },
-    {
-      name: "Pending Uploads",
-      link: "/pages/pending-uploads",
-      icon: Clock3,
-    },
-    { name: "Activity", link: "/pages/activity", icon: Activity },
-  ];
-
-  const intelligenceLinks: Links[] = [
-    {
-      name: "Document Intelligence",
-      link: "/pages/document-intelligence",
-      icon: Brain,
-    },
-    { name: "Settings", link: "/pages/settings", icon: Settings },
-  ];
-
-  const workspaceLinks: Links[] = [
-    ...(!isManager
-      ? [{ name: "Dashboard", link: "/pages/dashboard", icon: LayoutDashboard }]
-      : []),
-    { name: "My Documents", link: "/pages/my-documents", icon: Archive },
-    ...(!isManager
-      ? [{ name: "My Compliance", link: "/pages/my-compliance", icon: ShieldCheck }]
-      : []),
-    { name: "Quick Access", link: "/pages/quick-access", icon: Pin },
-    { name: "Archived", link: "/pages/archived", icon: ArchiveRestore },
-    { name: "Recycle Bin", link: "/pages/recycle-bin", icon: Trash2 },
-  ];
-
-  const renderLinks = (links: Links[]) =>
-    links.map((l) => {
-      const Icon = l.icon;
-      const isActive =
-        l.name === "Dashboard"
-          ? routePath.startsWith("/pages/dashboard")
-          : l.name === "Organizational Files"
+  const renderLink = (item: NavLink) => {
+    const Icon = item.icon;
+    const isActive =
+      item.name === "Home"
+        ? routePath.startsWith("/pages/dashboard") ||
+          routePath.startsWith("/pages/activity")
+        : item.name === "My Workspace"
+          ? isWorkspacePath(routePath)
+        : item.name === "Policies"
+          ? routePath.startsWith("/pages/compliance")
+          : item.name === "Organizational Files"
             ? routePath.startsWith("/pages/organization") &&
               !routePath.includes("/templates-forms")
-            : routePath.startsWith(l.link);
-      return (
-        <Link
-          key={l.name}
-          href={l.link}
-          aria-current={isActive ? "page" : undefined}
-          title={collapsed ? l.name : undefined}
-          className={`group flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
-            isActive
-              ? "bg-gradient-to-br from-brand-text to-brand-pink text-white shadow-lg shadow-pink-200"
-              : "text-slate-500 hover:translate-x-0.5 hover:bg-pink-50/80 hover:text-brand-text"
-          } ${collapsed ? "justify-center px-2.5" : ""}`}
-        >
-          <Icon className="h-5 w-5 shrink-0" />
-          {!collapsed && <span>{l.name}</span>}
-        </Link>
-      );
-    });
+            : item.name === "Templates & Forms"
+              ? routePath.includes("/templates-forms")
+              : routePath.startsWith(item.link);
+    return (
+      <Link
+        key={item.name}
+        href={item.link}
+        aria-current={isActive ? "page" : undefined}
+        onClick={() => setMobileOpen(false)}
+        className={`app-nav-link ${isActive ? "is-active" : ""}`}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        <span>{item.name}</span>
+      </Link>
+    );
+  };
 
   return (
-    <aside
-      className={`doc-sidebar flex h-full shrink-0 border-r border-slate-200 bg-white p-2 transition-all duration-200 ${
-        collapsed ? "is-collapsed w-[4.5rem]" : "w-52 md:w-56 lg:w-60"
-      }`}
-    >
-      <div className="flex w-full flex-col gap-5">
-        <div className={`sidebar-brand-row ${collapsed ? "is-collapsed" : ""}`}>
-          {!collapsed && (
-            <div className="brand-lockup">
-              <span className="directory-brand">Document Management</span>
-              <span className="directory-brand-sub">
-                {isManager ? "Intelligence Engine" : "Employee workspace"}
-              </span>
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            className="sidebar-collapse-toggle"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </button>
-        </div>
-
-        {isManager && (
-          <div className="flex flex-col gap-2 border-t border-slate-200 pt-2">
-            {!collapsed && (
-              <span className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                Core
-              </span>
-            )}
-            <div className="flex flex-col gap-1">{renderLinks(coreLinks)}</div>
+    <nav className="app-nav" aria-label="Application">
+      <div className="app-nav-desktop">
+        {groups.map((group, index) => (
+          <div key={group.id} className="app-nav-cluster">
+            {index > 0 ? <span className="app-nav-divider" aria-hidden /> : null}
+            {group.links.map(renderLink)}
           </div>
-        )}
-
-        <div className="flex flex-col gap-2 border-t border-slate-200 pt-2">
-          {!collapsed && (
-            <span className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-              My workspace
-            </span>
-          )}
-          <div className="flex flex-col gap-1">{renderLinks(workspaceLinks)}</div>
-        </div>
-
-        <div className="flex flex-col gap-2 border-t border-slate-200 pt-2">
-          {!collapsed && (
-            <span className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-              Intelligence
-            </span>
-          )}
-          <div className="flex flex-col gap-1">
-            {renderLinks(
-              intelligenceLinks.filter((l) => l.name !== "Settings" || isDocAdmin),
-            )}
-          </div>
-        </div>
+        ))}
       </div>
-    </aside>
+      <div className="app-nav-mobile">
+        <button
+          type="button"
+          className="app-nav-menu-btn"
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen((open) => !open)}
+        >
+          {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          Menu
+        </button>
+        {mobileOpen ? (
+          <div className="app-nav-drawer">
+            {groups.map((group) => (
+              <div key={group.id} className="app-nav-drawer-group">
+                <p>{group.label}</p>
+                {group.links.map(renderLink)}
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </nav>
   );
 }

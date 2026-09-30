@@ -1,3 +1,44 @@
+export interface OrganizationalFilesPermissions {
+  can_access_org_library: boolean;
+  can_create_folder: boolean;
+  can_manage_folders: boolean;
+  can_share_manage_access: boolean;
+  can_folder_archive: boolean;
+  can_folder_delete: boolean;
+  can_upload: boolean;
+  can_document_manage: boolean;
+  can_document_manage_access: boolean;
+  can_document_delete: boolean;
+  actions?: Partial<
+    Record<
+      | "access_library"
+      | "create_folder"
+      | "manage_folders"
+      | "share_manage_access"
+      | "folder_archive"
+      | "folder_delete"
+      | "upload"
+      | "document_manage"
+      | "document_manage_access"
+      | "document_delete",
+      boolean
+    >
+  >;
+}
+
+export interface OrganizationalRoleActions {
+  access_library: boolean;
+  create_folder: boolean;
+  manage_folders: boolean;
+  share_manage_access: boolean;
+  folder_archive: boolean;
+  folder_delete: boolean;
+  upload: boolean;
+  document_manage: boolean;
+  document_manage_access: boolean;
+  document_delete: boolean;
+}
+
 export interface EmployeeFilesPermissions {
   can_access_ef_home: boolean;
   is_platform_admin: boolean;
@@ -33,6 +74,7 @@ export interface User {
   is_document_manager?: boolean;
   is_document_admin?: boolean;
   employee_files_permissions?: EmployeeFilesPermissions;
+  organizational_files_permissions?: OrganizationalFilesPermissions;
 }
 
 export interface EmployeeFilesRoleLine {
@@ -54,6 +96,20 @@ export interface EmployeeFilesRoleLine {
   };
 }
 
+export interface EmployeeFilesAssignedUser {
+  id: number;
+  name: string;
+  login: string;
+  employee_id?: number | false;
+  employee_name?: string;
+  department?: string;
+  job_title?: string;
+  employment_type?: string;
+  work_location?: string;
+  branch?: string;
+  grade?: string;
+}
+
 export interface EmployeeFilesRole {
   id?: number;
   name: string;
@@ -64,6 +120,8 @@ export interface EmployeeFilesRole {
   is_migration_seed?: boolean;
   lines: EmployeeFilesRoleLine[];
   assigned_user_ids?: number[];
+  assigned_users?: EmployeeFilesAssignedUser[];
+  organizational_actions?: OrganizationalRoleActions;
 }
 
 export interface EmployeeFilesRoleMember {
@@ -81,6 +139,9 @@ export interface EmployeeFilesRoleMember {
 export interface EmployeeFilesRoleMembersPayload {
   roles: EmployeeFilesRole[];
   members: EmployeeFilesRoleMember[];
+  total?: number;
+  page?: number;
+  page_size?: number;
 }
 
 export interface EmployeeFilesDocumentTypeOption {
@@ -111,6 +172,13 @@ export interface ModuleRoleMember {
   roles: Partial<Record<"user" | "admin", boolean>>;
 }
 
+export interface ModuleRoleMembersPayload {
+  members: ModuleRoleMember[];
+  total?: number;
+  page?: number;
+  page_size?: number;
+}
+
 export interface ModuleRoleAssignment {
   role_key: "admin";
   enabled: boolean;
@@ -121,6 +189,10 @@ export interface DocFolder {
   folder_name: string;
   description: string;
   folder_type: "employee" | "organizational";
+  folder_kind?: "folder" | "project" | "vendor";
+  collection_code?: string;
+  organize_by?: "none" | "department" | "grade" | "location" | "employment_type";
+  parent_id?: number | false;
   owner_id: number;
   owner_name: string;
   document_count: number;
@@ -128,12 +200,14 @@ export interface DocFolder {
   access_scope: string;
   is_locked: boolean;
   color: number;
+  color_hex?: string;
   allow_download?: boolean;
   favorite?: boolean;
   acknowledged?: boolean;
   pinned?: boolean;
   locked?: boolean;
   active?: boolean;
+  distribution_status?: string;
   employee_ids?: number[];
   department_ids?: number[];
   grade_ids?: number[];
@@ -149,6 +223,7 @@ export interface DocDocument {
   description: string;
   folder_id: number;
   folder_name: string;
+  folder_color_hex?: string;
   employee_id: number | null;
   employee_name: string;
   document_type_id: number;
@@ -172,6 +247,29 @@ export interface DocDocument {
   last_review_decision?: "approved" | "rejected" | null;
   mime_type: string;
   file_size: number;
+  source_url?: string;
+  link_status?: "none" | "ok" | "broken" | "unchecked";
+  is_policy?: boolean;
+  is_template?: boolean;
+  is_shortcut?: boolean;
+  shortcut_of_id?: number | false;
+  shortcut_of_name?: string;
+  shortcut_of_folder_id?: number | false;
+  imported_from?: string;
+  owner_id?: number | false;
+  owner_name?: string;
+  folder_path?: { id: number; name: string }[];
+  linked_policy_id?: number | false;
+  linked_policy_name?: string;
+  linked_template_document_id?: number | false;
+  linked_template_document_name?: string;
+  org_use_folder_access?: boolean;
+  org_access_scope?: string;
+  org_department_ids?: number[];
+  org_grade_ids?: number[];
+  org_employee_ids?: number[];
+  access_users?: { id: number; name: string }[];
+  access_user_count?: number;
   attachment_id: number;
   created_at: string;
   write_date: string;
@@ -427,6 +525,8 @@ export interface CompliancePolicy {
   grace_period_days: number;
   effective_date: string;
   active: boolean;
+  lifecycle_status?: "draft" | "active" | "archived";
+  ai_drafted?: boolean;
   last_run_at: string;
   next_run_at: string;
   evaluation_ids?: any[];
@@ -582,9 +682,20 @@ export type ComplianceReportKey =
   | "exceptions"
   | "employee_scores";
 
+export type WorkspaceActivityKind =
+  | "acknowledgement"
+  | "approval"
+  | "submitted"
+  | "approved"
+  | "rejected"
+  | "update"
+  | "upload"
+  | "folder_lock"
+  | "folder_unlock";
+
 export interface WorkspaceActivityEvent {
   id: number;
-  kind: "acknowledgement" | "approval" | "update" | "upload";
+  kind: WorkspaceActivityKind;
   message: string;
   document_id: number;
   document_name: string;
@@ -635,6 +746,7 @@ export interface AcknowledgementDocumentNode {
 export interface AcknowledgementFolderNode {
   folder_id: number;
   folder_name: string;
+  color_hex?: string;
   audience_count: number;
   acknowledged_count: number;
   acknowledgement_percent: number;
@@ -698,7 +810,6 @@ export interface EmployeeFilesConfig {
   sub_organizing_dimension: string;
   include_all_existing: boolean;
   include_inactive: boolean;
-  exclude_test_employees: boolean;
   collect_existing_documents: boolean;
   group_name_display: string;
   show_inactive_groups: boolean;
@@ -776,6 +887,11 @@ export interface EmployeeFileSummary {
   department_id: number | false;
   department_name: string;
   job_title: string;
+  employment_type?: string;
+  work_location?: string;
+  status?: string;
+  branch?: string;
+  grade?: string;
   document_count: number;
   attention_count: number;
   state: string;
@@ -807,7 +923,22 @@ export interface EmsEmployeeOption {
   id: number;
   name: string;
   department_name: string;
+  employment_type?: string;
+  work_location?: string;
+  job_title?: string;
+  status?: string;
+  branch?: string;
+  grade?: string;
   active: boolean;
+}
+
+export interface EmployeeFilesSetupAttentionEmployee {
+  employee_id: number;
+  employee_name: string;
+  department_name?: string;
+  job_title?: string;
+  issue: string;
+  issue_type: string;
 }
 
 export interface EmployeeFilesSetupPreview {
@@ -882,4 +1013,5 @@ export interface EmployeeFileDimensionOption {
   key: string;
   label: string;
   populated: boolean;
+  unavailable_reason?: string;
 }

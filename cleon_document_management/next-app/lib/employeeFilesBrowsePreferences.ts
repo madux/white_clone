@@ -59,7 +59,7 @@ export const EMPLOYEE_FILES_EMPLOYEE_COLUMNS: {
   { id: "department", label: "Department", defaultVisible: true },
   { id: "jobTitle", label: "Job title", defaultVisible: false },
   { id: "documents", label: "Documents", defaultVisible: true },
-  { id: "attention", label: "Needs attention", defaultVisible: true },
+  { id: "attention", label: "Status", defaultVisible: true },
 ];
 
 const STORAGE_KEY = "cleon-employee-files-browse-prefs";
@@ -70,6 +70,7 @@ export type EmployeeFilesBrowsePreferences = {
   employeeColumns: EmployeeFilesEmployeeColumnId[];
   documentSort: string;
   employeeSort: string;
+  groupSort: string;
 };
 
 function defaultDocumentColumns(): EmployeeFilesDocumentColumnId[] {
@@ -92,6 +93,7 @@ export function loadEmployeeFilesBrowsePreferences(): EmployeeFilesBrowsePrefere
       employeeColumns: defaultEmployeeColumns(),
       documentSort: "upload_date desc",
       employeeSort: "name asc",
+      groupSort: "name asc",
     };
   }
   try {
@@ -103,6 +105,7 @@ export function loadEmployeeFilesBrowsePreferences(): EmployeeFilesBrowsePrefere
         employeeColumns: defaultEmployeeColumns(),
         documentSort: "upload_date desc",
         employeeSort: "name asc",
+        groupSort: "name asc",
       };
     }
     const parsed = JSON.parse(raw) as Partial<EmployeeFilesBrowsePreferences>;
@@ -116,6 +119,7 @@ export function loadEmployeeFilesBrowsePreferences(): EmployeeFilesBrowsePrefere
         : defaultEmployeeColumns(),
       documentSort: parsed.documentSort || "upload_date desc",
       employeeSort: parsed.employeeSort || "name asc",
+      groupSort: parsed.groupSort || "name asc",
     };
   } catch {
     return {
@@ -124,6 +128,7 @@ export function loadEmployeeFilesBrowsePreferences(): EmployeeFilesBrowsePrefere
       employeeColumns: defaultEmployeeColumns(),
       documentSort: "upload_date desc",
       employeeSort: "name asc",
+      groupSort: "name asc",
     };
   }
 }

@@ -1,6 +1,6 @@
 # Employee Files QA baseline (v3 spec vs Cleon DMS)
 
-**Last updated:** 2026-03-16  
+**Last updated:** 2026-09-26  
 **Active QA mode:** **Baseline A (v3 PDF)** — automation-first Employee Files.  
 **Spec reference:** Draft DMS v3 — Employee Files Submodule (EF-A through EF-G, 42 features)  
 **Product under test:** `cleon_document_management` (Next.js + Odoo).
@@ -67,7 +67,21 @@ cd ~/Documents/Projects/odoo-17.0
 
 Then hard-refresh `/document-management` and open `/pages/employee` — you should see **Set Up Employee Files** again.
 
+Folder deletion during clear uses subtree-aware permanent delete (parents with children no longer fail on FK restrict).
+
 Optional env vars: `DMS_CLEAR_INTELLIGENCE=0`, `DMS_CLEAR_COMPLIANCE=0`, `DMS_RESET_ONBOARDING=0` to skip those steps.
+
+### Setup wizard (document admins)
+
+| Step | What to verify |
+|------|----------------|
+| **Organization** | Organizing dimensions, primary group, optional subgroup, or no hierarchy. |
+| **Initialization Rules** | Include inactive, collect documents; styled impact counts; **Select employees** / **View excluded** exclusion dialog. |
+| **Review** | Stat cards (groups, employees, documents, need attention, excluded); dimension/document insight cards; **Will need attention** → employee table with search, **Filters** (issue causes), pagination (`POST /api/employee-files/setup/preview/attention`). |
+| **Processing** | Stage list and progress only (no secondary “runs in background” copy). |
+| **Complete** | Links to home and issues when `need_attention > 0`. |
+
+In-app **Employee Files** onboarding guide (after `setup_complete`) includes browse/sort and pending approvals steps — restart from Settings → Help & onboarding if step counts changed.
 
 For a completely empty tenant (no HR seed), use a fresh database or your usual Odoo DB reset workflow instead.
 

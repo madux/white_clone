@@ -21,6 +21,7 @@ import type {
   ModuleRoleAssignment,
   ModuleRoleDefinition,
   ModuleRoleMember,
+  ModuleRoleMembersPayload,
   DocumentType,
   ShareLink,
   UploadConflict,
@@ -46,6 +47,7 @@ declare global {
       is_document_manager?: boolean;
       is_document_admin?: boolean;
       employee_files_permissions?: import("./types").EmployeeFilesPermissions;
+      organizational_files_permissions?: import("./types").OrganizationalFilesPermissions;
     };
   }
 }
@@ -69,14 +71,19 @@ export const multipartClient = axios.create({
 export async function rpc<T = any>(
   path: string,
   params: Record<string, any> = {},
+  options: { timeout?: number } = {},
 ): Promise<T> {
   try {
-    const { data } = await client.post<JsonRpcResponse<T>>(path, {
-      jsonrpc: "2.0",
-      method: "call",
-      id: Date.now(),
-      params,
-    });
+    const { data } = await client.post<JsonRpcResponse<T>>(
+      path,
+      {
+        jsonrpc: "2.0",
+        method: "call",
+        id: Date.now(),
+        params,
+      },
+      options.timeout ? { timeout: options.timeout } : undefined,
+    );
 
     if (data.error) {
       throw new Error(data.error.data?.message || data.error.message);
@@ -127,6 +134,7 @@ export const api = {
         is_document_manager: rawUser.is_document_manager,
         is_document_admin: rawUser.is_document_admin,
         employee_files_permissions: rawUser.employee_files_permissions,
+        organizational_files_permissions: rawUser.organizational_files_permissions,
       };
       if (
         typeof window !== "undefined" &&
@@ -215,7 +223,7 @@ export const api = {
 
   updateFolder: (payload: {
     id: number;
-    name: string;
+    name?: string;
     description?: string;
     require_upload_approval?: boolean;
     approval_flow?: string;
@@ -224,18 +232,43 @@ export const api = {
     department_ids?: number[];
     grade_ids?: number[];
     employee_ids?: number[];
+    color_hex?: string;
+    color?: number;
+    organize_by?: string;
   }) =>
     rpc<{ success: boolean; message: string }>("/api/update-folder", {
       id: payload.id,
-      folder_name: payload.name,
-      description: payload.description,
-      require_upload_approval: payload.require_upload_approval,
-      approval_flow: payload.approval_flow,
-      approver_ids: payload.approver_ids,
-      access_scope: payload.access_scope,
-      department_ids: payload.department_ids,
-      grade_ids: payload.grade_ids,
-      employee_ids: payload.employee_ids,
+      ...(payload.name !== undefined ? { folder_name: payload.name } : {}),
+      ...(payload.description !== undefined
+        ? { description: payload.description }
+        : {}),
+      ...(payload.require_upload_approval !== undefined
+        ? { require_upload_approval: payload.require_upload_approval }
+        : {}),
+      ...(payload.approval_flow !== undefined
+        ? { approval_flow: payload.approval_flow }
+        : {}),
+      ...(payload.approver_ids !== undefined
+        ? { approver_ids: payload.approver_ids }
+        : {}),
+      ...(payload.access_scope !== undefined
+        ? { access_scope: payload.access_scope }
+        : {}),
+      ...(payload.department_ids !== undefined
+        ? { department_ids: payload.department_ids }
+        : {}),
+      ...(payload.grade_ids !== undefined ? { grade_ids: payload.grade_ids } : {}),
+      ...(payload.employee_ids !== undefined
+        ? { employee_ids: payload.employee_ids }
+        : {}),
+      ...(payload.color_hex !== undefined ? { color_hex: payload.color_hex } : {}),
+      ...(payload.color !== undefined ? { color: payload.color } : {}),
+      ...(payload.organize_by !== undefined ? { organize_by: payload.organize_by } : {}),
+    }).then((result) => {
+      if (result?.success === false) {
+        throw new Error(result.message || "Unable to update folder.");
+      }
+      return result;
     }),
 
   deleteFolder: (id: number) =>
@@ -251,6 +284,7 @@ export const api = {
     expiry_option?: string;
     allow_download?: boolean;
     allow_printing?: boolean;
+    include_documents?: boolean;
   }) =>
     rpc<{ success: boolean; data: { token?: string; url?: string }; message?: string }>(
       "/api/folder-action",
@@ -313,8 +347,11 @@ export const api = {
     folder_id: number;
     document_type_ids: number[];
     expiry_dates?: string[];
+    issue_dates?: string[];
+    descriptions?: string[];
     replace_document_ids?: Array<number | null>;
     change_notes?: string[];
+    is_template?: boolean;
   }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
@@ -323,11 +360,20 @@ export const api = {
     if (payload.expiry_dates?.length) {
       form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
     }
+    if (payload.issue_dates?.length) {
+      form.append("issue_dates", JSON.stringify(payload.issue_dates));
+    }
+    if (payload.descriptions?.length) {
+      form.append("descriptions", JSON.stringify(payload.descriptions));
+    }
     if (payload.replace_document_ids?.length) {
       form.append("replace_document_ids", JSON.stringify(payload.replace_document_ids));
     }
     if (payload.change_notes?.length) {
       form.append("change_notes", JSON.stringify(payload.change_notes));
+    }
+    if (payload.is_template) {
+      form.append("is_template", "1");
     }
     return multipartClient
       .post<{
@@ -458,6 +504,222 @@ export const api = {
   deleteDocument: (id: number) =>
     rpc<{ success: boolean; message: string }>("/api/delete-document", { id }),
 
+  updateOrganizationalDocumentAccess: (payload: Record<string, unknown>) =>
+    rpc<{ success: boolean; data: import("./types").DocDocument }>(
+      "/api/organizational/document-access",
+      payload,
+    ),
+
+  assignPolicyTemplate: (payload: {
+    document_id: number;
+    linked_policy_id?: number | false;
+    linked_template_document_id?: number | false;
+  }) =>
+    rpc<{ success: boolean; data: import("./types").DocDocument }>(
+      "/api/organizational/assign-policy-template",
+      payload,
+    ),
+
+  copyOrganizationalDocument: (payload: { document_id: number; folder_id: number }) =>
+    rpc<{ success: boolean; message?: string; data: import("./types").DocDocument }>(
+      "/api/organizational/copy-document",
+      payload,
+    ),
+
+  renameOrganizationalDocument: (payload: { document_id: number; name: string }) =>
+    rpc<{ success: boolean; message?: string; data: import("./types").DocDocument }>(
+      "/api/organizational/rename-document",
+      payload,
+    ),
+
+  createOrganizationalShortcut: (payload: { document_id: number; folder_id: number }) =>
+    rpc<{ success: boolean; message?: string; data: import("./types").DocDocument }>(
+      "/api/organizational/create-shortcut",
+      payload,
+    ),
+
+  moveOrganizationalFolder: (payload: { folder_id: number; parent_id?: number | false }) =>
+    rpc<{ success: boolean; message?: string }>("/api/organizational/move-folder", payload),
+
+  refreshOrganizationalLinkStatus: (documentId: number) =>
+    rpc<{ success: boolean; data: { link_status: string; source_url: string } }>(
+      "/api/organizational/link-status",
+      { document_id: documentId },
+    ),
+
+  listOrganizationalPoliciesTemplates: () =>
+    rpc<{
+      success: boolean;
+      data: {
+        policies: { id: number; name: string; lifecycle_status: string; category: string }[];
+        templates: { id: number; name: string; folder_id: number }[];
+      };
+    }>("/api/organizational/policies-templates", {}),
+
+  suggestedOrganizationalFiles: (payload: { name: string; folder_id?: number }) =>
+    rpc<{ success: boolean; data: { items: import("./types").DocDocument[] } }>(
+      "/api/organizational/suggested-files",
+      payload,
+    ),
+
+  generateFromOrganizationalTemplate: (payload: { template_id: number; folder_id: number }) =>
+    rpc<{ success: boolean; message?: string; data: import("./types").DocDocument }>(
+      "/api/organizational/generate-from-template",
+      payload,
+      { timeout: 120000 },
+    ),
+
+  createOrganizationalTemplate: (documentId: number) =>
+    rpc<{ success: boolean; data: import("./types").DocDocument }>(
+      "/api/organizational/create-template",
+      { document_id: documentId },
+    ),
+
+  importOrganizationalPolicy: (documentId: number) =>
+    rpc<{ success: boolean; message?: string }>("/api/organizational/import-policy", {
+      document_id: documentId,
+    }),
+
+  draftAiPolicy: (payload: {
+    name: string;
+    description?: string;
+    policy_type_id?: number;
+    document_type_ids?: number[];
+    document_type_id?: number;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: { policy_id: number; name: string; description: string };
+    }>("/api/organizational/ai-policy-draft", payload, { timeout: 120000 }),
+
+  organizationalAutomations: (payload: Record<string, unknown>) =>
+    rpc<{ success: boolean; message?: string; data: any }>(
+      "/api/organizational/automations",
+      payload,
+    ),
+
+  organizationalConnectors: (payload: Record<string, unknown> = {}) =>
+    rpc<{
+      success: boolean;
+      data: { items?: { provider: string; label: string; connected: boolean }[] } | { provider: string; connected: boolean };
+    }>("/api/organizational/connectors", payload),
+
+  organizationalOauthStart: (payload: {
+    provider: string;
+    folder_id?: number;
+    return_path?: string;
+  }) =>
+    rpc<{ success: boolean; message?: string; data?: { auth_url: string } }>(
+      "/api/organizational/oauth/start",
+      payload,
+    ),
+
+  organizationalOauthStatus: () =>
+    rpc<{
+      success: boolean;
+      data: {
+        items: {
+          provider: string;
+          configured: boolean;
+          company_enabled: boolean;
+          user_connected: boolean;
+          account_label: string;
+        }[];
+      };
+    }>("/api/organizational/oauth/status", {}),
+
+  organizationalOauthDisconnect: (payload: { provider: string }) =>
+    rpc<{ success: boolean; message?: string }>(
+      "/api/organizational/oauth/disconnect",
+      payload,
+    ),
+
+  listOrganizationalCloudFiles: (payload: {
+    provider: string;
+    parent_id?: string;
+    page_token?: string;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data?: {
+        items: {
+          id: string;
+          name: string;
+          mime_type: string;
+          is_folder: boolean;
+          size: number;
+          modified_at: string;
+        }[];
+        next_page_token?: string;
+      };
+    }>("/api/organizational/cloud-files/list", payload),
+
+  importFromOrganizationalConnector: (payload: {
+    folder_id: number;
+    provider: string;
+    file_id: string;
+    document_type_id: number;
+    name?: string;
+  }) =>
+    rpc<{ success: boolean; message?: string; data?: DocDocument }>(
+      "/api/organizational/import-from-connector",
+      payload,
+    ),
+
+  assignPolicyToEmployee: (payload: {
+    policy_id: number;
+    employee_id: number;
+    requested_signature?: boolean;
+  }) =>
+    rpc<{ success: boolean; message?: string }>("/api/organizational/assign-policy-employee", payload),
+
+  listEmployeePolicies: (employeeId: number) =>
+    rpc<{ success: boolean; data: { items: any[] } }>("/api/organizational/employee-policies", {
+      employee_id: employeeId,
+    }),
+
+  organizationalObjectAudit: (payload: { res_model: string; res_id: number }) =>
+    rpc<{ success: boolean; data: { items: any[] } }>("/api/organizational/object-audit", payload),
+
+  restoreOrganizationalVersion: (versionId: number) =>
+    rpc<{ success: boolean; message?: string }>("/api/organizational/restore-version", {
+      version_id: versionId,
+    }),
+
+  suggestOrganizationalFolderDescription: async (payload: {
+    name: string;
+    visibility?: string;
+    description?: string;
+  }) => {
+    const result = await rpc<{
+      success: boolean;
+      message?: string;
+      data?: { description: string };
+    }>("/api/organizational/suggest-description", payload, { timeout: 120000 });
+    if (!result?.success) {
+      throw new Error(result?.message || "Unable to suggest a description.");
+    }
+    return result;
+  },
+
+  summarizeOrganizationalDocument: async (documentId: number) => {
+    const result = await rpc<{
+      success: boolean;
+      message?: string;
+      data?: { summary: string };
+    }>(
+      "/api/organizational/summarize-document",
+      { document_id: documentId },
+      { timeout: 120000 },
+    );
+    if (!result?.success) {
+      throw new Error(result?.message || "Unable to summarize this document.");
+    }
+    return result;
+  },
+
   documentAction: (payload: {
     id: number;
     action:
@@ -468,7 +730,10 @@ export const api = {
       | "restore"
       | "activate"
       | "deactivate"
-      | "permanent_delete";
+      | "permanent_delete"
+      | "copy"
+      | "print";
+    folder_id?: number;
   }) =>
     rpc<{ success: boolean; data: { id: number; action: string } }>(
       "/api/document-action",
@@ -499,11 +764,17 @@ export const api = {
       {},
     ),
 
-  getWorkspaceActivity: () =>
-    rpc<{ success: boolean; data: WorkspaceActivity }>(
-      "/api/workspace-activity",
-      {},
-    ),
+  getWorkspaceActivity: async () => {
+    const result = await rpc<{
+      success: boolean;
+      data: WorkspaceActivity;
+      message?: string;
+    }>("/api/workspace-activity", {});
+    if (!result?.success || !result.data) {
+      throw new Error(result?.message || "Acknowledgement data could not be loaded.");
+    }
+    return result;
+  },
 
   getDocumentAcknowledgementAudience: (payload: {
     document_id: number;
@@ -720,7 +991,7 @@ export const api = {
   getPolicies: () =>
     rpc<{ success: boolean; count: number; data: CompliancePolicy[] }>(
       "/api/compliance/policies",
-      { active_only: true },
+      { active_only: false },
     ).then((r) => r.data),
 
   createPolicy: (payload: Record<string, any>) =>
@@ -747,14 +1018,7 @@ export const api = {
       {},
     ).then((r) => r.data),
 
-  createDocumentType: (payload: {
-    name: string;
-    category: string;
-    description?: string;
-    is_mandatory_default?: boolean;
-    expiry_applicable?: boolean;
-    default_retention_years?: number;
-  }) =>
+  createDocumentType: (payload: Record<string, any>) =>
     rpc<{ success: boolean; data: DocumentType; message?: string }>(
       "/api/create-document-type",
       payload,
@@ -795,11 +1059,22 @@ export const api = {
       "/api/document-management/roles/definitions",
     ).then((result) => result.data),
 
-  getModuleRoleMembers: (search = "") =>
-    rpc<{ success: boolean; data: ModuleRoleMember[] }>(
+  getModuleRoleMembers: (search = "", page = 1, pageSize = 10) =>
+    rpc<{ success: boolean; data: ModuleRoleMember[] | ModuleRoleMembersPayload }>(
       "/api/document-management/roles/members",
-      { search, limit: 50 },
-    ).then((result) => result.data),
+      { search, page, page_size: pageSize },
+    ).then((result) => {
+      const data = result.data;
+      if (Array.isArray(data)) {
+        return { members: data, total: data.length };
+      }
+      return {
+        members: data.members || [],
+        total: data.total ?? data.members?.length ?? 0,
+        page: data.page,
+        page_size: data.page_size,
+      };
+    }),
 
   assignModuleRoles: (
     employeeId: number,
@@ -829,11 +1104,20 @@ export const api = {
       role_id: roleId,
     }),
 
-  getEmployeeFilesRoleMembers: (search = "") =>
+  getEmployeeFilesRoleMembers: (search = "", page = 1, pageSize = 10) =>
     rpc<{ success: boolean; data: import("./types").EmployeeFilesRoleMembersPayload }>(
       "/api/employee-files/roles/members",
-      { search, limit: 50 },
-    ).then((result) => result.data),
+      { search, page, page_size: pageSize },
+    ).then((result) => {
+      const data = result.data;
+      return {
+        roles: data.roles || [],
+        members: data.members || [],
+        total: data.total ?? data.members?.length ?? 0,
+        page: data.page,
+        page_size: data.page_size,
+      };
+    }),
 
   assignEmployeeFilesRoles: (userId: number, roleIds: number[]) =>
     rpc<{ success: boolean; data: import("./types").EmployeeFilesRoleMember }>(
@@ -887,6 +1171,11 @@ export const api = {
       justification,
     }),
 
+  importEmployeeFileExclusions: (employeeIds: number[]) =>
+    rpc<{ success: boolean; ids: number[] }>("/api/employee-files/exclusions/import", {
+      rows: employeeIds.map((employee_id) => ({ employee_id })),
+    }),
+
   removeEmployeeFileExclusion: (id: number) =>
     rpc<{ success: boolean }>("/api/employee-files/exclusions/remove", { id }),
 
@@ -901,6 +1190,36 @@ export const api = {
       success: boolean;
       data: import("./types").EmployeeFilesSetupPreview;
     }>("/api/employee-files/setup/preview", payload).then((r) => r.data),
+
+  listEmployeeFilesSetupAttention: (
+    payload: Record<string, unknown>,
+    params?: {
+      search?: string;
+      limit?: number;
+      offset?: number;
+      issue_type?: string;
+      issue_types?: string[];
+    },
+  ) =>
+    rpc<{
+      success: boolean;
+      data: {
+        items: import("./types").EmployeeFilesSetupAttentionEmployee[];
+        total: number;
+        categories: Array<{
+          issue_type: string;
+          label: string;
+          count: number;
+        }>;
+      };
+    }>("/api/employee-files/setup/preview/attention", {
+      ...payload,
+      search: params?.search ?? "",
+      limit: params?.limit ?? 10,
+      offset: params?.offset ?? 0,
+      issue_type: params?.issue_type ?? "all",
+      issue_types: params?.issue_types ?? [],
+    }).then((r) => r.data),
 
   confirmEmployeeFilesSetup: (payload: Record<string, unknown>) =>
     rpc<{
@@ -977,6 +1296,7 @@ export const api = {
     offset?: number;
     department_id?: number | string;
     order?: string;
+    attention_filter?: string;
   }) =>
     rpc<{ success: boolean; data: import("./types").EmployeeFileSummaryPage }>(
       "/api/employee-files/employee-files",
@@ -985,7 +1305,13 @@ export const api = {
 
   listEmployeeGroupMembers: (
     groupId: number,
-    params?: { search?: string; limit?: number; offset?: number },
+    params?: {
+      search?: string;
+      limit?: number;
+      offset?: number;
+      order?: string;
+      attention_filter?: string;
+    },
   ) =>
     rpc<{ success: boolean; data: import("./types").EmployeeFileSummaryPage }>(
       "/api/employee-files/group/members",

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import type { ModuleRoleAssignment, ModuleRoleMember } from "../lib/types";
+import { EMPLOYEE_FILE_LIST_PAGE_SIZE } from "../lib/employeeFileListPageSize";
+import type { ModuleRoleAssignment } from "../lib/types";
 
 export function useModuleRoleDefinitions(enabled = true) {
   return useQuery({
@@ -10,10 +11,15 @@ export function useModuleRoleDefinitions(enabled = true) {
   });
 }
 
-export function useModuleRoleMembers(search = "", enabled = true) {
+export function useModuleRoleMembers(
+  search = "",
+  page = 1,
+  enabled = true,
+  pageSize = EMPLOYEE_FILE_LIST_PAGE_SIZE,
+) {
   return useQuery({
-    queryKey: ["document-management", "roles", "members", search],
-    queryFn: () => api.getModuleRoleMembers(search),
+    queryKey: ["document-management", "roles", "members", search, page, pageSize],
+    queryFn: () => api.getModuleRoleMembers(search, page, pageSize),
     enabled,
   });
 }

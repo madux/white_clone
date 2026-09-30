@@ -1,9 +1,10 @@
 "use client";
 
-import { Search, UserMinus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { UserMinus } from "lucide-react";
+import { useMemo, useState } from "react";
 import { api } from "../../../lib/api";
-import type { EmployeeFileExclusion, EmsEmployeeOption } from "../../../lib/types";
+import type { EmployeeFileExclusion } from "../../../lib/types";
+import EmployeeMetricPicker from "./EmployeeMetricPicker";
 import ModalDialog from "./ModalDialog";
 
 type Mode = "select" | "view";
@@ -21,9 +22,6 @@ export default function EmployeeFilesExclusionDialog({
   onSaved: () => void;
   onRemoved: () => void;
 }) {
-  const [search, setSearch] = useState("");
-  const [employees, setEmployees] = useState<EmsEmployeeOption[]>([]);
-  const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<number[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -33,31 +31,25 @@ export default function EmployeeFilesExclusionDialog({
     [exclusions],
   );
 
-  useEffect(() => {
-    if (mode !== "select") return;
-    let cancelled = false;
-    setLoading(true);
-    api
-      .listEmsEmployees(search.trim() || undefined)
-      .then((rows) => {
-        if (!cancelled) setEmployees(rows);
-      })
-      .catch((err: Error) => {
-        if (!cancelled) setError(err.message || "Unable to load employees.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [mode, search]);
-
-  const toggle = (id: number) => {
-    if (excludedIds.has(id)) return;
-    setSelected((current) =>
-      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
-    );
+  const importCsv = async (file: File) => {
+    setPending(true);
+    setError("");
+    try {
+      const text = await file.text();
+      const ids = text
+        .split(/\r?\n/)
+        .slice(1)
+        .map((line) => Number((line.split(",")[0] || "").replace(/"/g, "").trim()))
+        .filter((id) => Number.isInteger(id) && id > 0);
+      if (!ids.length) throw new Error("No employee IDs found in the CSV.");
+      await api.importEmployeeFileExclusions(ids);
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || "Unable to import exclusions.");
+    } finally {
+      setPending(false);
+    }
   };
 
   const save = async () => {
@@ -151,59 +143,12 @@ export default function EmployeeFilesExclusionDialog({
       size="2xl"
       zIndex={120}
     >
-      <label className="relative block">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <input
-          className="field w-full pl-10"
-          placeholder="Search by name, email, or employee ID…"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-      </label>
-
-      <div className="employee-file-tree mt-4 max-h-80 overflow-y-auto rounded-2xl border border-slate-100 p-2">
-        {loading ? (
-          <p className="px-4 py-8 text-center text-sm text-slate-500">Loading employees…</p>
-        ) : employees.length ? (
-          employees.map((employee) => {
-            const alreadyExcluded = excludedIds.has(employee.id);
-            const isSelected = selected.includes(employee.id);
-            return (
-              <button
-                key={employee.id}
-                type="button"
-                disabled={alreadyExcluded || pending}
-                onClick={() => toggle(employee.id)}
-                className={`employee-tree-row employee-tree-row-employee w-full text-left transition ${
-                  alreadyExcluded
-                    ? "opacity-60"
-                    : isSelected
-                      ? "bg-pink-50/80"
-                      : "hover:bg-slate-50"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  readOnly
-                  checked={alreadyExcluded || isSelected}
-                  disabled={alreadyExcluded}
-                  className="pointer-events-none h-4 w-4 shrink-0 accent-pink-600"
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block font-semibold text-slate-800">{employee.name}</span>
-                  <span className="block text-xs text-slate-500">
-                    {employee.department_name || "Unassigned"}
-                    {!employee.active ? " · Inactive" : ""}
-                    {alreadyExcluded ? " · Already excluded" : ""}
-                  </span>
-                </span>
-              </button>
-            );
-          })
-        ) : (
-          <p className="px-4 py-8 text-center text-sm text-slate-500">No employees match your search.</p>
-        )}
-      </div>
+      <EmployeeMetricPicker
+        selectedIds={selected}
+        onChange={(ids) => setSelected(ids)}
+        disabledIds={Array.from(excludedIds)}
+        placeholder="Search employees, departments, or other EMS metrics…"
+      />
 
       {error ? (
         <p className="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -212,6 +157,18 @@ export default function EmployeeFilesExclusionDialog({
       ) : null}
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <label className="text-sm font-semibold text-slate-600">
+          Import CSV
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            className="ml-2 text-xs"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void importCsv(file);
+            }}
+          />
+        </label>
         <p className="text-sm text-slate-600">
           {selected.length
             ? `${selected.length} employee${selected.length === 1 ? "" : "s"} selected`

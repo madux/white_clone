@@ -18,7 +18,9 @@ WORKSPACE_STEP_IDS = {
 
 EMPLOYEE_FILES_STEP_IDS = {
     "ef-home",
+    "ef-browse",
     "ef-issues",
+    "ef-pending-approvals",
     "ef-groups",
     "ef-exclusions",
     "ef-custom-groups",
@@ -27,6 +29,8 @@ EMPLOYEE_FILES_STEP_IDS = {
 ORGANIZATIONAL_STEP_IDS = {
     "folders",
     "organizational-upload",
+    "org-policy-folder",
+    "org-policy-linked",
     "org-sharing",
 }
 

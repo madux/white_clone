@@ -32,6 +32,28 @@ def user_employee_files_permissions(user, env=None):
     return _permission(env).serialize_user_permissions(user)
 
 
+def _org_permission(env=None):
+    env = env or request.env
+    return env["doc.organizational.files.permission"]
+
+
+def user_organizational_files_permissions(user, env=None):
+    env = env or getattr(user, "env", None) or request.env
+    return _org_permission(env).serialize_user_permissions(user)
+
+
+def user_can_access_org_library(user, env=None):
+    env = env or getattr(user, "env", None) or request.env
+    return _org_permission(env).user_can_access_org_library(user)
+
+
+def user_can_access_workspace_activity(user, env=None):
+    env = env or getattr(user, "env", None) or request.env
+    return user_is_document_manager(user, env) or user_can_access_org_library(
+        user, env
+    )
+
+
 def require_document_manager():
     if not user_is_document_manager(request.env.user):
         raise AccessError(_("Employee Files access is required."))

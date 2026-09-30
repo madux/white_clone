@@ -37,6 +37,8 @@ class ComplianceController(http.Controller):
             "grace_period_days": policy.grace_period_days,
             "effective_date": str(policy.effective_date or ""),
             "active": policy.active,
+            "lifecycle_status": policy.lifecycle_status or "active",
+            "ai_drafted": bool(policy.ai_drafted),
             "last_run_at": str(policy.last_run_at or ""),
             "next_run_at": str(policy.next_run_at or ""),
             # Type-specific parameters
@@ -339,9 +341,12 @@ class ComplianceController(http.Controller):
     def policies(self, **kwargs):
         try:
             domain = []
+            Policy = request.env["doc.compliance.policy"]
             if kwargs.get("active_only", True):
                 domain.append(("active", "=", True))
-            policies = request.env["doc.compliance.policy"].search(domain)
+            else:
+                Policy = Policy.with_context(active_test=False)
+            policies = Policy.search(domain)
             return {
                 "success": True,
                 "count": len(policies),
@@ -442,7 +447,17 @@ class ComplianceController(http.Controller):
             "audit_frequency": kwargs.get("audit_frequency", "quarterly"),
             "sample_pct": kwargs.get("sample_pct", 100),
             "assigned_auditor_id": int(kwargs.get("assigned_auditor_id")) if kwargs.get("assigned_auditor_id") else False,
+            "lifecycle_status": kwargs.get("lifecycle_status") or "active",
+            "policy_category": kwargs.get("policy_category") or "",
+            "policy_visibility": kwargs.get("policy_visibility") or "employees",
+            "policy_audience": kwargs.get("policy_audience") or "everyone",
+            "source_document_id": int(kwargs.get("source_document_id") or 0) or False,
+            "ai_drafted": bool(kwargs.get("ai_drafted")),
         }
+        if values["lifecycle_status"] == "draft":
+            values["active"] = False
+        if values["lifecycle_status"] == "archived":
+            values["active"] = False
         if not values["name"] or not values["policy_type_id"]:
             return {"success": False, "message": "Name and policy type are required."}
         try:
@@ -473,6 +488,7 @@ class ComplianceController(http.Controller):
                 "description",
                 "effective_date",
                 "active",
+                "lifecycle_status",
                 "schedule",
                 "custom_schedule_days",
                 "applies_to",
@@ -546,6 +562,12 @@ class ComplianceController(http.Controller):
         if target_applies == "employee" and not emp_ids:
             return {"success": False, "message": "Select at least one employee."}
 
+        if "active" in values:
+            values["active"] = bool(values["active"])
+            if values["active"]:
+                values["lifecycle_status"] = "active"
+            elif policy.lifecycle_status == "draft":
+                values["lifecycle_status"] = "active"
         if "schedule" in values and values["schedule"] == "manual":
             values["schedule"] = False
         if "custom_schedule_days" in values:

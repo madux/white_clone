@@ -2,8 +2,6 @@
 
 import {
   AlertCircle,
-  ArrowDown,
-  ArrowUp,
   Check,
   CircleHelp,
   FileText,
@@ -16,15 +14,19 @@ import {
   RefreshCw,
   RotateCcw,
   Save,
-  Search,
   Shield,
   Trash2,
-  X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import SectionTabs from "./SectionTabs";
+import AppToolbar from "./AppToolbar";
+import EmptyState from "./EmptyState";
+import StatusPill from "./StatusPill";
+import ListPagination from "./ListPagination";
+import { useClientPagination } from "../../../lib/useClientPagination";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "../../../hooks/useToast";
+import { useAppDialog } from "../../../hooks/useAppDialog";
 import {
   useSaveSettings,
   useDeleteSettingsDocumentType,
@@ -36,7 +38,11 @@ import {
   useOnboarding,
 } from "../../../hooks/useDocuments";
 import ThemedSelect from "./ThemedSelect";
-import ModalDialog from "./ModalDialog";
+import DocumentTypeFormDialog, {
+  DOCUMENT_TYPE_CATEGORIES,
+  emptyDocumentTypeForm,
+  type DocumentTypeFormValues,
+} from "./DocumentTypeForm";
 import RolesPage from "./RolesPage";
 import EmployeeFilesSettingsPanel from "./EmployeeFilesSettingsPanel";
 import {
@@ -44,17 +50,6 @@ import {
   ONBOARDING_MODULE_ORDER,
   type OnboardingModuleId,
 } from "../../../lib/onboardingModules";
-const categories = [
-  ["hr", "Human Resources"],
-  ["finance", "Finance"],
-  ["legal", "Legal"],
-  ["identity", "Identity"],
-  ["employment", "Employment"],
-  ["medical", "Medical"],
-  ["training", "Training"],
-  ["other", "Other"],
-] as const;
-
 const sections = [
   {
     id: "types",
@@ -62,13 +57,6 @@ const sections = [
     shortLabel: "Types",
     description: "Keep classification consistent across every upload.",
     icon: FileText,
-  },
-  {
-    id: "access",
-    label: "Access defaults",
-    shortLabel: "Access",
-    description: "Choose the audience for new organizational folders.",
-    icon: FolderCog,
   },
   {
     id: "lifecycle",
@@ -96,45 +84,16 @@ const sections = [
 const fallbackSettings = {
   default_require_upload_approval: false,
   default_approval_flow: "any",
-  default_access_scope: "all_staff",
   default_retention_period: "7",
   recycle_bin_retention_days: 30,
   default_approver_ids: [],
 };
 
-const accessOptions = [
-  {
-    value: "all_staff",
-    label: "All staff",
-    description: "Everyone in the company can access the folder.",
-  },
-  {
-    value: "department",
-    label: "Specific departments",
-    description: "Limit access to selected departments.",
-  },
-  {
-    value: "grade",
-    label: "Specific grades",
-    description: "Limit access to selected job grades.",
-  },
-  {
-    value: "individual",
-    label: "Specific employees",
-    description: "Choose exactly who can access it.",
-  },
-  {
-    value: "admin_only",
-    label: "Admin only",
-    description: "Keep the folder restricted to document managers.",
-  },
-];
-
 const rolesSection = {
   id: "roles" as const,
   label: "Module roles",
   shortLabel: "Roles",
-  description: "Employee Files roles and platform administrator access.",
+  description: "Custom roles for Employee Files and Organizational Files, plus platform administrator access.",
   icon: Shield,
 };
 
@@ -145,45 +104,24 @@ export default function SettingsPage() {
   const currentUser = useCurrentUser();
   const params = useSearchParams();
   const { showToast } = useToast();
+  const { showConfirm } = useAppDialog();
   const save = useSaveSettings();
   const saveType = useSaveSettingsDocumentType();
   const toggleType = useToggleSettingsDocumentType();
   const deleteType = useDeleteSettingsDocumentType();
 
+  const [typeForm, setTypeForm] = useState<DocumentTypeFormValues | null>(null);
+
   const openDocumentTypeForm = (item?: Record<string, any>) => {
-    const base = {
-      name: "",
-      category: "other",
-      description: "",
-      is_mandatory_default: false,
-      expiry_applicable: false,
-      require_upload_approval: false,
-      require_issue_date: false,
-      require_description: false,
-      enable_versioning: true,
-      duplicate_detection_mode: "inherit" as const,
-      approval_flow: "any" as const,
-      approver_ids: [] as number[],
-      default_retention_years: 7,
-    };
-    if (!item) {
-      setTypeForm(base);
-      return;
-    }
-    setTypeForm({
-      ...base,
-      ...item,
-      approver_ids:
-        item.approver_ids ??
-        (item.approvers ?? []).map((approver: { id: number }) => approver.id),
-    });
+    setTypeForm(emptyDocumentTypeForm(item));
   };
 
   const handleDeleteDocumentType = async (item: { id: number; name: string }) => {
     if (
-      !window.confirm(
+      !(await showConfirm(
         `Delete document type "${item.name}"? This cannot be undone.`,
-      )
+        { title: "Delete document type", confirmLabel: "Delete" },
+      ))
     ) {
       return;
     }
@@ -207,7 +145,6 @@ export default function SettingsPage() {
   const updateOnboarding = useUpdateOnboarding();
   const [section, setSection] = useState<SectionId>("types");
   const [settings, setSettings] = useState<Record<string, any> | null>(null);
-  const [typeForm, setTypeForm] = useState<Record<string, any> | null>(null);
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState<{
     message: string;
@@ -228,9 +165,7 @@ export default function SettingsPage() {
   const guideSection: SectionId | null =
     guideTarget === "document-types" || guideTarget === "approval-workflow"
       ? "types"
-      : guideTarget === "sharing"
-        ? "access"
-        : null;
+      : null;
 
   useEffect(() => {
     if (query.data?.settings && !settings) setSettings(query.data.settings);
@@ -246,6 +181,9 @@ export default function SettingsPage() {
     }
     if (requestedSection === "employee_files") {
       setSection("employee_files");
+    }
+    if (requestedSection === "access") {
+      setSection("types");
     }
   }, [requestedSection, canManageRoles]);
 
@@ -313,8 +251,7 @@ export default function SettingsPage() {
   const isDocAdmin = currentUser.data?.is_document_admin === true;
 
   return (
-    <div className="min-h-full bg-[#f7f8fc] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1320px]">
+    <div className="app-page">
         {query.isError && (
           <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
@@ -349,25 +286,21 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
-          <div className="border-b border-slate-200 px-5 pt-5 sm:px-8 sm:pt-7">
-            <div className="overflow-x-auto pb-1">
-              <SectionTabs
-                items={visibleSections.map((item) => ({
-                  id: item.id,
-                  label: item.label,
-                  icon: item.icon,
-                  emphasisClassName:
-                    guideSection === item.id ? "guide-emphasis" : undefined,
-                }))}
-                value={section}
-                onChange={setSection}
-                ariaLabel="Settings sections"
-              />
-            </div>
-          </div>
-
-          <div className="min-h-[590px] p-5 sm:p-8">
+        <SectionTabs
+          items={visibleSections.map((item) => ({
+            id: item.id,
+            label: item.label,
+            icon: item.icon,
+            emphasisClassName:
+              guideSection === item.id ? "guide-emphasis" : undefined,
+          }))}
+          value={section}
+          onChange={setSection}
+          level="page"
+          stretch
+          ariaLabel="Settings sections"
+        />
+        <div className="mt-6">
             {query.isLoading ? (
               <LoadingState />
             ) : section === "types" ? (
@@ -419,14 +352,13 @@ export default function SettingsPage() {
               />
             )}
           </div>
-        </section>
-      </div>
 
       {typeForm && (
-        <TypeModal
+        <DocumentTypeFormDialog
           form={typeForm}
           setForm={setTypeForm}
-          submit={saveDocumentType}
+          onClose={() => setTypeForm(null)}
+          onSubmit={saveDocumentType}
           saving={saveType.isPending}
           allApprovers={allApprovers}
         />
@@ -437,14 +369,8 @@ export default function SettingsPage() {
 
 function LoadingState() {
   return (
-    <div className="flex min-h-[470px] flex-col items-center justify-center text-center">
-      <div className="h-9 w-9 animate-spin rounded-full border-2 border-pink-100 border-t-brand-pink" />
-      <p className="mt-4 text-sm font-bold text-slate-700">
-        Loading workspace settings
-      </p>
-      <p className="mt-1 text-xs text-slate-400">
-        Preparing your configuration controls.
-      </p>
+    <div className="app-page-body p-8 text-center text-sm text-slate-500">
+      Loading workspace settings…
     </div>
   );
 }
@@ -459,76 +385,54 @@ function Types({
   onDelete,
   loading,
 }: any) {
+  const paging = useClientPagination(types, `${types.length}:${search}`);
   return (
-    <section>
-      <div className="flex flex-col gap-5 border-b border-slate-100 pb-6 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-bold text-slate-900">Document types</h3>
-            <span className="rounded-full bg-pink-50 px-2.5 py-1 text-xs font-bold text-brand-text">
-              {total}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <label className="relative block sm:w-64">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search document types"
-              className="field pl-10"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => edit()}
-            className="inline-flex items-center justify-center gap-2 !rounded-xl bg-gradient-to-r from-brand-text to-brand-pink px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_18px_rgba(232,62,140,0.18)] transition hover:brightness-105"
-          >
+    <section className="app-table-well app-page-body">
+      <AppToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search document types"
+        actions={
+          <button type="button" onClick={() => edit()} className="app-btn app-btn-primary">
             <Plus className="h-4 w-4" /> Add type
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {types.length === 0 ? (
-        <div className="mt-7 flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-6 text-center">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-pink-50 text-brand-pink">
-            <FileText className="h-6 w-6" />
-          </div>
-          <h4 className="mt-4 text-base font-bold text-slate-800">
-            {total === 0
+        <EmptyState
+          title={
+            total === 0
               ? "Start your classification library"
-              : "No matching document types"}
-          </h4>
-          <p className="mt-1 max-w-md text-sm leading-6 text-slate-500">
-            {total === 0
+              : "No matching document types"
+          }
+          description={
+            total === 0
               ? "Create a document type so every upload has a clear, consistent home."
-              : "Try another search term or clear the search field."}
-          </p>
-          {total === 0 && (
-            <button
-              type="button"
-              onClick={() => edit()}
-              className="mt-5 !rounded-xl border border-brand-pink/30 bg-white px-4 py-2.5 text-sm font-bold text-brand-text hover:bg-pink-50"
-            >
-              Create first type
-            </button>
-          )}
-        </div>
+              : "Try another search term or clear the search field."
+          }
+          action={
+            total === 0 ? (
+              <button type="button" onClick={() => edit()} className="app-btn app-btn-primary">
+                Create first type
+              </button>
+            ) : null
+          }
+        />
       ) : (
-        <div className="mt-7 overflow-x-auto rounded-2xl border border-slate-200">
-          <table className="w-full min-w-[720px] text-left">
-            <thead className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+        <div className="overflow-x-auto">
+          <table className="ef-table min-w-[720px] text-left">
+            <thead>
               <tr>
-                <th className="px-5 py-4">Document type</th>
-                <th className="px-5 py-4">Category</th>
-                <th className="px-5 py-4">Retention</th>
-                <th className="px-5 py-4">Status</th>
-                <th className="px-5 py-4 text-right">Actions</th>
+                <th>Document type</th>
+                <th>Category</th>
+                <th>Retention</th>
+                <th>Status</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {types.map((item: any) => (
+            <tbody>
+              {paging.items.map((item: any) => (
                 <tr key={item.id} className="transition hover:bg-pink-50/30">
                   <td className="px-5 py-4">
                     <p className="text-sm font-bold text-slate-800">
@@ -539,19 +443,15 @@ function Types({
                     </p>
                   </td>
                   <td className="px-5 py-4 text-sm text-slate-600">
-                    {categories.find(([id]) => id === item.category)?.[1] ||
+                    {DOCUMENT_TYPE_CATEGORIES.find(([id]) => id === item.category)?.[1] ||
                       item.category}
                   </td>
                   <td className="px-5 py-4 text-sm text-slate-600">
                     {item.default_retention_years} years
                   </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-bold ${item.active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}
-                    >
-                      {item.active ? "Active" : "Inactive"}
-                    </span>
-                  </td>
+                    <td>
+                      <StatusPill label={item.active ? "Active" : "Inactive"} />
+                    </td>
                   <td className="px-5 py-4 text-right">
                     <div className="inline-flex items-center justify-end gap-1">
                       <button
@@ -593,6 +493,12 @@ function Types({
               ))}
             </tbody>
           </table>
+          <ListPagination
+            page={paging.page}
+            pageSize={paging.pageSize}
+            total={paging.total}
+            onPageChange={paging.setPage}
+          />
         </div>
       )}
     </section>
@@ -608,12 +514,6 @@ function SettingsPanel({
 }: any) {
   return (
     <section>
-      {section === "access" && (
-        <AccessPanel
-          value={values.default_access_scope || "all_staff"}
-          update={update}
-        />
-      )}
       {section === "lifecycle" && (
         <LifecyclePanel values={values} update={update} />
       )}
@@ -636,94 +536,60 @@ function SettingsPanel({
   );
 }
 
-function AccessPanel({ value, update }: any) {
-  return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {accessOptions.map((option) => {
-        const active = value === option.value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => update("default_access_scope", option.value)}
-            className={`flex items-start gap-4 !rounded-2xl border p-5 text-left transition ${active ? "border-brand-pink bg-pink-50/60 shadow-sm" : "border-slate-200 bg-white hover:border-pink-200 hover:bg-pink-50/20"}`}
-          >
-            <span
-              className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${active ? "border-brand-pink" : "border-slate-300"}`}
-            >
-              {active && (
-                <span className="h-2.5 w-2.5 rounded-full bg-brand-pink" />
-              )}
-            </span>
-            <span>
-              <span className="block text-sm font-bold text-slate-800">
-                {option.label}
-              </span>
-              <span className="mt-1 block text-xs leading-5 text-slate-500">
-                {option.description}
-              </span>
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 function LifecyclePanel({ values, update }: any) {
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <div className="rounded-2xl border border-slate-200 p-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-brand-pink">
-          <History className="h-5 w-5" />
-        </div>
-        <h4 className="mt-4 text-sm font-bold text-slate-900">
-          Default retention
-        </h4>
-        <p className="mt-1 text-xs leading-5 text-slate-500">
-          Applied to new folders unless an administrator chooses a different
-          period.
-        </p>
-        <div className="mt-5">
-          <ThemedSelect
-            value={values.default_retention_period || "7"}
-            onChange={(value) => update("default_retention_period", value)}
-            options={[
-              { value: "1", label: "1 year" },
-              { value: "3", label: "3 years" },
-              { value: "5", label: "5 years" },
-              { value: "7", label: "7 years" },
-              { value: "10", label: "10 years" },
-              { value: "permanent", label: "Permanent" },
-            ]}
-          />
-        </div>
-      </div>
-      <div className="rounded-2xl border border-slate-200 p-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-brand-primary">
-          <History className="h-5 w-5" />
-        </div>
-        <h4 className="mt-4 text-sm font-bold text-slate-900">
-          Recycle-bin retention
-        </h4>
-        <p className="mt-1 text-xs leading-5 text-slate-500">
-          Deleted items remain recoverable for this many days before cleanup.
-        </p>
-        <div className="relative mt-5">
-          <input
-            type="number"
-            min="1"
-            className="field bg-slate-50 pr-16"
-            value={values.recycle_bin_retention_days || 30}
-            onChange={(event) =>
-              update("recycle_bin_retention_days", Number(event.target.value))
-            }
-          />
-          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-            days
-          </span>
-        </div>
-      </div>
+    <div className="app-page-body">
+      <table>
+        <thead>
+          <tr>
+            <th>Setting</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <p className="font-semibold">Default retention</p>
+              <p className="text-xs text-slate-500">
+                Applied to new folders unless an administrator chooses a different period.
+              </p>
+            </td>
+            <td className="w-56">
+              <ThemedSelect
+                value={values.default_retention_period || "7"}
+                onChange={(value) => update("default_retention_period", value)}
+                options={[
+                  { value: "1", label: "1 year" },
+                  { value: "3", label: "3 years" },
+                  { value: "5", label: "5 years" },
+                  { value: "7", label: "7 years" },
+                  { value: "10", label: "10 years" },
+                  { value: "permanent", label: "Permanent" },
+                ]}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <p className="font-semibold">Recycle-bin retention</p>
+              <p className="text-xs text-slate-500">
+                Deleted items remain recoverable for this many days before cleanup.
+              </p>
+            </td>
+            <td>
+              <input
+                type="number"
+                min="1"
+                className="field"
+                value={values.recycle_bin_retention_days || 30}
+                onChange={(event) =>
+                  update("recycle_bin_retention_days", Number(event.target.value))
+                }
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -793,336 +659,5 @@ function OnboardingPanel({
         })}
       </div>
     </section>
-  );
-}
-
-function Switch({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={onChange}
-      className={`relative h-7 w-12 !rounded-full p-1 transition ${checked ? "bg-brand-pink" : "bg-slate-300"}`}
-    >
-      <span
-        className={`block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-5" : "translate-x-0"}`}
-      />
-    </button>
-  );
-}
-
-function TypeApprovalEditor({ form, setForm, allApprovers }: any) {
-  const selectedIds: number[] = form.approver_ids ?? [];
-  const sequential = form.approval_flow === "sequential";
-
-  const toggleApprover = (id: number) => {
-    const next = selectedIds.includes(id)
-      ? selectedIds.filter((value) => value !== id)
-      : [...selectedIds, id];
-    setForm({ ...form, approver_ids: next });
-  };
-
-  const moveApprover = (id: number, direction: -1 | 1) => {
-    const index = selectedIds.indexOf(id);
-    const nextIndex = index + direction;
-    if (index < 0 || nextIndex < 0 || nextIndex >= selectedIds.length) return;
-    const next = [...selectedIds];
-    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-    setForm({ ...form, approver_ids: next });
-  };
-
-  const selectedPeople = selectedIds
-    .map((id) => allApprovers.find((item: any) => Number(item.id) === id))
-    .filter(Boolean);
-
-  return (
-    <div className="sm:col-span-2 space-y-4 rounded-2xl border border-pink-100 bg-pink-50/30 p-4">
-      <p className="text-sm font-bold text-slate-800">Approval pipeline</p>
-      <div className="grid gap-1 rounded-xl bg-slate-100 p-1 sm:grid-cols-3">
-        {[
-          {
-            value: "any",
-            label: "Single approver",
-            description: "One selected reviewer can approve.",
-          },
-          {
-            value: "sequential",
-            label: "Sequential",
-            description: "Reviewers approve in the order you set.",
-          },
-          {
-            value: "random",
-            label: "All approvers",
-            description: "Everyone must approve.",
-          },
-        ].map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() =>
-              setForm({ ...form, approval_flow: option.value })
-            }
-            aria-pressed={form.approval_flow === option.value}
-            className={`!rounded-lg px-3 py-2.5 text-left transition ${form.approval_flow === option.value ? "bg-white text-brand-text shadow-sm" : "text-slate-400 hover:bg-white/70 hover:text-slate-700"}`}
-          >
-            <span className="block text-xs font-bold">{option.label}</span>
-            <span className="mt-1 block text-[10px] font-medium leading-4 text-slate-500">
-              {option.description}
-            </span>
-          </button>
-        ))}
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
-          {allApprovers.map((person: any) => {
-            const active = selectedIds.includes(Number(person.id));
-            return (
-              <button
-                key={person.id}
-                type="button"
-                onClick={() => toggleApprover(Number(person.id))}
-                className={`mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${active ? "bg-pink-50 font-semibold text-brand-text" : "text-slate-600 hover:bg-slate-50"}`}
-              >
-                <span>{person.name}</span>
-                {active ? <Check className="h-4 w-4" /> : null}
-              </button>
-            );
-          })}
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-            Selected approvers
-          </p>
-          {selectedPeople.length ? (
-            <ul className="mt-2 space-y-2">
-              {selectedPeople.map((person: any) => (
-                <li
-                  key={person.id}
-                  className="flex items-center justify-between gap-2 text-sm font-medium text-slate-700"
-                >
-                  <span>{person.name}</span>
-                  {sequential ? (
-                    <span className="flex gap-1">
-                      <button
-                        type="button"
-                        aria-label="Move up"
-                        onClick={() => moveApprover(Number(person.id), -1)}
-                        className="rounded-lg p-1 hover:bg-slate-100"
-                      >
-                        <ArrowUp className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Move down"
-                        onClick={() => moveApprover(Number(person.id), 1)}
-                        className="rounded-lg p-1 hover:bg-slate-100"
-                      >
-                        <ArrowDown className="h-3.5 w-3.5" />
-                      </button>
-                    </span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-2 text-xs text-slate-500">
-              Choose at least one approver for this type.
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TypeModal({ form, setForm, submit, saving, allApprovers }: any) {
-  return (
-    <ModalDialog
-      title={form.id ? "Edit document type" : "Add document type"}
-      description="Give uploads a clear, consistent classification."
-      onClose={() => setForm(null)}
-      size="xl"
-      backdropClassName="bg-slate-950/35"
-    >
-      <form onSubmit={submit}>
-        <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-brand-pink">
-          <FileText className="h-5 w-5" />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="sm:col-span-2">
-            <span className="label">Name</span>
-            <input
-              required
-              className="field"
-              value={form.name}
-              onChange={(event) =>
-                setForm({ ...form, name: event.target.value })
-              }
-              placeholder="e.g. Employment contract"
-            />
-          </label>
-          <label>
-            <span className="label">Category</span>
-            <ThemedSelect
-              value={form.category}
-              onChange={(value) => setForm({ ...form, category: value })}
-              options={categories.map(([value, label]) => ({ value, label }))}
-            />
-          </label>
-          <label>
-            <span className="label">Default retention</span>
-            <div className="relative">
-              <input
-                type="number"
-                min="0"
-                className="field pr-16"
-                value={form.default_retention_years}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    default_retention_years: Number(event.target.value),
-                  })
-                }
-              />
-              <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                years
-              </span>
-            </div>
-          </label>
-          <label className="sm:col-span-2">
-            <span className="label">
-              Description{" "}
-              <em className="font-normal normal-case tracking-normal text-slate-400">
-                (optional)
-              </em>
-            </span>
-            <textarea
-              className="field min-h-24"
-              value={form.description}
-              onChange={(event) =>
-                setForm({ ...form, description: event.target.value })
-              }
-              placeholder="When should this type be used?"
-            />
-          </label>
-          <label className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              checked={form.is_mandatory_default}
-              onChange={(event) =>
-                setForm({ ...form, is_mandatory_default: event.target.checked })
-              }
-              className="h-4 w-4 accent-pink-600"
-            />
-            Make this mandatory by default
-          </label>
-          <label className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              checked={Boolean(form.expiry_applicable)}
-              onChange={(event) =>
-                setForm({ ...form, expiry_applicable: event.target.checked })
-              }
-              className="h-4 w-4 accent-pink-600"
-            />
-            Expiry applicable
-          </label>
-          <label className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              checked={Boolean(form.enable_versioning ?? true)}
-              onChange={(event) =>
-                setForm({ ...form, enable_versioning: event.target.checked })
-              }
-              className="h-4 w-4 accent-pink-600"
-            />
-            Enable versioning (Update replaces current file)
-          </label>
-          <label className="sm:col-span-2 block">
-            <span className="label">Duplicate handling</span>
-            <ThemedSelect
-              value={String(form.duplicate_detection_mode || "inherit")}
-              onChange={(value) =>
-                setForm({ ...form, duplicate_detection_mode: value })
-              }
-              options={[
-                { value: "inherit", label: "Inherit company default" },
-                { value: "warn", label: "Warn user" },
-                { value: "prevent", label: "Prevent duplicate" },
-                {
-                  value: "allow_confirm",
-                  label: "Allow with confirmation",
-                },
-              ]}
-            />
-          </label>
-          <label className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              checked={Boolean(form.require_upload_approval)}
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  require_upload_approval: event.target.checked,
-                })
-              }
-              className="h-4 w-4 accent-pink-600"
-            />
-            Require approval before this type becomes current
-          </label>
-          {form.require_upload_approval ? (
-            <TypeApprovalEditor
-              form={form}
-              setForm={setForm}
-              allApprovers={allApprovers}
-            />
-          ) : null}
-          <label className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              checked={Boolean(form.require_issue_date)}
-              onChange={(event) =>
-                setForm({ ...form, require_issue_date: event.target.checked })
-              }
-              className="h-4 w-4 accent-pink-600"
-            />
-            Require issue date on upload
-          </label>
-          <label className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              checked={Boolean(form.require_description)}
-              onChange={(event) =>
-                setForm({ ...form, require_description: event.target.checked })
-              }
-              className="h-4 w-4 accent-pink-600"
-            />
-            Require description on upload
-          </label>
-        </div>
-        <div className="mt-8 flex justify-end gap-2 border-t border-slate-100 pt-5">
-          <button
-            type="button"
-            onClick={() => setForm(null)}
-            className="!rounded-xl px-4 py-2.5 font-semibold text-slate-500 hover:bg-slate-50"
-          >
-            Cancel
-          </button>
-          <button
-            disabled={saving}
-            className="!rounded-xl bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 font-bold text-white shadow-[0_8px_18px_rgba(232,62,140,0.18)] disabled:opacity-60"
-          >
-            {saving ? "Saving…" : "Save type"}
-          </button>
-        </div>
-      </form>
-    </ModalDialog>
   );
 }

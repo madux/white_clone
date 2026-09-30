@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useCreateException, useMyCompliance } from "../../../hooks/useDocuments";
 import { formatStatusLabel } from "../../../lib/formatLabel";
+import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
 
 const statusStyles: Record<string, string> = {
   compliant: "bg-emerald-50 text-emerald-700",
@@ -15,7 +16,11 @@ const statusStyles: Record<string, string> = {
   complete: "bg-emerald-50 text-emerald-700",
 };
 
-export default function MyCompliancePage() {
+export default function MyCompliancePage({
+  embedded = false,
+}: {
+  embedded?: boolean;
+}) {
   const compliance = useMyCompliance();
   const createException = useCreateException();
   const data = compliance.data;
@@ -49,7 +54,7 @@ export default function MyCompliancePage() {
   }
 
   return (
-    <div className="mx-auto min-h-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
+    <div className={embedded ? "space-y-6" : "app-page space-y-6"}>
       {compliance.error && (
         <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
           <AlertCircle className="h-5 w-5 shrink-0" />
@@ -57,30 +62,16 @@ export default function MyCompliancePage() {
         </div>
       )}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="app-page-metrics">
         {[
-          { label: "Compliant policies", value: summary?.compliant, icon: CheckCircle2 },
-          { label: "Partially compliant", value: summary?.partial, icon: Clock3 },
-          { label: "Non-compliant", value: summary?.non_compliant, icon: AlertCircle },
-          { label: "Outstanding items", value: summary?.outstanding_count, icon: ShieldCheck },
-        ].map(({ label, value, icon: Icon }) => (
-          <div
-            key={label}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">{label}</p>
-                {compliance.isLoading ? (
-                  <div className="mt-2 h-9 w-12 animate-pulse rounded-xl bg-slate-200" />
-                ) : (
-                  <p className="mt-1 text-3xl font-bold text-slate-900">{value ?? 0}</p>
-                )}
-              </div>
-              <div className="rounded-xl bg-pink-50 p-2.5 text-brand-pink">
-                <Icon className="h-5 w-5" />
-              </div>
-            </div>
+          { label: "Compliant policies", value: summary?.compliant },
+          { label: "Partially compliant", value: summary?.partial },
+          { label: "Non-compliant", value: summary?.non_compliant },
+          { label: "Outstanding items", value: summary?.outstanding_count },
+        ].map(({ label, value }) => (
+          <div key={label} className="app-page-metric">
+            <span>{label}</span>
+            <strong>{compliance.isLoading ? "…" : value ?? 0}</strong>
           </div>
         ))}
       </section>
@@ -191,7 +182,7 @@ export default function MyCompliancePage() {
                 </div>
               ))}
               <Link
-                href="/pages/my-documents"
+                href={myWorkspaceHref("documents")}
                 className="mt-4 inline-flex text-sm font-bold text-brand-pink hover:underline"
               >
                 Upload in My Documents

@@ -1,4 +1,5 @@
 from odoo import fields, http
+from odoo.exceptions import AccessError, UserError
 from odoo.http import request
 
 
@@ -233,13 +234,20 @@ class DocumentActions(http.Controller):
     )
     def update_document(self, id=None, **kwargs):
         """Update document metadata through the same manager boundary as the model."""
-        if not request.env.user.has_group(
-            "cleon_document_management.group_document_manager"
-        ):
-            return {"success": False, "message": "Document manager access is required."}
         document = request.env["doc.document"].browse(int(id or 0)).exists()
         if not document:
             return {"success": False, "message": "Document not found."}
+        is_manager = request.env.user.has_group(
+            "cleon_document_management.group_document_manager"
+        )
+        org_ok = (
+            document.folder_id.folder_type == "organizational"
+            and request.env["doc.organizational.files.permission"].user_can_manage_org_document(
+                request.env.user
+            )
+        )
+        if not is_manager and not org_ok:
+            return {"success": False, "message": "Document manager access is required."}
         allowed = {
             key: kwargs[key]
             for key in (
@@ -356,15 +364,59 @@ class DocumentActions(http.Controller):
         if not document:
             return {"success": False, "message": "Document not found."}
         document.check_access_rule("read")
+        org_perm = request.env["doc.organizational.files.permission"]
+        is_org = document.folder_id.folder_type == "organizational"
         if action == "favorite":
             document.action_toggle_favorite()
         elif action == "pin":
             document.action_toggle_pin()
         elif action == "delete":
+            if is_org and not org_perm.user_can_delete_org_document(request.env.user):
+                return {
+                    "success": False,
+                    "message": "You do not have permission to delete this document.",
+                }
             document.action_move_to_recycle_bin()
             return {"success": True, "data": {"deleted": True}}
         elif action == "archive":
+            if is_org and not org_perm.user_can_manage_org_document(request.env.user):
+                return {
+                    "success": False,
+                    "message": "You do not have permission to archive this document.",
+                }
             document.action_archive()
+        elif action == "copy" and is_org:
+            if not org_perm.user_can_manage_org_document(request.env.user):
+                return {
+                    "success": False,
+                    "message": "You do not have permission to copy this document.",
+                }
+            destination_id = kwargs.get("folder_id") or document.folder_id.id
+            destination = request.env["doc.folder"].browse(int(destination_id)).exists()
+            if not destination or destination.folder_type != "organizational":
+                return {"success": False, "message": "Destination folder not found."}
+            try:
+                destination.assert_unlocked(for_upload=True)
+                copy = document.with_context(org_document_copy=True).copy(
+                    default={
+                        "folder_id": destination.id,
+                        "name": f"{document.name} (Copy)",
+                    }
+                )
+            except UserError as error:
+                return {"success": False, "message": error.args[0]}
+            return {
+                "success": True,
+                "data": copy.serialize_for_api(request.env.user),
+            }
+        elif action == "print":
+            return {
+                "success": True,
+                "data": {
+                    "document_id": document.id,
+                    "print": True,
+                },
+            }
         elif action == "deactivate":
             document.action_deactivate()
         elif action == "restore":

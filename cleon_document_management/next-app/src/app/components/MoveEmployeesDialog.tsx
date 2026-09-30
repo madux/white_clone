@@ -3,6 +3,7 @@
 import { FolderInput } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useMoveEmployeesBetweenFolders } from "../../../hooks/useDocuments";
+import AppSelect from "./AppSelect";
 import ModalDialog from "./ModalDialog";
 
 type Folder = { id: number; folder_name: string; folder_type: "employee" | "organizational" };
@@ -48,10 +49,16 @@ export default function MoveEmployeesDialog({ employeeIds, sourceFolderId, folde
     >
       <label className="block">
         <span className="label">Destination folder</span>
-        <select value={destinationId} onChange={(event) => setDestinationId(event.target.value)} className="field" disabled={move.isPending || !destinations.length}>
-          {!destinations.length && <option value="">No compatible folders available</option>}
-          {destinations.map((folder) => <option key={folder.id} value={folder.id}>{folder.folder_name}</option>)}
-        </select>
+        <AppSelect
+          value={destinationId}
+          onChange={setDestinationId}
+          disabled={move.isPending || !destinations.length}
+          placeholder="No compatible folders available"
+          options={destinations.map((folder) => ({
+            value: String(folder.id),
+            label: folder.folder_name,
+          }))}
+        />
       </label>
       {error && <p role="alert" className="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <div className="mt-6 flex justify-end gap-2">

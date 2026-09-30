@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, CheckCircle2, Folder, FolderInput, RotateCcw, Search, Trash2 } from "lucide-react";
+import { Archive, Folder, FolderInput, RotateCcw, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   useCurrentUser,
@@ -10,9 +10,14 @@ import {
   useFolderLifecycle,
   useFolders,
 } from "../../../hooks/useDocuments";
+import { useAppDialog } from "../../../hooks/useAppDialog";
 import type { DocDocument } from "../../../lib/types";
 import MoveRecycledFolderDocumentsDialog from "./MoveRecycledFolderDocumentsDialog";
 import ModalDialog from "./ModalDialog";
+import AppToolbar from "./AppToolbar";
+import LibraryFileTable, { type LibraryFileRow } from "./LibraryFileTable";
+import { Button } from "@/components/ui/button";
+import { formatDocumentDate } from "../../../lib/formatDocumentDate";
 
 type LifecycleRecord = {
   id: number;
@@ -30,8 +35,10 @@ type LifecycleRecord = {
 
 export default function DocumentLifecyclePage({
   lifecycle,
+  embedded = false,
 }: {
   lifecycle: "archived" | "recycle_bin";
+  embedded?: boolean;
 }) {
   const documents = useDocumentLifecycle(lifecycle);
   const folders = useFolderLifecycle(lifecycle);
@@ -39,6 +46,7 @@ export default function DocumentLifecyclePage({
   const documentAction = useDocumentAction();
   const folderAction = useFolderAction();
   const currentUser = useCurrentUser();
+  const { showConfirm } = useAppDialog();
   const isManager = currentUser.data?.is_document_manager === true;
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -96,7 +104,13 @@ export default function DocumentLifecyclePage({
       const message = linkedFolderCount
         ? `Delete ${selected.length} selected item${selected.length === 1 ? "" : "s"}? ${linkedFolderCount} folder${linkedFolderCount === 1 ? "" : "s"} still have linked documents that will be deleted too. Move files first if you want to keep them. This cannot be undone.`
         : `Delete ${selected.length} selected item${selected.length === 1 ? "" : "s"}? This cannot be undone.`;
-      if (!window.confirm(message)) return;
+      if (
+        !(await showConfirm(message, {
+          title: "Delete selected items",
+          confirmLabel: "Delete",
+        }))
+      )
+        return;
     }
     for (const record of selectedRecords) {
       if (action === "permanent_delete" && record.record_type === "folder") {
@@ -116,22 +130,29 @@ export default function DocumentLifecyclePage({
   const linkedCount = (record: LifecycleRecord) =>
     record.record_type === "folder" ? (record.linked_document_count ?? 0) : 0;
 
-  const confirmDelete = (record: LifecycleRecord) => {
+  const confirmDelete = async (record: LifecycleRecord) => {
     const label = record.folder_name ?? record.name;
     if (record.record_type === "folder") {
       const linked = linkedCount(record);
       if (linked > 0) {
-        return window.confirm(
+        return showConfirm(
           `Delete "${label}" and all ${linked} linked document${linked === 1 ? "" : "s"}? Use Move files first if you want to keep any documents. This cannot be undone.`,
+          { title: "Delete folder", confirmLabel: "Delete" },
         );
       }
-      return window.confirm(`Delete "${label}"? This cannot be undone.`);
+      return showConfirm(`Delete "${label}"? This cannot be undone.`, {
+        title: "Delete folder",
+        confirmLabel: "Delete",
+      });
     }
-    return window.confirm(`Delete "${label}"? This cannot be undone.`);
+    return showConfirm(`Delete "${label}"? This cannot be undone.`, {
+      title: "Delete document",
+      confirmLabel: "Delete",
+    });
   };
 
   const deleteRecord = async (record: LifecycleRecord) => {
-    if (!confirmDelete(record)) return;
+    if (!(await confirmDelete(record))) return;
     if (record.record_type === "folder") {
       const linked = linkedCount(record);
       await perform(record, linked > 0 ? "force_permanent_delete" : "permanent_delete");
@@ -144,184 +165,117 @@ export default function DocumentLifecyclePage({
   const allSelected = rows.length > 0 && rows.every((item: LifecycleRecord) => selected.includes(keyOf(item)));
 
   return (
-    <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-end">
-        <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm">
-          <p className="text-2xl font-bold text-brand-text">{rows.length}</p>
-          <p className="text-xs font-semibold text-slate-400">
-            {recycle ? "in recycle bin" : "archived records"}
-          </p>
-        </div>
-      </div>
+    <div className={embedded ? "space-y-6" : "app-page space-y-6"}>
+      <section className="app-table-well app-page-body">
+        <AppToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search files and folders..."
+        />
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 p-4">
-          <label className="relative block max-w-md">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search files and folders..."
-              className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-pink/40 focus:bg-white focus:ring-4 focus:ring-brand-pink/10"
-            />
-          </label>
-        </div>
-
-        {selected.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 border-b border-pink-100 bg-pink-50 p-2.5">
-            <span className="px-2 text-sm font-bold text-brand-text">{selected.length} selected</span>
-            <button
-              type="button"
-              onClick={() => runSelected("restore")}
-              className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-brand-text"
-            >
+        {selected.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
+            <span className="text-sm font-medium">{selected.length} selected</span>
+            <Button size="sm" variant="outline" onClick={() => runSelected("restore")}>
               Restore selected
-            </button>
-            {recycle && isManager && (
-              <button
-                type="button"
+            </Button>
+            {recycle && isManager ? (
+              <Button
+                size="sm"
+                variant="destructive"
                 onClick={() => runSelected("permanent_delete")}
-                className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-red-600"
               >
                 Delete selected
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setSelected([])}
-              className="ml-auto rounded-lg px-3 py-2 text-xs font-bold text-slate-500"
-            >
+              </Button>
+            ) : null}
+            <Button size="sm" variant="ghost" onClick={() => setSelected([])}>
               Clear
-            </button>
+            </Button>
           </div>
-        )}
+        ) : null}
 
-        {documents.isLoading || folders.isLoading ? (
-          <div className="space-y-3 p-5">
-            <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
-            <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
-          </div>
-        ) : rows.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left">
-              <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                <tr>
-                  <th className="w-12 px-5 py-4">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={() =>
-                        setSelected(allSelected ? [] : rows.map((item: LifecycleRecord) => keyOf(item)))
-                      }
-                      aria-label="Select all lifecycle items"
-                      className="h-4 w-4 accent-pink-600"
-                    />
-                  </th>
-                  <th className="px-5 py-4">Item</th>
-                  <th className="px-5 py-4">Location</th>
-                  <th className="px-5 py-4">Type</th>
-                  <th className="px-5 py-4">Date</th>
-                  <th className="px-5 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rows.map((record: LifecycleRecord) => (
-                  <tr key={keyOf(record)} className="hover:bg-pink-50/30">
-                    <td className="w-12 px-5 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(keyOf(record))}
-                        onChange={() =>
-                          setSelected((current) =>
-                            current.includes(keyOf(record))
-                              ? current.filter((id) => id !== keyOf(record))
-                              : [...current, keyOf(record)],
-                          )
-                        }
-                        aria-label={`Select ${record.name}`}
-                        className="h-4 w-4 accent-pink-600"
-                      />
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <span className="rounded-xl bg-pink-50 p-2.5 text-brand-pink">
-                          {record.record_type === "folder" ? (
-                            <Folder className="h-5 w-5" />
-                          ) : (
-                            <Archive className="h-5 w-5" />
-                          )}
-                        </span>
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">{record.name}</p>
-                          <p className="mt-1 text-xs text-slate-400">
-                            {record.record_type === "folder"
-                              ? linkedCount(record) > 0
-                                ? `${linkedCount(record)} linked document${linkedCount(record) === 1 ? "" : "s"} (includes pending uploads)`
-                                : "No linked documents"
-                              : record.employee_name !== "N/A"
-                                ? record.employee_name
-                                : "Organizational record"}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-600">
-                      {record.record_type === "folder" ? "Folder" : record.folder_name}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-600">
-                      {record.record_type === "folder"
-                        ? `${record.folder_type === "employee" ? "Employee" : "Organizational"} folder`
-                        : record.document_type}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-500">
-                      {(recycle ? record.recycle_bin_until : record.write_date)?.slice(0, 10) ?? "—"}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex justify-end gap-2">
-                        {recycle &&
-                          isManager &&
-                          record.record_type === "folder" &&
-                          linkedCount(record) > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => setMoveFolder(record)}
-                              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                            >
-                              <FolderInput className="h-3.5 w-3.5" />
-                              Move files
-                            </button>
-                          )}
-                        <button
-                          type="button"
-                          onClick={() => perform(record, "restore")}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-pink-200 px-3 py-2 text-xs font-bold text-brand-text hover:bg-pink-50"
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" />
-                          Restore
-                        </button>
-                        {recycle && isManager && (
-                          <button
-                            type="button"
-                            onClick={() => void deleteRecord(record)}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-red-200 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center p-16 text-center">
-            <CheckCircle2 className="h-9 w-9 text-brand-pink" />
-            <p className="mt-4 font-bold text-slate-700">Nothing here</p>
-          </div>
-        )}
+        <LibraryFileTable
+          rows={rows.map((record: LifecycleRecord) => {
+            const key = keyOf(record);
+            return {
+              id: key,
+              kind: record.record_type === "folder" ? "folder" : "file",
+              icon: record.record_type === "folder" ? <Folder /> : <Archive />,
+              name: record.name,
+              subtitle:
+                record.record_type === "folder"
+                  ? linkedCount(record) > 0
+                    ? `${linkedCount(record)} linked document${linkedCount(record) === 1 ? "" : "s"}`
+                    : "No linked documents"
+                  : record.employee_name !== "N/A"
+                    ? record.employee_name
+                    : "Organizational record",
+              owner:
+                record.record_type === "folder"
+                  ? `${record.folder_type === "employee" ? "Employee" : "Organizational"} folder`
+                  : record.document_type || "—",
+              location: record.record_type === "folder" ? "Folder" : record.folder_name,
+              modified: formatDocumentDate(
+                recycle ? record.recycle_bin_until : record.write_date,
+              ),
+              selected: selected.includes(key),
+              onSelectChange: () =>
+                setSelected((current) =>
+                  current.includes(key)
+                    ? current.filter((id) => id !== key)
+                    : [...current, key],
+                ),
+              actions: (
+                <span className="flex justify-end gap-1">
+                  {recycle &&
+                  isManager &&
+                  record.record_type === "folder" &&
+                  linkedCount(record) > 0 ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setMoveFolder(record)}
+                    >
+                      <FolderInput data-icon="inline-start" />
+                      Move
+                    </Button>
+                  ) : null}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void perform(record, "restore")}
+                  >
+                    <RotateCcw data-icon="inline-start" />
+                    Restore
+                  </Button>
+                  {recycle && isManager ? (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => void deleteRecord(record)}
+                    >
+                      <Trash2 data-icon="inline-start" />
+                      Delete
+                    </Button>
+                  ) : null}
+                </span>
+              ),
+            } satisfies LibraryFileRow;
+          })}
+          loading={documents.isLoading || folders.isLoading}
+          selectable
+          allSelected={allSelected}
+          onToggleAll={(checked) =>
+            setSelected(checked ? rows.map((item: LifecycleRecord) => keyOf(item)) : [])
+          }
+          showLocation
+          emptyTitle="Nothing here"
+          emptyDescription={
+            recycle
+              ? "Deleted files will appear in this trash list."
+              : "Archived files will appear in this list."
+          }
+        />
       </section>
 
       {moveFolder && (
@@ -343,12 +297,11 @@ export default function DocumentLifecyclePage({
       {dialogMessage && (
         <ModalDialog
           title="Action notice"
-          description={dialogMessage}
           onClose={() => setDialogMessage(null)}
           size="sm"
           fullscreenable={false}
         >
-          <div />
+          <p className="text-sm text-slate-600">{dialogMessage}</p>
         </ModalDialog>
       )}
     </div>

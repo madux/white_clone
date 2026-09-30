@@ -21,11 +21,18 @@ import { useClickOutside } from "../../../hooks/useClickOutside";
 import type {
   AdminAttention,
   ApprovalInboxItem,
+  DocDocument,
   ExpiringDocument,
   ReviewAlertItem,
 } from "../../../lib/types";
-import { documentViewHref } from "../../../lib/documentLinks";
+import {
+  acknowledgementViewHref,
+  documentViewHref,
+} from "../../../lib/documentLinks";
+import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
+import { groupMetricResults } from "./EmployeeMetricPicker";
 import BackButton from "./BackButton";
+import Sidebar from "./Sidebar";
 
 type AttentionItem = AdminAttention["notifications"][number] | ApprovalInboxItem;
 
@@ -42,7 +49,7 @@ function attentionHref(item: AttentionItem, isDocumentManager: boolean) {
     );
   }
   if (!isDocumentManager) {
-    return "/pages/my-documents/";
+    return myWorkspaceHref("documents");
   }
   return item.employee_id
     ? `/pages/employee/profile/?employee=${item.employee_id}`
@@ -211,15 +218,33 @@ export default function Header() {
           href: documentViewHref(document, isDocumentManager),
           kind: "Document",
         })),
+      ...(isDocumentManager
+        ? groupMetricResults(
+            (targets.data?.employees ?? []).map((employee) => ({
+              id: employee.id,
+              name: employee.name,
+              department_name: employee.department,
+              job_title: employee.job_title,
+              work_location: employee.work_location || employee.location,
+              grade: employee.grade,
+            })),
+            query,
+          ).map((group) => ({
+            label: group.label,
+            detail: `${group.dimension} · ${group.employees.length} employees`,
+            href: `/pages/employee?search=${encodeURIComponent(group.label)}`,
+            kind: "Group",
+          }))
+        : []),
       ...(isDocumentManager ? targets.data?.employees ?? [] : [])
         .filter((employee) =>
           matches(
-            `${employee.name} ${employee.job_title} ${employee.department}`,
+            `${employee.name} ${employee.job_title} ${employee.department} ${employee.location || ""} ${employee.work_location || ""} ${employee.grade || ""}`,
           ),
         )
         .map((employee) => ({
           label: employee.name,
-          detail: employee.job_title || "Employee",
+          detail: [employee.job_title, employee.department].filter(Boolean).join(" · ") || "Employee",
           href: `/pages/employee/profile?employee=${employee.id}`,
           kind: "Employee",
         })),
@@ -234,21 +259,21 @@ export default function Header() {
       ...(!isDocumentManager
         ? [
             {
-              label: "My Documents",
+              label: "Documents",
               detail: "Your personal workspace",
-              href: "/pages/my-documents",
+              href: myWorkspaceHref("documents"),
               kind: "Workspace",
             },
             {
               label: "Shared Documents",
               detail: "Documents shared with you",
-              href: "/pages/my-documents?tab=shared",
+              href: myWorkspaceHref("documents", { scope: "shared" }),
               kind: "Workspace",
             },
             {
               label: "My Compliance",
               detail: "Your policy evaluations",
-              href: "/pages/my-compliance",
+              href: myWorkspaceHref("compliance"),
               kind: "Compliance",
             },
           ].filter((item) => matches(`${item.label} ${item.detail}`))
@@ -264,23 +289,40 @@ export default function Header() {
     query,
     targets.data,
   ]);
+  const attentionNotifications = (attention.data?.notifications ?? []).filter(
+    (item) => Boolean(item.employee_id),
+  );
+  const approvalItems = (approvalInbox.data?.items ?? []).filter(
+    (item) => item.folder_type !== "organizational",
+  );
+  const pendingAcknowledgements = (myWorkspace.data?.shared_documents ?? []).filter(
+    (document: DocDocument) => document.acknowledged === false,
+  );
   const attentionItems = attentionOpen === "approval-inbox"
-    ? approvalInbox.data?.items ?? []
-    : attention.data?.notifications ?? [];
+    ? approvalItems
+    : attentionNotifications;
   const expiringItems: ExpiringDocument[] = isDocumentManager
     ? dashboardStats.data?.expiring_items ?? []
     : myWorkspace.data?.expiring_documents ?? [];
   const reviewAlertCount = reviewAlerts.data?.count ?? 0;
+  const acknowledgementCount = pendingAcknowledgements.length;
   const panelCount = attentionOpen === "approval-inbox"
-    ? approvalInbox.data?.count ?? 0
-    : (attention.data?.count ?? 0) + expiringItems.length + reviewAlertCount;
+    ? approvalItems.length
+    : attentionNotifications.length +
+      expiringItems.length +
+      reviewAlertCount +
+      acknowledgementCount;
   const notificationBadgeCount =
-    (attention.data?.count ?? 0) + expiringItems.length + reviewAlertCount;
-  const employeeNotificationCount = reviewAlertCount + expiringItems.length;
+    attentionNotifications.length +
+    expiringItems.length +
+    reviewAlertCount +
+    acknowledgementCount;
+  const employeeNotificationCount =
+    reviewAlertCount + expiringItems.length + acknowledgementCount;
   return (
-    <header className="mx-auto w-full max-w-[1650px] rounded-2xl border border-slate-200 bg-white px-6 py-3.5 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex min-w-0 flex-1 items-center gap-4">
+    <header className="app-chrome">
+      <div className="app-chrome-bar">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <BackButton variant="header" />
           <div className="header-wordmark">
             Cleon<span>HR</span>
@@ -288,7 +330,7 @@ export default function Header() {
 
           <div
             ref={searchRef}
-            className={`relative hidden w-full max-w-[430px] sm:block ${guideTarget === "search" ? "guide-emphasis rounded-2xl" : ""}`}
+            className={`relative min-w-0 flex-1 ${guideTarget === "search" ? "guide-emphasis rounded-lg" : ""}`}
           >
             <input
               ref={searchInputRef}
@@ -301,11 +343,11 @@ export default function Header() {
               onKeyDown={(event) => {
                 if (event.key === "Escape") setSearchOpen(false);
               }}
-              className="w-full rounded-2xl border border-transparent bg-white py-3 pl-11 pr-16 text-sm text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-brand-pink/30 focus:bg-white focus:ring-4 focus:ring-brand-pink/10"
-              placeholder="Search documents, employees..."
+              className="app-chrome-search"
+              placeholder="Search documents, employees, departments..."
             />
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <span className="absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 sm:inline">
               ⌘ F
             </span>
             {searchOpen && (
@@ -362,7 +404,7 @@ export default function Header() {
             title="Approval inbox"
           >
             <Mail className="h-5 w-5" />
-            {!!approvalInbox.data?.count && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-pink px-1 text-center text-[9px] font-bold text-white">{approvalInbox.data.count}</span>}
+            {!!approvalItems.length && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-pink px-1 text-center text-[9px] font-bold text-white">{approvalItems.length}</span>}
           </button>
           <button
             type="button"
@@ -386,7 +428,7 @@ export default function Header() {
                   <p className="mt-0.5 text-[11px] text-slate-400">
                     {attentionOpen === "approval-inbox"
                       ? "Documents ready for your decision"
-                      : "Workspace activity requiring attention"}
+                      : "Documents to acknowledge and other workspace activity"}
                   </p>
                 </div>
                 <span className="rounded-full bg-pink-50 px-2 py-1 text-[10px] font-bold text-brand-pink">
@@ -396,10 +438,30 @@ export default function Header() {
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {attentionOpen === "notifications" &&
+                  pendingAcknowledgements.map((document) => (
+                    <Link
+                      key={`ack-${document.id}`}
+                      href={acknowledgementViewHref(document.id)}
+                      onClick={() => setAttentionOpen(null)}
+                      className="mb-2 block rounded-xl border border-pink-100 bg-pink-50 px-3 py-3 transition hover:bg-pink-100/70"
+                    >
+                      <p className="text-xs font-semibold leading-5 text-pink-900">
+                        You need to acknowledge {document.name}
+                      </p>
+                      <p className="mt-1 text-[10px] text-pink-700">
+                        {document.document_type}
+                        {document.folder_name ? ` · ${document.folder_name}` : ""}
+                      </p>
+                    </Link>
+                  ))}
+                {attentionOpen === "notifications" &&
                   (reviewAlerts.data?.items ?? []).map((item: ReviewAlertItem) => (
                     <Link
                       key={`review-alert-${item.id}`}
-                      href={`/pages/my-documents?tab=files&doc=${item.document_id}`}
+                      href={myWorkspaceHref("documents", {
+                        scope: "files",
+                        doc: String(item.document_id),
+                      })}
                       onClick={() => setAttentionOpen(null)}
                       className="mb-2 block rounded-xl border border-red-100 bg-red-50 px-3 py-3 transition hover:bg-red-100/70"
                     >
@@ -485,7 +547,7 @@ export default function Header() {
                     <div>
                       <strong className="text-sm text-slate-900">Notifications</strong>
                       <p className="mt-0.5 text-[11px] text-slate-400">
-                        Document reviews and expiring files
+                        Documents to acknowledge and other alerts
                       </p>
                     </div>
                     <span className="rounded-full bg-pink-50 px-2 py-1 text-[10px] font-bold text-brand-pink">
@@ -493,10 +555,26 @@ export default function Header() {
                     </span>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
+                    {pendingAcknowledgements.map((document) => (
+                      <Link
+                        key={`ack-${document.id}`}
+                        href={acknowledgementViewHref(document.id)}
+                        onClick={() => setAttentionOpen(null)}
+                        className="mb-2 block rounded-xl border border-pink-100 bg-pink-50 px-3 py-3 transition hover:bg-pink-100/70"
+                      >
+                        <p className="text-xs font-semibold leading-5 text-pink-900">
+                          You need to acknowledge {document.name}
+                        </p>
+                        <p className="mt-1 text-[10px] text-pink-700">
+                          {document.document_type}
+                          {document.folder_name ? ` · ${document.folder_name}` : ""}
+                        </p>
+                      </Link>
+                    ))}
                     {(reviewAlerts.data?.items ?? []).map((item: ReviewAlertItem) => (
                       <Link
                         key={`review-alert-${item.id}`}
-                        href={`/pages/my-documents?tab=files&doc=${item.document_id}`}
+                        href={myWorkspaceHref("documents", { scope: "files", doc: String(item.document_id) })}
                         onClick={() => setAttentionOpen(null)}
                         className="mb-2 block rounded-xl border border-red-100 bg-red-50 px-3 py-3 transition hover:bg-red-100/70"
                       >
@@ -540,10 +618,11 @@ export default function Header() {
               )}
             </>
           )}
-          <div className="h-4 w-[1px] bg-slate-200" />
+          <div className="hidden h-5 w-px bg-slate-200 sm:block" />
           <UserWidget />
         </div>
       </div>
+      <Sidebar />
     </header>
   );
 }

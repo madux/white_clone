@@ -1,7 +1,7 @@
 import json
 from datetime import date, datetime, timedelta
 from odoo import _, fields, http
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.http import request
 from odoo.modules.module import get_resource_path
 from odoo.osv import expression
@@ -208,6 +208,11 @@ def _process_document_upload(
     allow_separate_duplicate=False,
 ):
     """Create a new document or version an existing one from an uploaded file."""
+    if folder.folder_type == "organizational":
+        request.env["doc.organizational.files.permission"].require_upload_org(
+            request.env.user
+        )
+    folder.assert_unlocked(for_upload=True)
     Document = request.env["doc.document"]
     _metadata_values_for_upload(document_type, issue_date, description, expiry_values)
     _enforce_upload_conflict(
@@ -309,9 +314,6 @@ class DocumentUICreation(http.Controller):
             "default_approval_flow": params.get_param(
                 "cleon_document_management.default_approval_flow", "any"
             ),
-            "default_access_scope": params.get_param(
-                "cleon_document_management.default_access_scope", "all_staff"
-            ),
             "default_retention_period": params.get_param(
                 "cleon_document_management.default_retention_period", "7"
             ),
@@ -391,23 +393,44 @@ class DocumentUICreation(http.Controller):
                 "message": "A document type with this name already exists.",
             }
 
-        item = model.create(
-            {
-                "name": name,
-                "category": category,
-                "description": (kwargs.get("description") or "").strip(),
-                "is_mandatory_default": bool(kwargs.get("is_mandatory_default", False)),
-                "expiry_applicable": bool(kwargs.get("expiry_applicable", False)),
-                "require_upload_approval": bool(
-                    kwargs.get("require_upload_approval", False)
-                ),
-                "require_issue_date": bool(kwargs.get("require_issue_date", False)),
-                "require_description": bool(kwargs.get("require_description", False)),
-                "default_retention_years": max(
-                    int(kwargs.get("default_retention_years") or 7), 0
-                ),
-            }
-        )
+        values = {
+            "name": name,
+            "category": category,
+            "description": (kwargs.get("description") or "").strip(),
+            "is_mandatory_default": bool(kwargs.get("is_mandatory_default", False)),
+            "expiry_applicable": bool(kwargs.get("expiry_applicable", False)),
+            "require_upload_approval": bool(
+                kwargs.get("require_upload_approval", False)
+            ),
+            "require_issue_date": bool(kwargs.get("require_issue_date", False)),
+            "require_description": bool(kwargs.get("require_description", False)),
+            "enable_versioning": bool(kwargs.get("enable_versioning", True)),
+            "duplicate_detection_mode": kwargs.get("duplicate_detection_mode")
+            or "inherit",
+            "approval_flow": kwargs.get("approval_flow") or "any",
+            "default_retention_years": max(
+                int(kwargs.get("default_retention_years") or 7), 0
+            ),
+        }
+        if values["duplicate_detection_mode"] not in {
+            "inherit",
+            "warn",
+            "prevent",
+            "allow_confirm",
+        }:
+            return {"success": False, "message": "Select a valid duplicate handling mode."}
+        if values["approval_flow"] not in {"sequential", "random", "any"}:
+            return {"success": False, "message": "Select a valid approval flow."}
+        if kwargs.get("approver_ids") is not None:
+            approver_ids = [
+                int(value)
+                for value in kwargs.get("approver_ids") or []
+                if str(value).isdigit() or isinstance(value, int)
+            ]
+            users = request.env["res.users"].browse(approver_ids).exists()
+            values["approver_ids"] = [fields.Command.set(users.ids)]
+            values["approver_order"] = ",".join(str(user_id) for user_id in users.ids)
+        item = model.create(values)
         return {
             "success": True,
             "message": "Document type created successfully.",
@@ -548,7 +571,6 @@ class DocumentUICreation(http.Controller):
         if not self._require_settings_manager():
             return {"success": False, "message": "Document manager access is required."}
         flow = kwargs.get("default_approval_flow") or "any"
-        scope = kwargs.get("default_access_scope") or "all_staff"
         retention = kwargs.get("default_retention_period") or "7"
         try:
             recycle_days = max(int(kwargs.get("recycle_bin_retention_days") or 30), 1)
@@ -556,8 +578,6 @@ class DocumentUICreation(http.Controller):
             return {"success": False, "message": "Recycle-bin retention must be a valid number."}
         if flow not in {"sequential", "random", "any"}:
             return {"success": False, "message": "Select a valid approval flow."}
-        if scope not in {"all_staff", "department", "grade", "individual", "admin_only"}:
-            return {"success": False, "message": "Select a valid default access scope."}
         if retention not in {"1", "3", "5", "7", "10", "permanent"}:
             return {"success": False, "message": "Select a valid default retention period."}
         require_approval = bool(kwargs.get("default_require_upload_approval"))
@@ -577,7 +597,6 @@ class DocumentUICreation(http.Controller):
         params = request.env["ir.config_parameter"].sudo()
         params.set_param("cleon_document_management.default_require_upload_approval", "1" if require_approval else "0")
         params.set_param("cleon_document_management.default_approval_flow", flow)
-        params.set_param("cleon_document_management.default_access_scope", scope)
         params.set_param("cleon_document_management.default_retention_period", retention)
         params.set_param("cleon_document_management.recycle_bin_retention_days", str(recycle_days))
         params.set_param(
@@ -594,7 +613,49 @@ class DocumentUICreation(http.Controller):
         try:
             name = kwargs.get("nameElm")
             description = kwargs.get("descriptionElm")
-            if not name:
+            folder_type = kwargs.get("folder_type") or "organizational"
+            if folder_type == "organizational":
+                org_perm = request.env["doc.organizational.files.permission"]
+                if not org_perm.user_can_create_folder(request.env.user):
+                    return {
+                        "success": False,
+                        "message": "You do not have permission to create folders.",
+                    }
+                name = (name or "").strip()
+                if not name:
+                    return {"success": False, "message": "Folder name is required."}
+                if len(name) > 100:
+                    return {
+                        "success": False,
+                        "message": "Folder name must be 100 characters or fewer.",
+                    }
+                description = (description or "").strip()
+                if len(description) > 500:
+                    return {
+                        "success": False,
+                        "message": "Description must be 500 characters or fewer.",
+                    }
+                parent_id = kwargs.get("parent_id") or False
+                duplicate_domain = [
+                    ("folder_type", "=", "organizational"),
+                    ("folder_name", "=", name),
+                    ("active", "=", True),
+                    ("deleted_at", "=", False),
+                ]
+                if parent_id:
+                    duplicate_domain.append(("parent_id", "=", int(parent_id)))
+                else:
+                    duplicate_domain.append(("parent_id", "=", False))
+                duplicate = request.env["doc.folder"].search(
+                    duplicate_domain,
+                    limit=1,
+                )
+                if duplicate:
+                    return {
+                        "success": False,
+                        "message": "A folder with this name already exists.",
+                    }
+            elif not name:
                 return {"success": False, "message": "Folder name is required."}
 
             folder_type = kwargs.get("folder_type") or "organizational"
@@ -608,22 +669,52 @@ class DocumentUICreation(http.Controller):
                         "message": "Employee folders are managed automatically after Employee Files setup.",
                     }
             settings = self._settings_values()
-            access_scope = kwargs.get("access_scope") or (
-                "individual" if folder_type == "employee" else settings["default_access_scope"]
-            )
-            if folder_type == "organizational" and access_scope == "department" and not kwargs.get("department_ids"):
+            parent = request.env["doc.folder"]
+            parent_id = kwargs.get("parent_id") or False
+            if parent_id:
+                parent = request.env["doc.folder"].browse(int(parent_id)).exists()
+                if not parent:
+                    return {"success": False, "message": "Parent folder not found."}
+
+            access_scope = kwargs.get("access_scope")
+            inherit_access = False
+            if folder_type == "employee":
+                access_scope = access_scope or "individual"
+            elif not access_scope and parent and parent.folder_type == "organizational":
+                access_scope = parent.access_scope
+                inherit_access = True
+            elif not access_scope:
+                access_scope = "all_staff"
+
+            department_ids = list(kwargs.get("department_ids") or [])
+            grade_ids = list(kwargs.get("grade_ids") or [])
+            employee_ids = list(kwargs.get("employee_ids") or [])
+            if inherit_access:
+                if not department_ids:
+                    department_ids = parent.department_ids.ids
+                if not grade_ids:
+                    grade_ids = parent.grade_ids.ids
+                if not employee_ids:
+                    employee_ids = parent.employee_ids.ids
+
+            if folder_type == "organizational" and access_scope == "department" and not department_ids:
                 return {"success": False, "message": "Select at least one department."}
-            if folder_type == "organizational" and access_scope == "grade" and not kwargs.get("grade_ids"):
+            if folder_type == "organizational" and access_scope == "grade" and not grade_ids:
                 return {"success": False, "message": "Select at least one grade."}
-            if folder_type == "organizational" and access_scope == "individual" and not kwargs.get("employee_ids"):
+            if folder_type == "organizational" and access_scope == "individual" and not employee_ids:
                 return {"success": False, "message": "Select at least one employee."}
             values = {
                 "folder_name": name,
                 "description": description or "",
                 "folder_type": folder_type,
+                "folder_kind": kwargs.get("folder_kind") or "folder",
                 "access_scope": access_scope,
                 "retention_period": kwargs.get("retention_period") or settings["default_retention_period"],
             }
+            if folder_type == "organizational":
+                values["organize_by"] = kwargs.get("organize_by") or "none"
+            if parent:
+                values["parent_id"] = parent.id
             Folder = request.env["doc.folder"]
             try:
                 if folder_type == "employee":
@@ -711,7 +802,7 @@ class DocumentUICreation(http.Controller):
                 values["department_ids"] = [
                     fields.Command.set(
                         request.env["hr.department"]
-                        .browse(kwargs.get("department_ids", []))
+                        .browse(department_ids)
                         .exists()
                         .ids
                     )
@@ -719,7 +810,7 @@ class DocumentUICreation(http.Controller):
                 values["grade_ids"] = [
                     fields.Command.set(
                         request.env["hr.grade"]
-                        .browse(kwargs.get("grade_ids", []))
+                        .browse(grade_ids)
                         .exists()
                         .ids
                     )
@@ -727,12 +818,16 @@ class DocumentUICreation(http.Controller):
                 values["employee_ids"] = [
                     fields.Command.set(
                         request.env["hr.employee"]
-                        .browse(kwargs.get("employee_ids", []))
+                        .browse(employee_ids)
                         .exists()
                         .ids
                     )
                 ]
-            folder = request.env["doc.folder"].create(values)
+            FolderModel = request.env["doc.folder"]
+            if folder_type == "organizational":
+                folder = FolderModel.sudo().create(values)
+            else:
+                folder = FolderModel.create(values)
             if folder.folder_type == "employee":
                 folder._assign_pending_approved_documents_for_employees(
                     folder.employee_ids
@@ -797,6 +892,8 @@ class DocumentUICreation(http.Controller):
                             "require_upload_approval": folder.require_upload_approval,
                             "approval_flow": folder.approval_flow,
                             "approver_ids": folder.approver_ids.ids,
+                            "color": folder.color,
+                            "color_hex": folder.color_hex or "",
                         }
                     },
                 }
@@ -815,6 +912,8 @@ class DocumentUICreation(http.Controller):
                             "id": folder.id,
                             "folder_name": folder.folder_name,
                             "folder_type": folder.folder_type,
+                            "folder_kind": getattr(folder, "folder_kind", "folder") or "folder",
+                            "parent_id": folder.parent_id.id if folder.parent_id else False,
                             "description": folder.description,
                             "folder_count": folder.document_count,
                             "last_modified": folder.write_date,
@@ -822,11 +921,14 @@ class DocumentUICreation(http.Controller):
                             "owner_name": folder.owner_id.name or "N/A",
                             "access_scope": folder.access_scope,
                             "color": folder.color,
+                            "color_hex": folder.color_hex or "",
                             "document_count": folder.document_count,
                             "favorite": request.env.user in folder.favorite_user_ids,
                             "pinned": request.env.user in folder.pinned_user_ids,
                             "locked": folder.is_locked,
                             "active": folder.active,
+                            "collection_code": getattr(folder, "collection_code", "") or "",
+                            "organize_by": getattr(folder, "organize_by", "none") or "none",
                             "employee_ids": folder.employee_ids.ids,
                             "department_ids": folder.department_ids.ids,
                             "grade_ids": folder.grade_ids.ids,
@@ -880,10 +982,54 @@ class DocumentUICreation(http.Controller):
             if not folder.exists():
                 return {"success": False, "message": "Folder not found."}
 
-            write_values = {
-                "folder_name": folder_name,
-                "description": description,
-            }
+            if folder.folder_type == "organizational":
+                org_perm = request.env["doc.organizational.files.permission"]
+                user = request.env.user
+                can_manage = org_perm.user_can_manage_folders(user)
+                can_share_access = org_perm.user_can_share_manage_access(user)
+                if not can_manage and not can_share_access:
+                    return {
+                        "success": False,
+                        "message": "You do not have permission to edit this folder.",
+                    }
+                if not can_manage:
+                    renaming = (
+                        folder_name is not None
+                        and folder_name != folder.folder_name
+                    )
+                    redescribing = (
+                        description is not None
+                        and description != (folder.description or "")
+                    )
+                    if renaming or redescribing:
+                        return {
+                            "success": False,
+                            "message": "You do not have permission to edit this folder.",
+                        }
+                    for blocked_key in (
+                        "color_hex",
+                        "color",
+                        "organize_by",
+                        "require_upload_approval",
+                        "approval_flow",
+                        "approver_ids",
+                    ):
+                        if blocked_key in kwargs:
+                            return {
+                                "success": False,
+                                "message": "You do not have permission to edit this folder.",
+                            }
+                    if "access_scope" not in kwargs:
+                        return {
+                            "success": False,
+                            "message": "You do not have permission to edit this folder.",
+                        }
+
+            write_values = {}
+            if folder_name is not None:
+                write_values["folder_name"] = folder_name
+            if description is not None:
+                write_values["description"] = description
             if any(
                 key in kwargs
                 for key in (
@@ -919,11 +1065,19 @@ class DocumentUICreation(http.Controller):
                 except ValidationError as error:
                     return {"success": False, "message": error.args[0]}
 
+            if "color_hex" in kwargs:
+                write_values["color_hex"] = kwargs.get("color_hex") or False
+            if "color" in kwargs and kwargs.get("color") is not None:
+                write_values["color"] = int(kwargs.get("color"))
+            if "organize_by" in kwargs and folder.folder_type == "organizational":
+                write_values["organize_by"] = kwargs.get("organize_by") or "none"
+
             approval_disabled = (
                 folder.folder_type == "employee"
                 and write_values.get("require_upload_approval") is False
             )
-            folder.write(write_values)
+            if write_values:
+                folder.write(write_values)
             if approval_disabled:
                 request.env["doc.folder"].reconcile_pending_uploads_for_folder(folder)
 
@@ -1170,9 +1324,13 @@ class DocumentUICreation(http.Controller):
 
             documents = request.env["doc.document"].search(domain, order="create_date desc")
             user = request.env.user
+            visible_documents = documents.filtered(
+                lambda document: document.folder_id.folder_type != "organizational"
+                or document._organizational_user_can_access(user)
+            )
             return {
                 "success": True,
-                "count": len(documents),
+                "count": len(visible_documents),
                 "data": {
                     "data": [
                         document.serialize_for_api(
@@ -1180,9 +1338,9 @@ class DocumentUICreation(http.Controller):
                             favorite=user in document.favorite_user_ids,
                             pinned=user in document.pinned_user_ids,
                         )
-                        for document in documents
+                        for document in visible_documents
                     ],
-                    "total_count": len(documents.ids),
+                    "total_count": len(visible_documents.ids),
                 },
             }
         except AccessError:
@@ -1223,6 +1381,7 @@ class DocumentUICreation(http.Controller):
                         "folder_name": folder.folder_name,
                         "description": folder.description or "",
                         "folder_type": folder.folder_type,
+                        "color_hex": folder.color_hex or "",
                         "pinned": True,
                     }
                     for folder in folders
@@ -1350,7 +1509,7 @@ class DocumentUICreation(http.Controller):
                     description=description,
                     allow_separate_duplicate=allow_flag,
                 )
-        except (ValidationError, AccessError) as error:
+        except (ValidationError, AccessError, UserError) as error:
             return request.make_json_response({"success": False, "message": str(error)}, status=400)
         request.env["doc.folder"].sync_pending_upload_assignments()
         return request.make_json_response(
@@ -1450,7 +1609,7 @@ class DocumentUICreation(http.Controller):
                     description=description,
                     allow_separate_duplicate=allow_flag,
                 )
-        except (ValidationError, AccessError) as error:
+        except (ValidationError, AccessError, UserError) as error:
             return request.make_json_response({"success": False, "message": str(error)}, status=400)
         return request.make_json_response(
             {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
@@ -1669,10 +1828,35 @@ class DocumentUICreation(http.Controller):
                     if document.write_date != document.create_date
                     else "Added"
                 ),
-                "occurred_at": document.write_date or document.create_date,
+                "occurred_at": fields.Datetime.to_string(
+                    document.write_date or document.create_date
+                ),
             }
             for document in combined[:20]
         ]
+        acknowledgements = request.env["doc.document.acknowledgement"].search(
+            [("user_id", "=", user.id)],
+            order="acknowledged_at desc",
+            limit=20,
+        )
+        for acknowledgement in acknowledgements:
+            document = acknowledgement.document_id
+            if not document:
+                continue
+            activities.append(
+                {
+                    "id": 20_000_000 + acknowledgement.id,
+                    "document_id": document.id,
+                    "document": document.name,
+                    "folder": document.folder_id.folder_name,
+                    "event": "Acknowledged",
+                    "occurred_at": fields.Datetime.to_string(
+                        acknowledgement.acknowledged_at
+                    ),
+                }
+            )
+        activities.sort(key=lambda item: item.get("occurred_at") or "", reverse=True)
+        activities = activities[:20]
         states = {
             state: len(combined.filtered(lambda item, value=state: item.state == value))
             for state in ("approved", "processing", "draft", "rejected", "expired")
@@ -1981,6 +2165,14 @@ class DocumentUICreation(http.Controller):
                 status=400,
             )
         folder.check_access_rule("read")
+        try:
+            request.env["doc.organizational.files.permission"].require_upload_org(
+                request.env.user
+            )
+        except AccessError as error:
+            return request.make_json_response(
+                {"success": False, "message": str(error)}, status=403
+            )
         documents = request.env["doc.document"]
         expiry_dates = _upload_expiry_dates()
         issue_dates = _upload_issue_dates()
@@ -2015,7 +2207,9 @@ class DocumentUICreation(http.Controller):
                     issue_date=issue_date or None,
                     description=description,
                 )
-        except (ValidationError, AccessError) as error:
+            if request.httprequest.form.get("is_template") in ("1", "true", "True"):
+                documents.write({"is_template": True})
+        except (ValidationError, AccessError, UserError) as error:
             return request.make_json_response({"success": False, "message": str(error)}, status=400)
         return request.make_json_response(
             {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
@@ -2033,13 +2227,78 @@ class DocumentUICreation(http.Controller):
                 "success": False,
                 "message": "name, folder_id, document_type_id required.",
             }
-        doc = request.env["doc.document"].create(
-            {
+        folder = request.env["doc.folder"].browse(int(folder_id)).exists()
+        if folder and folder.folder_type == "organizational":
+            try:
+                request.env["doc.organizational.files.permission"].require_upload_org(
+                    request.env.user
+                )
+            except AccessError as error:
+                return {"success": False, "message": str(error)}
+        try:
+            if folder:
+                folder.assert_unlocked(for_upload=True)
+            payload = {
                 "name": name,
                 "folder_id": folder_id,
                 "document_type_id": document_type_id,
+                "source_url": kwargs.get("source_url") or False,
+                "description": kwargs.get("description") or kwargs.get("source_url") or "",
+                "is_policy": bool(kwargs.get("is_policy")),
+                "is_template": bool(kwargs.get("is_template")),
+                "imported_from": kwargs.get("imported_from") or "native",
             }
-        )
+            if kwargs.get("source_url") and not payload.get("attachment_id"):
+                from odoo.addons.cleon_document_management.models.organizational_library import (
+                    probe_source_url,
+                )
+
+                payload["link_status"] = probe_source_url(kwargs.get("source_url"))
+                placeholder = request.env["ir.attachment"].sudo().create(
+                    {
+                        "name": f"{name}.url.txt",
+                        "datas": base64.b64encode(b"external-link"),
+                        "mimetype": "text/plain",
+                        "res_model": "doc.document",
+                    }
+                )
+                payload["attachment_id"] = placeholder.id
+            if kwargs.get("is_policy") and not kwargs.get("source_url") and not kwargs.get(
+                "attachment_id"
+            ):
+                file_name = (name or "").strip()
+                if file_name and not file_name.lower().endswith(".pdf"):
+                    file_name = f"{file_name}.pdf"
+                elif not file_name:
+                    file_name = "Policy.pdf"
+                payload["name"] = file_name
+                placeholder = request.env["ir.attachment"].sudo().create(
+                    {
+                        "name": file_name,
+                        "datas": base64.b64encode(
+                            b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+                            b"2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\n"
+                            b"trailer<</Size 2/Root 1 0 R>>\nstartxref\n0\n%%EOF"
+                        ),
+                        "mimetype": "application/pdf",
+                        "res_model": "doc.document",
+                    }
+                )
+                payload["attachment_id"] = placeholder.id
+            if kwargs.get("linked_policy_id"):
+                payload["linked_policy_id"] = int(kwargs["linked_policy_id"])
+            doc = request.env["doc.document"].create(payload)
+            linked_policy_id = int(kwargs.get("linked_policy_id") or 0)
+            if linked_policy_id:
+                policy = (
+                    request.env["doc.compliance.policy"]
+                    .browse(linked_policy_id)
+                    .exists()
+                )
+                if policy:
+                    policy.sudo().write({"source_document_id": doc.id})
+        except UserError as error:
+            return {"success": False, "message": error.args[0]}
         return {"success": True, "data": {"id": doc.id, "name": doc.name}}
 
     @http.route(

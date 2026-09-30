@@ -8,8 +8,10 @@ import {
   useEmployeeDocumentRelations,
   useRemoveEmployeeDocumentRelation,
 } from "../../../hooks/useEmployeeFiles";
+import { useAppDialog } from "../../../hooks/useAppDialog";
 import { DOCUMENT_RELATION_TYPE_OPTIONS } from "../../../lib/documentRelationTypes";
 import type { DocDocument, DocDocumentRelation, DocumentRelationType } from "../../../lib/types";
+import AppSelect from "./AppSelect";
 import ModalDialog from "./ModalDialog";
 
 type Props = {
@@ -28,6 +30,7 @@ export default function DocumentRelationsPanel({
   onOpenRelated,
 }: Props) {
   const router = useRouter();
+  const { showConfirm } = useAppDialog();
   const relations = useEmployeeDocumentRelations(documentId);
   const addRelation = useAddEmployeeDocumentRelation();
   const removeRelation = useRemoveEmployeeDocumentRelation();
@@ -108,9 +111,10 @@ export default function DocumentRelationsPanel({
 
   const removeLink = async (row: DocDocumentRelation) => {
     if (
-      !window.confirm(
+      !(await showConfirm(
         `Remove the link to "${row.related_document_name}"? The documents will not be deleted.`,
-      )
+        { title: "Remove relationship", confirmLabel: "Remove" },
+      ))
     ) {
       return;
     }
@@ -214,19 +218,15 @@ export default function DocumentRelationsPanel({
           <div className="space-y-4">
             <label className="block">
               <span className="label">Other document</span>
-              <select
-                className="field w-full"
+              <AppSelect
                 value={otherId}
-                onChange={(e) => setOtherId(e.target.value)}
-              >
-                <option value="">Select a document…</option>
-                {pickerOptions.map((doc) => (
-                  <option key={doc.id} value={String(doc.id)}>
-                    {doc.name}
-                    {doc.document_type ? ` · ${doc.document_type}` : ""}
-                  </option>
-                ))}
-              </select>
+                onChange={setOtherId}
+                placeholder="Select a document…"
+                options={pickerOptions.map((doc) => ({
+                  value: String(doc.id),
+                  label: `${doc.name}${doc.document_type ? ` · ${doc.document_type}` : ""}`,
+                }))}
+              />
             </label>
             {pickerOptions.length === 0 ? (
               <p className="text-xs text-slate-500">
@@ -235,19 +235,16 @@ export default function DocumentRelationsPanel({
             ) : null}
             <label className="block">
               <span className="label">Relationship type</span>
-              <select
-                className="field w-full"
+              <AppSelect
                 value={relationType}
-                onChange={(e) =>
-                  setRelationType(e.target.value as DocumentRelationType)
+                onChange={(value) =>
+                  setRelationType(value as DocumentRelationType)
                 }
-              >
-                {DOCUMENT_RELATION_TYPE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                options={DOCUMENT_RELATION_TYPE_OPTIONS.map((opt) => ({
+                  value: opt.value,
+                  label: opt.label,
+                }))}
+              />
             </label>
             <fieldset className="space-y-2">
               <legend className="label">Direction</legend>

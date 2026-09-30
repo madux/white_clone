@@ -62,7 +62,9 @@ class DocumentVersion(models.Model):
         for version in self:
             if not version._user_can_manage():
                 raise AccessError(_("You do not have permission to delete this version."))
-        attachments = self.mapped("file_attachment")
+        attachment_ids = self.mapped("file_attachment").ids
         result = super().unlink()
-        attachments.sudo().unlink()
+        leftover = self.env["ir.attachment"].sudo().browse(attachment_ids).exists()
+        if leftover:
+            leftover.unlink()
         return result

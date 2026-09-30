@@ -129,6 +129,7 @@ export default function FolderEmployeeFileTree({
   onFolderExpandedChange,
   employeeMemberLists,
   employeeCountDisplay,
+  showFolderHeader = true,
 }: {
   kind: "employee" | "organizational";
   rows: FolderTreeRow[];
@@ -160,6 +161,8 @@ export default function FolderEmployeeFileTree({
     }
   >;
   employeeCountDisplay?: Record<number, number>;
+  /** Hide the folder row; show employees/documents only (e.g. folder detail page). */
+  showFolderHeader?: boolean;
 }) {
   const [expandedFoldersInternal, setExpandedFoldersInternal] = useState<
     Record<number, boolean>
@@ -269,6 +272,7 @@ export default function FolderEmployeeFileTree({
     <div className="employee-file-tree p-4">
       {rows.map(({ folder, documents: folderDocuments, employees, depth = 0, nestedRows }) => {
         const folderExpanded = expandedFolders[folder.id] ?? singleFolderExpanded;
+        const contentOpen = showFolderHeader ? folderExpanded : true;
         const employeeCount =
           kind === "employee"
             ? (employeeCountDisplay?.[folder.id] ?? employees.length)
@@ -281,6 +285,7 @@ export default function FolderEmployeeFileTree({
             key={folder.id}
             style={depth > 0 ? { marginLeft: `${depth * 20}px` } : undefined}
           >
+            {showFolderHeader ? (
             <div className="employee-tree-row employee-tree-row-folder">
               {onToggleFolderSelected ? (
                 <input
@@ -365,9 +370,10 @@ export default function FolderEmployeeFileTree({
                 )
               ) : null}
             </div>
+            ) : null}
 
             <AnimatedTreeCollapse
-              open={folderExpanded}
+              open={contentOpen}
               className="employee-tree-children"
             >
                 {kind === "employee" && nestedRows?.length ? (
@@ -384,6 +390,7 @@ export default function FolderEmployeeFileTree({
                     employeeMemberLists={employeeMemberLists}
                     employeeCountDisplay={employeeCountDisplay}
                     emptyMessage={emptyMessage}
+                    showFolderHeader={showFolderHeader}
                   />
                 ) : null}
                 {kind === "employee" && memberList && !nestedRows?.length ? (

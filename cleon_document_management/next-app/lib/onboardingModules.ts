@@ -37,7 +37,7 @@ export const ONBOARDING_MODULE_META: Record<
   },
   administration: {
     label: "Administration",
-    subtitle: "Document types, access defaults, and lifecycle",
+    subtitle: "Document types, retention, and lifecycle",
   },
 };
 
@@ -47,35 +47,35 @@ const workspaceSteps: GuideStep[] = [
     title: "Explore your workspace",
     description:
       "See where personal files, shared documents, archives, and the recycle bin live.",
-    href: "/pages/my-documents?guide=workspace",
+    href: "/pages/my-workspace?guide=workspace",
     action: "Open My Documents",
   },
   {
     id: "upload",
     title: "Upload your first document",
     description: "Add a file, choose its document type, and keep your personal records organized.",
-    href: "/pages/my-documents?guide=upload",
+    href: "/pages/my-workspace?guide=upload",
     action: "View My Documents",
   },
   {
     id: "approval",
     title: "Understand approvals",
     description: "Learn how a document moves from draft to review and approval when required.",
-    href: "/pages/my-documents?guide=approval",
+    href: "/pages/my-workspace?guide=approval",
     action: "View approval status",
   },
   {
     id: "shared",
     title: "Open a shared document",
     description: "Review shared files, see who shared them, and acknowledge documents when needed.",
-    href: "/pages/my-documents?guide=shared",
+    href: "/pages/my-workspace?guide=shared&scope=shared",
     action: "View shared documents",
   },
   {
     id: "search",
     title: "Use workspace search",
     description: "Find your documents from the search field on the My Documents page.",
-    href: "/pages/my-documents?guide=search&tab=files",
+    href: "/pages/my-workspace?guide=search&scope=files",
     action: "Highlight search",
   },
 ];
@@ -85,28 +85,47 @@ const employeeFilesSteps: GuideStep[] = [
     id: "ef-home",
     title: "Employee Files home",
     description:
-      "Switch between groups, employees, and documents. Use dimension tabs to browse system-managed groups.",
+      "Use the nested tabs for Employee files (group tree), Employees (flat list), and Documents. Group by dimension on the Employee files tab. Search, Filters, list/card view, and column pickers work on Employees and Documents.",
     href: "/pages/employee",
     action: "Open home",
   },
   {
+    id: "ef-browse",
+    title: "Sort groups and members",
+    description:
+      "On Employee files, click column headers to sort top-level groups (name, people, files, status). Expand a leaf group and sort employees the same way as on the Employees tab—order is shared between both views.",
+    href: "/pages/employee?view=groups",
+    action: "Open group view",
+  },
+  {
     id: "ef-issues",
     title: "Issues & reconciliation",
-    description: "Review employees or documents that need attention after setup or EMS changes.",
+    description:
+      "Review employees with missing EMS attributes, sync failures, exclusions, and related cases. Search and filter by classification; export a CSV report when needed.",
     href: "/pages/employee?tab=issues",
     action: "View issues",
   },
   {
+    id: "ef-pending-approvals",
+    title: "Pending approvals",
+    description:
+      "Employee document uploads and inbox items awaiting approval appear under Pending approvals on the home workspace.",
+    href: "/pages/employee?tab=pending-approvals",
+    action: "Open queue",
+  },
+  {
     id: "ef-groups",
     title: "Open a group",
-    description: "System-managed groups reflect EMS dimensions; custom groups are managed in Settings.",
-    href: "/pages/employee",
+    description:
+      "System-managed groups follow your organizing dimensions; expand the tree to see members with pagination and in-group search. Custom groups are managed in Settings.",
+    href: "/pages/employee?view=groups",
     action: "Browse groups",
   },
   {
     id: "ef-exclusions",
     title: "Manage exclusions",
-    description: "Add or remove manually excluded employees without re-running setup.",
+    description:
+      "During setup you can pick EMS employees to exclude with a searchable dialog; after setup, add or remove exclusions in Settings without re-running the wizard.",
     href: "/pages/settings?section=employee_files",
     action: "Open settings",
   },
@@ -123,24 +142,42 @@ const organizationalSteps: GuideStep[] = [
   {
     id: "folders",
     title: "Create your folder structure",
-    description: "Set up organizational folders for the records your team manages.",
+    description:
+      "Build folders and subfolders with visibility (who can see the folder), optional AI-assisted descriptions, and a details panel from the row menu. Child folders cannot be wider than their parent’s visibility.",
     href: "/pages/organization?guide=folders",
     action: "Open organizational files",
   },
   {
     id: "organizational-upload",
-    title: "Upload an organizational document",
+    title: "Upload and import",
     description:
-      "Add a company document and confirm that the intended audience can see it in Shared Documents.",
+      "Use + New to upload files, scan, or import from connected cloud sources. Open the document viewer for preview, versions, and optional AI summary on organizational files.",
     href: "/pages/organization?guide=organizational-upload",
     action: "Upload a document",
   },
   {
+    id: "org-policy-folder",
+    title: "Create policies in folders",
+    description:
+      "From + New in a folder, create a compliance policy (from scratch, import an existing file, or draft with AI). A policy document is added to the folder named after the policy. Template-from-library creation is reserved for a future Templates module.",
+    href: "/pages/organization",
+    action: "Open library",
+  },
+  {
+    id: "org-policy-linked",
+    title: "Linked policies",
+    description:
+      "Policy-linked files show a Linked to policy badge in the library. Use Filters → Other → Linked to policy / Not linked. Opening the file shows a compliance link that opens the policy in Policies (`/pages/compliance?policy=`).",
+    href: "/pages/organization",
+    action: "Browse library",
+  },
+  {
     id: "org-sharing",
-    title: "Folder access",
-    description: "Control who can view each folder—all staff, departments, grades, or individuals.",
-    href: "/pages/settings?guide=sharing",
-    action: "Review access",
+    title: "Folder and document access",
+    description:
+      "Manage access from the folder or document menu: adjust visibility scope and grants without exposing raw access-scope codes in the UI.",
+    href: "/pages/organization?guide=org-sharing",
+    action: "Review folder access",
   },
 ];
 
@@ -152,14 +189,6 @@ const administrationSteps: GuideStep[] = [
       "Set up upload categories and, when needed, require approval with approvers on each type.",
     href: "/pages/settings?guide=document-types",
     action: "Open Settings",
-  },
-  {
-    id: "sharing",
-    title: "Define sharing access",
-    description:
-      "Choose default access for new folders—shared with all staff, departments, grades, or specific employees.",
-    href: "/pages/settings?guide=sharing",
-    action: "Review access defaults",
   },
   {
     id: "approval-inbox",

@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import { fetchEmployeeFileSummaryPage } from "../lib/employeeFileSummaryPages";
 import { EMPLOYEE_FILE_LIST_PAGE_SIZE } from "../lib/employeeFileListPageSize";
 
 export const EMPLOYEE_FILES_KEYS = {
@@ -17,10 +18,17 @@ export const EMPLOYEE_FILES_KEYS = {
     offset?: number;
     department_id?: string;
     order?: string;
+    attention_filter?: string;
   }) => ["employee-files", "files", params],
   groupMembers: (
     groupId: number,
-    params: { search?: string; limit?: number; offset?: number },
+    params: {
+      search?: string;
+      limit?: number;
+      offset?: number;
+      order?: string;
+      attention_filter?: string;
+    },
   ) => ["employee-files", "group-members", groupId, params],
   issues: (
     category: string,
@@ -148,6 +156,7 @@ export function useEmployeeFileSummaries(
     pageSize?: number;
     departmentId?: string;
     order?: string;
+    attentionFilter?: string;
     enabled?: boolean;
   } = {},
 ) {
@@ -157,9 +166,12 @@ export function useEmployeeFileSummaries(
     pageSize = EMPLOYEE_FILE_LIST_PAGE_SIZE,
     departmentId,
     order,
+    attentionFilter = "all",
     enabled = true,
   } = params;
   const offset = (Math.max(page, 1) - 1) * pageSize;
+  const attention_filter =
+    attentionFilter !== "all" ? attentionFilter : undefined;
   return useQuery({
     queryKey: EMPLOYEE_FILES_KEYS.files({
       search,
@@ -167,15 +179,21 @@ export function useEmployeeFileSummaries(
       offset,
       department_id: departmentId,
       order,
+      attention_filter,
     }),
-    queryFn: () =>
-      api.listEmployeeFileSummaries({
+    queryFn: () => {
+      const department_id =
+        departmentId !== "all" ? departmentId : undefined;
+      return fetchEmployeeFileSummaryPage({
         search,
-        limit: pageSize,
+        department_id,
+        pageSize,
         offset,
-        department_id: departmentId !== "all" ? departmentId : undefined,
         order,
-      }),
+        attention_filter,
+      });
+    },
+    placeholderData: keepPreviousData,
     enabled,
   });
 }
@@ -241,16 +259,30 @@ export function useEmployeeGroupMembers(
   page = 1,
   pageSize = EMPLOYEE_FILE_LIST_PAGE_SIZE,
   enabled = true,
+  order = "name asc",
+  attentionFilter = "all",
 ) {
   const offset = (Math.max(page, 1) - 1) * pageSize;
+  const attention_filter =
+    attentionFilter !== "all" ? attentionFilter : undefined;
   return useQuery({
     queryKey: EMPLOYEE_FILES_KEYS.groupMembers(groupId, {
       search,
       limit: pageSize,
       offset,
+      order,
+      attention_filter,
     }),
     queryFn: () =>
-      api.listEmployeeGroupMembers(groupId, { search, limit: pageSize, offset }),
+      fetchEmployeeFileSummaryPage({
+        groupId,
+        search,
+        pageSize,
+        offset,
+        order,
+        attention_filter,
+      }),
+    placeholderData: keepPreviousData,
     enabled: enabled && groupId > 0,
   });
 }

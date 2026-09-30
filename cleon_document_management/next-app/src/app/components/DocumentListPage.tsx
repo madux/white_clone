@@ -1,13 +1,8 @@
 "use client";
 
 import {
-  Check,
-  FilePlus2,
   FileText,
-  FolderOpen,
-  Grid2X2,
-  List,
-  Search,
+  FolderPlus,
   ShieldCheck,
   SlidersHorizontal,
   Users,
@@ -30,7 +25,8 @@ import {
   useSettings,
   useWorkspaceActivity,
 } from "../../../hooks/useDocuments";
-import SectionTabs from "./SectionTabs";
+import { useAppDialog } from "../../../hooks/useAppDialog";
+import ViewToggle from "./ViewToggle";
 import OrganizationalLibraryTree, {
   type AckPercentFilter,
 } from "./OrganizationalLibraryTree";
@@ -40,17 +36,33 @@ import FolderApprovalFields, {
   type ApprovalFlow,
   validateFolderApproval,
 } from "./FolderApprovalFields";
-import OrganizationalAccessScopeFields, {
-  validateOrganizationalScope,
-} from "./OrganizationalAccessScopeFields";
+import OrganizationalVisibilityFields, {
+  validateOrganizationalVisibility,
+  visibilityToAccessScope,
+  type OrgVisibilityMode,
+} from "./OrganizationalVisibilityFields";
+import { canCreateOrgFolder, canUploadOrgDocuments } from "../../../lib/organizationalFilesAccess";
 import BulkFolderActions from "./BulkFolderActions";
-import ThemedSelect from "./ThemedSelect";
+import FolderPickerDialog from "./FolderPickerDialog";
+import { folderIdsWithDescendants } from "./FolderTreePicker";
+import { api } from "../../../lib/api";
+import AppToolbar from "./AppToolbar";
+import EmptyState from "./EmptyState";
+import NewMenu from "./NewMenu";
+import OrganizationalNewMenu from "./OrganizationalNewMenu";
+import LibraryBreadcrumb from "./LibraryBreadcrumb";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   prefillFromSearchParams,
   readCreateFolderIntent,
   type CreateFolderPrefill,
 } from "../../../lib/createFolderIntent";
 import { formatFieldLabel } from "../../../lib/formatLabel";
+import { folderCardStyle, folderWellStyle } from "../../../lib/folderColor";
+import FolderDescriptionAssist from "./FolderDescriptionAssist";
+import OrgFolderIcon from "./OrgFolderIcon";
 
 type PageKind = "employee" | "organization" | "organizational";
 type ViewMode = "list" | "cards";
@@ -59,9 +71,9 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
   const documents = useDocuments();
   const complianceTargets = useComplianceTargets();
   const currentUser = useCurrentUser();
-  const workspaceActivity = useWorkspaceActivity();
   const params = useSearchParams();
   const isOrganizationPage = kind === "organization";
+  const workspaceActivity = useWorkspaceActivity(isOrganizationPage);
   const guideTarget = params.get("guide");
   const createQuery = params.get("create");
   const departmentIdQuery = params.get("department_id");
@@ -70,14 +82,26 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selected, setSelected] = useState<number[]>([]);
+  const [movingFolders, setMovingFolders] = useState(false);
+  const [movingFoldersPending, setMovingFoldersPending] = useState(false);
+  const { showAlert } = useAppDialog();
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [createPrefill, setCreatePrefill] = useState<CreateFolderPrefill>({});
   const [showFilters, setShowFilters] = useState(false);
+  const [librarySortKey, setLibrarySortKey] = useState("name asc");
   const [complianceFilter, setComplianceFilter] = useState<"all" | "attention" | "complete">("all");
   const isEmployeePage = kind === "employee";
+  const canCreateFolder =
+    kind === "organization"
+      ? canCreateOrgFolder(currentUser.data)
+      : currentUser.data?.is_document_manager === true;
+  const canUploadOrg = canUploadOrgDocuments(currentUser.data);
   const [ackPercentFilters, setAckPercentFilters] = useState<AckPercentFilter[]>(
     [],
   );
+  const [folderLockFilters, setFolderLockFilters] = useState<
+    Array<"locked" | "unlocked" | "archived">
+  >([]);
   useEffect(() => {
     const fromParams = prefillFromSearchParams(params);
     const fromStorage = readCreateFolderIntent();
@@ -131,7 +155,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
     [documents.data, visibleFolders],
   );
 
-  const filteredRows = isEmployeePage
+  const filteredRows = (isEmployeePage
     ? rows
     : rows.filter(({ compliance }) =>
         complianceFilter === "all"
@@ -139,7 +163,20 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
           : complianceFilter === "complete"
             ? compliance === 100
             : compliance < 100,
-      );
+      )
+  ).filter(({ folder }) => {
+    if (!folderLockFilters.length) return true;
+    const locked = Boolean(folder.locked || folder.is_locked);
+    const archived = Boolean(
+      folder.active === false || folder.distribution_status === "archived",
+    );
+    const matchLocked =
+      folderLockFilters.includes("locked") && locked && !archived;
+    const matchUnlocked =
+      folderLockFilters.includes("unlocked") && !locked && !archived;
+    const matchArchived = folderLockFilters.includes("archived") && archived;
+    return matchLocked || matchUnlocked || matchArchived;
+  });
   const isLoading = folders.isLoading || documents.isLoading;
   const visibleIds = filteredRows.map(({ folder }) => folder.id);
   const allSelected =
@@ -153,78 +190,78 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
 
   return (
     <>
-    <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-end">
-        <div className="flex flex-wrap gap-2">
-          {kind === "employee" && currentUser.data?.is_document_admin === true && (
-            <Link
-              href="/pages/compliance"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-pink hover:text-brand-pink"
-            >
-              <ShieldCheck className="h-4 w-4" />
-              Compliance
-            </Link>
-          )}
-          {currentUser.data?.is_document_manager === true && (
-            <button
-              type="button"
-              onClick={() => setShowCreateFolder(true)}
-              className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200 transition hover:shadow-pink-300 ${guideTarget === "folders" ? "guide-emphasis" : ""}`}
-            >
-              <FilePlus2 className="h-4 w-4" />
-              Create Folder
-            </button>
-          )}
-        </div>
-      </div>
-
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-slate-100 p-4 lg:flex-row lg:items-center lg:justify-between">
-          <label className="relative block w-full lg:max-w-md">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={
-                kind === "employee"
-                  ? "Search employees, folders..."
-                  : "Search folders, policies..."
-              }
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-brand-pink/40 focus:bg-white focus:ring-4 focus:ring-brand-pink/10"
-            />
-          </label>
-          <div className="flex items-center justify-between gap-3">
-            {!isEmployeePage ? (
-              <button
-                type="button"
-                aria-expanded={showFilters}
-                aria-controls="folder-filters"
-                onClick={() => setShowFilters((current) => !current)}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-brand-pink hover:text-brand-pink"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                Filters
-              </button>
-            ) : null}
-            <SectionTabs
-              items={[
-                { id: "list", label: "List", icon: List },
-                { id: "cards", label: "Cards", icon: Grid2X2 },
-              ]}
-              value={viewMode}
-              onChange={setViewMode}
-              className="!w-auto"
+    <div className="app-page space-y-6">
+      {isOrganizationPage ? (
+        <LibraryBreadcrumb items={[{ label: "Organizational Files" }]} />
+      ) : null}
+      <section className="app-table-well app-page-body">
+        <AppToolbar
+          leading={
+            isOrganizationPage && canCreateFolder ? (
+              <OrganizationalNewMenu
+                canUpload={canUploadOrg}
+                canCreateFolder={canCreateFolder}
+                canCreatePolicy={currentUser.data?.is_document_admin === true}
+                onCreateRootFolder={() => setShowCreateFolder(true)}
+              />
+            ) : canCreateFolder ? (
+              <NewMenu
+                items={[
+                  {
+                    label: "Folder",
+                    icon: FolderPlus,
+                    onSelect: () => setShowCreateFolder(true),
+                  },
+                ]}
+              />
+            ) : null
+          }
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder={
+            kind === "employee"
+              ? "Search employees, departments, folders..."
+              : "Search folders, policies..."
+          }
+          extras={
+            !isEmployeePage ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  aria-expanded={showFilters}
+                  aria-controls="folder-filters"
+                  onClick={() => setShowFilters((current) => !current)}
+                >
+                  <SlidersHorizontal data-icon="inline-start" />
+                  Filters
+                </Button>
+              </>
+            ) : null
+          }
+          toggle={
+            <ViewToggle
+              value={viewMode === "cards" ? "card" : "list"}
+              onChange={(value) => setViewMode(value === "card" ? "cards" : "list")}
               ariaLabel="Folder view mode"
             />
-          </div>
-        </div>
-        {showFilters && !isEmployeePage && (
-          <div
-            id="folder-filters"
-            className="space-y-3 border-b border-slate-100 bg-slate-50/70 px-4 py-3"
-            role="region"
-            aria-label="Folder filters"
-          >
+          }
+          actions={
+            kind === "employee" && currentUser.data?.is_document_admin === true ? (
+              <Button variant="outline" render={<Link href="/pages/compliance" />}>
+                <ShieldCheck data-icon="inline-start" />
+                Compliance
+              </Button>
+            ) : null
+          }
+          footer={
+            showFilters && !isEmployeePage ? (
+              <div
+                id="folder-filters"
+                className="w-full space-y-3"
+                role="region"
+                aria-label="Folder filters"
+              >
             {isOrganizationPage ? (
               <section className="employee-filter-section !border-0 !p-0">
                 <h3 className="employee-filter-section-title">Acknowledgement %</h3>
@@ -276,12 +313,46 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
                 ))}
               </div>
             </section>
-          </div>
-        )}
+            {isOrganizationPage ? (
+              <section className="employee-filter-section !border-0 !p-0">
+                <h3 className="employee-filter-section-title">Folder state</h3>
+                <div className="employee-filter-options !max-h-none">
+                  {([
+                    ["locked", "Locked"],
+                    ["unlocked", "Unlocked"],
+                    ["archived", "Archived"],
+                  ] as const).map(([value, label]) => (
+                    <label key={value} className="employee-filter-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={folderLockFilters.includes(value)}
+                        onChange={() =>
+                          setFolderLockFilters((current) =>
+                            current.includes(value)
+                              ? current.filter((item) => item !== value)
+                              : [...current, value],
+                          )
+                        }
+                        className="h-4 w-4 rounded border-slate-300 accent-pink-600"
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+              </div>
+            ) : null
+          }
+        />
         <div className="px-4 pt-4">
           <BulkFolderActions
             selected={selected}
             onClear={() => setSelected([])}
+            organizational={isOrganizationPage}
+            onMove={
+              isOrganizationPage ? () => setMovingFolders(true) : undefined
+            }
           />
         </div>
 
@@ -291,17 +362,20 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
           </p>
         )}
         {isLoading ? (
-          <div className="space-y-3 p-5">
-            <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
-            <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
+          <div className="flex flex-col gap-2 p-4">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
           </div>
         ) : viewMode === "list" ? (
           isOrganizationPage ? (
-            workspaceActivity.isError ? (
-              <p className="p-8 text-center text-sm text-red-600">
-                Acknowledgement data could not be loaded.
-              </p>
-            ) : (
+            <>
+              {workspaceActivity.isError && (
+                <p className="mx-4 mt-4 rounded-xl border border-amber-100 bg-amber-50 p-3 text-sm text-amber-800">
+                  Acknowledgement percentages could not be loaded. Folders are still
+                  available.
+                </p>
+              )}
               <OrganizationalLibraryTree
                 rows={filteredRows}
                 ackFolders={
@@ -315,8 +389,10 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
                 guideTarget={guideTarget}
                 search={search}
                 percentFilters={ackPercentFilters}
+                sortKey={librarySortKey}
+                onSortChange={setLibrarySortKey}
               />
-            )
+            </>
           ) : (
             <FolderExplorerAccordion
               kind="employee"
@@ -339,18 +415,31 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
                 <article
                   key={folder.id}
                   className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-brand-pink/30 hover:shadow-lg hover:shadow-pink-100"
+                  style={folderCardStyle(folder.color_hex)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={selected.includes(folder.id)}
-                        onChange={() => toggleSelected(folder.id)}
+                        onCheckedChange={() => toggleSelected(folder.id)}
                         aria-label={`Select ${folder.folder_name}`}
-                        className="h-4 w-4 accent-pink-600"
                       />
-                      <div className="rounded-xl bg-pink-50 p-3 text-brand-pink">
-                        <FolderOpen className="h-5 w-5" />
+                      <div
+                        className="rounded-xl bg-pink-50 p-3 text-brand-pink"
+                        style={
+                          isOrganizationPage
+                            ? undefined
+                            : folderWellStyle(folder.color_hex)
+                        }
+                      >
+                        <OrgFolderIcon
+                          className="h-10 w-10"
+                          hasContent={
+                            folderDocuments.length > 0 ||
+                            (kind === "employee" && employees > 0)
+                          }
+                          documents={folderDocuments}
+                        />
                       </div>
                     </div>
                   </div>
@@ -387,57 +476,58 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
           </div>
         )}
         {!isLoading && !filteredRows.length && (
-          <div className="p-12 text-center">
-            <Check className="mx-auto h-8 w-8 rounded-full bg-pink-50 p-1.5 text-brand-pink" />
-            {visibleFolders.length === 0 ? (
-              <>
-                <p className="mt-3 font-semibold text-slate-700">
-                  {isEmployeePage
-                    ? "No employee folders yet"
-                    : "No organizational folders yet"}
-                </p>
-                <p className="mt-1 text-sm text-slate-400">
-                  {isEmployeePage
-                    ? "Create a folder to group employee files and documents."
-                    : "Create a folder to publish policies and shared documents."}
-                </p>
-                {currentUser.data?.is_document_manager === true && (
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateFolder(true)}
-                    className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200"
-                  >
-                    <FilePlus2 className="h-4 w-4" />
-                    Create folder
-                  </button>
-                )}
-              </>
-            ) : (
-              <>
-                <p className="mt-3 font-semibold text-slate-700">
-                  No folders match your filters
-                </p>
-                <p className="mt-1 text-sm text-slate-400">
-                  {search.trim()
-                    ? "Try a different search term."
-                    : "Clear filters to see all folders."}
-                </p>
-                {(search.trim() || complianceFilter !== "all") && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearch("");
-                      setComplianceFilter("all");
-                      setAckPercentFilters([]);
-                    }}
-                    className="mt-5 text-sm font-semibold text-brand-pink hover:underline"
-                  >
-                    Clear search and filters
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+          <EmptyState
+            title={
+              visibleFolders.length === 0
+                ? isEmployeePage
+                  ? "No employee folders yet"
+                  : "No organizational folders yet"
+                : "No folders match your filters"
+            }
+            description={
+              visibleFolders.length === 0
+                ? isEmployeePage
+                  ? "Create a folder to group employee files and documents."
+                  : "Create a folder to publish policies and shared documents."
+                : search.trim()
+                  ? "Try a different search term."
+                  : "Clear filters to see all folders."
+            }
+            action={
+              visibleFolders.length === 0 && canCreateFolder ? (
+                isOrganizationPage ? (
+                  <OrganizationalNewMenu
+                    canUpload={canUploadOrg}
+                    canCreateFolder={canCreateFolder}
+                    canCreatePolicy={currentUser.data?.is_document_admin === true}
+                    onCreateRootFolder={() => setShowCreateFolder(true)}
+                  />
+                ) : (
+                <NewMenu
+                  items={[
+                    {
+                      label: "Folder",
+                      icon: FolderPlus,
+                      onSelect: () => setShowCreateFolder(true),
+                    },
+                  ]}
+                />
+                )
+              ) : search.trim() || complianceFilter !== "all" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch("");
+                    setComplianceFilter("all");
+                    setAckPercentFilters([]);
+                  }}
+                  className="app-btn app-btn-secondary"
+                >
+                  Clear search and filters
+                </button>
+              ) : null
+            }
+          />
         )}
       </section>
       {showCreateFolder && (
@@ -449,6 +539,38 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
           onClose={() => setShowCreateFolder(false)}
         />
       )}
+      {movingFolders ? (
+        <FolderPickerDialog
+          title="Move folders"
+          folders={folders.data ?? []}
+          excludeIds={folderIdsWithDescendants(folders.data ?? [], selected)}
+          allowRoot
+          confirmLabel="Move"
+          pending={movingFoldersPending}
+          onClose={() => setMovingFolders(false)}
+          onPick={async (parentId) => {
+            setMovingFoldersPending(true);
+            try {
+              for (const id of selected) {
+                const result = await api.moveOrganizationalFolder({
+                  folder_id: id,
+                  parent_id: parentId || false,
+                });
+                if (!result.success) {
+                  await showAlert(result.message || "Unable to move this folder.", {
+                    title: "Move folders",
+                  });
+                  return;
+                }
+              }
+              setMovingFolders(false);
+              setSelected([]);
+            } finally {
+              setMovingFoldersPending(false);
+            }
+          }}
+        />
+      ) : null}
     </div>
     </>
   );
@@ -468,6 +590,7 @@ function FolderCreateModal({
   initialFolderName?: string;
 }) {
   const create = useCreateFolder();
+  const { showAlert } = useAppDialog();
   const documentTypes = useDocumentTypes();
   const targets = useComplianceTargets();
   const folders = useFolders();
@@ -475,7 +598,7 @@ function FolderCreateModal({
   const [step, setStep] = useState<"configure" | "review">("configure");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [accessScope, setAccessScope] = useState("all_staff");
+  const [accessScope] = useState("all_staff");
   const [retention, setRetention] = useState("7");
   const [requireUploadApproval, setRequireUploadApproval] = useState(false);
   const [approvalFlow, setApprovalFlow] = useState<ApprovalFlow>("any");
@@ -485,6 +608,9 @@ function FolderCreateModal({
   const [gradeIds, setGradeIds] = useState<number[]>([]);
   const [scopeIds, setScopeIds] = useState<number[]>([]);
   const [scopeSearch, setScopeSearch] = useState("");
+  const [visibilityMode, setVisibilityMode] =
+    useState<OrgVisibilityMode>("public");
+  const [restrictedScope, setRestrictedScope] = useState("department");
   const [advancedSearch, setAdvancedSearch] = useState("");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(
     null,
@@ -513,7 +639,6 @@ function FolderCreateModal({
       );
     }
     if (kind === "organizational") {
-      setAccessScope(settings.default_access_scope || "all_staff");
       setRetention(settings.default_retention_period || "7");
     }
   }, [kind, settingsQuery.data?.settings]);
@@ -729,67 +854,95 @@ function FolderCreateModal({
     );
   };
 
-  const validateConfigure = () => {
+  const validateConfigure = async () => {
     if (kind === "organizational") {
-      const scopeValidation = validateOrganizationalScope(accessScope, scopeIds);
+      const scopeValidation = validateOrganizationalVisibility(
+        visibilityMode,
+        restrictedScope,
+        scopeIds,
+      );
       if (scopeValidation) {
-        window.alert(scopeValidation);
+        await showAlert(scopeValidation, { title: "Check folder details" });
+        return false;
+      }
+      if (!name.trim()) {
+        await showAlert("Folder name is required.", { title: "Check folder details" });
+        return false;
+      }
+      if (name.trim().length > 100) {
+        await showAlert("Folder name must be 100 characters or fewer.", {
+          title: "Check folder details",
+        });
+        return false;
+      }
+      if (description.length > 500) {
+        await showAlert("Description must be 500 characters or fewer.", {
+          title: "Check folder details",
+        });
         return false;
       }
     }
     if (kind === "employee" && !canProceed) {
-      window.alert(
+      await showAlert(
         configureError || "Select at least one existing department.",
+        { title: "Check folder details" },
       );
       return false;
     }
     if (kind === "employee" && approvalError) {
-      window.alert(approvalError);
+      await showAlert(approvalError, { title: "Check folder details" });
       return false;
     }
     return true;
   };
 
-  const goToReview = (event: React.FormEvent) => {
+  const goToReview = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!validateConfigure()) return;
+    if (!(await validateConfigure())) return;
     setStep("review");
   };
+
+  const resolvedOrgScope =
+    kind === "organizational"
+      ? visibilityToAccessScope(visibilityMode, restrictedScope)
+      : accessScope;
 
   const submit = async () => {
     const result = await create.mutateAsync({
       nameElm: name.trim(),
       descriptionElm: description.trim(),
       folder_type: kind,
-      access_scope: accessScope,
-      retention_period: retention,
+      access_scope: resolvedOrgScope,
       ...(kind === "employee"
         ? {
+            retention_period: retention,
             require_upload_approval: requireUploadApproval,
             approval_flow: approvalFlow,
             approver_ids: approverIds,
+            allowed_document_type_ids: allowedTypes,
           }
         : {}),
-      allowed_document_type_ids: allowedTypes,
       department_ids:
         kind === "employee"
           ? departmentIds
-          : accessScope === "department"
+          : resolvedOrgScope === "department"
             ? scopeIds
             : [],
       grade_ids:
         kind === "employee"
           ? gradeIds
-          : accessScope === "grade"
+          : resolvedOrgScope === "grade"
             ? scopeIds
             : [],
       employee_ids:
-        kind === "organizational" && accessScope === "individual"
+        kind === "organizational" && resolvedOrgScope === "individual"
           ? scopeIds
           : [],
     });
     if (!result.success) {
-      window.alert(result.message || "Unable to create folder.");
+      await showAlert(result.message || "Unable to create folder.", {
+        title: "Unable to create folder",
+      });
       return;
     }
     onClose();
@@ -841,9 +994,15 @@ function FolderCreateModal({
               </div>
             ) : (
               <label>
-                <span className="label">Folder name</span>
+                <span className="label">
+                  Folder name{" "}
+                  <span className="font-normal text-slate-400">
+                    ({name.trim().length}/100)
+                  </span>
+                </span>
                 <input
                   required
+                  maxLength={100}
                   className="field"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
@@ -853,78 +1012,77 @@ function FolderCreateModal({
             {kind === "organizational" && (
               <>
                 <div className="sm:col-span-2">
-                  <OrganizationalAccessScopeFields
-                    accessScope={accessScope}
-                    onAccessScopeChange={setAccessScope}
-                    scopeIds={scopeIds}
-                    onScopeIdsChange={setScopeIds}
-                    scopeSearch={scopeSearch}
-                    onScopeSearchChange={setScopeSearch}
-                    departments={departments}
-                    grades={grades}
-                    employees={employees}
-                  />
-                </div>
-                <label className="sm:col-span-2">
-                  <span className="label">Description</span>
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <span className="label mb-0">
+                      Description{" "}
+                      <span className="font-normal text-slate-400">
+                        ({description.length}/500)
+                      </span>
+                    </span>
+                    <FolderDescriptionAssist
+                      name={name}
+                      visibility={
+                        visibilityMode === "public"
+                          ? "Public, visible to all staff"
+                          : visibilityMode === "private"
+                            ? "Private"
+                            : `Restricted (${formatFieldLabel(restrictedScope)})`
+                      }
+                      description={description}
+                      onDescriptionChange={setDescription}
+                    />
+                  </div>
                   <textarea
+                    maxLength={500}
                     className="field min-h-24"
                     value={description}
                     onChange={(event) => setDescription(event.target.value)}
-                    placeholder="Describe what belongs in this folder"
+                    placeholder="Describe what belongs in this folder, or suggest with AI"
                   />
-                </label>
-                <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
-                  <summary className="cursor-pointer text-sm font-bold text-slate-700">
-                    Advanced configuration{" "}
-                    <span className="font-normal text-slate-400">(optional)</span>
-                  </summary>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    <label>
-                      <span className="label">Retention period</span>
-                      <ThemedSelect value={retention} onChange={setRetention} options={[{ value: "1", label: "1 year" }, { value: "3", label: "3 years" }, { value: "5", label: "5 years" }, { value: "7", label: "7 years" }, { value: "10", label: "10 years" }, { value: "permanent", label: "Permanent" }]} />
-                    </label>
-                    <p className="sm:col-span-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs leading-5 text-slate-500">
-                      Admin uploads in organizational folders are published
-                      immediately to the selected audience. Employees acknowledge
-                      shared documents from their workspace when required.
-                    </p>
-                    {kind === "organizational" && (
-                      <label className="sm:col-span-2">
-                        <span className="label">
-                          Allowed document types{" "}
-                          <span className="font-normal text-slate-400">
-                            (optional)
-                          </span>
-                        </span>
-                        <div className="grid max-h-36 gap-2 overflow-y-auto sm:grid-cols-2">
-                          {(documentTypes.data ?? []).map((item: any) => (
-                            <label
-                              key={item.id}
-                              className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={allowedTypes.includes(item.id)}
-                                onChange={() =>
-                                  setAllowedTypes(
-                                    allowedTypes.includes(item.id)
-                                      ? allowedTypes.filter(
-                                          (id) => id !== item.id,
-                                        )
-                                      : [...allowedTypes, item.id],
-                                  )
-                                }
-                                className="h-4 w-4 accent-pink-600"
-                              />
-                              {item.name}
-                            </label>
-                          ))}
-                        </div>
-                      </label>
-                    )}
-                  </div>
-                </details>
+                </div>
+                <OrganizationalVisibilityFields
+                  visibilityMode={visibilityMode}
+                  onVisibilityModeChange={(mode) => {
+                    setVisibilityMode(mode);
+                    if (mode !== "restricted") setScopeIds([]);
+                  }}
+                  restrictedScope={restrictedScope}
+                  onRestrictedScopeChange={(value) => {
+                    setRestrictedScope(value);
+                    setScopeIds([]);
+                  }}
+                  scopeIds={scopeIds}
+                  onScopeIdsChange={setScopeIds}
+                  scopeSearch={scopeSearch}
+                  onScopeSearchChange={setScopeSearch}
+                  departments={departments}
+                  grades={grades}
+                  employees={employees}
+                />
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Configuration summary
+                  </p>
+                  <ul className="mt-3 space-y-1 text-sm text-slate-600">
+                    <li>
+                      <span className="font-semibold">Visibility:</span>{" "}
+                      {visibilityMode === "public"
+                        ? "Public"
+                        : visibilityMode === "private"
+                          ? "Private"
+                          : `Restricted (${formatFieldLabel(restrictedScope)})`}
+                    </li>
+                    <li>
+                      <span className="font-semibold">Retention (inherited):</span>{" "}
+                      {settingsQuery.data?.settings?.default_retention_period || retention}{" "}
+                      years
+                    </li>
+                    <li>
+                      <span className="font-semibold">Upload approval:</span> Not
+                      required for organizational uploads
+                    </li>
+                  </ul>
+                </div>
               </>
             )}
             {kind === "employee" && (
@@ -1036,7 +1194,7 @@ function FolderCreateModal({
             </button>
             <button
               disabled={!canProceed}
-              className="rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="app-btn app-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
               Review
             </button>
@@ -1103,7 +1261,7 @@ function FolderCreateModal({
               <>
                 <div className="flex justify-between gap-4">
                   <dt className="font-semibold text-slate-500">Access scope</dt>
-                  <dd className="text-slate-700">{formatFieldLabel(accessScope)}</dd>
+                  <dd className="text-slate-700">{formatFieldLabel(resolvedOrgScope)}</dd>
                 </div>
                 {scopeLabels.length > 0 && (
                   <div className="flex justify-between gap-4">

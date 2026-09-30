@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { useCurrentUser } from "../../../hooks/useDocuments";
 
 export default function SystemAdminOnly({
@@ -10,18 +8,19 @@ export default function SystemAdminOnly({
   children: React.ReactNode;
 }) {
   const user = useCurrentUser();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (!user.isPending && user.data?.is_admin !== true) {
-      router.replace("/pages/my-documents");
-    }
-  }, [router, user.data?.is_admin, user.isPending]);
-
-  if (user.isPending || user.data?.is_admin !== true) {
+  if (user.isPending) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-sm font-semibold text-slate-400">
         Loading workspace...
+      </div>
+    );
+  }
+
+  if (user.data?.is_admin !== true) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-6 text-center text-sm font-semibold text-red-700">
+        Super Admin is restricted to system administrators.
       </div>
     );
   }

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import { EMPLOYEE_FILE_LIST_PAGE_SIZE } from "../lib/employeeFileListPageSize";
 import type { EmployeeFilesRole } from "../lib/types";
 
 const baseKey = ["employee-files", "roles"];
@@ -12,10 +13,15 @@ export function useEmployeeFilesRoles(enabled = true) {
   });
 }
 
-export function useEmployeeFilesRoleMembers(search = "", enabled = true) {
+export function useEmployeeFilesRoleMembers(
+  search = "",
+  page = 1,
+  enabled = true,
+  pageSize = EMPLOYEE_FILE_LIST_PAGE_SIZE,
+) {
   return useQuery({
-    queryKey: [...baseKey, "members", search],
-    queryFn: () => api.getEmployeeFilesRoleMembers(search),
+    queryKey: [...baseKey, "members", search, page, pageSize],
+    queryFn: () => api.getEmployeeFilesRoleMembers(search, page, pageSize),
     enabled,
   });
 }

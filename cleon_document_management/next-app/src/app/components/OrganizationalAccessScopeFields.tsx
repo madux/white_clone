@@ -1,8 +1,21 @@
 "use client";
 
 import ThemedSelect from "./ThemedSelect";
+import EmployeeMetricPicker from "./EmployeeMetricPicker";
 
-type ScopeTarget = { id: number; name: string };
+type ScopeTarget = {
+  id: number;
+  name: string;
+  department?: string;
+  department_name?: string;
+  job_title?: string;
+  work_location?: string;
+  location?: string;
+  employment_type?: string;
+  status?: string;
+  branch?: string;
+  grade?: string;
+};
 
 type OrganizationalAccessScopeFieldsProps = {
   accessScope: string;
@@ -14,6 +27,8 @@ type OrganizationalAccessScopeFieldsProps = {
   departments: ScopeTarget[];
   grades: ScopeTarget[];
   employees: ScopeTarget[];
+  hideAdminOnly?: boolean;
+  allowedScopes?: string[];
 };
 
 export function scopeIdsForFolder(folder: {
@@ -59,14 +74,17 @@ export default function OrganizationalAccessScopeFields({
   departments,
   grades,
   employees,
+  hideAdminOnly = false,
+  allowedScopes,
 }: OrganizationalAccessScopeFieldsProps) {
   const scopeOptions = [
     { value: "all_staff", label: "All staff" },
     { value: "department", label: "Specific departments" },
     { value: "grade", label: "Specific grades" },
     { value: "individual", label: "Specific employees" },
-    { value: "admin_only", label: "Admin only" },
-  ];
+    { value: "private", label: "Private" },
+    ...(hideAdminOnly ? [] : [{ value: "admin_only", label: "Admin only" }]),
+  ].filter((option) => !allowedScopes || allowedScopes.includes(option.value));
 
   const scopeSource =
     accessScope === "department"
@@ -112,32 +130,52 @@ export default function OrganizationalAccessScopeFields({
         accessScope === "individual") && (
         <div className="rounded-2xl border border-pink-100 bg-pink-50/40 p-4">
           <span className="label">Select {scopeLabel}</span>
-          <input
-            value={scopeSearch}
-            onChange={(event) => onScopeSearchChange(event.target.value)}
-            placeholder={`Search ${scopeLabel}...`}
-            className="field mt-2"
-          />
-          <div className="mt-3 grid max-h-40 gap-2 overflow-y-auto sm:grid-cols-2">
-            {scopeSource
-              .filter((item) =>
-                item.name.toLowerCase().includes(scopeSearch.toLowerCase()),
-              )
-              .map((item) => (
-                <label
-                  key={item.id}
-                  className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={scopeIds.includes(item.id)}
-                    onChange={() => toggleScopeId(item.id)}
-                    className="h-4 w-4 accent-pink-600"
-                  />
-                  {item.name}
-                </label>
-              ))}
-          </div>
+          {accessScope === "individual" ? (
+            <EmployeeMetricPicker
+              employees={employees.map((item) => ({
+                id: item.id,
+                name: item.name,
+                department_name: item.department_name || item.department,
+                job_title: item.job_title,
+                work_location: item.work_location || item.location,
+                employment_type: item.employment_type,
+                status: item.status,
+                branch: item.branch,
+                grade: item.grade,
+              }))}
+              selectedIds={scopeIds}
+              onChange={(ids) => onScopeIdsChange(ids)}
+            />
+          ) : (
+            <>
+              <input
+                value={scopeSearch}
+                onChange={(event) => onScopeSearchChange(event.target.value)}
+                placeholder={`Search ${scopeLabel}...`}
+                className="field mt-2"
+              />
+              <div className="mt-3 grid max-h-40 gap-2 overflow-y-auto sm:grid-cols-2">
+                {scopeSource
+                  .filter((item) =>
+                    item.name.toLowerCase().includes(scopeSearch.toLowerCase()),
+                  )
+                  .map((item) => (
+                    <label
+                      key={item.id}
+                      className="flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={scopeIds.includes(item.id)}
+                        onChange={() => toggleScopeId(item.id)}
+                        className="h-4 w-4 accent-pink-600"
+                      />
+                      {item.name}
+                    </label>
+                  ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

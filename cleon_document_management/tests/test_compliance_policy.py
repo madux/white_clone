@@ -138,6 +138,32 @@ class TestCompliancePolicy(TransactionCase):
         )
         self.assertFalse(policy.allow_waiver)
 
+    def test_ai_draft_activate_then_deactivate_is_inactive(self):
+        policy = self._create_policy(
+            user=self.admin,
+            name="AI Draft Policy",
+            ai_drafted=True,
+            lifecycle_status="draft",
+            active=False,
+        )
+        self.assertEqual(policy.lifecycle_status, "draft")
+        self.assertFalse(policy.active)
+        policy.write({"active": True})
+        self.assertTrue(policy.active)
+        self.assertEqual(policy.lifecycle_status, "active")
+        policy.write({"active": False})
+        self.assertFalse(policy.active)
+        self.assertEqual(policy.lifecycle_status, "active")
+
+    def test_non_ai_policy_cannot_be_created_as_draft(self):
+        policy = self._create_policy(
+            user=self.admin,
+            name="Scratch Policy",
+            lifecycle_status="draft",
+        )
+        self.assertFalse(policy.ai_drafted)
+        self.assertEqual(policy.lifecycle_status, "active")
+
     def test_exception_blocked_when_waiver_disabled(self):
         policy = self._create_policy(
             user=self.admin,

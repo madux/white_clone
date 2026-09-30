@@ -1,22 +1,17 @@
 "use client";
 
-import {
-  ChevronDown,
-  ChevronRight,
-  FileText,
-  FolderOpen,
-} from "lucide-react";
-import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Lock } from "lucide-react";
+import { useMemo } from "react";
 import type {
-  AcknowledgementDocumentNode,
   AcknowledgementFolderNode,
   DocDocument,
   DocFolder,
 } from "../../../lib/types";
-import AcknowledgementDocumentPanel from "./AcknowledgementDocumentPanel";
-import AnimatedTreeCollapse from "./AnimatedTreeCollapse";
+import { formatDocumentDate } from "../../../lib/formatDocumentDate";
 import FolderActions from "./FolderActions";
+import { sortLibraryFileRows } from "../../../lib/libraryTableSort";
+import LibraryFileTable, { type LibraryFileRow } from "./LibraryFileTable";
+import StatusPill from "./StatusPill";
 
 export type AckPercentFilter = "below100" | "below90" | "below80" | "above80";
 
@@ -35,30 +30,29 @@ function matchesPercentFilter(percent: number, filters: AckPercentFilter[]) {
   });
 }
 
-function percentBadgeClass(percent: number | null) {
-  if (percent === null) return "ack-percent-badge muted";
-  if (percent >= 80) return "ack-percent-badge healthy";
-  if (percent >= 60) return "ack-percent-badge caution";
-  return "ack-percent-badge risk";
+function percentBadge(percent: number | null) {
+  if (percent === null) return <StatusPill label="—" tone="neutral" />;
+  const tone =
+    percent >= 80 ? "ok" : percent >= 60 ? "attention" : "danger";
+  return <StatusPill label={`${percent}%`} tone={tone} />;
 }
 
-function toAckDocumentNode(
-  document: DocDocument,
-  folder: DocFolder,
-  ack?: AcknowledgementDocumentNode,
-): AcknowledgementDocumentNode {
-  if (ack) return ack;
-  return {
-    document_id: document.id,
-    document_name: document.name,
-    document_type: document.document_type,
-    folder_id: folder.id,
-    folder_name: folder.folder_name,
-    audience_count: 0,
-    acknowledged_count: 0,
-    acknowledgement_percent: 0,
-    pending_count: 0,
-  };
+function folderKindLabel(kind?: DocFolder["folder_kind"]) {
+  if (kind === "project") return "Project";
+  if (kind === "vendor") return "Vendor";
+  return "Folder";
+}
+
+function formatBytes(bytes: number) {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let index = 0;
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
+  }
+  return `${value < 10 && index > 0 ? value.toFixed(1) : Math.round(value)} ${units[index]}`;
 }
 
 export default function OrganizationalLibraryTree({
@@ -70,6 +64,9 @@ export default function OrganizationalLibraryTree({
   guideTarget,
   search,
   percentFilters,
+  parentFolderId,
+  sortKey = "name asc",
+  onSortChange,
 }: {
   rows: FolderRow[];
   ackFolders: AcknowledgementFolderNode[];
@@ -79,233 +76,144 @@ export default function OrganizationalLibraryTree({
   guideTarget?: string | null;
   search: string;
   percentFilters: AckPercentFilter[];
+  parentFolderId?: number | false;
+  sortKey?: string;
+  onSortChange?: (order: string) => void;
 }) {
-  const [expandedFolders, setExpandedFolders] = useState<Record<number, boolean>>(
-    {},
-  );
-  const [expandedDocumentId, setExpandedDocumentId] = useState<number | null>(
-    null,
-  );
-
   const ackByFolderId = useMemo(
     () => new Map(ackFolders.map((folder) => [folder.folder_id, folder])),
     [ackFolders],
   );
 
+  const childFolderCountByParent = useMemo(() => {
+    const counts = new Map<number, number>();
+    rows.forEach(({ folder }) => {
+      const parentId = Number(folder.parent_id || 0);
+      if (!parentId) return;
+      counts.set(parentId, (counts.get(parentId) ?? 0) + 1);
+    });
+    return counts;
+  }, [rows]);
+
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return rows
-      .map(({ folder, documents }) => {
-        const ackFolder = ackByFolderId.get(folder.id);
-        const ackDocMap = new Map(
-          (ackFolder?.documents ?? []).map((document) => [
-            document.document_id,
-            document,
-          ]),
-        );
-
-        const visibleDocuments = documents.filter((document) => {
-          const ackDoc = ackDocMap.get(document.id);
-          const matchesSearch =
-            !query ||
-            folder.folder_name.toLowerCase().includes(query) ||
+    const scoped = rows.filter(({ folder }) => {
+      const parentId = folder.parent_id || false;
+      if (query) return true;
+      if (parentFolderId) return parentId === parentFolderId;
+      return !parentId;
+    });
+    const matched = scoped.filter(({ folder, documents }) => {
+      const ackFolder = ackByFolderId.get(folder.id);
+      const folderPercent = ackFolder?.acknowledgement_percent ?? null;
+      const matchesSearch =
+        !query ||
+        folder.folder_name.toLowerCase().includes(query) ||
+        documents.some(
+          (document) =>
             document.name.toLowerCase().includes(query) ||
-            document.document_type.toLowerCase().includes(query);
-          const matchesPercent = matchesPercentFilter(
-            ackDoc?.acknowledgement_percent ?? 100,
-            percentFilters,
-          );
-          return matchesSearch && matchesPercent;
-        });
+            document.document_type.toLowerCase().includes(query),
+        );
+      const matchesPercent = matchesPercentFilter(
+        folderPercent ?? 100,
+        percentFilters,
+      );
+      return matchesSearch && matchesPercent;
+    });
+    return matched;
+  }, [ackByFolderId, parentFolderId, percentFilters, rows, search]);
 
-        if (!visibleDocuments.length && query) {
-          const folderMatches = folder.folder_name.toLowerCase().includes(query);
-          if (!folderMatches) return null;
-        } else if (!visibleDocuments.length && percentFilters.length) {
-          return null;
-        }
+  const tableRows: LibraryFileRow[] = sortLibraryFileRows(
+    filteredRows.map(({ folder, documents }) => {
+    const ackFolder = ackByFolderId.get(folder.id);
+    const folderPercent = ackFolder?.acknowledgement_percent ?? null;
+    const href = `/pages/organization/folder?folder=${folder.id}${
+      guideTarget === "organizational-upload" ? "&guide=organizational-upload" : ""
+    }`;
+    const itemCount =
+      (folder.document_count ?? documents.length) +
+      (childFolderCountByParent.get(folder.id) ?? 0);
+    return {
+      id: `folder-${folder.id}`,
+      kind: "folder",
+      folderPreview: {
+        hasContent: itemCount > 0,
+        documents,
+      },
+      name: folder.folder_name,
+      description: folder.description || "",
+      documentsCount: itemCount,
+      subtitle: `${folderKindLabel(folder.folder_kind)}${folder.collection_code ? ` · ${folder.collection_code}` : ""}`,
+      href,
+      extra: folder.locked ? (
+        <Lock className="size-3.5 text-muted-foreground" aria-label="Locked" />
+      ) : null,
+      owner: folder.owner_name || "—",
+      modified: formatDocumentDate(folder.last_modified),
+      modifiedRaw: folder.last_modified || undefined,
+      status: folder.locked ? (
+        <StatusPill label="Locked" />
+      ) : (
+        percentBadge(folderPercent)
+      ),
+      selected: selectedFolderIds.includes(folder.id),
+      onSelectChange: isDocumentManager
+        ? () => onToggleFolderSelected(folder.id)
+        : undefined,
+      actions: (
+        <FolderActions
+          folderId={folder.id}
+          folderName={folder.folder_name}
+          description={folder.description}
+          locked={folder.locked}
+          folderType={folder.folder_type}
+          accessScope={folder.access_scope}
+          departmentIds={folder.department_ids}
+          gradeIds={folder.grade_ids}
+          employeeIds={folder.employee_ids}
+          colorHex={folder.color_hex}
+          folderKind={folder.folder_kind}
+          organizeBy={folder.organize_by}
+          requireUploadApproval={folder.require_upload_approval}
+          approvalFlow={folder.approval_flow}
+          acknowledgementPercent={folderPercent}
+          acknowledgementPending={
+            ackFolder
+              ? Math.max(
+                  0,
+                  ackFolder.audience_count - ackFolder.acknowledged_count,
+                )
+              : undefined
+          }
+        />
+      ),
+    };
+    }),
+    sortKey,
+  );
 
-        const folderPercent = ackFolder?.acknowledgement_percent ?? null;
-        if (
-          percentFilters.length &&
-          folderPercent !== null &&
-          !matchesPercentFilter(folderPercent, percentFilters) &&
-          !visibleDocuments.length
-        ) {
-          return null;
-        }
-
-        return {
-          folder,
-          documents: visibleDocuments.length ? visibleDocuments : documents,
-          folderPercent,
-          ackDocMap,
-        };
-      })
-      .filter(Boolean) as {
-      folder: DocFolder;
-      documents: DocDocument[];
-      folderPercent: number | null;
-      ackDocMap: Map<number, AcknowledgementDocumentNode>;
-    }[];
-  }, [ackByFolderId, percentFilters, rows, search]);
-
-  const toggleFolder = (folderId: number) => {
-    setExpandedFolders((current) => ({
-      ...current,
-      [folderId]: !(current[folderId] ?? false),
-    }));
-  };
-
-  const toggleDocument = (documentId: number) => {
-    setExpandedDocumentId((current) =>
-      current === documentId ? null : documentId,
-    );
-  };
-
-  if (!rows.length) {
-    return (
-      <p className="py-16 text-center text-sm text-slate-400">
-        No organizational folders found.
-      </p>
-    );
-  }
-
-  if (!filteredRows.length) {
-    return (
-      <p className="py-12 text-center text-sm text-slate-400">
-        No folders or documents match the current filters.
-      </p>
-    );
+  if (!tableRows.length) {
+    return null;
   }
 
   return (
-    <div className="ack-tree-list p-4">
-      {filteredRows.map(
-        ({ folder, documents, folderPercent, ackDocMap }) => {
-          const folderExpanded = expandedFolders[folder.id] ?? false;
-          return (
-            <div key={folder.id} className="ack-tree-folder">
-              <div className="ack-tree-row ack-tree-row-folder">
-                {isDocumentManager ? (
-                  <input
-                    type="checkbox"
-                    checked={selectedFolderIds.includes(folder.id)}
-                    onChange={() => onToggleFolderSelected(folder.id)}
-                    aria-label={`Select ${folder.folder_name}`}
-                    className="h-4 w-4 shrink-0 accent-pink-600"
-                    onClick={(event) => event.stopPropagation()}
-                  />
-                ) : null}
-                <button
-                  type="button"
-                  className="employee-tree-toggle"
-                  onClick={() => toggleFolder(folder.id)}
-                  aria-expanded={folderExpanded}
-                  aria-label={`${folderExpanded ? "Collapse" : "Expand"} ${folder.folder_name}`}
-                >
-                  {folderExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </button>
-                <FolderOpen className="h-4 w-4 shrink-0 text-brand-pink" />
-                <button
-                  type="button"
-                  className="min-w-0 flex-1 text-left"
-                  onClick={() => toggleFolder(folder.id)}
-                >
-                  <span className="block truncate font-semibold text-slate-800">
-                    {folder.folder_name}
-                  </span>
-                  <span className="block truncate text-xs text-slate-500">
-                    {documents.length} documents
-                  </span>
-                </button>
-                <span className={percentBadgeClass(folderPercent)}>
-                  {folderPercent === null ? "—" : `${folderPercent}%`}
-                </span>
-                <FolderActions
-                  folderId={folder.id}
-                  folderName={folder.folder_name}
-                  description={folder.description}
-                  locked={folder.locked}
-                  folderType={folder.folder_type}
-                  accessScope={folder.access_scope}
-                  departmentIds={folder.department_ids}
-                  gradeIds={folder.grade_ids}
-                  employeeIds={folder.employee_ids}
-                />
-                <Link
-                  href={`/pages/organization/folder?folder=${folder.id}${guideTarget === "organizational-upload" ? "&guide=organizational-upload" : ""}`}
-                  className="employee-tree-open-link"
-                  aria-label={`Open ${folder.folder_name}`}
-                >
-                  Open
-                </Link>
-              </div>
-
-              <AnimatedTreeCollapse
-                open={folderExpanded}
-                className="ack-tree-documents"
-              >
-                  {documents.length ? (
-                    documents.map((document) => {
-                      const ackDoc = ackDocMap.get(document.id);
-                      const ackNode = toAckDocumentNode(
-                        document,
-                        folder,
-                        ackDoc,
-                      );
-                      const expanded = expandedDocumentId === document.id;
-                      return (
-                        <div key={document.id} className="ack-tree-document-block">
-                          <button
-                            type="button"
-                            className={`ack-tree-row ack-tree-row-document ${
-                              expanded ? "active" : ""
-                            }`}
-                            onClick={() => toggleDocument(document.id)}
-                          >
-                            <FileText className="h-4 w-4 shrink-0 text-slate-400" />
-                            <span className="min-w-0 flex-1 text-left">
-                              <span className="block truncate font-medium text-slate-800">
-                                {document.name}
-                              </span>
-                              <span className="block truncate text-xs text-slate-500">
-                                {document.document_type}
-                                {ackDoc?.pending_count
-                                  ? ` · ${ackDoc.pending_count} pending`
-                                  : ""}
-                              </span>
-                            </span>
-                            <span
-                              className={percentBadgeClass(
-                                ackDoc ? ackDoc.acknowledgement_percent : null,
-                              )}
-                            >
-                              {ackDoc
-                                ? `${ackDoc.acknowledgement_percent}%`
-                                : "—"}
-                            </span>
-                          </button>
-                          <AnimatedTreeCollapse open={expanded}>
-                            <AcknowledgementDocumentPanel document={ackNode} />
-                          </AnimatedTreeCollapse>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="ack-document-panel-empty px-4 py-6">
-                      No documents in this folder yet.
-                    </p>
-                  )}
-              </AnimatedTreeCollapse>
-            </div>
-          );
-        },
-      )}
-    </div>
+    <LibraryFileTable
+      rows={tableRows}
+      sortKey={sortKey}
+      onSortChange={onSortChange}
+      selectable={isDocumentManager}
+      allSelected={tableRows.every((row) => row.selected)}
+      onToggleAll={(checked) => {
+        filteredRows.forEach(({ folder }) => {
+          const selected = selectedFolderIds.includes(folder.id);
+          if (checked && !selected) onToggleFolderSelected(folder.id);
+          if (!checked && selected) onToggleFolderSelected(folder.id);
+        });
+      }}
+      showStatus
+      showDescription
+      showDocuments
+      documentsColumnLabel="Items"
+    />
   );
 }

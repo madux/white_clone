@@ -1,12 +1,13 @@
 "use client";
 
-import { Eye, FileText, Pencil, Play, Trash2 } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { Eye, FileText, Pencil, Play, Power, PowerOff, Trash2 } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   useDeletePolicy,
   useEvaluatePolicy,
   useUpdatePolicy,
 } from "../../../hooks/useDocuments";
+import { useAppDialog } from "../../../hooks/useAppDialog";
 import ModalDialog from "./ModalDialog";
 import PolicyTypeMultiSelect from "./PolicyTypeMultiSelect";
 import ThemedSelect from "./ThemedSelect";
@@ -34,11 +35,15 @@ export default function PolicyActions({
   documents,
   types,
   targets,
+  openView = false,
+  onViewClose,
 }: {
   policy: any;
   documents: { id: number; name: string }[];
   types: any[];
   targets: any;
+  openView?: boolean;
+  onViewClose?: () => void;
 }) {
   const [mode, setMode] = useState<"view" | "edit" | null>(null);
   const [form, setForm] = useState({
@@ -72,6 +77,14 @@ export default function PolicyActions({
   const update = useUpdatePolicy();
   const remove = useDeletePolicy();
   const evaluate = useEvaluatePolicy();
+  const { showAlert, showConfirm } = useAppDialog();
+  useEffect(() => {
+    if (openView) setMode("view");
+  }, [openView]);
+  const closeMode = () => {
+    setMode(null);
+    if (mode === "view") onViewClose?.();
+  };
   const requiredDocuments = (policy.document_type_ids ?? [])
     .map((id: number) => documents.find((document) => document.id === id)?.name)
     .filter(Boolean);
@@ -146,12 +159,43 @@ export default function PolicyActions({
   };
   const run = async () => {
     const result = await evaluate.mutateAsync(policy.id);
-    window.alert(result.message || "Policy check completed.");
+    await showAlert(result.message || "Policy check completed.", {
+      title: "Policy check",
+    });
+  };
+  const toggleActive = async () => {
+    const nextActive = !policy.active;
+    if (
+      policy.active &&
+      !(await showConfirm(
+        `Deactivate "${policy.name}"? It will stop running until you activate it again.`,
+        { title: "Deactivate policy", confirmLabel: "Deactivate" },
+      ))
+    ) {
+      return;
+    }
+    try {
+      await update.mutateAsync({
+        id: policy.id,
+        active: nextActive,
+        lifecycle_status: "active",
+      });
+    } catch (error: any) {
+      await showAlert(error?.message || "Unable to update this policy.", {
+        title: nextActive ? "Activate policy" : "Deactivate policy",
+      });
+    }
   };
   const deletePolicy = async () => {
-    if (window.confirm(`Delete "${policy.name}"? This cannot be undone.`))
+    if (
+      await showConfirm(`Delete "${policy.name}"? This cannot be undone.`, {
+        title: "Delete policy",
+        confirmLabel: "Delete",
+      })
+    )
       await remove.mutateAsync(policy.id);
   };
+  const canRun = Boolean(policy.active) && policy.lifecycle_status !== "archived";
   return (
     <>
       <div className="flex items-center justify-end gap-1">
@@ -166,14 +210,26 @@ export default function PolicyActions({
         </button>
         <button
           type="button"
-          onClick={run}
-          disabled={evaluate.isPending}
+          onClick={() => void toggleActive()}
+          disabled={update.isPending}
           className="row-action"
-          title="Run policy check"
-          aria-label="Run policy check"
+          title={policy.active ? "Deactivate policy" : "Activate policy"}
+          aria-label={policy.active ? "Deactivate policy" : "Activate policy"}
         >
-          <Play />
+          {policy.active ? <PowerOff /> : <Power />}
         </button>
+        {canRun ? (
+          <button
+            type="button"
+            onClick={run}
+            disabled={evaluate.isPending}
+            className="row-action"
+            title="Run policy check"
+            aria-label="Run policy check"
+          >
+            <Play />
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => setMode("edit")}
@@ -198,13 +254,18 @@ export default function PolicyActions({
         <ModalDialog
           title={mode === "view" ? policy.name : "Edit policy"}
           eyebrow="Policy"
-          onClose={() => setMode(null)}
+          onClose={closeMode}
           size="3xl"
           backdropClassName="bg-slate-900/40"
           titleClassName="text-xl"
         >
             {mode === "view" ? (
               <div className="mt-5 space-y-4 text-sm text-slate-600">
+                {policy.lifecycle_status === "draft" ? (
+                  <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    Saved as Draft. Activate it from the table when it is ready.
+                  </p>
+                ) : null}
                 <p>{policy.description || "No description provided."}</p>
                 <div>
                   <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -231,6 +292,16 @@ export default function PolicyActions({
                   </ol>
                 </div>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <Info
+                    label="Status"
+                    value={
+                      policy.active
+                        ? "Active"
+                        : policy.lifecycle_status === "draft"
+                          ? "Draft"
+                          : "Inactive"
+                    }
+                  />
                   <Info label="Type" value={policy.policy_type} />
                   <Info
                     label="Scope"
@@ -314,7 +385,7 @@ export default function PolicyActions({
                 </button>
               </div>
             ) : (
-              <form onSubmit={save} className="mt-5 grid gap-4 sm:grid-cols-2">
+              <form onSubmit={save} className="mt-5 grid gap-3 sm:grid-cols-2">
                 <label>
                   <span className="label">Policy name</span>
                   <input
@@ -349,9 +420,8 @@ export default function PolicyActions({
                   />
                 </label>
 
-                {/* Render Type-specific configuration fields */}
                 {typeCode === "document_requirement" && (
-                  <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3 grid gap-3 sm:grid-cols-2">
+                  <>
                     <label>
                       <span className="label">Extra days to submit</span>
                       <input
@@ -367,7 +437,7 @@ export default function PolicyActions({
                         }
                       />
                     </label>
-                    <label className="flex items-center gap-2 pt-6 text-xs font-semibold text-slate-700">
+                    <label className="flex items-end gap-2 pb-1 text-sm text-slate-700">
                       <input
                         type="checkbox"
                         checked={form.allow_waiver}
@@ -376,80 +446,69 @@ export default function PolicyActions({
                         }
                         className="h-4 w-4 accent-pink-600 rounded"
                       />
-                      Allow exceptions or waivers
+                      Allow exceptions
                     </label>
-                  </div>
+                  </>
                 )}
 
                 {typeCode === "renewable_document" && (
-                  <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-                      Expiration Alert Settings
-                    </p>
-
+                  <>
                     <AlertCadenceSelector
                       value={form.alert_schedule_days}
                       onChange={(val: string) =>
                         setForm({ ...form, alert_schedule_days: val })
                       }
                     />
-
-                    <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
-                      <label>
-                        <span className="label">Also notify HR admin</span>
-                        <ThemedSelect
-                          value={String(form.escalate_hr_days)}
-                          onChange={(val) =>
-                            setForm({ ...form, escalate_hr_days: Number(val) })
-                          }
-                          options={[
-                            { value: "15", label: "15 days before expiry" },
-                            { value: "7", label: "7 days before expiry" },
-                            { value: "3", label: "3 days before expiry" },
-                            { value: "1", label: "1 day before expiry" },
-                            { value: "0", label: "On expiry day" },
-                          ]}
-                        />
-                      </label>
-
-                      <label>
-                        <span className="label">Extra days after expiry</span>
-                        <input
-                          type="number"
-                          min="0"
-                          className="field"
-                          value={form.grace_period_days}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              grace_period_days: e.target.value,
-                            })
-                          }
-                        />
-                      </label>
-
-                      <div className="flex items-center pt-5">
-                        <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={form.auto_request_renewal}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                auto_request_renewal: e.target.checked,
-                              })
-                            }
-                            className="h-4 w-4 accent-pink-600 rounded"
-                          />
-                          Create a task for the employee to upload a new copy
-                        </label>
-                      </div>
-                    </div>
-                  </div>
+                    <label>
+                      <span className="label">Also notify HR</span>
+                      <ThemedSelect
+                        value={String(form.escalate_hr_days)}
+                        onChange={(val) =>
+                          setForm({ ...form, escalate_hr_days: Number(val) })
+                        }
+                        options={[
+                          { value: "15", label: "15 days before expiry" },
+                          { value: "7", label: "7 days before expiry" },
+                          { value: "3", label: "3 days before expiry" },
+                          { value: "1", label: "1 day before expiry" },
+                          { value: "0", label: "On expiry day" },
+                        ]}
+                      />
+                    </label>
+                    <label>
+                      <span className="label">Extra days after expiry</span>
+                      <input
+                        type="number"
+                        min="0"
+                        className="field"
+                        value={form.grace_period_days}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            grace_period_days: e.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="flex items-end gap-2 pb-1 text-sm text-slate-700 sm:col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={form.auto_request_renewal}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            auto_request_renewal: e.target.checked,
+                          })
+                        }
+                        className="h-4 w-4 accent-pink-600 rounded"
+                      />
+                      Create a renewal task for the employee
+                    </label>
+                  </>
                 )}
 
                 {typeCode === "compliance_request" && (
-                  <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3 grid gap-3 sm:grid-cols-2">
+                  <>
                     <label>
                       <span className="label">When should this start?</span>
                       <ThemedSelect
@@ -463,7 +522,7 @@ export default function PolicyActions({
                       />
                     </label>
                     <label>
-                      <span className="label">Days to submit documents</span>
+                      <span className="label">Days to submit</span>
                       <input
                         type="number"
                         min="1"
@@ -475,9 +534,7 @@ export default function PolicyActions({
                       />
                     </label>
                     <label className="sm:col-span-2">
-                      <span className="label">
-                        Who follows up?
-                      </span>
+                      <span className="label">Who follows up?</span>
                       <ThemedSelect
                         value={String(form.assigned_reviewer_id || "")}
                         onChange={(val) =>
@@ -490,11 +547,11 @@ export default function PolicyActions({
                         }))}
                       />
                     </label>
-                  </div>
+                  </>
                 )}
 
                 {typeCode === "retention" && (
-                  <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3 grid gap-3 sm:grid-cols-2">
+                  <>
                     <label>
                       <span className="label">How often to check</span>
                       <ThemedSelect
@@ -508,7 +565,7 @@ export default function PolicyActions({
                       />
                     </label>
                     <label>
-                      <span className="label">How many people to check (%)</span>
+                      <span className="label">Sample size (%)</span>
                       <input
                         type="number"
                         min="1"
@@ -534,26 +591,24 @@ export default function PolicyActions({
                         }))}
                       />
                     </label>
-                  </div>
+                  </>
                 )}
 
-                <label className="sm:col-span-2">
-                  <span className="label">Which documents are needed?</span>
-                  <div className="mt-2">
-                    <PolicyTypeMultiSelect
-                      types={documents}
-                      selected={form.document_type_ids}
-                      onChange={(document_type_ids) =>
-                        setForm({ ...form, document_type_ids })
-                      }
-                      error={
-                        error === "Select at least one required document type."
-                          ? error
-                          : undefined
-                      }
-                    />
-                  </div>
-                </label>
+                <div className="sm:col-span-2">
+                  <span className="label">Required documents</span>
+                  <PolicyTypeMultiSelect
+                    types={documents}
+                    selected={form.document_type_ids}
+                    onChange={(document_type_ids) =>
+                      setForm({ ...form, document_type_ids })
+                    }
+                    error={
+                      error === "Select at least one required document type."
+                        ? error
+                        : undefined
+                    }
+                  />
+                </div>
                 <label>
                   <span className="label">Applies to</span>
                   <ThemedSelect

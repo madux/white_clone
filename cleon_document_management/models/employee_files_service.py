@@ -9,6 +9,7 @@ from odoo.exceptions import AccessError, UserError
 
 from .employee_issue import (
     CLASSIFICATION_LABELS,
+    EXCLUSION_REASON_LABELS,
     EXCLUSION_REASON_TO_CLASSIFICATION,
     ISSUE_CATEGORIES,
     ISSUE_TYPE_DEFAULTS,
@@ -62,9 +63,6 @@ class _EmployeeFilesPreviewConfig:
         )
         self.include_inactive = wizard_values.get(
             "include_inactive", config.include_inactive
-        )
-        self.exclude_test_employees = wizard_values.get(
-            "exclude_test_employees", config.exclude_test_employees
         )
         self.collect_existing_documents = wizard_values.get(
             "collect_existing_documents", config.collect_existing_documents
@@ -121,14 +119,6 @@ class DocEmployeeFilesService(models.AbstractModel):
         ]
 
     @api.model
-    def _is_test_employee(self, employee):
-        if hasattr(employee, "is_test_employee"):
-            return bool(employee.is_test_employee)
-        if hasattr(employee, "test_employee"):
-            return bool(employee.test_employee)
-        return False
-
-    @api.model
     def _dimension_value(self, employee, dimension):
         if dimension == "department":
             dep = employee.department_id
@@ -153,6 +143,80 @@ class DocEmployeeFilesService(models.AbstractModel):
             status = "inactive" if not employee.active else "active"
             return (status, status.title())
         return (False, False)
+
+    def _or_join(self, clauses):
+        if not clauses:
+            return []
+        if len(clauses) == 1:
+            return list(clauses)
+        return ["|"] * (len(clauses) - 1) + list(clauses)
+
+    def _employee_metric_search_clauses(self, Employee, needle, prefix=""):
+        clauses = [
+            ("%sname" % prefix, "ilike", needle),
+            ("%swork_email" % prefix, "ilike", needle),
+            ("%sbarcode" % prefix, "ilike", needle),
+            ("%sidentification_id" % prefix, "ilike", needle),
+            ("%sdepartment_id.name" % prefix, "ilike", needle),
+            ("%sjob_id.name" % prefix, "ilike", needle),
+            ("%suser_id.login" % prefix, "ilike", needle),
+        ]
+        fields = getattr(Employee, "_fields", {}) or {}
+        for fname in (
+            "employee_type_id",
+            "employment_type_id",
+            "work_location_id",
+            "address_id",
+            "branch_id",
+            "grade_id",
+        ):
+            if not fields or fname in fields:
+                clauses.append(("%s%s.name" % (prefix, fname), "ilike", needle))
+        lowered = needle.lower()
+        if lowered in ("active", "inactive"):
+            clauses.append(("%sactive" % prefix, "=", lowered == "active"))
+        return clauses
+
+    @api.model
+    def search_company_employees(self, search="", limit=10, offset=0):
+        """Paginated employee search across name, login, and EMS dimensions."""
+        limit = min(max(int(limit or 10), 1), 100)
+        offset = max(int(offset or 0), 0)
+        Employee = self.env["hr.employee"].sudo()
+        company = self.env.company
+        domain = [
+            ("company_id", "in", [False, company.id]),
+            ("active", "=", True),
+        ]
+        needle = (search or "").strip()
+        if needle:
+            domain = domain + self._or_join(
+                self._employee_metric_search_clauses(Employee, needle)
+            )
+        total = Employee.search_count(domain)
+        employees = Employee.search(domain, order="name", limit=limit, offset=offset)
+        return employees, total, limit, offset
+
+    def _serialize_employee_metrics(self, employee):
+        et = getattr(employee, "employment_type_id", False) or getattr(
+            employee, "employee_type_id", False
+        )
+        loc = getattr(employee, "work_location_id", False) or getattr(
+            employee, "address_id", False
+        )
+        branch = getattr(employee, "branch_id", False)
+        grade = getattr(employee, "grade_id", False)
+        return {
+            "department_name": employee.department_id.name
+            if employee.department_id
+            else "",
+            "employment_type": et.name if et else "",
+            "work_location": loc.name if loc else "",
+            "job_title": employee.job_id.name if employee.job_id else "",
+            "status": "Active" if employee.active else "Inactive",
+            "branch": branch.name if branch else "",
+            "grade": grade.name if grade else "",
+        }
 
     @api.model
     def _eligible_employees(self, config):
@@ -183,9 +247,6 @@ class DocEmployeeFilesService(models.AbstractModel):
         for employee in employees:
             if employee.id in manual_excluded:
                 excluded_counts["manual"] += 1
-                continue
-            if config.exclude_test_employees and self._is_test_employee(employee):
-                excluded_counts["test_employee"] += 1
                 continue
             if not config.include_inactive and not employee.active:
                 excluded_counts["inactive"] += 1
@@ -225,8 +286,6 @@ class DocEmployeeFilesService(models.AbstractModel):
         reasons = set()
         if not config.include_inactive and not employee.active:
             reasons.add("inactive")
-        if config.exclude_test_employees and self._is_test_employee(employee):
-            reasons.add("test_employee")
         return reasons
 
     @api.model
@@ -276,6 +335,26 @@ class DocEmployeeFilesService(models.AbstractModel):
                 active_row.write({"active": False})
 
     @api.model
+    def _clear_config_exclusions_for_employee(self, employee, config):
+        """Manual exclusion wins; hide duplicate config-driven exclusion rows."""
+        if not employee:
+            return
+        Exclusion = self.env["doc.employee.exclusion"].sudo()
+        company_id = config.company_id.id
+        if not self._has_manual_exclusion(employee, config):
+            return
+        rows = Exclusion.search(
+            [
+                ("company_id", "=", company_id),
+                ("employee_id", "=", employee.id),
+                ("reason", "in", list(self.CONFIG_DRIVEN_EXCLUSION_REASONS)),
+                ("active", "=", True),
+            ]
+        )
+        if rows:
+            rows.write({"active": False})
+
+    @api.model
     def _primary_organizing_dimension(self, config):
         dimensions = config.get_organizing_dimensions()
         if not dimensions:
@@ -309,7 +388,6 @@ class DocEmployeeFilesService(models.AbstractModel):
         for key in (
             "include_all_existing",
             "include_inactive",
-            "exclude_test_employees",
             "collect_existing_documents",
             "primary_organizing_dimension",
             "sub_organizing_dimension",
@@ -321,6 +399,7 @@ class DocEmployeeFilesService(models.AbstractModel):
             overrides["organizing_dimension_ids"] = json.dumps(dims)
             overrides["primary_organizing_dimension"] = dims[0] if dims else False
         if persist:
+            overrides["exclude_test_employees"] = False
             if "organizing_dimensions" in wizard_values:
                 config.set_organizing_dimensions(wizard_values["organizing_dimensions"])
             if overrides:
@@ -495,6 +574,7 @@ class DocEmployeeFilesService(models.AbstractModel):
         if not config.setup_complete:
             return
         self._sync_config_exclusions(employee, config)
+        self._clear_config_exclusions_for_employee(employee, config)
         if not self._is_ef_eligible(employee, config):
             self._wind_down_excluded_employee(employee, config)
             return
@@ -571,9 +651,6 @@ class DocEmployeeFilesService(models.AbstractModel):
             if dim not in allowed_dims:
                 obsolete |= group
                 continue
-            if nested and sub and dim == sub and not group.parent_group_id:
-                obsolete |= group
-                continue
             if group.parent_group_id:
                 if not nested or dim != sub:
                     obsolete |= group
@@ -594,6 +671,34 @@ class DocEmployeeFilesService(models.AbstractModel):
         for group in root_obsolete:
             if not group.child_ids:
                 group.unlink()
+
+    @api.model
+    def _backfill_top_level_dimension_groups(self, config, dimension):
+        """Create missing flat groups so a nested sub-dimension still has its own tab."""
+        if not dimension:
+            return
+        company_id = config.company_id.id
+        files = (
+            self.env["doc.employee.file"]
+            .sudo()
+            .search([("company_id", "=", company_id)])
+        )
+        for employee_file in files:
+            employee = employee_file.employee_id
+            if not employee:
+                continue
+            key, label = self._dimension_value(employee, dimension)
+            if not key:
+                continue
+            group = self._ensure_system_managed_group(
+                company_id,
+                dimension,
+                key,
+                label,
+                parent_group=False,
+            )
+            if employee_file not in group.member_ids:
+                group.write({"member_ids": [(4, employee_file.id)]})
 
     @api.model
     def _integration_module_name_from_error(self, error):
@@ -1039,6 +1144,153 @@ class DocEmployeeFilesService(models.AbstractModel):
         return group_keys, missing_primary
 
     @api.model
+    def _organizing_dimension_label(self, dimension_key):
+        if not dimension_key:
+            return ""
+        Config = self.env["doc.employee.files.config"]
+        field = Config._fields.get("primary_organizing_dimension")
+        labels = dict(field.selection) if field else {}
+        return labels.get(dimension_key, dimension_key.replace("_", " ").title())
+
+    @api.model
+    def _employee_missing_primary_attribute(self, employee, primary, nested_primary):
+        if not primary:
+            return False
+        parent_key, _label = self._dimension_value(employee, primary)
+        if nested_primary:
+            return not parent_key
+        return not parent_key
+
+    @api.model
+    def _setup_preview_attention_row(self, employee, issue_type, issue_text):
+        return {
+            "employee_id": employee.id,
+            "employee_name": employee.name,
+            "department_name": employee.department_id.name
+            if employee.department_id
+            else "",
+            "job_title": employee.job_id.name if employee.job_id else "",
+            "issue": issue_text,
+            "issue_type": issue_type,
+        }
+
+    @api.model
+    def _collect_setup_preview_attention_rows(self, preview_config):
+        primary = self._primary_organizing_dimension(preview_config)
+        if not primary:
+            return []
+        sub = self._sub_organizing_dimension(preview_config)
+        nested_primary = self._nested_primary_groups(preview_config)
+        included, _excluded = self._eligible_employees(preview_config)
+        primary_label = self._organizing_dimension_label(primary)
+        sub_label = self._organizing_dimension_label(sub) if sub and sub != "none" else ""
+        rows = []
+        for employee in included:
+            parent_key, _parent_label = self._dimension_value(employee, primary)
+            if not parent_key:
+                rows.append(
+                    self._setup_preview_attention_row(
+                        employee,
+                        "no_org_attribute",
+                        _("Missing %s") % primary_label,
+                    )
+                )
+                continue
+            if nested_primary and sub and sub != "none":
+                sub_key, _sub_label = self._dimension_value(employee, sub)
+                if not sub_key:
+                    rows.append(
+                        self._setup_preview_attention_row(
+                            employee,
+                            "no_subgroup_attribute",
+                            _("Missing %s") % sub_label,
+                        )
+                    )
+        rows.sort(key=lambda item: (item.get("employee_name") or "").lower())
+        return rows
+
+    @api.model
+    def _setup_preview_attention_categories(self, rows):
+        buckets = {}
+        for row in rows:
+            issue_type = row.get("issue_type") or "unknown"
+            if issue_type not in buckets:
+                buckets[issue_type] = {
+                    "issue_type": issue_type,
+                    "label": row.get("issue") or issue_type,
+                    "count": 0,
+                }
+            buckets[issue_type]["count"] += 1
+        return sorted(buckets.values(), key=lambda item: item["label"])
+
+    @api.model
+    def _filter_attention_rows_by_search(self, rows, search=None):
+        needle = (search or "").strip()
+        if not needle:
+            return rows
+        employee_ids = [row["employee_id"] for row in rows if row.get("employee_id")]
+        ems_matched = set()
+        if employee_ids:
+            Employee = self.env["hr.employee"].sudo()
+            domain = [("id", "in", employee_ids)] + self._or_join(
+                self._employee_metric_search_clauses(Employee, needle)
+            )
+            ems_matched = set(Employee.search(domain).ids)
+        filtered = []
+        for row in rows:
+            employee_id = row.get("employee_id")
+            if employee_id in ems_matched or self._issue_matches_search(row, search):
+                filtered.append(row)
+        return filtered
+
+    @api.model
+    def _setup_preview_attention_rows(
+        self,
+        preview_config,
+        search=None,
+        issue_type=None,
+        issue_types=None,
+    ):
+        rows = self._collect_setup_preview_attention_rows(preview_config)
+        categories = self._setup_preview_attention_categories(rows)
+        types_filter = [item for item in (issue_types or []) if item]
+        if types_filter:
+            types_set = set(types_filter)
+            rows = [row for row in rows if row.get("issue_type") in types_set]
+        elif issue_type and issue_type != "all":
+            rows = [row for row in rows if row.get("issue_type") == issue_type]
+        rows = self._filter_attention_rows_by_search(rows, search=search)
+        return rows, categories
+
+    @api.model
+    def setup_preview_attention(
+        self,
+        wizard_values=None,
+        search=None,
+        limit=10,
+        offset=0,
+        issue_type=None,
+        issue_types=None,
+    ):
+        config = self.env["doc.employee.files.config"].get_for_company()
+        wizard_values = dict(wizard_values or {})
+        preview_config = _EmployeeFilesPreviewConfig(config, wizard_values)
+        limit = max(1, min(int(limit or 10), 100))
+        offset = max(0, int(offset or 0))
+        rows, categories = self._setup_preview_attention_rows(
+            preview_config,
+            search=search,
+            issue_type=issue_type,
+            issue_types=issue_types,
+        )
+        total = len(rows)
+        return {
+            "items": rows[offset : offset + limit],
+            "total": total,
+            "categories": categories,
+        }
+
+    @api.model
     def setup_preview(self, wizard_values=None, persist=False):
         config = self.env["doc.employee.files.config"].get_for_company()
         wizard_values = dict(wizard_values or {})
@@ -1049,32 +1301,56 @@ class DocEmployeeFilesService(models.AbstractModel):
             preview_config = _EmployeeFilesPreviewConfig(config, wizard_values)
 
         dimensions = preview_config.get_organizing_dimensions()
-        if not dimensions:
-            raise UserError(_("Select at least one organizing dimension."))
-
         company = preview_config.company_id or self.env.company
         ems_employees_in_company = self.env["hr.employee"].sudo().with_company(
             company
         ).search_count(self._employee_domain(company))
 
         included, excluded_counts = self._eligible_employees(preview_config)
+        total_excluded = sum(excluded_counts.values())
+        doc_count = 0
+        if preview_config.collect_existing_documents:
+            doc_count = self.env["doc.document"].sudo().search_count(
+                [
+                    ("employee_id", "in", [e.id for e in included]),
+                    ("active", "=", True),
+                ]
+            )
+
+        if not dimensions:
+            return {
+                "organizing_dimensions": [],
+                "sub_organizing_dimension": "none",
+                "primary_organizing_dimension": "",
+                "nested_primary_view": False,
+                "groups_to_create": 0,
+                "employees_included": len(included),
+                "ems_employees_in_company": ems_employees_in_company,
+                "documents_expected": doc_count,
+                "need_attention_expected": 0,
+                "excluded_total": total_excluded,
+                "excluded_breakdown": excluded_counts,
+                "dimension_summaries": [],
+                "group_breakdown": [],
+            }
+
         primary = self._primary_organizing_dimension(preview_config)
         sub = self._sub_organizing_dimension(preview_config)
         nested_primary = self._nested_primary_groups(preview_config)
 
         dimension_summaries = []
         total_groups = 0
-        need_attention_expected = 0
+        need_attention_expected = len(
+            self._collect_setup_preview_attention_rows(preview_config)
+        )
         for dimension in dimensions:
-            buckets, missing = self._preview_group_buckets(
+            buckets, _missing = self._preview_group_buckets(
                 included,
                 dimension,
                 primary,
                 sub,
                 nested_primary,
             )
-            if dimension == primary:
-                need_attention_expected = missing
             total_groups += len(buckets)
             dimension_summaries.append(
                 {
@@ -1095,15 +1371,6 @@ class DocEmployeeFilesService(models.AbstractModel):
         primary_buckets, _missing = self._preview_group_buckets(
             included, primary, primary, sub, nested_primary
         )
-        doc_count = 0
-        if preview_config.collect_existing_documents:
-            doc_count = self.env["doc.document"].sudo().search_count(
-                [
-                    ("employee_id", "in", [e.id for e in included]),
-                    ("active", "=", True),
-                ]
-            )
-
         total_excluded = sum(excluded_counts.values())
         return {
             "organizing_dimensions": dimensions,
@@ -1142,7 +1409,11 @@ class DocEmployeeFilesService(models.AbstractModel):
         config.write(
             {
                 "setup_complete": False,
-                "primary_organizing_dimension": preview["organizing_dimensions"][0],
+                "primary_organizing_dimension": (
+                    preview["organizing_dimensions"][0]
+                    if preview.get("organizing_dimensions")
+                    else False
+                ),
             }
         )
 
@@ -1447,6 +1718,14 @@ class DocEmployeeFilesService(models.AbstractModel):
                             ("parent_group_id", "=", False),
                         ]
                     )
+                    self._backfill_top_level_dimension_groups(config, dimension)
+                    groups = Group.search(
+                        system_domain
+                        + [
+                            ("organizing_dimension", "=", dimension),
+                            ("parent_group_id", "=", False),
+                        ]
+                    )
             else:
                 groups = Group.search(system_domain)
             if config.enable_custom_groups:
@@ -1471,13 +1750,20 @@ class DocEmployeeFilesService(models.AbstractModel):
         if search:
             needle = search.lower()
             groups = groups.filtered(lambda g: needle in (g.name or "").lower())
-        if not config.show_inactive_groups:
+        if not config.show_inactive_groups and not dimension:
             groups = groups.filtered(lambda g: g.employee_count > 0)
         return groups
 
     @api.model
-    def _employee_file_search_domain(self, search=None, department_id=None):
+    def _employee_file_search_domain(
+        self, search=None, department_id=None, attention_filter=None
+    ):
         domain = [("company_id", "=", self.env.company.id)]
+        filt = (attention_filter or "all").strip().lower()
+        if filt in ("needs_attention", "attention", "needs-attention"):
+            domain.append(("attention_count", ">", 0))
+        elif filt in ("ok", "clear", "no_attention"):
+            domain.append(("attention_count", "=", 0))
         if department_id and str(department_id) != "all":
             if str(department_id).isdigit():
                 domain.append(("employee_id.department_id", "=", int(department_id)))
@@ -1487,72 +1773,157 @@ class DocEmployeeFilesService(models.AbstractModel):
                 )
         needle = (search or "").strip()
         if needle:
-            domain += [
-                "|",
-                "|",
-                "|",
-                "|",
-                ("employee_id.name", "ilike", needle),
-                ("employee_id.barcode", "ilike", needle),
-                ("employee_id.work_email", "ilike", needle),
-                ("employee_id.identification_id", "ilike", needle),
-                ("employee_id.department_id.name", "ilike", needle),
-            ]
+            Employee = self.env["hr.employee"].sudo()
+            domain += self._or_join(
+                self._employee_metric_search_clauses(
+                    Employee, needle, prefix="employee_id."
+                )
+            )
         return domain
-
-    @api.model
-    def list_employee_files(
-        self, search=None, limit=10, offset=0, department_id=None, order="name asc"
-    ):
-        limit = max(1, min(int(limit or 10), 100))
-        offset = max(0, int(offset or 0))
-        domain = self._employee_file_search_domain(search, department_id=department_id)
-        EmployeeFile = self.env["doc.employee.file"]
-        order = self._sanitize_employee_file_order(order)
-        total = EmployeeFile.search_count(domain)
-        files = EmployeeFile.search(
-            domain, limit=limit, offset=offset, order=order
-        )
-        return files, total
 
     @api.model
     def _sanitize_employee_file_order(self, order):
         allowed = {
             "name asc": "employee_id asc",
             "name desc": "employee_id desc",
-            "department asc": "employee_id asc",
-            "department desc": "employee_id desc",
-            "documents asc": "document_count asc",
-            "documents desc": "document_count desc",
+            "identification asc": (
+                "employee_id.identification_id asc, "
+                "employee_id.barcode asc, employee_id.name asc"
+            ),
+            "identification desc": (
+                "employee_id.identification_id desc, "
+                "employee_id.barcode desc, employee_id.name desc"
+            ),
+            "department asc": (
+                "employee_id.department_id.name asc, employee_id.name asc"
+            ),
+            "department desc": (
+                "employee_id.department_id.name desc, employee_id.name desc"
+            ),
+            "job_title asc": "employee_id.job_id.name asc, employee_id.name asc",
+            "job_title desc": "employee_id.job_id.name desc, employee_id.name desc",
+            "documents asc": "document_count asc, employee_id.name asc",
+            "documents desc": "document_count desc, employee_id.name desc",
+            "attention asc": "attention_count asc, employee_id.name asc",
+            "attention desc": "attention_count desc, employee_id.name desc",
         }
         key = (order or "name asc").strip().lower()
         return allowed.get(key, "employee_id asc")
 
     @api.model
-    def list_group_members(self, group_id, search=None, limit=10, offset=0):
+    def _employee_file_python_sort_key(self, record, order_key):
+        """Stable in-memory sort keys (full result set before pagination)."""
+        if order_key.startswith("identification"):
+            return (
+                record.employee_id.identification_id
+                or record.employee_id.barcode
+                or ""
+            ).lower()
+        if order_key.startswith("attention"):
+            return (record.attention_count, (record.employee_id.name or "").lower())
+        if order_key.startswith("documents"):
+            return (record.document_count, (record.employee_id.name or "").lower())
+        if order_key.startswith("department"):
+            return (
+                (record.employee_id.department_id.name or "").lower(),
+                (record.employee_id.name or "").lower(),
+            )
+        if order_key.startswith("job_title"):
+            return (
+                (record.employee_id.job_id.name or "").lower(),
+                (record.employee_id.name or "").lower(),
+            )
+        return (record.employee_id.name or "").lower()
+
+    @api.model
+    def _search_employee_files_sorted(
+        self, domain, order="name asc", limit=10, offset=0
+    ):
         limit = max(1, min(int(limit or 10), 100))
         offset = max(0, int(offset or 0))
+        EmployeeFile = self.env["doc.employee.file"]
+        key = (order or "name asc").strip().lower()
+        python_sort_keys = (
+            "identification asc",
+            "identification desc",
+            "attention asc",
+            "attention desc",
+            "documents asc",
+            "documents desc",
+            "department asc",
+            "department desc",
+            "job_title asc",
+            "job_title desc",
+        )
+        if key in python_sort_keys:
+            records = EmployeeFile.search(domain)
+            reverse = key.endswith("desc")
+            records = records.sorted(
+                key=lambda rec: self._employee_file_python_sort_key(rec, key),
+                reverse=reverse,
+            )
+            total = len(records)
+            return records[offset : offset + limit], total
+        sort = self._sanitize_employee_file_order(order)
+        total = EmployeeFile.search_count(domain)
+        files = EmployeeFile.search(
+            domain, limit=limit, offset=offset, order=sort
+        )
+        return files, total
+
+    @api.model
+    def list_employee_files(
+        self,
+        search=None,
+        limit=10,
+        offset=0,
+        department_id=None,
+        order="name asc",
+        attention_filter=None,
+    ):
+        domain = self._employee_file_search_domain(
+            search,
+            department_id=department_id,
+            attention_filter=attention_filter,
+        )
+        return self._search_employee_files_sorted(
+            domain, order=order, limit=limit, offset=offset
+        )
+
+    @api.model
+    def list_group_members(
+        self,
+        group_id,
+        search=None,
+        limit=10,
+        offset=0,
+        order="name asc",
+        attention_filter=None,
+    ):
         group = self.env["doc.employee.group"].browse(int(group_id)).exists()
         if not group or group.company_id != self.env.company:
             return self.env["doc.employee.file"], 0
-        domain = [("id", "in", group.member_ids.ids)]
+        if group.child_ids:
+            member_files = group.child_ids.mapped("member_ids")
+        else:
+            member_files = group.member_ids
+        domain = [("id", "in", member_files.ids)]
         needle = (search or "").strip()
         if needle:
-            domain += [
-                "|",
-                "|",
-                "|",
-                ("employee_id.name", "ilike", needle),
-                ("employee_id.barcode", "ilike", needle),
-                ("employee_id.work_email", "ilike", needle),
-                ("employee_id.identification_id", "ilike", needle),
-            ]
-        EmployeeFile = self.env["doc.employee.file"]
-        total = EmployeeFile.search_count(domain)
-        files = EmployeeFile.search(
-            domain, limit=limit, offset=offset, order="employee_id"
+            Employee = self.env["hr.employee"].sudo()
+            domain += self._or_join(
+                self._employee_metric_search_clauses(
+                    Employee, needle, prefix="employee_id."
+                )
+            )
+        filt = (attention_filter or "all").strip().lower()
+        if filt in ("needs_attention", "attention", "needs-attention"):
+            domain.append(("attention_count", ">", 0))
+        elif filt in ("ok", "clear", "no_attention"):
+            domain.append(("attention_count", "=", 0))
+        return self._search_employee_files_sorted(
+            domain, order=order, limit=limit, offset=offset
         )
-        return files, total
 
     @api.model
     def _employee_document_search_domain(self, filters=None):
@@ -1609,6 +1980,8 @@ class DocEmployeeFilesService(models.AbstractModel):
                     ("expiry_date", ">=", today),
                     ("expiry_date", "<=", fields.Date.add(today, days=30)),
                 ]
+            elif status == "needs_attention":
+                domain.append(("employee_file_id.attention_count", ">", 0))
             else:
                 domain.append(("state", "=", status))
         return domain
@@ -1689,7 +2062,10 @@ class DocEmployeeFilesService(models.AbstractModel):
     def _reconciliation_item_from_exclusion(self, exclusion):
         employee = exclusion.employee_id
         classification = EXCLUSION_REASON_TO_CLASSIFICATION.get(
-            exclusion.reason, "unresolved_data"
+            exclusion.reason, "excluded"
+        )
+        reason_label = EXCLUSION_REASON_LABELS.get(
+            exclusion.reason, exclusion.reason or ""
         )
         return {
             "id": exclusion.id,
@@ -1699,6 +2075,7 @@ class DocEmployeeFilesService(models.AbstractModel):
             "classification": classification,
             "classification_label": classification_label(classification),
             "issue_type": exclusion.reason,
+            "issue_type_label": reason_label,
             "details": exclusion.justification
             or _("Employee is excluded from Employee Files."),
             "state": "open",
@@ -1720,7 +2097,20 @@ class DocEmployeeFilesService(models.AbstractModel):
         employee_id = row.get("employee_id")
         if needle.isdigit() and employee_id and str(employee_id) == needle:
             return True
-        for field in ("employee_name", "name", "details"):
+        for field in (
+            "employee_name",
+            "name",
+            "details",
+            "department_name",
+            "employment_type",
+            "job_title",
+            "work_location",
+            "status",
+            "branch",
+            "grade",
+            "work_email",
+            "issue",
+        ):
             value = (row.get(field) or "").lower()
             if needle in value:
                 return True
@@ -1742,10 +2132,21 @@ class DocEmployeeFilesService(models.AbstractModel):
                 continue
             items.append(row)
         Exclusion = self.env["doc.employee.exclusion"]
-        for exclusion in Exclusion.search(
+        exclusions = Exclusion.search(
             [("company_id", "=", company_id), ("active", "=", True)],
             order="create_date desc, id desc",
-        ):
+        )
+        manual_employee_ids = {
+            row.employee_id.id
+            for row in exclusions
+            if row.reason == "manual" and row.employee_id
+        }
+        for exclusion in exclusions:
+            if (
+                exclusion.reason in self.CONFIG_DRIVEN_EXCLUSION_REASONS
+                and exclusion.employee_id.id in manual_employee_ids
+            ):
+                continue
             row = self._reconciliation_item_from_exclusion(exclusion)
             if category != "all" and row["classification"] != category:
                 continue
@@ -1760,7 +2161,10 @@ class DocEmployeeFilesService(models.AbstractModel):
 
     @api.model
     def reconciliation_total(self):
-        return len(self._all_reconciliation_items(category="all"))
+        company_id = self.env.company.id
+        return self.env["doc.employee.issue"].search_count(
+            [("company_id", "=", company_id), ("state", "=", "open")]
+        )
 
     @api.model
     def list_issues(self, category="all", limit=10, offset=0, search=None):
@@ -1786,7 +2190,7 @@ class DocEmployeeFilesService(models.AbstractModel):
             [("company_id", "=", company_id), ("active", "=", True)]
         ):
             cls = EXCLUSION_REASON_TO_CLASSIFICATION.get(
-                exclusion.reason, "unresolved_data"
+                exclusion.reason, "excluded"
             )
             counts[cls] = counts.get(cls, 0) + 1
         summary = []
@@ -1946,11 +2350,11 @@ class DocEmployeeFilesService(models.AbstractModel):
         sub = self._sub_organizing_dimension(config)
         nested_primary = self._nested_primary_groups(config)
         desired_groups = Group.browse()
+        dimensions = list(config.get_organizing_dimensions())
+        if nested_primary and sub and sub not in dimensions:
+            dimensions.append(sub)
 
-        for dimension in config.get_organizing_dimensions():
-            # Sub-dimension is represented only as nested children under primary.
-            if nested_primary and sub and dimension == sub:
-                continue
+        for dimension in dimensions:
             nested_view = nested_primary and dimension == primary
             if nested_view:
                 parent_key, parent_label = self._dimension_value(employee, primary)
@@ -1980,18 +2384,19 @@ class DocEmployeeFilesService(models.AbstractModel):
                         parent.write({"member_ids": [(3, employee_file.id)]})
                 else:
                     desired_groups |= parent
-            else:
-                key, label = self._dimension_value(employee, dimension)
-                if not key:
-                    continue
-                group = self._ensure_system_managed_group(
-                    company_id,
-                    dimension,
-                    key,
-                    label,
-                    parent_group=False,
-                )
-                desired_groups |= group
+            if nested_view:
+                continue
+            key, label = self._dimension_value(employee, dimension)
+            if not key:
+                continue
+            group = self._ensure_system_managed_group(
+                company_id,
+                dimension,
+                key,
+                label,
+                parent_group=False,
+            )
+            desired_groups |= group
 
         stale = Group.search(
             [
@@ -2188,28 +2593,21 @@ class DocEmployeeFilesService(models.AbstractModel):
         """EMS employees for setup exclusion picker (EF-A3)."""
         limit = max(1, min(int(limit or 200), 500))
         domain = list(self._employee_domain(self.env.company))
+        Employee = self.env["hr.employee"].sudo()
         if search and str(search).strip():
             needle = str(search).strip()
             domain.extend(
-                [
-                    "|",
-                    "|",
-                    ("name", "ilike", needle),
-                    ("work_email", "ilike", needle),
-                    ("barcode", "ilike", needle),
-                ]
+                self._or_join(
+                    self._employee_metric_search_clauses(Employee, needle)
+                )
             )
-        employees = self.env["hr.employee"].sudo().search(
-            domain, limit=limit, order="name"
-        )
+        employees = Employee.search(domain, limit=limit, order="name")
         return [
             {
                 "id": employee.id,
                 "name": employee.name,
-                "department_name": employee.department_id.name
-                if employee.department_id
-                else "",
                 "active": bool(employee.active),
+                **self._serialize_employee_metrics(employee),
             }
             for employee in employees
         ]
@@ -2305,7 +2703,8 @@ class DocEmployeeFilesService(models.AbstractModel):
                         group.organizing_dimension == sub
                         and not group.parent_group_id
                     ):
-                        stale |= group
+                        # Keep top-level membership for the dimension tab;
+                        # hide the duplicate on the profile related-groups list.
                         canonical_by_id.pop(group.id, None)
 
         canonical_groups = Group.browse(list(canonical_by_id.keys()))
@@ -2461,6 +2860,22 @@ class DocEmployeeFilesService(models.AbstractModel):
         for entry in change_logs:
             activity_log.append(entry.serialize_for_activity())
 
+        employee = employee_file.employee_id
+        ack_domain = [("employee_id", "=", employee.id)]
+        if employee.user_id:
+            ack_domain = [
+                "|",
+                ("employee_id", "=", employee.id),
+                ("user_id", "=", employee.user_id.id),
+            ]
+        acknowledgements = (
+            env["doc.document.acknowledgement"]
+            .sudo()
+            .search(ack_domain, order="acknowledged_at desc", limit=limit)
+        )
+        for acknowledgement in acknowledgements:
+            activity_log.append(acknowledgement.serialize_for_activity())
+
         message_domain = [
             ("message_type", "in", ["comment", "notification"]),
             "|",
@@ -2485,8 +2900,8 @@ class DocEmployeeFilesService(models.AbstractModel):
                 document = Document.browse(message.res_id).exists()
             lowered = text.lower()
             if "acknowledged" in lowered:
-                kind = "acknowledgement"
-            elif "submitted" in lowered and "review" in lowered:
+                continue
+            if "submitted" in lowered and "review" in lowered:
                 kind = "approval"
             elif "approved" in lowered or "rejected" in lowered:
                 kind = "approval"

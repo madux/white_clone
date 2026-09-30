@@ -28,12 +28,13 @@ type ModalDialogProps = {
   headerActions?: ReactNode;
   backdropClassName?: string;
   titleClassName?: string;
+  bodyClassName?: string;
+  panelClassName?: string;
 };
 
 export default function ModalDialog({
   title,
   eyebrow,
-  description,
   onClose,
   children,
   size = "lg",
@@ -43,6 +44,8 @@ export default function ModalDialog({
   headerActions,
   backdropClassName = "bg-slate-900/30",
   titleClassName = "text-2xl",
+  bodyClassName,
+  panelClassName = "",
 }: ModalDialogProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -105,7 +108,7 @@ export default function ModalDialog({
         className={`flex w-full flex-col overflow-hidden bg-white shadow-2xl transition-all ${
           isFullscreen
             ? "h-screen max-w-none rounded-none p-8"
-            : `max-h-[92vh] rounded-3xl p-6 ${SIZE_CLASSES[size]}`
+            : `max-h-[92vh] rounded-3xl p-6 ${SIZE_CLASSES[size]} ${panelClassName}`
         }`}
       >
         <div className="flex shrink-0 items-start justify-between border-b border-slate-100 pb-4">
@@ -121,9 +124,6 @@ export default function ModalDialog({
             >
               {title}
             </h2>
-            {description && (
-              <p className="mt-2 text-sm text-slate-500">{description}</p>
-            )}
           </div>
           <div className="flex items-center gap-2">
             {headerActions}
@@ -152,7 +152,11 @@ export default function ModalDialog({
             </button>
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto pt-4">{children}</div>
+        <div
+          className={`min-h-0 flex-1 pt-4 ${bodyClassName || "overflow-y-auto"}`}
+        >
+          {children}
+        </div>
         {footer && (
           <div className="shrink-0 border-t border-slate-100 pt-4">{footer}</div>
         )}

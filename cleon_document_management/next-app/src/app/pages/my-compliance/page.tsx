@@ -1,5 +1,10 @@
-import MyCompliancePage from "@/app/components/MyCompliancePage";
+"use client";
+
+import QueryRedirect from "@/app/components/QueryRedirect";
+import { myWorkspaceHref } from "../../../../lib/workspaceRoutes";
 
 export default function MyComplianceRoute() {
-  return <MyCompliancePage />;
+  return (
+    <QueryRedirect href={() => myWorkspaceHref("compliance")} />
+  );
 }

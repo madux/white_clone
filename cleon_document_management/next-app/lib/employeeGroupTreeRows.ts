@@ -24,6 +24,7 @@ export function employeeGroupToFolder(group: EmployeeFileGroup): DocFolder {
     last_modified: "",
     access_scope: "all_staff",
     color: 0,
+    color_hex: "",
     is_locked: false,
     locked: false,
     favorite: false,

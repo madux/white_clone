@@ -1,8 +1,10 @@
 "use client";
 
 import { History } from "lucide-react";
+import { api } from "../../../lib/api";
 import { useDocumentVersions } from "../../../hooks/useDocuments";
 import { documentVersionPreviewUrl } from "../../../lib/documentPreviewUrls";
+import { useAppDialog } from "../../../hooks/useAppDialog";
 
 export default function DocumentVersionsFooter({
   documentId,
@@ -18,6 +20,7 @@ export default function DocumentVersionsFooter({
   onViewCurrent?: () => void;
 }) {
   const versions = useDocumentVersions(documentId);
+  const { showAlert, showConfirm } = useAppDialog();
 
   if (versions.isLoading) {
     return (
@@ -121,6 +124,30 @@ export default function DocumentVersionsFooter({
                 >
                   Open tab
                 </a>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void (async () => {
+                      const confirmed = await showConfirm(
+                        `Restore version ${version.version_number} as a new current version? The current file is kept in history.`,
+                        { title: "Restore version", confirmLabel: "Restore" },
+                      );
+                      if (!confirmed) return;
+                      const result = await api.restoreOrganizationalVersion(version.id);
+                      if (!result.success) {
+                        await showAlert(result.message || "Unable to restore this version.", {
+                          title: "Restore version",
+                        });
+                        return;
+                      }
+                      await versions.refetch();
+                      onViewCurrent?.();
+                    })()
+                  }
+                  className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:border-brand-pink hover:text-brand-pink"
+                >
+                  Restore
+                </button>
               </div>
             </li>
           );

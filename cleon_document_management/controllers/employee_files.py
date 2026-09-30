@@ -3,7 +3,7 @@ import csv
 import io
 import json
 
-from odoo import http
+from odoo import _, http
 from odoo.exceptions import AccessError, UserError
 from odoo.http import request, content_disposition
 
@@ -64,7 +64,6 @@ class EmployeeFilesController(http.Controller):
         writable = {
             "include_all_existing",
             "include_inactive",
-            "exclude_test_employees",
             "collect_existing_documents",
             "group_name_display",
             "show_inactive_groups",
@@ -91,6 +90,7 @@ class EmployeeFilesController(http.Controller):
             values["integration_mapping_json"] = kwargs["integration_mapping_json"]
         if "category_action_matrix_json" in kwargs:
             values["category_action_matrix_json"] = kwargs["category_action_matrix_json"]
+        values["exclude_test_employees"] = False
         reconcile_flags = ("include_inactive", "exclude_test_employees")
         prior = {key: config[key] for key in reconcile_flags}
         prior_dims = config.get_organizing_dimensions()
@@ -155,6 +155,31 @@ class EmployeeFilesController(http.Controller):
     def setup_preview(self, **kwargs):
         self._require_admin()
         data = self._service().setup_preview(kwargs)
+        return {"success": True, "data": data}
+
+    @http.route(
+        "/api/employee-files/setup/preview/attention",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def setup_preview_attention(self, **kwargs):
+        self._require_admin()
+        payload = dict(kwargs)
+        search = payload.pop("search", None)
+        limit = payload.pop("limit", 10)
+        offset = payload.pop("offset", 0)
+        issue_type = payload.pop("issue_type", None) or "all"
+        issue_types = payload.pop("issue_types", None)
+        data = self._service().setup_preview_attention(
+            payload,
+            search=search,
+            limit=limit,
+            offset=offset,
+            issue_type=issue_type,
+            issue_types=issue_types,
+        )
         return {"success": True, "data": data}
 
     @http.route(
@@ -358,6 +383,7 @@ class EmployeeFilesController(http.Controller):
             offset,
             department_id=kwargs.get("department_id"),
             order=kwargs.get("order"),
+            attention_filter=kwargs.get("attention_filter"),
         )
         user = request.env.user
         limit = max(1, min(int(limit or 10), 100))
@@ -380,7 +406,14 @@ class EmployeeFilesController(http.Controller):
         csrf=False,
     )
     def list_group_members(self, id=None, search=None, limit=10, offset=0, **kwargs):
-        files, total = self._service().list_group_members(id, search, limit, offset)
+        files, total = self._service().list_group_members(
+            id,
+            search,
+            limit,
+            offset,
+            order=kwargs.get("order"),
+            attention_filter=kwargs.get("attention_filter"),
+        )
         user = request.env.user
         limit = max(1, min(int(limit or 10), 100))
         offset = max(0, int(offset or 0))
@@ -655,6 +688,24 @@ class EmployeeFilesController(http.Controller):
             if employee:
                 service.reconcile_employee_from_ems(employee)
         return {"success": True, "ids": created}
+
+    @http.route(
+        "/api/employee-files/exclusions/import",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def import_exclusions(self, rows=None, **kwargs):
+        self._require_admin()
+        employee_ids = []
+        for row in rows or []:
+            raw = row.get("employee_id") if isinstance(row, dict) else row
+            try:
+                employee_ids.append(int(raw))
+            except (TypeError, ValueError):
+                continue
+        return self.add_exclusion(employee_ids=employee_ids, justification="CSV import")
 
     @http.route(
         "/api/employee-files/ems-employees",
@@ -1036,6 +1087,11 @@ class EmployeeFilesController(http.Controller):
                     "key": key,
                     "label": label,
                     "populated": populated,
+                    "unavailable_reason": (
+                        False
+                        if populated
+                        else _("No populated %s data was found in EMS.") % label
+                    ),
                 }
             )
         return {"success": True, "data": options}

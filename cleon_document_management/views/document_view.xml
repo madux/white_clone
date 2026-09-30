@@ -31,16 +31,17 @@
 				<sheet>
 					<group>
 						<group>
-							<field name="folder_name"/>
-							<field name="description"/>
+							<field name="folder_name" readonly="is_locked"/>
+							<field name="description" readonly="is_locked"/>
 							<field name="folder_type"/>
 							<field name="owner_id"/>
-							<field name="parent_id"/>
+							<field name="parent_id" readonly="is_locked"/>
 							<field name="company_id"/>
 						</group>
 						<group>
-							<field name="color" widget="color_picker"/>
-							<field name="retention_period"/>
+							<field name="color" widget="color_picker" readonly="is_locked"/>
+							<field name="color_hex" readonly="is_locked"/>
+							<field name="retention_period" readonly="is_locked"/>
 							<field name="is_locked"/>
 							<field name="locked_by"/>
 							<field name="active" invisible="1"/>
@@ -49,27 +50,27 @@
 					<notebook>
 						<page string="Access">
 							<group>
-								<field name="access_scope"/>
-								<field name="department_ids" widget="many2many_tags"/>
-								<field name="branch_ids" widget="many2many_tags"/>
-								<field name="grade_ids" widget="many2many_tags"/>
-								<field name="employment_type_ids" widget="many2many_tags"/>
-								<field name="role_group_ids" widget="many2many_tags"/>
-								<field name="allowed_user_ids" widget="many2many_tags"/>
+								<field name="access_scope" readonly="is_locked"/>
+								<field name="department_ids" widget="many2many_tags" readonly="is_locked"/>
+								<field name="branch_ids" widget="many2many_tags" readonly="is_locked"/>
+								<field name="grade_ids" widget="many2many_tags" readonly="is_locked"/>
+								<field name="employment_type_ids" widget="many2many_tags" readonly="is_locked"/>
+								<field name="role_group_ids" widget="many2many_tags" readonly="is_locked"/>
+								<field name="allowed_user_ids" widget="many2many_tags" readonly="is_locked"/>
 							</group>
 						</page>
 						<page string="Categories">
-							<field name="allowed_document_type_ids" widget="many2many_tags"/>
+							<field name="allowed_document_type_ids" widget="many2many_tags" readonly="is_locked"/>
 						</page>
 						<page string="Approval">
 							<group>
-								<field name="require_upload_approval"/>
-								<field name="approval_flow" invisible="not require_upload_approval"/>
-								<field name="approver_ids" widget="many2many_tags" invisible="not require_upload_approval"/>
+								<field name="require_upload_approval" readonly="is_locked"/>
+								<field name="approval_flow" invisible="not require_upload_approval" readonly="is_locked"/>
+								<field name="approver_ids" widget="many2many_tags" invisible="not require_upload_approval" readonly="is_locked"/>
 							</group>
 						</page>
 						<page string="Employees">
-							<field name="employee_ids" widget="many2many_tags"/>
+							<field name="employee_ids" widget="many2many_tags" readonly="is_locked"/>
 						</page>
 						<page string="Documents">
 							<field name="document_ids">

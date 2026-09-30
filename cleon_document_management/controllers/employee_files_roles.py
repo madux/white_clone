@@ -47,11 +47,15 @@ class EmployeeFilesRolesController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def list_members(self, search="", limit=50, **kwargs):
+    def list_members(self, search="", page=1, page_size=10, limit=None, **kwargs):
         service = request.env["doc.employee.files.role.service"]
         return {
             "success": True,
-            "data": service.list_members(search=search or "", limit=limit),
+            "data": service.list_members(
+                search=search or "",
+                page=page,
+                page_size=page_size or limit,
+            ),
         }
 
     @http.route(

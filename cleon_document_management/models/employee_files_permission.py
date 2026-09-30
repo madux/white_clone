@@ -39,17 +39,24 @@ class DocEmployeeFilesPermission(models.AbstractModel):
         return user.sudo().employee_files_role_ids.filtered(lambda role: role.active)
 
     @api.model
+    def _role_grants_employee_files_view(self, user):
+        for role in self.user_assigned_roles(user):
+            if any(line.action_view for line in role.line_ids):
+                return True
+        return False
+
+    @api.model
     def user_has_ef_roles(self, user):
         if self.user_is_platform_admin(user) or self.user_has_legacy_manager(user):
             return True
-        return bool(self.user_assigned_roles(user))
+        return self._role_grants_employee_files_view(user)
 
     @api.model
     def user_can_access_ef_home(self, user):
         """Browse Employee Files admin surfaces (any scope beyond pure self-service)."""
         if self.user_is_platform_admin(user) or self.user_has_legacy_manager(user):
             return True
-        return bool(self.user_assigned_roles(user))
+        return self._role_grants_employee_files_view(user)
 
     @api.model
     def _employee_in_scope(self, user, target_employee, role):

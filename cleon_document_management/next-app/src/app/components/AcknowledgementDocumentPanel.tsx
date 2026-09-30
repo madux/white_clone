@@ -151,6 +151,7 @@ export default function AcknowledgementDocumentPanel({
           size="5xl"
           backdropClassName="bg-slate-900/40"
           iframeMinHeight="min-h-[65vh]"
+          enableAiSummary
         />
       ) : null}
     </div>

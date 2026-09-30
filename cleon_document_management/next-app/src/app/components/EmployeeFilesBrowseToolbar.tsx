@@ -1,7 +1,10 @@
 "use client";
 
-import { Grid2X2, List, Search, SlidersHorizontal, X } from "lucide-react";
-import SectionTabs from "./SectionTabs";
+import { Filter, X } from "lucide-react";
+import { useState } from "react";
+import ViewToggle from "./ViewToggle";
+import AppToolbar from "./AppToolbar";
+import ThemedSelect from "./ThemedSelect";
 import type { EmployeeFilesBrowseFilters } from "../../../lib/employeeFilesBrowsePreferences";
 import {
   DEFAULT_EMPLOYEE_FILES_BROWSE_FILTERS,
@@ -26,12 +29,19 @@ const DOCUMENT_CATEGORIES = [
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
+  { value: "needs_attention", label: "Needs attention" },
   { value: "approved", label: "Approved" },
   { value: "draft", label: "Draft" },
   { value: "pending_approval", label: "Pending approval" },
   { value: "rejected", label: "Rejected" },
   { value: "expired", label: "Expired" },
   { value: "expiring_30", label: "Expiring in 30 days" },
+];
+
+const EMPLOYEE_ATTENTION_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: "needs_attention", label: "Needs attention" },
+  { value: "ok", label: "OK" },
 ];
 
 const SOURCE_OPTIONS = [
@@ -52,6 +62,8 @@ type Props = {
   onDocumentFiltersChange?: (filters: EmployeeFilesBrowseFilters) => void;
   employeeDepartmentId?: string;
   onEmployeeDepartmentChange?: (value: string) => void;
+  employeeAttentionFilter?: string;
+  onEmployeeAttentionFilterChange?: (value: string) => void;
   documentTypes?: { id: number; name: string }[];
   departments?: string[];
   documentColumns?: EmployeeFilesDocumentColumnId[];
@@ -60,6 +72,10 @@ type Props = {
   onEmployeeColumnsChange?: (cols: EmployeeFilesEmployeeColumnId[]) => void;
   resultCount?: number;
   totalCount?: number;
+  showLayoutToggle?: boolean;
+  groupByOptions?: { id: string; label: string }[];
+  groupByValue?: string;
+  onGroupByChange?: (value: string) => void;
 };
 
 export default function EmployeeFilesBrowseToolbar({
@@ -74,6 +90,8 @@ export default function EmployeeFilesBrowseToolbar({
   onDocumentFiltersChange,
   employeeDepartmentId = "all",
   onEmployeeDepartmentChange,
+  employeeAttentionFilter = "all",
+  onEmployeeAttentionFilterChange,
   documentTypes = [],
   departments = [],
   documentColumns = [],
@@ -82,6 +100,10 @@ export default function EmployeeFilesBrowseToolbar({
   onEmployeeColumnsChange,
   resultCount,
   totalCount,
+  showLayoutToggle = true,
+  groupByOptions,
+  groupByValue,
+  onGroupByChange,
 }: Props) {
   const activeFilters: { key: string; label: string; clear: () => void }[] = [];
 
@@ -149,12 +171,28 @@ export default function EmployeeFilesBrowseToolbar({
     });
   }
 
+  if (
+    showEmployeeFilters &&
+    employeeAttentionFilter !== "all" &&
+    onEmployeeAttentionFilterChange
+  ) {
+    const label =
+      EMPLOYEE_ATTENTION_OPTIONS.find((s) => s.value === employeeAttentionFilter)
+        ?.label ?? employeeAttentionFilter;
+    activeFilters.push({
+      key: "emp-attention",
+      label: `Status: ${label}`,
+      clear: () => onEmployeeAttentionFilterChange("all"),
+    });
+  }
+
   const clearAll = () => {
     onSearchChange("");
     if (onDocumentFiltersChange) {
       onDocumentFiltersChange(DEFAULT_EMPLOYEE_FILES_BROWSE_FILTERS);
     }
     onEmployeeDepartmentChange?.("all");
+    onEmployeeAttentionFilterChange?.("all");
   };
 
   const columnDefs = showDocumentFilters
@@ -165,228 +203,233 @@ export default function EmployeeFilesBrowseToolbar({
     ? onDocumentColumnsChange
     : onEmployeeColumnsChange;
 
-  return (
-    <div className="space-y-3 overflow-visible rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="relative min-w-[220px] flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            className="w-full rounded-xl border border-slate-200 py-2 pl-10 pr-4 text-sm"
-            placeholder={searchPlaceholder}
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
-        </label>
-        <SectionTabs
-          items={[
-            { id: "list", label: "List", icon: List },
-            { id: "card", label: "Cards", icon: Grid2X2 },
-          ]}
-          value={layoutMode}
-          onChange={onLayoutModeChange}
-          className="!w-auto shrink-0"
-          ariaLabel="Browse view mode"
-        />
-      </div>
+  const [expanded, setExpanded] = useState(false);
 
-      {(showDocumentFilters || showEmployeeFilters) && (
-        <div className="flex flex-wrap items-end gap-3 overflow-visible border-t border-slate-100 pt-3">
-          <SlidersHorizontal className="mb-2 h-4 w-4 text-slate-400" />
+  return (
+    <AppToolbar
+      search={search}
+      onSearchChange={onSearchChange}
+      searchPlaceholder={searchPlaceholder}
+      extras={
+        <>
+          {groupByOptions?.length && onGroupByChange ? (
+            <div className="group-by-switch">
+              <span className="group-by-switch-label">Group by</span>
+              <div
+                className="group-by-switch-track"
+                role="tablist"
+                aria-label="Organizing dimension"
+              >
+                {groupByOptions.map((option) => {
+                  const active = option.id === groupByValue;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      className={active ? "is-active" : undefined}
+                      onClick={() => onGroupByChange(option.id)}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
           {showDocumentFilters && onDocumentFiltersChange ? (
             <>
-              <select
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                value={documentFilters.category}
-                onChange={(e) =>
-                  onDocumentFiltersChange({
-                    ...documentFilters,
-                    category: e.target.value,
-                  })
-                }
-              >
-                {DOCUMENT_CATEGORIES.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                value={documentFilters.documentTypeId}
-                onChange={(e) =>
-                  onDocumentFiltersChange({
-                    ...documentFilters,
-                    documentTypeId: e.target.value,
-                  })
-                }
-              >
-                <option value="all">All document types</option>
-                {documentTypes.map((type) => (
-                  <option key={type.id} value={String(type.id)}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                value={documentFilters.status}
-                onChange={(e) =>
-                  onDocumentFiltersChange({
-                    ...documentFilters,
-                    status: e.target.value,
-                  })
-                }
-              >
-                {STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                value={documentFilters.source}
-                onChange={(e) =>
-                  onDocumentFiltersChange({
-                    ...documentFilters,
-                    source: e.target.value,
-                  })
-                }
-              >
-                {SOURCE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              {departments.length > 0 ? (
-                <select
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                  value={documentFilters.departmentId}
-                  onChange={(e) =>
-                    onDocumentFiltersChange({
-                      ...documentFilters,
-                      departmentId: e.target.value,
-                    })
+              <div className="w-40">
+                <ThemedSelect
+                  value={documentFilters.status}
+                  onChange={(value) =>
+                    onDocumentFiltersChange({ ...documentFilters, status: value })
                   }
-                >
-                  <option value="all">All departments</option>
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
+                  options={STATUS_OPTIONS}
+                />
+              </div>
+              <button
+                type="button"
+                className="app-btn app-btn-secondary"
+                onClick={() => setExpanded((open) => !open)}
+              >
+                <Filter className="h-4 w-4" />
+                Filters
+                {activeFilters.length ? (
+                  <span className="status-pill status-pill--pending">
+                    {activeFilters.length}
+                  </span>
+                ) : null}
+              </button>
             </>
           ) : null}
-          {showEmployeeFilters && onEmployeeDepartmentChange ? (
-            <select
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              value={employeeDepartmentId}
-              onChange={(e) => onEmployeeDepartmentChange(e.target.value)}
-            >
-              <option value="all">All departments</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-            </select>
+          {showEmployeeFilters && onEmployeeAttentionFilterChange ? (
+            <div className="w-44">
+              <ThemedSelect
+                value={employeeAttentionFilter}
+                onChange={onEmployeeAttentionFilterChange}
+                options={EMPLOYEE_ATTENTION_OPTIONS}
+              />
+            </div>
+          ) : null}
+          {showEmployeeFilters && onEmployeeDepartmentChange && departments.length ? (
+            <div className="w-44">
+              <ThemedSelect
+                value={employeeDepartmentId}
+                onChange={onEmployeeDepartmentChange}
+                options={[
+                  { value: "all", label: "All departments" },
+                  ...departments.map((dept) => ({ value: dept, label: dept })),
+                ]}
+              />
+            </div>
           ) : null}
           {(showDocumentFilters || showEmployeeFilters) && onColsChange ? (
             <details className="relative overflow-visible text-sm">
-              <summary
-                className="inline-flex cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 font-semibold text-slate-600 transition hover:border-brand-pink hover:text-brand-pink [&::-webkit-details-marker]:hidden"
-              >
+              <summary className="app-btn app-btn-secondary cursor-pointer list-none [&::-webkit-details-marker]:hidden">
                 Columns
               </summary>
               <div
-                className="absolute right-0 z-30 mt-2 w-[min(100vw-2rem,260px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-lg"
+                className="absolute right-0 z-30 mt-2 w-[min(100vw-2rem,260px)] border border-slate-200 bg-white p-4 shadow-lg"
                 onClick={(e) => e.stopPropagation()}
               >
-                  <h3 className="employee-filter-section-title">Visible columns</h3>
-                  <div className="employee-filter-options !max-h-none mt-2">
-                {columnDefs.map((col) => {
-                  const id = col.id as EmployeeFilesDocumentColumnId &
-                    EmployeeFilesEmployeeColumnId;
-                  const checked = visibleCols.includes(id);
-                  return (
-                    <label
-                      key={col.id}
-                      className="employee-filter-checkbox"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={col.id === "name"}
-                        className="h-4 w-4 shrink-0 rounded border-slate-300 accent-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
-                        onChange={() => {
-                          const next = checked
-                            ? visibleCols.filter((c) => c !== id)
-                            : [...visibleCols, id];
-                          if (!next.length) return;
-                          if (showDocumentFilters && onDocumentColumnsChange) {
-                            onDocumentColumnsChange(
-                              next as EmployeeFilesDocumentColumnId[],
-                            );
-                          } else if (onEmployeeColumnsChange) {
-                            onEmployeeColumnsChange(
-                              next as EmployeeFilesEmployeeColumnId[],
-                            );
-                          }
-                        }}
-                      />
-                      <span>{col.label}</span>
-                    </label>
-                  );
-                })}
-                  </div>
+                <h3 className="employee-filter-section-title">Visible columns</h3>
+                <div className="employee-filter-options !max-h-none mt-2">
+                  {columnDefs.map((col) => {
+                    const id = col.id as EmployeeFilesDocumentColumnId &
+                      EmployeeFilesEmployeeColumnId;
+                    const checked = visibleCols.includes(id);
+                    return (
+                      <label key={col.id} className="employee-filter-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={col.id === "name"}
+                          className="h-4 w-4 shrink-0 rounded border-slate-300 accent-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
+                          onChange={() => {
+                            const next = checked
+                              ? visibleCols.filter((c) => c !== id)
+                              : [...visibleCols, id];
+                            if (!next.length) return;
+                            if (showDocumentFilters && onDocumentColumnsChange) {
+                              onDocumentColumnsChange(
+                                next as EmployeeFilesDocumentColumnId[],
+                              );
+                            } else if (onEmployeeColumnsChange) {
+                              onEmployeeColumnsChange(
+                                next as EmployeeFilesEmployeeColumnId[],
+                              );
+                            }
+                          }}
+                        />
+                        <span>{col.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
             </details>
           ) : null}
-        </div>
-      )}
-
-      {(activeFilters.length > 0 || search.trim()) && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-          <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-            Active filters
-          </span>
-          {search.trim() ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-semibold text-brand-pink">
-              Search: {search.trim()}
-              <button type="button" onClick={() => onSearchChange("")}>
-                <X className="h-3 w-3" />
-              </button>
-            </span>
+        </>
+      }
+      toggle={
+        showLayoutToggle ? (
+          <ViewToggle
+            value={layoutMode === "card" ? "card" : "list"}
+            onChange={(value) => onLayoutModeChange(value === "card" ? "card" : "list")}
+            ariaLabel="Browse view mode"
+          />
+        ) : null
+      }
+      footer={
+        <>
+          {expanded && showDocumentFilters && onDocumentFiltersChange ? (
+            <div className="flex w-full flex-wrap items-center gap-2">
+              <ThemedSelect
+                value={documentFilters.category}
+                onChange={(value) =>
+                  onDocumentFiltersChange({ ...documentFilters, category: value })
+                }
+                options={DOCUMENT_CATEGORIES}
+              />
+              <ThemedSelect
+                value={documentFilters.documentTypeId}
+                onChange={(value) =>
+                  onDocumentFiltersChange({
+                    ...documentFilters,
+                    documentTypeId: value,
+                  })
+                }
+                options={[
+                  { value: "all", label: "All document types" },
+                  ...documentTypes.map((type) => ({
+                    value: String(type.id),
+                    label: type.name,
+                  })),
+                ]}
+              />
+              <ThemedSelect
+                value={documentFilters.source}
+                onChange={(value) =>
+                  onDocumentFiltersChange({ ...documentFilters, source: value })
+                }
+                options={SOURCE_OPTIONS}
+              />
+              {departments.length > 0 ? (
+                <ThemedSelect
+                  value={documentFilters.departmentId}
+                  onChange={(value) =>
+                    onDocumentFiltersChange({
+                      ...documentFilters,
+                      departmentId: value,
+                    })
+                  }
+                  options={[
+                    { value: "all", label: "All departments" },
+                    ...departments.map((dept) => ({ value: dept, label: dept })),
+                  ]}
+                />
+              ) : null}
+            </div>
           ) : null}
-          {activeFilters.map((chip) => (
-            <span
-              key={chip.key}
-              className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-semibold text-brand-pink"
-            >
-              {chip.label}
-              <button type="button" onClick={chip.clear}>
-                <X className="h-3 w-3" />
+          {activeFilters.length > 0 || search.trim() ? (
+            <div className="flex w-full flex-wrap items-center gap-2">
+              {search.trim() ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-semibold text-brand-pink">
+                  Search: {search.trim()}
+                  <button type="button" onClick={() => onSearchChange("")}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ) : null}
+              {activeFilters.map((chip) => (
+                <span
+                  key={chip.key}
+                  className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-semibold text-brand-pink"
+                >
+                  {chip.label}
+                  <button type="button" onClick={chip.clear}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+              <button
+                type="button"
+                onClick={clearAll}
+                className="ml-auto text-xs font-semibold text-slate-500 hover:text-brand-pink"
+              >
+                Clear all
               </button>
-            </span>
-          ))}
-          <button
-            type="button"
-            onClick={clearAll}
-            className="ml-auto text-xs font-semibold text-slate-500 hover:text-brand-pink"
-          >
-            Clear all
-          </button>
-        </div>
-      )}
-
-      {typeof resultCount === "number" && typeof totalCount === "number" ? (
-        <p className="text-xs text-slate-500">
-          Showing {resultCount} of {totalCount} results
-        </p>
-      ) : null}
-    </div>
+            </div>
+          ) : null}
+          {typeof resultCount === "number" && typeof totalCount === "number" ? (
+            <p className="text-xs text-slate-500">
+              Showing {resultCount} of {totalCount} results
+            </p>
+          ) : null}
+        </>
+      }
+    />
   );
 }

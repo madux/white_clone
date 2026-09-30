@@ -15,6 +15,7 @@ import {
   IntelligenceLoading,
 } from "./states";
 import ModalDialog from "../ModalDialog";
+import AppSelect from "../AppSelect";
 
 const EMPTY_FIELD: IntelligenceField = {
   name: "",
@@ -178,22 +179,19 @@ export default function ProfilesConfigPanel() {
             </label>
             <label className="mt-3 block">
               <span className="label">Document type</span>
-              <select
-                className="field"
-                value={editing.document_type_id || ""}
-                onChange={(event) =>
+              <AppSelect
+                value={String(editing.document_type_id || "")}
+                onChange={(value) =>
                   setEditing({
                     ...editing,
-                    document_type_id: Number(event.target.value),
+                    document_type_id: Number(value),
                   })
                 }
-              >
-                {(types.data || []).map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
+                options={(types.data || []).map((item) => ({
+                  value: String(item.id),
+                  label: item.name,
+                }))}
+              />
             </label>
             <label className="mt-3 block">
               <span className="label">Extraction instructions</span>
@@ -235,19 +233,17 @@ export default function ProfilesConfigPanel() {
                       setEditing({ ...editing, fields });
                     }}
                   />
-                  <select
-                    className="field"
+                  <AppSelect
                     value={field.field_type}
-                    onChange={(event) => {
+                    onChange={(value) => {
                       const fields = [...fieldRows];
                       fields[index] = {
                         ...field,
-                        field_type: event.target.value,
+                        field_type: value,
                       };
                       setEditing({ ...editing, fields });
                     }}
-                  >
-                    {[
+                    options={[
                       "text",
                       "date",
                       "email",
@@ -257,12 +253,11 @@ export default function ProfilesConfigPanel() {
                       "currency",
                       "boolean",
                       "employee_reference",
-                    ].map((typeName) => (
-                      <option key={typeName} value={typeName}>
-                        {typeName}
-                      </option>
-                    ))}
-                  </select>
+                    ].map((typeName) => ({
+                      value: typeName,
+                      label: typeName,
+                    }))}
+                  />
                   <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"

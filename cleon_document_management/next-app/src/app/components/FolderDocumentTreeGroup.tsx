@@ -1,7 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ChevronDown, ChevronRight, FileText, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { FileTypeIcon } from "./FileTypeIcon";
 import Link from "next/link";
 import { useDocumentVersions } from "../../../hooks/useDocuments";
 import { documentViewHref } from "../../../lib/documentLinks";
@@ -56,7 +57,13 @@ function VersionHistoryRows({
           <div className="employee-tree-leading" style={{ paddingLeft: `${pad}px` }}>
           <span className={employeeTreeCol.check} aria-hidden />
           <span className={employeeTreeCol.toggle} aria-hidden />
-          <FileText className={`h-4 w-4 shrink-0 text-slate-400 ${employeeTreeCol.icon}`} />
+          <FileTypeIcon
+            name={document.name}
+            mime_type={document.mime_type}
+            document_type={document.document_type}
+            source_url={document.source_url}
+            className={`h-8 w-6 shrink-0 ${employeeTreeCol.icon}`}
+          />
           <div className={`${employeeTreeCol.name} min-w-0`}>
             <p className="text-sm font-medium text-slate-600">
               v{version.version_number}
@@ -120,7 +127,13 @@ function VersionHistoryRows({
           <div className="employee-tree-leading" style={{ paddingLeft: `${pad}px` }}>
           <span className={employeeTreeCol.check} aria-hidden />
           <span className={employeeTreeCol.toggle} aria-hidden />
-          <FileText className={`h-4 w-4 shrink-0 text-slate-400 ${employeeTreeCol.icon}`} />
+          <FileTypeIcon
+            name={document.name}
+            mime_type={document.mime_type}
+            document_type={document.document_type}
+            source_url={document.source_url}
+            className={`h-8 w-6 shrink-0 ${employeeTreeCol.icon}`}
+          />
           <div className={`${employeeTreeCol.name} min-w-0`}>
             <p className="text-sm font-medium text-slate-600">Earlier copy</p>
             <p className="text-xs text-slate-400">
@@ -236,8 +249,12 @@ export default function FolderDocumentTreeGroup({
         ) : (
           <span className={employeeTreeCol.toggle} aria-hidden />
         )}
-        <FileText
-          className={`h-4 w-4 shrink-0 text-brand-pink ${employeeTreeCol.icon}`}
+        <FileTypeIcon
+          name={document.name}
+          mime_type={document.mime_type}
+          document_type={document.document_type}
+          source_url={document.source_url}
+          className={`h-8 w-6 shrink-0 ${employeeTreeCol.icon}`}
         />
         <div className={`${employeeTreeCol.name} flex min-w-0 flex-wrap items-center gap-2`}>
           {onDocumentOpen ? (

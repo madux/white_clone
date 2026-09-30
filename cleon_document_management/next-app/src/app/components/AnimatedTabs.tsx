@@ -25,6 +25,7 @@ type AnimatedTabsProps<T extends string> = {
   onChange?: (value: T) => void;
   variant?: "underline" | "segmented";
   size?: "sm" | "md";
+  level?: "page" | "nested";
   stretch?: boolean;
   className?: string;
   ariaLabel?: string;
@@ -42,6 +43,7 @@ export default function AnimatedTabs<T extends string>({
   onChange,
   variant = "underline",
   size = "md",
+  level = "nested",
   stretch = false,
   className = "",
   ariaLabel = "Sections",
@@ -69,7 +71,11 @@ export default function AnimatedTabs<T extends string>({
 
   useLayoutEffect(() => {
     updateIndicator();
-  }, [updateIndicator, items]);
+    tabRefs.current[value]?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, [updateIndicator, items, value]);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -91,6 +97,7 @@ export default function AnimatedTabs<T extends string>({
     "animated-tabs",
     `animated-tabs--${variant}`,
     `animated-tabs--${size}`,
+    `animated-tabs--${level}`,
     stretch ? "animated-tabs--stretch" : "",
     className,
   ]

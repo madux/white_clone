@@ -1,7 +1,12 @@
 "use client";
 
-import { SlidersHorizontal, X } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import {
   countActiveEmployeeFilters,
   INITIAL_EMPLOYEE_FILE_FILTERS,
@@ -104,14 +109,16 @@ export default function EmployeeFilterPanel({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
         {showSearch ? (
-          <label className="relative block min-w-[240px] flex-1 sm:max-w-md">
-            <input
+          <InputGroup className="min-w-[240px] flex-1 sm:max-w-md">
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupInput
               value={filters.search}
               onChange={(event) => update({ search: event.target.value })}
               placeholder={searchPlaceholder}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-4 pr-4 text-sm outline-none focus:border-brand-pink/40 focus:ring-4 focus:ring-brand-pink/10"
             />
-          </label>
+          </InputGroup>
         ) : null}
         <button
           type="button"

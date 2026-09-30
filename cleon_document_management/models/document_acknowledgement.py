@@ -14,6 +14,52 @@ class DocumentAcknowledgement(models.Model):
 
     _sql_constraints = [("document_user_unique", "unique(document_id, user_id)", "This document has already been acknowledged.")]
 
+    def serialize_for_activity(self):
+        self.ensure_one()
+        document = self.document_id
+        actor = self.user_id.name or _("Someone")
+        return {
+            "id": 20_000_000 + self.id,
+            "kind": "acknowledgement",
+            "message": _("%(actor)s acknowledged %(document)s")
+            % {
+                "actor": actor,
+                "document": document.name,
+            },
+            "document_id": document.id,
+            "document_name": document.name,
+            "folder_id": document.folder_id.id,
+            "folder_name": document.folder_id.folder_name,
+            "folder_type": document.folder_id.folder_type or "organizational",
+            "employee_id": self.employee_id.id or False,
+            "actor_name": actor,
+            "occurred_at": fields.Datetime.to_string(self.acknowledged_at),
+        }
+
+    def _post_on_employee_file(self):
+        self.ensure_one()
+        employee = self.employee_id
+        if not employee:
+            return
+        employee_file = (
+            self.env["doc.employee.file"]
+            .sudo()
+            .search(
+                [
+                    ("employee_id", "=", employee.id),
+                    ("company_id", "=", employee.company_id.id or self.env.company.id),
+                ],
+                limit=1,
+            )
+        )
+        if not employee_file:
+            return
+        employee_file.message_post(
+            body=_("%s acknowledged %s.")
+            % (self.user_id.name, self.document_id.name),
+            subtype_xmlid="mail.mt_note",
+        )
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -30,4 +76,5 @@ class DocumentAcknowledgement(models.Model):
                 partner_ids=admins.mapped("partner_id").ids,
                 subtype_xmlid="mail.mt_note",
             )
+            acknowledgement._post_on_employee_file()
         return acknowledgements

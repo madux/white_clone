@@ -14,6 +14,8 @@ import {
 import { useState } from "react";
 import { api } from "../../../lib/api";
 import { useCurrentUser, useDocumentAction } from "../../../hooks/useDocuments";
+import { useAppDialog } from "../../../hooks/useAppDialog";
+import { canManageOrgDocuments } from "../../../lib/organizationalFilesAccess";
 import {
   expandDeleteDocumentIds,
   type EmployeeDocumentGroup,
@@ -37,10 +39,13 @@ export default function BulkDocumentActions({
   const [running, setRunning] = useState(false);
   const action = useDocumentAction();
   const currentUser = useCurrentUser();
+  const { showConfirm } = useAppDialog();
   const isDocumentManager =
     currentUser.data?.employee_files_permissions?.can_access_ef_home === true ||
     currentUser.data?.is_document_manager === true;
-  const canArchive = organizational || isDocumentManager;
+  const canArchive = organizational
+    ? canManageOrgDocuments(currentUser.data)
+    : isDocumentManager;
   if (!selected.length) return null;
 
   const deleteIds = groups ? expandDeleteDocumentIds(selected, groups) : selected;
@@ -87,7 +92,13 @@ export default function BulkDocumentActions({
     const message = organizational
       ? `Archive ${archivableSelected.length} selected document${archivableSelected.length === 1 ? "" : "s"}? They will be removed from active sharing until restored.`
       : `Archive ${archivableSelected.length} selected document${archivableSelected.length === 1 ? "" : "s"}? They will leave active employee file lists. Restore from Archived when needed.`;
-    if (!window.confirm(message)) return;
+    if (
+      !(await showConfirm(message, {
+        title: "Archive documents",
+        confirmLabel: "Archive",
+      }))
+    )
+      return;
     setRunning(true);
     for (const document of archivableSelected) {
       await action.mutateAsync({ id: document.id, action: "archive" });
@@ -100,7 +111,13 @@ export default function BulkDocumentActions({
     const message = includesGroupedHistory
       ? `Delete ${selected.length} selected file${selected.length === 1 ? "" : "s"} and all related versions?`
       : `Delete ${selected.length} selected document${selected.length === 1 ? "" : "s"}?`;
-    if (!window.confirm(message)) return;
+    if (
+      !(await showConfirm(message, {
+        title: "Delete documents",
+        confirmLabel: "Delete",
+      }))
+    )
+      return;
     setRunning(true);
     for (const id of deleteIds) await action.mutateAsync({ id, action: "delete" });
     setRunning(false);
@@ -109,9 +126,9 @@ export default function BulkDocumentActions({
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-pink-100 bg-pink-50 p-2.5">
-      <span className="px-2 text-sm font-bold text-brand-text">
-        {selected.length} selected
-      </span>
+          <span className="px-2 text-sm font-bold text-brand-text">
+            {selected.length} file{selected.length === 1 ? "" : "s"} selected
+          </span>
       {onMove && (
         <button disabled={running} type="button" onClick={onMove} className="bulk-button">
           <FolderInput />

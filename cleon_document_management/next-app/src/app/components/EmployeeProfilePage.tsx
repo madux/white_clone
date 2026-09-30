@@ -24,26 +24,19 @@ import {
   useReviewDocument,
   useUploadEmployeeDocument,
 } from "../../../hooks/useDocuments";
+import { useAppDialog } from "../../../hooks/useAppDialog";
 import BulkDocumentActions from "./BulkDocumentActions";
-import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
 import ModalDialog from "./ModalDialog";
-import ThemedSelect from "./ThemedSelect";
 import DocumentFilterBar, { FilterState, INITIAL_FILTER_STATE, applyDocumentFilters } from "./DocumentFilterBar";
 import DocumentViewerDialog from "./DocumentViewerDialog";
 import DocumentRelationsPanel from "./DocumentRelationsPanel";
 import { documentPreviewUrl } from "../../../lib/documentPreviewUrls";
-import BackButton from "./BackButton";
 import EmployeeProfileDocumentTree from "./EmployeeProfileDocumentTree";
 import UpdateDocumentModal from "./UpdateDocumentModal";
 import type { DocDocument } from "../../../lib/types";
-import { typeRequiresExpiry } from "./uploadExpiryHelpers";
-import {
-  firstUploadMetadataError,
-  missingUploadMetadata,
-  typeRequiresDescription,
-  typeRequiresIssueDate,
-} from "../../../lib/uploadMetadataHelpers";
-import EmployeeUploadWizard from "./EmployeeUploadWizard";
+import DocumentUploadModal, {
+  type DocumentUploadPayload,
+} from "./DocumentUploadModal";
 import UploadConflictDialog from "./UploadConflictDialog";
 import {
   buildAllowSeparateDuplicates,
@@ -57,6 +50,10 @@ import type { UploadConflict } from "../../../lib/types";
 import { canReviewDocument } from "../../../lib/approvalHelpers";
 import { groupEmployeeDocuments } from "../../../lib/groupEmployeeDocuments";
 import SectionTabs from "./SectionTabs";
+import StatusPill from "./StatusPill";
+import LibraryBreadcrumb from "./LibraryBreadcrumb";
+import NewMenu from "./NewMenu";
+import AppSelect from "./AppSelect";
 import {
   useEmployeeFileActivity,
   useEmployeeFileDocuments,
@@ -70,6 +67,7 @@ import {
   normalizeHeaderFieldKeys,
 } from "../../../lib/employeeFileHeaderFields";
 import { documentViewHref } from "../../../lib/documentLinks";
+import { api } from "../../../lib/api";
 import type { WorkspaceActivityEvent } from "../../../lib/types";
 
 export default function EmployeeProfilePage() {
@@ -82,6 +80,10 @@ export default function EmployeeProfilePage() {
   const complianceEvaluations = useEvaluations(employeeId || undefined);
   const targets = useComplianceTargets();
   const currentUser = useCurrentUser();
+  const canViewActivity =
+    currentUser.data?.is_document_admin === true ||
+    currentUser.data?.is_admin === true;
+  const { showConfirm, showAlert } = useAppDialog();
   const review = useReviewDocument();
   const availableDocumentTypes = useDocumentTypes();
   const uploadEmployeeDocument = useUploadEmployeeDocument();
@@ -94,7 +96,19 @@ export default function EmployeeProfilePage() {
   const [rejectReason, setRejectReason] = useState("");
   const [profileTab, setProfileTab] = useState<
     "overview" | "documents" | "compliance" | "activity" | "groups"
-  >("documents");
+  >(() => {
+    const tab = params.get("tab");
+    if (
+      tab === "overview" ||
+      tab === "documents" ||
+      tab === "compliance" ||
+      tab === "groups"
+    ) {
+      return tab;
+    }
+    if (tab === "activity") return "activity";
+    return "documents";
+  });
   const [reviewError, setReviewError] = useState("");
   const [showUpload, setShowUpload] = useState(false);
   const [uploadConflictWarning, setUploadConflictWarning] = useState<{
@@ -103,15 +117,15 @@ export default function EmployeeProfilePage() {
     proceedUpdate: () => Promise<void>;
     proceedSeparate: () => Promise<void>;
   } | null>(null);
-  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
-  const [uploadTypes, setUploadTypes] = useState<string[]>([]);
-  const [uploadExpiryDates, setUploadExpiryDates] = useState<string[]>([]);
-  const [uploadIssueDates, setUploadIssueDates] = useState<string[]>([]);
-  const [uploadDescriptions, setUploadDescriptions] = useState<string[]>([]);
-  const [uploadMode, setUploadMode] = useState<"wizard" | "bulk">("wizard");
-  const [bulkUploadType, setBulkUploadType] = useState("");
+  const pendingUploadRef = useRef<DocumentUploadPayload | null>(null);
   const [uploadError, setUploadError] = useState("");
   const [removingGroupId, setRemovingGroupId] = useState<number | null>(null);
+  const [assignPolicyOpen, setAssignPolicyOpen] = useState(false);
+  const [assignPolicyId, setAssignPolicyId] = useState("");
+  const [requestSignature, setRequestSignature] = useState(false);
+  const [assignedPolicies, setAssignedPolicies] = useState<
+    { id: number; policy_name: string; requested_signature?: boolean }[]
+  >([]);
   const employeeDocuments = useMemo(
     () => fileDocuments.data ?? [],
     [fileDocuments.data],
@@ -208,6 +222,13 @@ export default function EmployeeProfilePage() {
     const match = employeeDocuments.find((document) => document.id === docId);
     if (match) setViewing(match);
   }, [employeeDocuments, params]);
+
+  useEffect(() => {
+    if (!employeeId) return;
+    void api.listEmployeePolicies(employeeId).then((result) => {
+      setAssignedPolicies(result.data?.items ?? []);
+    });
+  }, [employeeId, profileTab]);
   const visibleIds = groupedEmployeeDocuments.map((group) => group.primary.id);
   const allSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
@@ -223,10 +244,6 @@ export default function EmployeeProfilePage() {
     "Employee profile";
   const employmentState = employeeFileSummary.data?.state ?? "active";
   const statusLabel = employmentState === "inactive" ? "Inactive" : "Active";
-  const statusClass =
-    employmentState === "inactive"
-      ? "bg-slate-100 text-slate-700"
-      : "bg-emerald-50 text-emerald-700";
   const initials = name
     .split(" ")
     .map((part) => part[0])
@@ -325,32 +342,19 @@ export default function EmployeeProfilePage() {
     change_notes?: string[];
     allow_separate_duplicates?: boolean[];
   }) => {
-    const types = availableDocumentTypes.data ?? [];
-    const metadataError = firstUploadMetadataError(
-      uploadTypes,
-      uploadExpiryDates,
-      uploadIssueDates,
-      uploadDescriptions,
-      types,
-    );
-    if (
-      !uploadFiles.length ||
-      uploadTypes.some((id) => !id) ||
-      !employeeId ||
-      metadataError
-    ) {
-      if (metadataError) setUploadError(metadataError);
+    const payload = pendingUploadRef.current;
+    if (!payload?.files.length || payload.documentTypeIds.some((id) => !id) || !employeeId) {
       return;
     }
     setUploadError("");
     try {
       const response = await uploadEmployeeDocument.mutateAsync({
-        files: uploadFiles,
+        files: payload.files,
         employee_id: employeeId,
-        document_type_ids: uploadTypes.map(Number),
-        expiry_dates: uploadExpiryDates,
-        issue_dates: uploadIssueDates,
-        descriptions: uploadDescriptions,
+        document_type_ids: payload.documentTypeIds.map(Number),
+        expiry_dates: payload.expiryDates,
+        issue_dates: payload.issueDates,
+        descriptions: payload.descriptions,
         replace_document_ids: extras?.replace_document_ids,
         change_notes: extras?.change_notes,
         allow_separate_duplicates: extras?.allow_separate_duplicates,
@@ -358,86 +362,26 @@ export default function EmployeeProfilePage() {
       if (!response.success || !response.data?.id) {
         throw new Error(response.message || "The document could not be uploaded.");
       }
-      setUploadFiles([]);
-      setUploadTypes([]);
-      setUploadExpiryDates([]);
-      setUploadIssueDates([]);
-      setUploadDescriptions([]);
-      setBulkUploadType("");
+      pendingUploadRef.current = null;
       setShowUpload(false);
     } catch (error: any) {
       setUploadError(error?.message || "The document could not be uploaded.");
     }
   };
 
-  const handleWizardUpload = async (payload: {
-    files: File[];
-    documentTypeId: number;
-    metadata: Record<string, string>;
-  }) => {
-    if (!employeeId) return;
-    setUploadError("");
-    const file = payload.files[0];
-    const typeId = String(payload.documentTypeId);
-    const expiry = payload.metadata.expiry_date ?? "";
-    const issue = payload.metadata.issue_date ?? "";
-    const description = payload.metadata.description ?? "";
-    const types = availableDocumentTypes.data ?? [];
-    const metadataError = firstUploadMetadataError(
-      [typeId],
-      [expiry],
-      [issue],
-      [description],
-      types,
-    );
-    if (metadataError) {
-      throw new Error(metadataError);
-    }
-    const uploadWizard = async (extras?: {
-      replace_document_ids?: Array<number | null>;
-      change_notes?: string[];
-      allow_separate_duplicates?: boolean[];
-    }) => {
-      const response = await uploadEmployeeDocument.mutateAsync({
-        files: [file],
-        employee_id: employeeId,
-        document_type_ids: [payload.documentTypeId],
-        expiry_dates: [expiry],
-        issue_dates: [issue],
-        descriptions: [description],
-        replace_document_ids: extras?.replace_document_ids,
-        change_notes: extras?.change_notes,
-        allow_separate_duplicates: extras?.allow_separate_duplicates,
-      });
-      if (!response.success) {
-        throw new Error(response.message || "The document could not be uploaded.");
-      }
-      setShowUpload(false);
-    };
-    await runUploadConflictPreflight([typeId], uploadWizard);
-  };
-
-  const handleUploadSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (
-      !uploadFiles.length ||
-      uploadTypes.some((id) => !id) ||
-      !employeeId ||
-      missingUploadMetadata(
-        uploadTypes,
-        uploadExpiryDates,
-        uploadIssueDates,
-        uploadDescriptions,
-        availableDocumentTypes.data ?? [],
-      )
-    )
-      return;
-    await runUploadConflictPreflight(uploadTypes, performUpload);
+  const handleUploadSubmit = async (payload: DocumentUploadPayload) => {
+    pendingUploadRef.current = payload;
+    await runUploadConflictPreflight(payload.documentTypeIds, performUpload);
   };
 
   return (
-    <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <BackButton variant="page" />
+    <div className="app-page space-y-6">
+      <LibraryBreadcrumb
+        items={[
+          { label: "Employee Files", href: "/pages/employee" },
+          { label: name },
+        ]}
+      />
       {reviewError && !rejecting && (
         <p
           role="alert"
@@ -485,22 +429,19 @@ export default function EmployeeProfilePage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span
-              className={`rounded-full px-3 py-1.5 text-sm font-bold ${statusClass}`}
-            >
-              {statusLabel}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setUploadError("");
-                setShowUpload(true);
-              }}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200"
-            >
-              <FilePlus2 className="h-4 w-4" />
-              Upload document
-            </button>
+            <StatusPill label={statusLabel} />
+            <NewMenu
+              items={[
+                {
+                  label: "File upload",
+                  icon: FilePlus2,
+                  onSelect: () => {
+                    setUploadError("");
+                    setShowUpload(true);
+                  },
+                },
+              ]}
+            />
           </div>
         </div>
         <div className="mt-6 border-t border-slate-100 pt-5">
@@ -509,39 +450,37 @@ export default function EmployeeProfilePage() {
               { id: "overview", label: "Overview" },
               { id: "documents", label: "Documents" },
               { id: "compliance", label: "Compliance" },
-              { id: "activity", label: "Activity" },
+              ...(canViewActivity ? [{ id: "activity", label: "Activity" }] : []),
               { id: "groups", label: "Related groups" },
             ]}
-            value={profileTab}
-            onChange={setProfileTab}
+            value={profileTab === "activity" && !canViewActivity ? "documents" : profileTab}
+            onChange={(value) => {
+              const next = value as typeof profileTab;
+              setProfileTab(next);
+              const nextParams = new URLSearchParams(params.toString());
+              nextParams.set("tab", next);
+              router.replace(`/pages/employee/profile?${nextParams.toString()}`);
+            }}
+            level="page"
             ariaLabel="Employee file sections"
           />
         </div>
       </section>
       {profileTab === "overview" ? (
         <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl bg-gradient-to-br from-brand-text to-brand-pink p-5 text-white shadow-lg shadow-pink-200">
-          <p className="text-sm text-white/80">Total documents</p>
-          <p className="mt-3 text-3xl font-bold">{employeeDocuments.length}</p>
-          <p className="mt-1 text-xs text-white/80">
-            Across this employee record
-          </p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Approved documents</p>
-          <p className="mt-3 text-3xl font-bold text-slate-900">{approved}</p>
-          <p className="mt-1 text-xs text-slate-400">
-            Active and verified records
-          </p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Document types</p>
-          <p className="mt-3 text-3xl font-bold text-slate-900">{documentTypes.length}</p>
-          <p className="mt-1 text-xs text-slate-400">
-            Classified categories
-          </p>
-        </div>
+        <div className="app-page-metrics">
+          <div className="app-page-metric">
+            <span>Total documents</span>
+            <strong>{employeeDocuments.length}</strong>
+          </div>
+          <div className="app-page-metric">
+            <span>Approved documents</span>
+            <strong>{approved}</strong>
+          </div>
+          <div className="app-page-metric">
+            <span>Document types</span>
+            <strong>{documentTypes.length}</strong>
+          </div>
         </div>
         </div>
       ) : null}
@@ -554,6 +493,20 @@ export default function EmployeeProfilePage() {
         showDepartmentFilter={false}
         totalCount={employeeDocuments.length}
         filteredCount={filteredEmployeeDocuments.length}
+        leading={
+          <NewMenu
+            items={[
+              {
+                label: "File upload",
+                icon: FilePlus2,
+                onSelect: () => {
+                  setUploadError("");
+                  setShowUpload(true);
+                },
+              },
+            ]}
+          />
+        }
       />
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="px-5 pt-4">
@@ -623,12 +576,27 @@ export default function EmployeeProfilePage() {
       ) : null}
       {profileTab === "compliance" ? (
         <section className="rounded-2xl border border-slate-200 bg-white p-6">
-          <p className="text-sm text-slate-600">
-            Compliance status:{" "}
-            {complianceScore === null
-              ? "Not evaluated"
-              : `${complianceScore}% · ${complianceState}`}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-slate-600">
+              Compliance status:{" "}
+              {complianceScore === null
+                ? "Not evaluated"
+                : `${complianceScore}% · ${complianceState}`}
+            </p>
+            {isDocumentManager || currentUser.data?.is_document_admin ? (
+              <button
+                type="button"
+                className="app-btn app-btn-primary"
+                onClick={() => {
+                  setAssignPolicyId("");
+                  setRequestSignature(false);
+                  setAssignPolicyOpen(true);
+                }}
+              >
+                Assign policy
+              </button>
+            ) : null}
+          </div>
           <ul className="mt-4 space-y-2 text-sm text-slate-700">
             {currentEvaluations.map((evaluation) => (
               <li key={evaluation.id} className="flex justify-between gap-4 border-b border-slate-100 pb-2">
@@ -637,9 +605,24 @@ export default function EmployeeProfilePage() {
               </li>
             ))}
           </ul>
+          {assignedPolicies.length ? (
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold">Assigned policies</h3>
+              <ul className="mt-2 space-y-2 text-sm">
+                {assignedPolicies.map((item) => (
+                  <li key={item.id} className="flex justify-between gap-4 border-b border-slate-100 pb-2">
+                    <span>{item.policy_name}</span>
+                    <span className="text-xs text-slate-500">
+                      {item.requested_signature ? "Signature requested" : "Notified"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </section>
       ) : null}
-      {profileTab === "activity" ? (
+      {profileTab === "activity" && canViewActivity ? (
         <EmployeeFileActivityPanel
           loading={fileActivity.isLoading}
           events={fileActivity.data ?? []}
@@ -678,9 +661,10 @@ export default function EmployeeProfilePage() {
                       onClick={async () => {
                         if (!employeeFileId) return;
                         if (
-                          !window.confirm(
+                          !(await showConfirm(
                             `Remove ${name} from "${group.name}"? This only removes the group membership; their employee file and documents are unchanged.`,
-                          )
+                            { title: "Remove from group", confirmLabel: "Remove" },
+                          ))
                         ) {
                           return;
                         }
@@ -718,236 +702,21 @@ export default function EmployeeProfilePage() {
           ) : null}
         </section>
       ) : null}
-      {showUpload && (
-        <ModalDialog
+      {showUpload ? (
+        <DocumentUploadModal
           title="Upload documents"
           eyebrow="Employee files"
-          description="Upload with the guided wizard or add several files at once. Required metadata depends on the document type."
-          onClose={() => setShowUpload(false)}
-          size="lg"
-          titleClassName="text-xl"
-        >
-          <div className="mb-4 flex gap-2">
-            <button
-              type="button"
-              className={`rounded-full px-4 py-2 text-xs font-bold ${
-                uploadMode === "wizard"
-                  ? "bg-brand-pink text-white"
-                  : "bg-slate-100 text-slate-600"
-              }`}
-              onClick={() => setUploadMode("wizard")}
-            >
-              Guided upload
-            </button>
-            <button
-              type="button"
-              className={`rounded-full px-4 py-2 text-xs font-bold ${
-                uploadMode === "bulk"
-                  ? "bg-brand-pink text-white"
-                  : "bg-slate-100 text-slate-600"
-              }`}
-              onClick={() => setUploadMode("bulk")}
-            >
-              Bulk upload
-            </button>
-          </div>
-          {uploadMode === "wizard" ? (
-            <EmployeeUploadWizard
-              documentTypes={availableDocumentTypes.data ?? []}
-              onClose={() => setShowUpload(false)}
-              onSubmit={handleWizardUpload}
-            />
-          ) : null}
-          {uploadMode === "bulk" ? (
-          <form onSubmit={(event) => void handleUploadSubmit(event)}>
-            <label className="block">
-              <span className="label">Files</span>
-              <span className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-brand-pink/40 bg-pink-50/50 px-4 py-6 text-sm font-semibold text-brand-text">
-                <Upload className="h-5 w-5" />{uploadFiles.length ? `${uploadFiles.length} file${uploadFiles.length === 1 ? "" : "s"} selected` : "Choose files from your computer"}
-                <input
-                  required
-                  multiple
-                  type="file"
-                  onChange={(event) => {
-                    const next = Array.from(event.target.files ?? []);
-                    setUploadFiles(next);
-                    setUploadTypes(next.map((_, index) => uploadTypes[index] ?? ""));
-                    setUploadExpiryDates(
-                      next.map((_, index) => uploadExpiryDates[index] ?? ""),
-                    );
-                    setUploadIssueDates(
-                      next.map((_, index) => uploadIssueDates[index] ?? ""),
-                    );
-                    setUploadDescriptions(
-                      next.map((_, index) => uploadDescriptions[index] ?? ""),
-                    );
-                  }}
-                  className="hidden"
-                />
-              </span>
-            </label>
-            {uploadFiles.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <div className="grid grid-cols-[minmax(0,1fr)_minmax(160px,200px)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(0,1fr)] gap-3 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                  <span>File name</span>
-                  <span>Document type</span>
-                  <span>Issue date</span>
-                  <span>Expiry date</span>
-                  <span>Description</span>
-                </div>
-                {uploadFiles.map((file, index) => (
-                  <div
-                    key={`${file.name}-${index}`}
-                    className="grid grid-cols-[minmax(0,1fr)_minmax(160px,200px)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2"
-                  >
-                    <span
-                      title={file.name}
-                      className="min-w-0 truncate text-sm font-medium text-slate-700"
-                    >
-                      {file.name}
-                    </span>
-                    <ThemedSelect
-                      value={uploadTypes[index] ?? ""}
-                      onChange={(value) =>
-                        setUploadTypes((current) =>
-                          current.map((item, i) => (i === index ? value : item)),
-                        )
-                      }
-                      placeholder="Document type"
-                      options={(availableDocumentTypes.data ?? []).map((type) => ({
-                        value: String(type.id),
-                        label: type.name,
-                      }))}
-                    />
-                    {typeRequiresIssueDate(
-                      uploadTypes[index] ?? "",
-                      availableDocumentTypes.data ?? [],
-                    ) ? (
-                      <input
-                        required
-                        type="date"
-                        className="field"
-                        value={uploadIssueDates[index] ?? ""}
-                        onChange={(event) =>
-                          setUploadIssueDates((current) =>
-                            current.map((item, i) =>
-                              i === index ? event.target.value : item,
-                            ),
-                          )
-                        }
-                      />
-                    ) : (
-                      <input
-                        type="date"
-                        className="field"
-                        value={uploadIssueDates[index] ?? ""}
-                        onChange={(event) =>
-                          setUploadIssueDates((current) =>
-                            current.map((item, i) =>
-                              i === index ? event.target.value : item,
-                            ),
-                          )
-                        }
-                      />
-                    )}
-                    {typeRequiresExpiry(
-                      uploadTypes[index] ?? "",
-                      availableDocumentTypes.data ?? [],
-                    ) ? (
-                      <input
-                        required
-                        type="date"
-                        className="field"
-                        value={uploadExpiryDates[index] ?? ""}
-                        onChange={(event) =>
-                          setUploadExpiryDates((current) =>
-                            current.map((item, i) =>
-                              i === index ? event.target.value : item,
-                            ),
-                          )
-                        }
-                      />
-                    ) : (
-                      <span className="text-xs text-slate-400">—</span>
-                    )}
-                    <input
-                      type="text"
-                      className="field min-w-0"
-                      required={typeRequiresDescription(
-                        uploadTypes[index] ?? "",
-                        availableDocumentTypes.data ?? [],
-                      )}
-                      placeholder={
-                        typeRequiresDescription(
-                          uploadTypes[index] ?? "",
-                          availableDocumentTypes.data ?? [],
-                        )
-                          ? "Required"
-                          : "Optional"
-                      }
-                      value={uploadDescriptions[index] ?? ""}
-                      onChange={(event) =>
-                        setUploadDescriptions((current) =>
-                          current.map((item, i) =>
-                            i === index ? event.target.value : item,
-                          ),
-                        )
-                      }
-                    />
-                  </div>
-                ))}
-                {uploadFiles.length > 1 ? (
-                  <button
-                    type="button"
-                    className="text-xs font-bold text-brand-pink"
-                    onClick={() => {
-                      const value = uploadTypes[0] ?? "";
-                      setUploadTypes(uploadFiles.map(() => value));
-                    }}
-                  >
-                    Apply first type to all
-                  </button>
-                ) : null}
-              </div>
-            )}
-            {uploadFiles.length > 1 ? (
-              <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <summary className="cursor-pointer text-xs font-bold text-slate-700">Advanced configuration</summary>
-                <div className="mt-3 flex items-end gap-2">
-                  <label className="min-w-0 flex-1">
-                    <span className="label">Use one document type for all files</span>
-                    <ThemedSelect value={bulkUploadType} onChange={setBulkUploadType} placeholder="Select a type" options={(availableDocumentTypes.data ?? []).map((type) => ({ value: String(type.id), label: type.name }))} />
-                  </label>
-                  <InlineDocumentTypeCreator onCreated={(type) => setBulkUploadType(String(type.id))} />
-                  <button type="button" disabled={!bulkUploadType} onClick={() => setUploadTypes(uploadFiles.map(() => bulkUploadType))} className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50">Apply to all</button>
-                </div>
-              </details>
-            ) : null}
-            {uploadError && <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{uploadError}</p>}
-            <div className="mt-6 flex justify-end gap-2">
-              <button type="button" onClick={() => setShowUpload(false)} className="rounded-full px-4 py-2.5 font-semibold text-slate-500">Cancel</button>
-              <button
-                disabled={
-                  uploadEmployeeDocument.isPending ||
-                  !uploadFiles.length ||
-                  uploadTypes.some((id) => !id) ||
-                  missingUploadMetadata(
-                    uploadTypes,
-                    uploadExpiryDates,
-                    uploadIssueDates,
-                    uploadDescriptions,
-                    availableDocumentTypes.data ?? [],
-                  )
-                }
-                className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {uploadEmployeeDocument.isPending ? "Uploading..." : "Upload documents"}
-              </button>
-            </div>
-          </form>
-          ) : null}
-        </ModalDialog>
-      )}
+          documentTypes={availableDocumentTypes.data ?? []}
+          pending={uploadEmployeeDocument.isPending}
+          error={uploadError}
+          onClose={() => {
+            setShowUpload(false);
+            setUploadError("");
+            pendingUploadRef.current = null;
+          }}
+          onSubmit={handleUploadSubmit}
+        />
+      ) : null}
       {viewing && (
         <DocumentViewerDialog
           title={viewing.name}
@@ -978,6 +747,10 @@ export default function EmployeeProfilePage() {
           }
           currentVersionNumber={viewing.current_version_number}
           initialVersionId={viewingVersionId}
+          isShortcut={viewing.is_shortcut}
+          shortcutOfId={viewing.shortcut_of_id}
+          shortcutOfName={viewing.shortcut_of_name}
+          shortcutOfFolderId={viewing.shortcut_of_folder_id}
           previewUrl={documentPreviewUrl(viewing.id, {
             variant:
               canReviewDocument(viewing) && viewing.approval_state === "pending"
@@ -1011,7 +784,7 @@ export default function EmployeeProfilePage() {
                         type="button"
                         disabled={review.isPending}
                         onClick={() => void handleReview(viewing, "approve")}
-                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-4 py-2.5 text-sm font-bold text-white"
+                        className="app-btn app-btn-primary"
                       >
                         <Check className="h-4 w-4" />
                         Approve
@@ -1132,7 +905,107 @@ export default function EmployeeProfilePage() {
           </form>
         </ModalDialog>
       )}
+      {assignPolicyOpen ? (
+        <AssignPolicyDialog
+          employeeId={employeeId}
+          policyId={assignPolicyId}
+          onPolicyIdChange={setAssignPolicyId}
+          requestSignature={requestSignature}
+          onRequestSignatureChange={setRequestSignature}
+          onClose={() => setAssignPolicyOpen(false)}
+          onAssigned={(items) => {
+            setAssignedPolicies(items);
+            setAssignPolicyOpen(false);
+          }}
+          showAlert={showAlert}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function AssignPolicyDialog({
+  employeeId,
+  policyId,
+  onPolicyIdChange,
+  requestSignature,
+  onRequestSignatureChange,
+  onClose,
+  onAssigned,
+  showAlert,
+}: {
+  employeeId: number;
+  policyId: string;
+  onPolicyIdChange: (value: string) => void;
+  requestSignature: boolean;
+  onRequestSignatureChange: (value: boolean) => void;
+  onClose: () => void;
+  onAssigned: (
+    items: { id: number; policy_name: string; requested_signature?: boolean }[],
+  ) => void;
+  showAlert: (message: string, options?: { title?: string }) => Promise<void>;
+}) {
+  const [policies, setPolicies] = useState<{ id: number; name: string }[]>([]);
+  useEffect(() => {
+    void api.listOrganizationalPoliciesTemplates().then((result) => {
+      setPolicies(result.data?.policies ?? []);
+    });
+  }, []);
+  return (
+    <ModalDialog title="Assign policy" eyebrow="Employee file" onClose={onClose} size="md">
+      <p className="text-sm text-muted-foreground">
+        This assigns a reference to the same policy document. The employee is always notified.
+      </p>
+      <label className="mt-4 block space-y-1 text-sm">
+        <span className="font-semibold">Active policy</span>
+        <AppSelect
+          value={policyId}
+          onChange={onPolicyIdChange}
+          options={[
+            { value: "", label: "Select a policy" },
+            ...policies.map((item) => ({ value: String(item.id), label: item.name })),
+          ]}
+        />
+      </label>
+      <label className="mt-3 flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={requestSignature}
+          onChange={(event) => onRequestSignatureChange(event.target.checked)}
+          className="h-4 w-4 accent-pink-600"
+        />
+        Request signature
+      </label>
+      <div className="mt-5 flex justify-end gap-2">
+        <button type="button" className="secondary-button" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="primary-button"
+          disabled={!policyId}
+          onClick={() =>
+            void (async () => {
+              const result = await api.assignPolicyToEmployee({
+                policy_id: Number(policyId),
+                employee_id: employeeId,
+                requested_signature: requestSignature,
+              });
+              if (!result.success) {
+                await showAlert(result.message || "Unable to assign this policy.", {
+                  title: "Assign policy",
+                });
+                return;
+              }
+              const listed = await api.listEmployeePolicies(employeeId);
+              onAssigned(listed.data?.items ?? []);
+            })()
+          }
+        >
+          Assign
+        </button>
+      </div>
+    </ModalDialog>
   );
 }
 

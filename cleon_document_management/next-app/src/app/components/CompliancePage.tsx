@@ -11,9 +11,14 @@ import {
   RotateCcw,
   ToggleLeft,
   Trash2,
+  Loader2,
 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { formatFieldLabel, formatStatusLabel } from "../../../lib/formatLabel";
+import { policyDocumentFileName } from "../../../lib/policyDocumentName";
+import { useClientPagination } from "../../../lib/useClientPagination";
+import ListPagination from "./ListPagination";
 import {
   useComplianceTargets,
   useCreateException,
@@ -21,6 +26,7 @@ import {
   useDeactivateException,
   useDeleteException,
   useCreatePolicy,
+  useCreateDocument,
   useDeletePolicy,
   useDocumentTypes,
   useEvaluatePolicy,
@@ -30,23 +36,35 @@ import {
   useRejectException,
   usePolicies,
   usePolicyTypes,
+  useDocuments,
 } from "../../../hooks/useDocuments";
+import { useAppDialog } from "../../../hooks/useAppDialog";
+import { api } from "../../../lib/api";
 import BulkActionBar from "./BulkActionBar";
 import PolicyActions from "./PolicyActions";
 import ModalDialog from "./ModalDialog";
 import PolicyTypeMultiSelect from "./PolicyTypeMultiSelect";
 import SortableTable from "./SortableTable";
-import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
 import ThemedSelect from "./ThemedSelect";
 import {
   AUDIT_FREQUENCY_LABELS,
   EVENT_TRIGGER_LABELS,
 } from "../../../lib/complianceCopy";
 import ComplianceReportsPanel from "./ComplianceReportsPanel";
+import EmployeeMetricPicker from "./EmployeeMetricPicker";
 import SectionTabs from "./SectionTabs";
-import { useRouter } from "next/navigation";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 
 type Tab = "policies" | "exceptions" | "history" | "reports";
+const AI_BRIEF_CHIPS = [
+  { label: "Who it applies to", text: "Applies to all employees." },
+  { label: "What's required", text: "Staff must complete the required documents." },
+  { label: "When it starts", text: "Takes effect from the activation date." },
+];
 const schedules = [
   "manual",
   "one_time",
@@ -61,9 +79,19 @@ const schedules = [
 
 export default function CompliancePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { showConfirm, showAlert } = useAppDialog();
   const [tab, setTab] = useState<Tab>("policies");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [policyPath, setPolicyPath] = useState<"chooser" | "scratch" | "import" | "ai" | null>(null);
+  const [importDocumentId, setImportDocumentId] = useState("");
+  const [aiName, setAiName] = useState("");
+  const [aiDescription, setAiDescription] = useState("");
+  const [aiPolicyTypeId, setAiPolicyTypeId] = useState("");
+  const [aiDocumentTypeIds, setAiDocumentTypeIds] = useState<number[]>([]);
+  const [aiPending, setAiPending] = useState(false);
+  const [reviewPolicyId, setReviewPolicyId] = useState<number | null>(null);
   const [policySubmitError, setPolicySubmitError] = useState("");
   const [running, setRunning] = useState(false);
   const policies = usePolicies();
@@ -71,8 +99,10 @@ export default function CompliancePage() {
   const runs = useEvaluationRuns();
   const types = usePolicyTypes();
   const documents = useDocumentTypes();
+  const orgDocuments = useDocuments(undefined, false, policyPath === "import");
   const targets = useComplianceTargets();
   const createPolicy = useCreatePolicy();
+  const createDocument = useCreateDocument();
   const createException = useCreateException();
   const evaluate = useEvaluatePolicy();
   const deletePolicy = useDeletePolicy();
@@ -108,6 +138,11 @@ export default function CompliancePage() {
     audit_frequency: "quarterly",
     sample_pct: 100,
     assigned_auditor_id: "",
+    policy_category: "",
+    lifecycle_status: "active",
+    active: true,
+    policy_visibility: "employees",
+    policy_audience: "everyone",
   });
 
   useEffect(() => {
@@ -118,6 +153,39 @@ export default function CompliancePage() {
       }));
     }
   }, [types.data, policyForm.policy_type_id]);
+
+  useEffect(() => {
+    if (!aiPolicyTypeId && types.data && types.data.length > 0) {
+      setAiPolicyTypeId(String(types.data[0].id));
+    }
+  }, [types.data, aiPolicyTypeId]);
+
+  useEffect(() => {
+    if (aiDocumentTypeIds.length || !documents.data?.length) return;
+    setAiDocumentTypeIds([documents.data[0].id]);
+  }, [documents.data, aiDocumentTypeIds.length]);
+
+  useEffect(() => {
+    if (searchParams.get("create") === "1") {
+      setTab("policies");
+      const path = searchParams.get("path");
+      if (path === "import" || path === "ai" || path === "scratch") {
+        setPolicyPath(path);
+        setShowForm(path === "scratch");
+      } else {
+        setPolicyPath("chooser");
+        setShowForm(false);
+      }
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const policyId = Number(searchParams.get("policy") || 0);
+    if (policyId > 0) {
+      setTab("policies");
+      setReviewPolicyId(policyId);
+    }
+  }, [searchParams]);
 
   const [exceptionForm, setExceptionForm] = useState({
     employee_ids: [] as number[],
@@ -142,7 +210,7 @@ export default function CompliancePage() {
         : policyForm.applies_to;
 
     try {
-      await createPolicy.mutateAsync({
+      const created = await createPolicy.mutateAsync({
         ...policyForm,
         policy_type_id: Number(policyForm.policy_type_id),
         applies_to: effectiveAppliesTo,
@@ -162,7 +230,26 @@ export default function CompliancePage() {
           ? Number(policyForm.assigned_auditor_id)
           : false,
         escalate_manager_days: 0,
+        lifecycle_status: "active",
+        active: policyForm.active !== false,
+        policy_category: policyForm.policy_category || "",
+        policy_visibility: policyForm.policy_visibility || "employees",
+        policy_audience: policyForm.policy_audience || "everyone",
+        ai_drafted: false,
       });
+      const folderId = Number(searchParams.get("folder") || 0);
+      const policyId = Number((created as { id?: number })?.id || 0);
+      const typeId =
+        policyForm.document_type_ids[0] || documents.data?.[0]?.id;
+      if (folderId && policyId && typeId) {
+        await createDocument.mutateAsync({
+          name: policyDocumentFileName(policyForm.name),
+          folder_id: folderId,
+          document_type_id: typeId,
+          is_policy: true,
+          linked_policy_id: policyId,
+        });
+      }
     } catch (error: any) {
       setPolicySubmitError(error?.message || "Failed to create policy.");
       return;
@@ -192,6 +279,11 @@ export default function CompliancePage() {
       audit_frequency: "quarterly",
       sample_pct: 100,
       assigned_auditor_id: "",
+      policy_category: "",
+      lifecycle_status: "active",
+      active: true,
+      policy_visibility: "employees",
+      policy_audience: "everyone",
     });
   };
   const submitException = async (event: FormEvent) => {
@@ -214,14 +306,66 @@ export default function CompliancePage() {
   const runCheck = async () => {
     setRunning(true);
     try {
-      for (const policy of policies.data ?? []) await evaluate.mutateAsync(policy.id);
+      const runnable = (policies.data ?? []).filter(policyCanRun);
+      for (const policy of runnable) await evaluate.mutateAsync(policy.id);
     } finally {
       setRunning(false);
     }
   };
 
+  const runAiDraft = async () => {
+    const title = aiName.trim();
+    if (!title) {
+      await showAlert("Enter a policy name.", { title: "Create with AI" });
+      return;
+    }
+    setAiPending(true);
+    try {
+      const result = await api.draftAiPolicy({
+        name: title,
+        description: aiDescription,
+        policy_type_id: aiPolicyTypeId ? Number(aiPolicyTypeId) : undefined,
+        document_type_ids: aiDocumentTypeIds,
+        document_type_id: aiDocumentTypeIds[0],
+      });
+      if (!result.success) {
+        await showAlert(result.message || "Unable to draft this policy.", {
+          title: "Create with AI",
+        });
+        return;
+      }
+      const policyId = Number(result.data?.policy_id || 0);
+      setAiName("");
+      setAiDescription("");
+      setAiDocumentTypeIds([]);
+      setPolicyPath(null);
+      setSearch("");
+      await policies.refetch();
+      if (policyId) setReviewPolicyId(policyId);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to draft this policy.";
+      await showAlert(
+        /timeout/i.test(message)
+          ? "The AI draft took too long. Try again."
+          : message,
+        { title: "Create with AI" },
+      );
+    } finally {
+      setAiPending(false);
+    }
+  };
+
+  const appendAiBrief = (fragment: string) => {
+    setAiDescription((current) => {
+      const trimmed = current.trim();
+      if (trimmed.includes(fragment.trim())) return current;
+      return trimmed ? `${trimmed} ${fragment}` : fragment;
+    });
+  };
+
   return (
-    <div className="relative min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
+    <div className="relative app-page space-y-6">
       <div className="flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-end">
         <div className="flex flex-wrap gap-2">
           <button
@@ -237,37 +381,35 @@ export default function CompliancePage() {
             type="button"
             onClick={() => {
               setPolicySubmitError("");
-              setShowForm(true);
+              if (tab === "exceptions") {
+                setShowForm(true);
+                return;
+              }
+              setPolicyPath("chooser");
+              setShowForm(false);
             }}
             disabled={tab === "history" || tab === "reports"}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="app-btn app-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
             {tab === "exceptions" ? "New Exception" : "New Policy"}
           </button>
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl bg-gradient-to-br from-brand-text to-brand-pink p-5 text-white shadow-lg shadow-pink-200">
-          <ShieldCheck className="h-5 w-5" />
-          <p className="mt-5 text-3xl font-bold">
-            {policies.data?.length ?? 0}
-          </p>
-          <p className="text-sm text-white/80">Active policies</p>
+      <div className="app-page-metrics">
+        <div className="app-page-metric">
+          <span>Active policies</span>
+          <strong>{policies.data?.length ?? 0}</strong>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <ClipboardCheck className="h-5 w-5 text-brand-pink" />
-          <p className="mt-5 text-3xl font-bold text-slate-900">
+        <div className="app-page-metric">
+          <span>Open exceptions</span>
+          <strong>
             {exceptions.data?.filter((item) => item.active !== false && ["draft", "approved"].includes(item.status)).length ?? 0}
-          </p>
-          <p className="text-sm text-slate-500">Open exceptions</p>
+          </strong>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <FileText className="h-5 w-5 text-brand-pink" />
-          <p className="mt-5 text-3xl font-bold text-slate-900">
-            {runs.data?.length ?? 0}
-          </p>
-          <p className="text-sm text-slate-500">Policy runs</p>
+        <div className="app-page-metric">
+          <span>Policy runs</span>
+          <strong>{runs.data?.length ?? 0}</strong>
         </div>
       </div>
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -287,17 +429,19 @@ export default function CompliancePage() {
               setSelectedExceptionIds([]);
             }}
             className="!w-auto min-w-0 flex-1"
+            level="page"
             ariaLabel="Compliance sections"
           />
-          <label className="relative block sm:w-72">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
+          <InputGroup className="sm:w-72">
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupInput
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder={`Search ${tab}...`}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-pink/40 focus:bg-white focus:ring-4 focus:ring-brand-pink/10"
             />
-          </label>
+          </InputGroup>
         </div>
         {tab === "policies" && (
           <>
@@ -329,9 +473,10 @@ export default function CompliancePage() {
                 disabled={deletePolicy.isPending}
                 onClick={async () => {
                   if (
-                    !window.confirm(
+                    !(await showConfirm(
                       `Delete ${selectedPolicyIds.length} selected polic${selectedPolicyIds.length === 1 ? "y" : "ies"}? This cannot be undone.`,
-                    )
+                      { title: "Delete policies", confirmLabel: "Delete" },
+                    ))
                   ) {
                     return;
                   }
@@ -351,6 +496,8 @@ export default function CompliancePage() {
               types={types.data ?? []}
               targets={targets.data}
               selectedIds={selectedPolicyIds}
+              reviewPolicyId={reviewPolicyId}
+              onReviewClose={() => setReviewPolicyId(null)}
               onToggleSelected={(id) =>
                 setSelectedPolicyIds((current) =>
                   current.includes(id)
@@ -445,9 +592,10 @@ export default function CompliancePage() {
                 disabled={deleteException.isPending}
                 onClick={async () => {
                   if (
-                    !window.confirm(
+                    !(await showConfirm(
                       `Delete ${selectedExceptionIds.length} selected exception${selectedExceptionIds.length === 1 ? "" : "s"}?`,
-                    )
+                      { title: "Delete exceptions", confirmLabel: "Delete" },
+                    ))
                   ) {
                     return;
                   }
@@ -519,6 +667,186 @@ export default function CompliancePage() {
             onSubmit={submitPolicy}
           />
         ))}
+      {tab !== "exceptions" && policyPath === "chooser" ? (
+        <ModalDialog
+          title="New policy"
+          eyebrow="Three ways to start"
+          onClose={() => setPolicyPath(null)}
+          size="md"
+        >
+          <div className="grid gap-2">
+            <button
+              type="button"
+              className="rounded-xl border border-slate-200 px-4 py-3 text-left hover:border-brand-pink"
+              onClick={() => {
+                setPolicyPath("scratch");
+                setShowForm(true);
+              }}
+            >
+              <strong>From scratch</strong>
+              <p className="text-sm text-muted-foreground">Configure a policy yourself.</p>
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border border-slate-200 px-4 py-3 text-left hover:border-brand-pink"
+              onClick={() => setPolicyPath("import")}
+            >
+              <strong>Import existing document</strong>
+              <p className="text-sm text-muted-foreground">
+                Reuse an organizational file as the policy source.
+              </p>
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border border-slate-200 px-4 py-3 text-left hover:border-brand-pink"
+              onClick={() => setPolicyPath("ai")}
+            >
+              <strong>Create with AI</strong>
+              <p className="text-sm text-muted-foreground">
+                Writes a short description and saves a draft.
+              </p>
+            </button>
+          </div>
+        </ModalDialog>
+      ) : null}
+      {policyPath === "import" ? (
+        <ModalDialog
+          title="Import existing document"
+          eyebrow="New policy"
+          onClose={() => setPolicyPath("chooser")}
+          size="md"
+        >
+          <ThemedSelect
+            value={importDocumentId}
+            onChange={setImportDocumentId}
+            placeholder="Select a document"
+            options={(orgDocuments.data ?? []).map((item) => ({
+              value: String(item.id),
+              label: item.name,
+            }))}
+          />
+          <div className="mt-5 flex justify-end gap-2">
+            <button type="button" className="secondary-button" onClick={() => setPolicyPath("chooser")}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              disabled={!importDocumentId}
+              onClick={() =>
+                void (async () => {
+                  const result = await api.importOrganizationalPolicy(Number(importDocumentId));
+                  if (!result.success) {
+                    await showAlert(result.message || "Unable to import.", { title: "Import policy" });
+                    return;
+                  }
+                  setPolicyPath("scratch");
+                  policies.refetch();
+                })()
+              }
+            >
+              Import
+            </button>
+          </div>
+        </ModalDialog>
+      ) : null}
+      {policyPath === "ai" ? (
+        <ModalDialog
+          title="Create with AI"
+          eyebrow="New policy"
+          onClose={() => {
+            if (!aiPending) setPolicyPath("chooser");
+          }}
+          size="md"
+        >
+          {aiPending ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-brand-pink" />
+              <p className="text-sm font-semibold text-slate-700">Drafting policy…</p>
+              <p className="text-xs text-muted-foreground">
+                This can take a little while. Keep this window open.
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                AI writes a short description and saves this as a <strong>Draft</strong>.
+                Activate it when it looks right.
+              </p>
+              <label className="mt-4 block space-y-1 text-sm">
+                <span className="font-semibold">Policy name</span>
+                <input
+                  className="field"
+                  value={aiName}
+                  onChange={(event) => setAiName(event.target.value)}
+                  placeholder="Remote work, Code of conduct…"
+                />
+              </label>
+              <label className="mt-3 block space-y-1 text-sm">
+                <span className="font-semibold">What should it cover?</span>
+                <textarea
+                  className="field min-h-24"
+                  value={aiDescription}
+                  onChange={(event) => setAiDescription(event.target.value)}
+                  placeholder="Optional: who it applies to, what is required, when it starts"
+                />
+              </label>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {AI_BRIEF_CHIPS.map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-brand-pink hover:text-brand-pink"
+                    onClick={() => appendAiBrief(chip.text)}
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label className="block space-y-1 text-sm">
+                  <span className="font-semibold">Policy type</span>
+                  <ThemedSelect
+                    value={aiPolicyTypeId}
+                    onChange={setAiPolicyTypeId}
+                    placeholder="Select type"
+                    options={(types.data ?? []).map((item) => ({
+                      value: String(item.id),
+                      label: item.name,
+                    }))}
+                  />
+                </label>
+                <div className="block space-y-1 text-sm sm:col-span-2">
+                  <span className="font-semibold">Required documents</span>
+                  <PolicyTypeMultiSelect
+                    types={documents.data ?? []}
+                    selected={aiDocumentTypeIds}
+                    onChange={setAiDocumentTypeIds}
+                    placeholder="Select document types"
+                  />
+                </div>
+              </div>
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setPolicyPath("chooser")}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={!aiName.trim()}
+                  onClick={() => void runAiDraft()}
+                >
+                  Generate draft
+                </button>
+              </div>
+            </>
+          )}
+        </ModalDialog>
+      ) : null}
     </div>
   );
 }
@@ -532,6 +860,8 @@ function PolicyTable({
   onToggleSelected,
   onToggleAll,
   allSelected,
+  reviewPolicyId,
+  onReviewClose,
 }: {
   policies: any[];
   documents: any[];
@@ -541,8 +871,12 @@ function PolicyTable({
   onToggleSelected: (id: number) => void;
   onToggleAll: () => void;
   allSelected: boolean;
+  reviewPolicyId?: number | null;
+  onReviewClose?: () => void;
 }) {
+  const paging = useClientPagination(policies, policies.length);
   return (
+    <>
     <Table
       headers={[
         "Policy name",
@@ -560,8 +894,11 @@ function PolicyTable({
       hasSelection
     >
       <>
-        {policies.map((policy) => (
-          <tr key={policy.id} className="hover:bg-pink-50/30">
+        {paging.items.map((policy) => (
+          <tr
+            key={policy.id}
+            className={`hover:bg-pink-50/30 ${reviewPolicyId === policy.id ? "bg-pink-50/70" : ""}`}
+          >
             <td className="cell w-10">
               <input
                 type="checkbox"
@@ -571,9 +908,11 @@ function PolicyTable({
                 aria-label={`Select ${policy.name}`}
               />
             </td>
-            <td className="cell">
-              <b>{policy.name}</b>
-              <small>{policy.description || "No description provided"}</small>
+            <td className="cell max-w-[18rem]">
+              <b className="truncate">{policy.name}</b>
+              <small title={policy.description || undefined}>
+                {policy.description || "No description provided"}
+              </small>
             </td>
             <td className="cell">
               <span className="tag">{policy.policy_type}</span>
@@ -593,8 +932,8 @@ function PolicyTable({
               {policy.last_run_at && <small className="mt-1">Last: {formatDateTime(policy.last_run_at)}</small>}
             </td>
             <td className="cell">
-              <span className="status">
-                {policy.active ? "Active" : "Inactive"}
+              <span className={`status ${policyStatusClass(policy)}`}>
+                {policyStatusLabel(policy)}
               </span>
             </td>
             <td className="cell">
@@ -603,12 +942,21 @@ function PolicyTable({
                 documents={documents}
                 types={types}
                 targets={targets}
+                openView={reviewPolicyId === policy.id}
+                onViewClose={onReviewClose}
               />
             </td>
           </tr>
         ))}
       </>
     </Table>
+    <ListPagination
+      page={paging.page}
+      pageSize={paging.pageSize}
+      total={paging.total}
+      onPageChange={paging.setPage}
+    />
+    </>
   );
 }
 function ExceptionTable({
@@ -624,7 +972,9 @@ function ExceptionTable({
   onToggleAll: () => void;
   allSelected: boolean;
 }) {
+  const paging = useClientPagination(exceptions, exceptions.length);
   return (
+    <>
     <Table
       headers={["Employee", "Reason", "Valid until", "Status", "Actions"]}
       empty="No exceptions found."
@@ -633,7 +983,7 @@ function ExceptionTable({
       hasSelection
     >
       <>
-        {exceptions.map((item) => (
+        {paging.items.map((item) => (
           <tr key={item.id} className="hover:bg-pink-50/30">
             <td className="cell w-10">
               <input
@@ -658,6 +1008,13 @@ function ExceptionTable({
         ))}
       </>
     </Table>
+    <ListPagination
+      page={paging.page}
+      pageSize={paging.pageSize}
+      total={paging.total}
+      onPageChange={paging.setPage}
+    />
+    </>
   );
 }
 
@@ -667,13 +1024,19 @@ function ExceptionActions({ exception }: { exception: any }) {
   const deactivate = useDeactivateException();
   const reactivate = useReactivateException();
   const remove = useDeleteException();
+  const { showConfirm } = useAppDialog();
   const active = exception.active !== false;
   const toggle = async () => {
     if (active) await deactivate.mutateAsync(exception.id);
     else await reactivate.mutateAsync(exception.id);
   };
   const deleteException = async () => {
-    if (window.confirm("Delete this exception? This cannot be undone."))
+    if (
+      await showConfirm("Delete this exception? This cannot be undone.", {
+        title: "Delete exception",
+        confirmLabel: "Delete",
+      })
+    )
       await remove.mutateAsync(exception.id);
   };
   return <div className="flex flex-wrap items-center justify-end gap-1">
@@ -689,13 +1052,15 @@ function HistoryTable({
   runs: any[];
   onOpenRun: (runId: number) => void;
 }) {
+  const paging = useClientPagination(runs, runs.length);
   return (
+    <>
     <Table
       headers={["Policy", "Run type", "Employees", "Results", "Evaluated at"]}
       empty="No run history yet."
     >
       <>
-        {runs.map((item) => (
+        {paging.items.map((item) => (
           <tr
             key={item.id}
             className="cursor-pointer hover:bg-pink-50/30"
@@ -720,12 +1085,37 @@ function HistoryTable({
         ))}
       </>
     </Table>
+    <ListPagination
+      page={paging.page}
+      pageSize={paging.pageSize}
+      total={paging.total}
+      onPageChange={paging.setPage}
+    />
+    </>
   );
 }
 
 function formatDateTime(value: string) {
   if (!value) return "—";
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value.replace(" ", "T") + (value.endsWith("Z") ? "" : "Z")));
+}
+
+function policyCanRun(policy: { active?: boolean; lifecycle_status?: string }) {
+  return Boolean(policy.active) && policy.lifecycle_status !== "archived";
+}
+
+function policyStatusLabel(policy: { active?: boolean; lifecycle_status?: string }) {
+  if (policy.active) return "Active";
+  if (policy.lifecycle_status === "draft") return "Draft";
+  if (policy.lifecycle_status === "archived") return "Archived";
+  return "Inactive";
+}
+
+function policyStatusClass(policy: { active?: boolean; lifecycle_status?: string }) {
+  if (policy.active) return "";
+  if (policy.lifecycle_status === "draft") return "draft";
+  if (policy.lifecycle_status === "archived" || !policy.active) return "pending";
+  return "";
 }
 function Table({
   children,
@@ -745,7 +1135,7 @@ function Table({
   return (
     <div className="overflow-x-auto">
       <SortableTable className="w-full min-w-[760px] text-left">
-        <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
+        <thead>
           <tr>
             {hasSelection ? (
               <th className="w-10 px-5 py-4">
@@ -783,19 +1173,7 @@ export function ScopeChecklist({
 }) {
   const [query, setQuery] = useState("");
 
-  if (appliesTo === "all") {
-    return (
-      <div className="sm:col-span-2 rounded-2xl border border-pink-200/80 bg-gradient-to-r from-pink-50/70 to-slate-50 p-4 text-slate-700 shadow-sm">
-        <p className="font-semibold text-brand-pink flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4" />
-          Applies to All Employees
-        </p>
-        <p className="mt-1 text-xs text-slate-500">
-          This policy will automatically apply to and evaluate all active employees in the organization.
-        </p>
-      </div>
-    );
-  }
+  if (appliesTo === "all") return null;
 
   const labelText =
     appliesTo === "department"
@@ -816,40 +1194,32 @@ export function ScopeChecklist({
   return (
     <div className="sm:col-span-2 space-y-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <span className="label text-slate-700 font-semibold">Select {labelText}</span>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+        <span className="label mb-0 text-slate-700">
+          Select {labelText}
+          {selected.length > 0 ? ` (${selected.length})` : ""}
+        </span>
+        <div className="relative w-full sm:w-56">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Search ${labelText.toLowerCase()}...`}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 text-xs text-slate-700 outline-none focus:border-brand-pink/40 focus:bg-white focus:ring-2 focus:ring-brand-pink/10"
+            className="field pl-8"
           />
         </div>
       </div>
 
-      <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 flex items-center justify-between">
-        <span>
-          💡 <strong>Note:</strong> If no {labelText.toLowerCase()} are selected, this policy will automatically apply to <strong>all employees</strong>.
-        </span>
-        {selected.length > 0 && (
-          <span className="text-[11px] font-semibold text-brand-pink">
-            {selected.length} selected
-          </span>
-        )}
-      </div>
-
-      <div className="grid max-h-44 gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+      <div className="grid max-h-40 gap-1.5 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 sm:grid-cols-2">
         {filtered.length === 0 ? (
-          <p className="sm:col-span-2 text-center text-xs text-slate-400 py-3">
+          <p className="sm:col-span-2 text-center text-xs text-slate-400 py-2">
             No matching {labelText.toLowerCase()} found.
           </p>
         ) : (
           filtered.map((item: any) => (
             <label
               key={item.id}
-              className="flex cursor-pointer items-center gap-3 rounded-lg bg-white px-3 py-2 text-sm text-slate-700 shadow-sm hover:border-pink-200 transition-colors"
+              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-pink-50"
             >
               <input
                 type="checkbox"
@@ -858,7 +1228,7 @@ export function ScopeChecklist({
                 className="h-4 w-4 accent-pink-600 rounded"
               />
               <div className="min-w-0 flex-1">
-                <span className="block truncate font-medium text-slate-800">{item.name}</span>
+                <span className="block truncate text-slate-800">{item.name}</span>
                 {item.department && appliesTo === "employee" && (
                   <span className="block truncate text-xs text-slate-400">
                     {item.department} {item.job_title ? `· ${item.job_title}` : ""}
@@ -907,13 +1277,8 @@ export function AlertCadenceSelector({
 
   return (
     <div className="space-y-2 sm:col-span-2">
-      <span className="label text-slate-700 font-semibold">
-        When to send reminders
-      </span>
-      <p className="text-xs text-slate-500">
-        Choose how far before the expiry date the employee should be reminded:
-      </p>
-      <div className="flex flex-wrap gap-2 pt-1">
+      <span className="label">Reminders</span>
+      <div className="flex flex-wrap gap-1.5">
         {PRESETS.map((preset) => {
           const isSelected = currentDays.includes(preset.days);
           return (
@@ -921,13 +1286,12 @@ export function AlertCadenceSelector({
               key={preset.days}
               type="button"
               onClick={() => toggleDay(preset.days)}
-              className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
                 isSelected
-                  ? "bg-brand-pink text-white shadow-sm shadow-pink-200"
+                  ? "bg-brand-pink text-white"
                   : "bg-white text-slate-600 border border-slate-200 hover:border-pink-300 hover:text-brand-pink"
               }`}
             >
-              {isSelected ? "✓ " : "+ "}
               {preset.label}
             </button>
           );
@@ -950,210 +1314,186 @@ function TypeSpecificFields({
 }) {
   if (typeCode === "document_requirement") {
     return (
-      <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-        <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-          Document Requirement Settings
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Extra days to submit">
+      <>
+        <Field label="Extra days to submit">
+          <input
+            type="number"
+            min="0"
+            className="field"
+            value={form.grace_period_days}
+            onChange={(e) =>
+              setForm({ ...form, grace_period_days: e.target.value })
+            }
+          />
+        </Field>
+        <div className="flex items-end pb-1">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
             <input
-              type="number"
-              min="0"
-              className="field"
-              value={form.grace_period_days}
+              type="checkbox"
+              checked={form.allow_waiver}
               onChange={(e) =>
-                setForm({ ...form, grace_period_days: e.target.value })
+                setForm({ ...form, allow_waiver: e.target.checked })
               }
+              className="h-4 w-4 accent-pink-600 rounded"
             />
-          </Field>
-          <div className="flex items-center pt-5">
-            <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
-              <input
-                type="checkbox"
-                checked={form.allow_waiver}
-                onChange={(e) =>
-                  setForm({ ...form, allow_waiver: e.target.checked })
-                }
-                className="h-4 w-4 accent-pink-600 rounded"
-              />
-              Allow exceptions or waivers
-            </label>
-          </div>
+            Allow exceptions
+          </label>
         </div>
-      </div>
+      </>
     );
   }
 
   if (typeCode === "renewable_document") {
     return (
-      <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-          Expiration Alert Settings
-        </p>
-
+      <>
         <AlertCadenceSelector
           value={form.alert_schedule_days}
           onChange={(val) => setForm({ ...form, alert_schedule_days: val })}
         />
-
-        <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
-          <Field label="Also notify HR admin">
-            <ThemedSelect
-              value={String(form.escalate_hr_days)}
-              onChange={(val) =>
-                setForm({ ...form, escalate_hr_days: Number(val) })
-              }
-              options={[
-                { value: "15", label: "15 days before expiry" },
-                { value: "7", label: "7 days before expiry" },
-                { value: "3", label: "3 days before expiry" },
-                { value: "1", label: "1 day before expiry" },
-                { value: "0", label: "On expiry day" },
-              ]}
-            />
-          </Field>
-
-          <Field label="Extra days after expiry">
+        <Field label="Also notify HR">
+          <ThemedSelect
+            value={String(form.escalate_hr_days)}
+            onChange={(val) =>
+              setForm({ ...form, escalate_hr_days: Number(val) })
+            }
+            options={[
+              { value: "15", label: "15 days before expiry" },
+              { value: "7", label: "7 days before expiry" },
+              { value: "3", label: "3 days before expiry" },
+              { value: "1", label: "1 day before expiry" },
+              { value: "0", label: "On expiry day" },
+            ]}
+          />
+        </Field>
+        <Field label="Extra days after expiry">
+          <input
+            type="number"
+            min="0"
+            className="field"
+            value={form.grace_period_days}
+            onChange={(e) =>
+              setForm({ ...form, grace_period_days: e.target.value })
+            }
+          />
+        </Field>
+        <div className="flex items-end pb-1 sm:col-span-2">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
             <input
-              type="number"
-              min="0"
-              className="field"
-              value={form.grace_period_days}
+              type="checkbox"
+              checked={form.auto_request_renewal}
               onChange={(e) =>
-                setForm({ ...form, grace_period_days: e.target.value })
+                setForm({ ...form, auto_request_renewal: e.target.checked })
               }
+              className="h-4 w-4 accent-pink-600 rounded"
             />
-          </Field>
-
-          <div className="flex items-center pt-5">
-            <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
-              <input
-                type="checkbox"
-                checked={form.auto_request_renewal}
-                onChange={(e) =>
-                  setForm({ ...form, auto_request_renewal: e.target.checked })
-                }
-                className="h-4 w-4 accent-pink-600 rounded"
-              />
-              Create a task for the employee to upload a new copy
-            </label>
-          </div>
+            Create a renewal task for the employee
+          </label>
         </div>
-      </div>
+      </>
     );
   }
 
   if (typeCode === "compliance_request") {
     return (
-      <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-        <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-          Compliance Request Settings
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="When should this start?">
-            <ThemedSelect
-              value={form.event_trigger}
-              onChange={(val) => setForm({ ...form, event_trigger: val })}
-              options={Object.entries(EVENT_TRIGGER_LABELS).map(([value, label]) => ({
-                value,
-                label,
-              }))}
-            />
-          </Field>
-          <Field label="Days to submit documents">
-            <input
-              type="number"
-              min="1"
-              className="field"
-              value={form.due_days}
-              onChange={(e) =>
-                setForm({ ...form, due_days: Number(e.target.value) })
-              }
-            />
-          </Field>
-          <Field label="Send reminder every (days)">
-            <input
-              type="number"
-              min="1"
-              className="field"
-              value={form.reminder_frequency_days}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  reminder_frequency_days: Number(e.target.value),
-                })
-              }
-            />
-          </Field>
-          <Field label="Who follows up?">
-            <ThemedSelect
-              value={String(form.assigned_reviewer_id || "")}
-              onChange={(val) =>
-                setForm({ ...form, assigned_reviewer_id: val })
-              }
-              placeholder="Select HR contact"
-              options={(targets?.users || []).map((u: any) => ({
-                value: String(u.id),
-                label: u.name,
-              }))}
-            />
-          </Field>
-        </div>
-      </div>
+      <>
+        <Field label="When should this start?">
+          <ThemedSelect
+            value={form.event_trigger}
+            onChange={(val) => setForm({ ...form, event_trigger: val })}
+            options={Object.entries(EVENT_TRIGGER_LABELS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
+        </Field>
+        <Field label="Days to submit">
+          <input
+            type="number"
+            min="1"
+            className="field"
+            value={form.due_days}
+            onChange={(e) =>
+              setForm({ ...form, due_days: Number(e.target.value) })
+            }
+          />
+        </Field>
+        <Field label="Reminder every (days)">
+          <input
+            type="number"
+            min="1"
+            className="field"
+            value={form.reminder_frequency_days}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                reminder_frequency_days: Number(e.target.value),
+              })
+            }
+          />
+        </Field>
+        <Field label="Who follows up?">
+          <ThemedSelect
+            value={String(form.assigned_reviewer_id || "")}
+            onChange={(val) =>
+              setForm({ ...form, assigned_reviewer_id: val })
+            }
+            placeholder="Select HR contact"
+            options={(targets?.users || []).map((u: any) => ({
+              value: String(u.id),
+              label: u.name,
+            }))}
+          />
+        </Field>
+      </>
     );
   }
 
   if (typeCode === "retention") {
     return (
-      <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-        <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
-          Review Schedule Settings
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="How often to check">
-            <ThemedSelect
-              value={form.audit_frequency}
-              onChange={(val) => setForm({ ...form, audit_frequency: val })}
-              options={Object.entries(AUDIT_FREQUENCY_LABELS).map(([value, label]) => ({
-                value,
-                label,
-              }))}
-            />
-          </Field>
-          <Field label="How many people to check (%)">
-            <input
-              type="number"
-              min="1"
-              max="100"
-              className="field"
-              value={form.sample_pct}
-              onChange={(e) =>
-                setForm({ ...form, sample_pct: Number(e.target.value) })
-              }
-            />
-          </Field>
-          <Field label="Who runs the check?" full>
-            <ThemedSelect
-              value={String(form.assigned_auditor_id || "")}
-              onChange={(val) =>
-                setForm({ ...form, assigned_auditor_id: val })
-              }
-              placeholder="Select HR contact"
-              options={(targets?.users || []).map((u: any) => ({
-                value: String(u.id),
-                label: u.name,
-              }))}
-            />
-          </Field>
-        </div>
-      </div>
+      <>
+        <Field label="How often to check">
+          <ThemedSelect
+            value={form.audit_frequency}
+            onChange={(val) => setForm({ ...form, audit_frequency: val })}
+            options={Object.entries(AUDIT_FREQUENCY_LABELS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
+        </Field>
+        <Field label="Sample size (%)">
+          <input
+            type="number"
+            min="1"
+            max="100"
+            className="field"
+            value={form.sample_pct}
+            onChange={(e) =>
+              setForm({ ...form, sample_pct: Number(e.target.value) })
+            }
+          />
+        </Field>
+        <Field label="Who runs the check?" full>
+          <ThemedSelect
+            value={String(form.assigned_auditor_id || "")}
+            onChange={(val) =>
+              setForm({ ...form, assigned_auditor_id: val })
+            }
+            placeholder="Select HR contact"
+            options={(targets?.users || []).map((u: any) => ({
+              value: String(u.id),
+              label: u.name,
+            }))}
+          />
+        </Field>
+      </>
     );
   }
 
   return null;
 }
 
-function PolicyForm({
+export function PolicyForm({
   form,
   setForm,
   types,
@@ -1163,6 +1503,7 @@ function PolicyForm({
   submitError,
   onClose,
   onSubmit,
+  organizationalMode,
 }: any) {
   const [step, setStep] = useState<"configure" | "review">("configure");
   const [formError, setFormError] = useState("");
@@ -1220,12 +1561,13 @@ function PolicyForm({
   return (
     <ModalDialog
       title={step === "configure" ? "Create policy" : "Review policy"}
-      eyebrow="Compliance engine"
+      eyebrow={organizationalMode ? "New policy" : "Compliance engine"}
       onClose={onClose}
-      size="3xl"
+      size="xl"
+      zIndex={organizationalMode ? 110 : 50}
     >
       {step === "configure" ? (
-      <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
         <Field label="Policy name">
           <input
             required
@@ -1247,31 +1589,20 @@ function PolicyForm({
         </Field>
         <Field label="Description" full>
           <textarea
-            className="field"
+            rows={2}
+            className="field min-h-[4.5rem]"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </Field>
-
-        <TypeSpecificFields
-          typeCode={typeCode}
-          form={form}
-          setForm={setForm}
-          targets={targets}
-        />
-
-        <Field label="Which documents are needed?">
-          <PolicyTypeMultiSelect
-            types={documents}
-            selected={form.document_type_ids}
-            onChange={(document_type_ids) =>
-              setForm({ ...form, document_type_ids })
-            }
-            error={
-              formError === "Select at least one required document type."
-                ? formError
-                : undefined
-            }
+        <Field label="Status">
+          <ThemedSelect
+            value={form.active === false ? "inactive" : "active"}
+            onChange={(value) => setForm({ ...form, active: value === "active" })}
+            options={[
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+            ]}
           />
         </Field>
         <Field label="Applies to">
@@ -1294,6 +1625,29 @@ function PolicyForm({
           selected={form.scope_ids}
           onToggle={toggleScope}
         />
+
+        <TypeSpecificFields
+          typeCode={typeCode}
+          form={form}
+          setForm={setForm}
+          targets={targets}
+        />
+
+        <div className="sm:col-span-2">
+          <span className="label">Required documents</span>
+          <PolicyTypeMultiSelect
+            types={documents}
+            selected={form.document_type_ids}
+            onChange={(document_type_ids) =>
+              setForm({ ...form, document_type_ids })
+            }
+            error={
+              formError === "Select at least one required document type."
+                ? formError
+                : undefined
+            }
+          />
+        </div>
         <Field label="Schedule">
           <ThemedSelect
             value={form.schedule}
@@ -1317,7 +1671,7 @@ function PolicyForm({
             }
           />
         </Field>
-        <Field label="How many copies are needed?">
+        <Field label="Copies needed">
           <input
             required
             min="1"
@@ -1329,24 +1683,26 @@ function PolicyForm({
             }
           />
         </Field>
-        <Field label="Extra days before marked missing">
-          <input
-            required
-            min="0"
-            type="number"
-            className="field"
-            value={form.grace_period_days}
-            onChange={(e) =>
-              setForm({ ...form, grace_period_days: e.target.value })
-            }
-          />
-        </Field>
+        {typeCode !== "document_requirement" && typeCode !== "renewable_document" ? (
+          <Field label="Grace period (days)">
+            <input
+              required
+              min="0"
+              type="number"
+              className="field"
+              value={form.grace_period_days}
+              onChange={(e) =>
+                setForm({ ...form, grace_period_days: e.target.value })
+              }
+            />
+          </Field>
+        ) : null}
         {(formError || submitError) && (
           <p className="sm:col-span-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
             {formError || submitError}
           </p>
         )}
-        <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 sm:col-span-2">
+        <div className="flex justify-end gap-3 border-t border-slate-100 pt-3 sm:col-span-2">
           <button
             type="button"
             onClick={onClose}
@@ -1355,7 +1711,7 @@ function PolicyForm({
             Cancel
           </button>
           <button
-            className="rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-5 py-2.5 text-sm font-semibold text-white"
+            className="app-btn app-btn-primary"
           >
             Review
           </button>
@@ -1424,7 +1780,7 @@ function PolicyForm({
               type="button"
               disabled={pending}
               onClick={(event) => submit(event as unknown as FormEvent)}
-              className="rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-5 py-2.5 text-sm font-semibold text-white"
+              className="app-btn app-btn-primary"
             >
               {pending ? "Saving..." : "Confirm"}
             </button>
@@ -1478,9 +1834,28 @@ function ExceptionForm({
   );
 }
 function EmployeeChecklist({ employees, form, setForm }: any) {
-  const [query, setQuery] = useState("");
-  const visible = employees.filter((item: any) => item.name.toLowerCase().includes(query.toLowerCase()));
-  return <Field label="Employees"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search employees..." className="field" /><div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-2xl border border-slate-200 p-2">{visible.map((item: any) => <label key={item.id} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-pink-50"><input type="checkbox" checked={form.employee_ids.includes(item.id)} onChange={() => setForm({ ...form, employee_ids: form.employee_ids.includes(item.id) ? form.employee_ids.filter((id: number) => id !== item.id) : [...form.employee_ids, item.id] })} className="h-4 w-4 accent-pink-600" />{item.name}<span className="ml-auto text-xs text-slate-400">{item.department}</span></label>)}</div>{!form.employee_ids.length && <p className="mt-1 text-xs text-red-500">Select at least one employee.</p>}</Field>;
+  return (
+    <Field label="Employees">
+      <EmployeeMetricPicker
+        employees={(employees ?? []).map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          department_name: item.department || item.department_name,
+          job_title: item.job_title,
+          work_location: item.work_location || item.location,
+          employment_type: item.employment_type,
+          status: item.status || item.lifecycle_status,
+          branch: item.branch,
+          grade: item.grade,
+        }))}
+        selectedIds={form.employee_ids}
+        onChange={(ids) => setForm({ ...form, employee_ids: ids })}
+      />
+      {!form.employee_ids.length && (
+        <p className="mt-1 text-xs text-red-500">Select at least one employee.</p>
+      )}
+    </Field>
+  );
 }
 function Field({ label, full, children }: any) {
   return (
@@ -1502,7 +1877,7 @@ function Actions({ pending, onClose }: any) {
       </button>
       <button
         disabled={pending}
-        className="rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-5 py-2.5 text-sm font-semibold text-white"
+              className="app-btn app-btn-primary"
       >
         {pending ? "Saving..." : "Create"}
       </button>

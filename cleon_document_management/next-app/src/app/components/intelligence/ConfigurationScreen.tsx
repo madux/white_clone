@@ -1,8 +1,9 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import SectionTabs from "../SectionTabs";
+import AppSelect from "../AppSelect";
 import { formatFieldLabel } from "../../../../lib/formatLabel";
 import { IntelligenceEmpty, IntelligenceError, IntelligenceLoading } from "./states";
 import ProfilesConfigPanel from "./ProfilesConfigPanel";
@@ -24,6 +25,7 @@ export default function ConfigurationScreen({
 }: {
   section: "types" | "profiles" | "settings" | "audit";
 }) {
+  const router = useRouter();
   const pathname = usePathname();
   const routePath =
     pathname?.replace(/^\/document-management(?=\/|$)/, "") || "/";
@@ -41,13 +43,17 @@ export default function ConfigurationScreen({
   return (
     <div className="space-y-8">
       <SectionTabs
+        level="nested"
+        ariaLabel="Intelligence configuration sections"
+        value={activeTab}
+        onChange={(value) => {
+          const next = TABS.find((tab) => tab.id === value);
+          if (next) router.push(next.href);
+        }}
         items={TABS.map((tab) => ({
           id: tab.id,
           label: tab.name,
-          href: tab.href,
         }))}
-        value={activeTab}
-        ariaLabel="Intelligence configuration sections"
       />
 
       {section === "types" ? <TypesConfigPanel /> : null}
@@ -133,23 +139,22 @@ function AuditLogsPanel() {
       <div className="flex flex-wrap items-end gap-3">
         <label className="block">
           <span className="label">Category</span>
-          <select
-            className="field w-56"
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-          >
-            {AUDIT_CATEGORIES.map((item) => (
-              <option key={item || "all"} value={item}>
-                {item || "All events"}
-              </option>
-            ))}
-          </select>
+          <div className="w-56">
+            <AppSelect
+              value={category || "all"}
+              onChange={(value) => setCategory(value === "all" ? "" : value)}
+              options={AUDIT_CATEGORIES.map((item) => ({
+                value: item || "all",
+                label: item || "All events",
+              }))}
+            />
+          </div>
         </label>
       </div>
       {rows.length ? (
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+            <thead>
               <tr>
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">Actor</th>

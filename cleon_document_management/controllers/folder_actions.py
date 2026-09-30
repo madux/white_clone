@@ -2,17 +2,22 @@ import uuid
 from markupsafe import escape
 
 from odoo import fields, http
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.http import request
 
 
 class DocumentFolderActions(http.Controller):
+    @staticmethod
+    def _org_perm():
+        return request.env["doc.organizational.files.permission"]
+
     @staticmethod
     def _folder(folder):
         return {
             "id": folder.id,
             "folder_name": folder.folder_name,
             "description": folder.description or "",
+            "color_hex": folder.color_hex or "",
             "favorite": request.env.user in folder.favorite_user_ids,
             "pinned": request.env.user in folder.pinned_user_ids,
             "locked": folder.is_locked,
@@ -28,7 +33,17 @@ class DocumentFolderActions(http.Controller):
         if not folder:
             return {"success": False, "message": "Folder not found."}
         folder.check_access_rule("read")
+        org_perm = self._org_perm()
+        is_org = folder.folder_type == "organizational"
 
+        try:
+            return self._run_folder_action(folder, action, org_perm, is_org, **kwargs)
+        except UserError as error:
+            return {"success": False, "message": error.args[0]}
+        except AccessError as error:
+            return {"success": False, "message": error.args[0]}
+
+    def _run_folder_action(self, folder, action, org_perm, is_org, **kwargs):
         if action == "favorite":
             folder.action_toggle_favorite()
         elif action == "pin":
@@ -40,6 +55,11 @@ class DocumentFolderActions(http.Controller):
         elif action == "archive":
             folder.action_archive()
         elif action == "delete":
+            if is_org and not org_perm.user_can_folder_delete(request.env.user):
+                return {
+                    "success": False,
+                    "message": "You do not have permission to delete this folder.",
+                }
             folder.action_move_to_recycle_bin()
         elif action == "restore":
             folder.action_restore()
@@ -66,8 +86,40 @@ class DocumentFolderActions(http.Controller):
                 "message": "Folder and all linked documents were permanently deleted.",
             }
         elif action == "duplicate":
-            folder = folder.action_duplicate()
+            if is_org and not org_perm.user_can_manage_folders(request.env.user):
+                return {
+                    "success": False,
+                    "message": "You do not have permission to duplicate this folder.",
+                }
+            include_documents = bool(kwargs.get("include_documents"))
+            folder = folder.action_duplicate(include_documents=include_documents)
+        elif action == "move" and is_org:
+            if not org_perm.user_can_manage_folders(request.env.user):
+                return {
+                    "success": False,
+                    "message": "You do not have permission to move this folder.",
+                }
+            parent = False
+            if kwargs.get("parent_id"):
+                parent = request.env["doc.folder"].browse(int(kwargs.get("parent_id"))).exists()
+                if not parent or parent.folder_type != "organizational":
+                    return {"success": False, "message": "Destination folder not found."}
+            folder.action_move_folder(parent)
         elif action == "share":
+            folder.assert_unlocked()
+            if is_org:
+                if not org_perm.user_can_share_manage_access(request.env.user):
+                    return {
+                        "success": False,
+                        "message": "You do not have permission to manage access.",
+                    }
+                return {
+                    "success": True,
+                    "data": {
+                        "manage_access": True,
+                        "folder_id": folder.id,
+                    },
+                }
             if not request.env.user.has_group(
                 "cleon_document_management.group_document_manager"
             ):

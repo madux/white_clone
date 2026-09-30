@@ -1,647 +1,196 @@
 "use client";
 
-import {
-  Activity,
-  AlertCircle,
-  ArrowUpRight,
-  BarChart3,
-  BellRing,
-  Brain,
-  CheckCircle2,
-  Clock3,
-  FileText,
-  FolderKanban,
-  Plus,
-  ShieldCheck,
-  Users,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { FolderPlus, Upload } from "lucide-react";
 import Link from "next/link";
-import { documentViewHref } from "../../../lib/documentLinks";
-import { formatStatusLabel } from "../../../lib/formatLabel";
+import { useRouter } from "next/navigation";
+import { documentViewHref, approvalInboxHref } from "../../../lib/documentLinks";
 import {
+  useAdminAttention,
+  useApprovalInbox,
   useDashboardStats,
-  useDocuments,
+  usePendingEmployeeUploads,
   useWorkspaceActivity,
 } from "../../../hooks/useDocuments";
-import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
+import { formatDocumentDate } from "../../../lib/formatDocumentDate";
+import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
+import LibraryFileTable, { type LibraryFileRow } from "./LibraryFileTable";
+import NewMenu from "./NewMenu";
+import StatusPill from "./StatusPill";
+import { Button } from "@/components/ui/button";
 
-function LoadingBlock({ className = "" }: { className?: string }) {
+function TableHeading({
+  title,
+  href,
+  hrefLabel,
+}: {
+  title: string;
+  href?: string;
+  hrefLabel?: string;
+}) {
   return (
-    <div className={`animate-pulse rounded-xl bg-slate-200 ${className}`} />
-  );
-}
-
-function ErrorState({ message }: { message: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
-      <AlertCircle className="h-5 w-5 shrink-0" />
-      <span>{message}</span>
+    <div className="mb-2 flex items-end justify-between gap-3">
+      <h2 className="text-base font-semibold">{title}</h2>
+      {href ? (
+        <Button variant="link" size="sm" render={<Link href={href} />}>
+          {hrefLabel || "View all"}
+        </Button>
+      ) : null}
     </div>
   );
 }
 
-function formatFileSize(bytes: number) {
-  if (bytes < 1000000) return `${Math.round(bytes / 1000)} KB`;
-  return `${(bytes / 1000000).toFixed(1)} MB`;
-}
-
-function formatActivityWhen(value: string) {
-  if (!value) return "—";
-  return new Intl.DateTimeFormat("en", {
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(String(value).replace(" ", "T")));
-}
-
-type ApprovalRingSegment = {
-  label: string;
-  count: number;
-  color: string;
-  dotClass: string;
-};
-
-function buildApprovalRingGradient(
-  segments: ApprovalRingSegment[],
-  total: number,
-): string {
-  if (!total) return "#f1f5f9";
-  let cursor = 0;
-  const stops: string[] = [];
-  for (const segment of segments) {
-    if (!segment.count) continue;
-    const start = cursor;
-    cursor += (segment.count / total) * 100;
-    stops.push(`${segment.color} ${start}% ${cursor}%`);
-  }
-  return stops.length ? `conic-gradient(${stops.join(", ")})` : "#f1f5f9";
-}
-
-const statusStyles = {
-  approved: "bg-pink-50 text-brand-pink",
-  processing: "bg-amber-50 text-amber-700",
-  draft: "bg-slate-100 text-slate-600",
-  rejected: "bg-red-50 text-red-700",
-  expired: "bg-orange-50 text-orange-700",
-  missing: "bg-orange-50 text-orange-700",
-};
-
 export default function Dashboard() {
+  const router = useRouter();
   const stats = useDashboardStats();
-  const documents = useDocuments();
-  const workspaceActivity = useWorkspaceActivity();
-  const dataError = stats.error || documents.error;
-  const documentRows = documents.data ?? [];
-  const documentSpacesPreview = documentRows.slice(0, 10);
-  const totalDocuments = documentRows.length;
-  const approvedCount = documentRows.filter(
-    (document) => document.state === "approved",
-  ).length;
-  const inReviewCount = documentRows.filter(
-    (document) => document.state === "processing",
-  ).length;
-  const draftCount = documentRows.filter(
-    (document) => document.state === "draft",
-  ).length;
-  const issueCount = documentRows.filter(
-    (document) =>
-      document.state === "rejected" ||
-      document.state === "expired" ||
-      document.state === "missing",
-  ).length;
-  const approvalProgress = totalDocuments
-    ? Math.round((approvedCount / totalDocuments) * 100)
-    : 0;
-  const approvalRingSegments: ApprovalRingSegment[] = [
-    {
-      label: "Approved",
-      count: approvedCount,
-      color: "#e83e8c",
-      dotClass: "bg-brand-pink",
-    },
-    {
-      label: "In review",
-      count: inReviewCount,
-      color: "#f3a6c5",
-      dotClass: "bg-pink-400",
-    },
-    {
-      label: "Draft",
-      count: draftCount,
-      color: "#f7d9e5",
-      dotClass: "bg-pink-100",
-    },
-    {
-      label: "Rejected / expired",
-      count: issueCount,
-      color: "#f5d0e2",
-      dotClass: "bg-pink-200",
-    },
-  ].filter((segment) => segment.count > 0);
-  const approvalRingGradient = buildApprovalRingGradient(
-    approvalRingSegments,
-    totalDocuments,
-  );
-  const statusMetrics = [
-    {
-      label: "Approved",
-      value: documentRows.filter((document) => document.state === "approved")
-        .length,
-      color: "bg-brand-pink",
-    },
-    {
-      label: "Processing",
-      value: documentRows.filter((document) => document.state === "processing")
-        .length,
-      color: "bg-amber-400",
-    },
-    {
-      label: "Draft",
-      value: documentRows.filter((document) => document.state === "draft")
-        .length,
-      color: "bg-slate-300",
-    },
-    {
-      label: "Rejected",
-      value: documentRows.filter((document) => document.state === "rejected")
-        .length,
-      color: "bg-red-400",
-    },
-    {
-      label: "Expired",
-      value: documentRows.filter((document) => document.state === "expired")
-        .length,
-      color: "bg-orange-400",
-    },
+  const approvals = useApprovalInbox();
+  const pendingUploads = usePendingEmployeeUploads();
+  const attention = useAdminAttention();
+  const activity = useWorkspaceActivity();
+
+  const expiring = stats.data?.expiring_items ?? [];
+  const approvalItems = approvals.data?.items ?? [];
+  const uploadItems = pendingUploads.data?.items ?? [];
+  const attentionItems = attention.data?.notifications ?? [];
+  const activityEvents = activity.data?.activity_log ?? [];
+
+  const suggested: LibraryFileRow[] = [
+    ...approvalItems.slice(0, 6).map((item) => ({
+      id: `approval-${item.approval_id}`,
+      kind: "file" as const,
+      name: item.document,
+      subtitle: item.document_type || item.message || "Waiting for review",
+      href: approvalInboxHref(item),
+      owner: item.employee || "—",
+      ownerHref: item.employee_id
+        ? `/pages/employee/profile?employee=${item.employee_id}`
+        : undefined,
+      modified: formatDocumentDate(item.created_at),
+      status: <StatusPill label="Approval" tone="pending" />,
+    })),
+    ...uploadItems.slice(0, 6).map((item) => ({
+      id: `upload-${item.id}`,
+      kind: "file" as const,
+      name: item.name,
+      subtitle: item.document_type || item.department || undefined,
+      href: item.employee_id
+        ? `/pages/employee/profile/?employee=${item.employee_id}`
+        : "/pages/employee?tab=pending-approvals",
+      owner: item.employee_name || "—",
+      ownerHref: item.employee_id
+        ? `/pages/employee/profile/?employee=${item.employee_id}`
+        : undefined,
+      status: (
+        <StatusPill
+          label={
+            item.status === "awaiting_folder"
+              ? "Awaiting folder"
+              : item.status === "awaiting_folder_restore"
+                ? "Awaiting restore"
+                : "Employee upload"
+          }
+          tone="pending"
+        />
+      ),
+    })),
+    ...attentionItems.slice(0, 4).map((item) => ({
+      id: `attention-${item.id}`,
+      kind: "file" as const,
+      name: item.document,
+      subtitle: item.message,
+      href: documentViewHref(
+        { id: item.document_id, employee_id: item.employee_id },
+        true,
+      ),
+      owner: item.employee || "—",
+      status: <StatusPill label="Alert" tone="attention" />,
+    })),
+    ...expiring.slice(0, 4).map((item) => ({
+      id: `expiring-${item.id}`,
+      kind: "file" as const,
+      name: item.name,
+      subtitle: item.expiry_date || "soon",
+      href: documentViewHref(item, true),
+      owner: "—",
+      status: <StatusPill label="Expiring" tone="attention" />,
+    })),
   ];
-  const chartMax = Math.max(...statusMetrics.map((metric) => metric.value), 1);
-  const yTicks =
-    chartMax <= 5
-      ? Array.from({ length: chartMax + 1 }, (_, index) => index)
-      : (() => {
-          const step = Math.ceil(chartMax / 4);
-          const top = step * 4;
-          return [0, step, step * 2, step * 3, top];
-        })();
-  const chartScaleMax = yTicks[yTicks.length - 1] || 1;
-  const statCards: Array<{
-    label: string;
-    value: number | undefined;
-    icon: LucideIcon;
-    caption: string;
-  }> = [
-    {
-      label: "Documents",
-      value: stats.data?.total_documents,
-      icon: FileText,
-      caption: "Total records",
-    },
-    {
-      label: "Folders",
-      value: stats.data?.total_folders,
-      icon: FolderKanban,
-      caption: "Active spaces",
-    },
-    {
-      label: "Expiring soon",
-      value: stats.data?.expiring_documents,
-      icon: Clock3,
-      caption: "Next 30 days",
-    },
-    {
-      label: "Pending approvals",
-      value: stats.data?.pending_approvals,
-      icon: ShieldCheck,
-      caption: "Needs attention",
-    },
-  ];
+
+  const recent: LibraryFileRow[] = activityEvents.slice(0, 12).map((event) => ({
+    id: `${event.id}-${event.occurred_at}`,
+    kind: "file" as const,
+    name: event.message || event.kind,
+    subtitle: event.document_name || event.folder_name || undefined,
+    owner: event.actor_name || "—",
+    modified: formatDocumentDate(event.occurred_at),
+  }));
 
   return (
-    <div className="min-h-full mx-auto w-full max-w-[1650px] space-y-8 bg-slate-50 p-6">
-      <section className="rounded-2xl shadow-brand-secondary/10">
-        <div className="flex justify-end items-center">
-          <div className="flex gap-4">
-            <Link
-              href="/pages/organization?create=1"
-              className="inline-flex gap-2 items-center bg-gradient-to-br from-brand-text to-brand-pink px-4 py-3 rounded-full text-white font-medium inline-block shadow-lg shadow-pink-200"
-            >
-              <Plus className="h-4 w-4" />
-              Add Folder
-            </Link>
-            <Link
-              href="/pages/my-documents?upload=1"
-              className="inline-flex gap-2 items-center bg-white px-4 py-3 rounded-full text-brand-pink font-medium inline-block border border-brand-pink"
-            >
-              Upload Document
-            </Link>
-          </div>
-        </div>
-      </section>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <LibraryBreadcrumbSafe />
+        <NewMenu
+          items={[
+            {
+              label: "Folder",
+              icon: FolderPlus,
+              onSelect: () => router.push("/pages/organization?create=1"),
+            },
+            {
+              label: "File upload",
+              icon: Upload,
+              onSelect: () =>
+                router.push(myWorkspaceHref("documents", { upload: "1" })),
+            },
+          ]}
+        />
+      </div>
 
-      {dataError && (
-        <ErrorState message="Some dashboard data could not be loaded. Please try again." />
-      )}
+      {stats.isError ? (
+        <p className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Some home data could not be loaded.
+        </p>
+      ) : null}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {statCards.map(({ label, value, icon: Icon, caption }, index) => {
-          const isFirst = index === 0;
-          return (
-            <div
-              key={label as string}
-              className={`rounded-2xl border border-slate-200 p-5 ${isFirst ? "bg-gradient-to-br text-white from-brand-text to-brand-pink shadow-lg shadow-pink-200" : "bg-white text-black"}`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium">{label}</p>
-                  {stats.isLoading ? (
-                    <LoadingBlock className="mt-2 h-9 w-16" />
-                  ) : (
-                    <p className="mt-1 text-3xl font-bold tracking-tight">
-                      {value ?? "-"}
-                    </p>
-                  )}
-                </div>
-                <div
-                  className={`rounded-xl p-2.5 ${isFirst ? "bg-white/20 text-white" : "bg-pink-50 text-brand-pink"}`}
-                >
-                  <Icon className="h-5 w-5" />
-                </div>
-              </div>
-              <p
-                className={`mt-3 text-xs ${isFirst ? "text-white" : "text-brand-text"}`}
-              >
-                {caption}
-              </p>
-            </div>
-          );
-        })}
-      </section>
+      <div>
+        <TableHeading
+          title="Suggested"
+          href="/pages/employee?tab=pending-approvals"
+          hrefLabel="Open queue"
+        />
+        <div className="app-page-body">
+          <LibraryFileTable
+            rows={suggested}
+            loading={
+              approvals.isLoading || pendingUploads.isLoading || attention.isLoading
+            }
+            showStatus
+            showModified={false}
+            emptyTitle="Nothing waiting"
+            emptyDescription="Approvals, uploads, and expiries will show up here."
+          />
+        </div>
+      </div>
 
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_1.5fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Your document spaces</h2>
-            <FolderKanban className="h-5 w-5 text-slate-300" />
-          </div>
-          {documents.isLoading ? (
-            <div className="space-y-3">
-              <LoadingBlock className="h-20 w-full" />
-              <LoadingBlock className="h-20 w-full" />
-            </div>
-          ) : documentSpacesPreview.length ? (
-            <div className="space-y-3">
-              {documentSpacesPreview.map((document) => (
-                <Link
-                  href={documentViewHref(document, true)}
-                  key={document.id}
-                  className="group flex items-center justify-between rounded-xl border border-slate-100 p-4 transition hover:border-pink-200 hover:bg-pink-50/40"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-pink-50 text-brand-pink">
-                      <FileText className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-800">
-                        {document.name}
-                      </p>
-                      <p className="mt-1 truncate text-xs text-slate-400">
-                        {document.folder_name || "—"}
-                        {document.document_type
-                          ? ` · ${document.document_type}`
-                          : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="ml-3 flex shrink-0 items-center gap-1 text-xs font-semibold text-slate-400 group-hover:text-brand-pink">
-                    {formatStatusLabel(document.state)}{" "}
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </span>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-500">
-              No documents are available yet.
-            </p>
-          )}
+      <div>
+        <TableHeading title="Recent" href="/pages/dashboard/?tab=activity" />
+        <div className="app-page-body">
+          <LibraryFileTable
+            rows={recent}
+            loading={activity.isLoading}
+            emptyTitle="No recent activity"
+            emptyDescription="Workspace events will appear here as people upload and approve files."
+          />
         </div>
+      </div>
+    </div>
+  );
+}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Workspace log</h2>
-            <Link
-              href="/pages/activity/"
-              className="text-xs font-semibold text-brand-pink hover:underline"
-            >
-              View all
-            </Link>
-          </div>
-          {workspaceActivity.data?.summary.pending_acknowledgement_count ? (
-            <Link
-              href="/pages/organization"
-              className="mb-4 flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
-            >
-              <Clock3 className="h-3.5 w-3.5 shrink-0" />
-              {workspaceActivity.data.summary.pending_acknowledgement_count}{" "}
-              document
-              {workspaceActivity.data.summary.pending_acknowledgement_count === 1
-                ? ""
-                : "s"}{" "}
-              still need acknowledgement
-            </Link>
-          ) : null}
-          {workspaceActivity.isLoading ? (
-            <div className="space-y-3">
-              <LoadingBlock className="h-16 w-full" />
-              <LoadingBlock className="h-16 w-full" />
-              <LoadingBlock className="h-16 w-full" />
-            </div>
-          ) : workspaceActivity.data?.activity_log.length ? (
-            <div className="divide-y divide-slate-100">
-              {workspaceActivity.data.activity_log.slice(0, 5).map((event) => (
-                <Link
-                  key={`${event.id}-${event.occurred_at}`}
-                  href={documentViewHref(event, true)}
-                  className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0 transition hover:bg-pink-50/40"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="rounded-lg bg-pink-50 p-2 text-brand-pink">
-                      <Activity className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-800">
-                        {event.message}
-                      </p>
-                      <p className="mt-1 truncate text-xs text-slate-400">
-                        {event.actor_name} · {event.folder_name}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="shrink-0 text-[10px] font-semibold text-slate-400">
-                    {formatActivityWhen(event.occurred_at)}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center rounded-xl bg-slate-50 p-8 text-center">
-              <CheckCircle2 className="h-7 w-7 text-brand-pink" />
-              <p className="mt-3 text-sm font-semibold text-slate-700">
-                No activity yet
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Uploads, approvals, and acknowledgements will appear here.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.8fr_0.95fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-5 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Document analytics</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                {totalDocuments} document{totalDocuments === 1 ? "" : "s"} by
-                approval status
-              </p>
-            </div>
-            <BarChart3 className="h-5 w-5 text-brand-pink" />
-          </div>
-          <div
-            className="flex gap-3"
-            role="img"
-            aria-label={`Document status chart: ${statusMetrics.map((metric) => `${metric.label} ${metric.value}`).join(", ")}`}
-          >
-            <div className="flex shrink-0 flex-col items-center pt-6 pb-8">
-              <span
-                className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 [writing-mode:vertical-rl] rotate-180"
-                aria-hidden
-              >
-                Documents
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex gap-2">
-                <div className="flex h-48 shrink-0 flex-col justify-between py-1 text-right">
-                  {[...yTicks].reverse().map((tick) => (
-                    <span
-                      key={tick}
-                      className="text-[10px] font-medium tabular-nums text-slate-400"
-                    >
-                      {tick}
-                    </span>
-                  ))}
-                </div>
-                <div className="relative min-w-0 flex-1 border-b border-l border-slate-200">
-                  {yTicks.map((tick) => (
-                    <div
-                      key={`grid-${tick}`}
-                      className="pointer-events-none absolute left-0 right-0 border-t border-slate-100"
-                      style={{ bottom: `${(tick / chartScaleMax) * 100}%` }}
-                    />
-                  ))}
-                  <div className="relative flex h-48 items-end justify-between gap-2 px-2">
-                    {statusMetrics.map((metric) => {
-                      const barHeight =
-                        metric.value === 0
-                          ? 0
-                          : Math.max(4, (metric.value / chartScaleMax) * 100);
-                      return (
-                        <div
-                          key={metric.label}
-                          className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
-                        >
-                          <span className="mb-1 text-xs font-bold tabular-nums text-slate-700">
-                            {metric.value}
-                          </span>
-                          <div
-                            className={`w-full max-w-10 rounded-t-md ${metric.color} transition-all`}
-                            style={{ height: `${barHeight}%` }}
-                            title={`${metric.label}: ${metric.value}`}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              <div className="ml-10 mt-2 flex justify-between gap-2 px-2">
-                {statusMetrics.map((metric) => (
-                  <span
-                    key={metric.label}
-                    className="min-w-0 flex-1 text-center text-[10px] font-semibold text-slate-500"
-                  >
-                    {metric.label}
-                  </span>
-                ))}
-              </div>
-              <p className="ml-10 mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Status
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Reminders</h2>
-            <BellRing className="h-5 w-5 text-brand-pink" />
-          </div>
-          <div className="mt-7">
-            <p className="text-2xl font-semibold leading-tight tracking-[-0.04em] text-brand-text">
-              {stats.data?.expiring_documents
-                ? "Review expiring documents"
-                : "Workspace is up to date"}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              {stats.data?.expiring_documents
-                ? `${stats.data.expiring_documents} document${stats.data.expiring_documents === 1 ? "" : "s"} need attention within 30 days.`
-                : "No renewal reminders are waiting for you."}
-            </p>
-            <Link
-              href={
-                stats.data?.expiring_items?.[0]
-                  ? documentViewHref(stats.data.expiring_items[0], true)
-                  : "/pages/organization/"
-              }
-              className="mt-7 flex items-center justify-center gap-2 rounded-full bg-brand-pink px-4 py-3 text-sm font-bold text-white transition hover:bg-brand-text"
-            >
-              {stats.data?.expiring_documents ? "Review now" : "Browse records"}{" "}
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Team activity</h2>
-            <Users className="h-5 w-5 text-brand-pink" />
-          </div>
-          <div className="mt-5 space-y-4">
-            {documentRows.slice(0, 3).map((document, index) => {
-              const name =
-                document.employee_name !== "N/A"
-                  ? document.employee_name
-                  : document.folder_name;
-              const initials = name
-                .split(" ")
-                .map((part) => part[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase();
-              return (
-                <div key={document.id} className="flex items-center gap-3">
-                  <div
-                    className={`flex h-9 w-9 items-center justify-center rounded-full ${["bg-pink-100", "bg-pink-200", "bg-pink-50"][index]} text-xs font-bold text-brand-text`}
-                  >
-                    {initials}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-800">
-                      {name}
-                    </p>
-                    <p className="truncate text-xs text-slate-400">
-                      {formatStatusLabel(document.state)} document
-                    </p>
-                  </div>
-                  <span className="ml-auto text-[10px] text-slate-400">
-                    {formatDocumentDateShort(document.created_at)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr_0.8fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Approval status</h2>
-            <ShieldCheck className="h-5 w-5 text-brand-pink" />
-          </div>
-          <div className="mt-6 flex items-center justify-center">
-            <div
-              className="relative flex h-44 w-44 items-center justify-center rounded-full"
-              style={{ background: approvalRingGradient }}
-            >
-              <div className="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-white">
-                <span className="text-4xl font-semibold tracking-[-0.06em] text-slate-950">
-                  {documents.isLoading ? "-" : `${approvalProgress}%`}
-                </span>
-                <span className="text-xs text-slate-400">approved</span>
-              </div>
-            </div>
-          </div>
-          <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] font-semibold text-slate-500">
-            {approvalRingSegments.length ? (
-              approvalRingSegments.map((segment) => (
-                <span
-                  key={segment.label}
-                  className="flex items-center gap-1.5"
-                >
-                  <i
-                    className={`h-2 w-2 rounded-full ${segment.dotClass}`}
-                  />
-                  {segment.label} ({segment.count})
-                </span>
-              ))
-            ) : (
-              <span className="text-slate-400">No documents yet</span>
-            )}
-          </div>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Quick actions</h2>
-            <ArrowUpRight className="h-5 w-5 text-brand-pink" />
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <Link
-              href="/pages/employee"
-              className="flex items-center justify-between rounded-xl border border-pink-100 bg-pink-50/50 p-4 text-sm font-semibold text-brand-text transition hover:bg-pink-100"
-            >
-              <span className="flex items-center gap-3">
-                <Users className="h-4 w-4" />
-                Employee files
-              </span>
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/pages/organization"
-              className="flex items-center justify-between rounded-xl border border-pink-100 bg-pink-50/50 p-4 text-sm font-semibold text-brand-text transition hover:bg-pink-100"
-            >
-              <span className="flex items-center gap-3">
-                <FolderKanban className="h-4 w-4" />
-                Organizational Files
-              </span>
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/pages/document-intelligence/ask"
-              className="flex items-center justify-between rounded-xl border border-pink-100 bg-pink-50/50 p-4 text-sm font-semibold text-brand-text transition hover:bg-pink-100"
-            >
-              <span className="flex items-center gap-3">
-                <Brain className="h-4 w-4" />
-                Ask AI
-              </span>
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-        <div className="flex flex-col justify-center rounded-2xl bg-gradient-to-br from-brand-text to-brand-pink p-6 text-white shadow-lg shadow-pink-200">
-          <Link
-            href="/pages/document-intelligence"
-            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-brand-text transition hover:bg-pink-50"
-          >
-            Open Document Intelligence <ArrowUpRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
+function LibraryBreadcrumbSafe() {
+  return (
+    <div>
+      <h1 className="text-lg font-semibold">Home</h1>
+      <p className="text-sm text-muted-foreground">Suggested files and recent activity</p>
     </div>
   );
 }

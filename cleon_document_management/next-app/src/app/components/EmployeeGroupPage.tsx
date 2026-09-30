@@ -2,23 +2,27 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { backButtonChromeClassName } from "./BackButton";
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import {
   useEmployeeFileGroup,
   useEmployeeFileGroups,
   useEmployeeFileSummaries,
+  useEmployeeGroupMembers,
 } from "../../../hooks/useEmployeeFiles";
 import { EMPLOYEE_FILE_LIST_PAGE_SIZE } from "../../../lib/employeeFileListPageSize";
 import ListPagination from "./ListPagination";
 import { api } from "../../../lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { EMPLOYEE_FILES_KEYS } from "../../../hooks/useEmployeeFiles";
-import EmployeeFilesGroupExplorer from "./EmployeeFilesGroupExplorer";
-import { filterGroupsToSubtree } from "../../../lib/employeeGroupTreeRows";
-import type { EmployeeFileGroup } from "../../../lib/types";
+import OrgFolderIcon from "./OrgFolderIcon";
+import { loadEmployeeFilesBrowsePreferences } from "../../../lib/employeeFilesBrowsePreferences";
+import EmployeeFilesEmployeeResults from "./EmployeeFilesEmployeeResults";
+import ThemedSelect from "./ThemedSelect";
+import {
+  EMPLOYEE_FILES_EMPLOYEE_COLUMNS,
+  type EmployeeFilesEmployeeColumnId,
+} from "../../../lib/employeeFilesBrowsePreferences";
 
 function employeeInitials(name: string) {
   return name
@@ -162,6 +166,11 @@ function AddEmployeeFilePicker({
   );
 }
 
+const DEFAULT_EMPLOYEE_COLUMNS: EmployeeFilesEmployeeColumnId[] =
+  EMPLOYEE_FILES_EMPLOYEE_COLUMNS.filter((column) => column.defaultVisible).map(
+    (column) => column.id,
+  );
+
 export default function EmployeeGroupPage() {
   const params = useSearchParams();
   const router = useRouter();
@@ -179,6 +188,15 @@ export default function EmployeeGroupPage() {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<number[]>([]);
   const [adding, setAdding] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [memberPage, setMemberPage] = useState(1);
+  const [memberSort, setMemberSort] = useState(
+    () => loadEmployeeFilesBrowsePreferences().employeeSort,
+  );
+  const [memberAttentionFilter, setMemberAttentionFilter] = useState(() => {
+    const value = params.get("attention");
+    return value === "needs_attention" || value === "ok" ? value : "all";
+  });
   const isCreate = params.get("create") === "1";
 
   const readOnly = group.data?.read_only_membership === true;
@@ -189,29 +207,31 @@ export default function EmployeeGroupPage() {
     }
   }, [isCreate, router]);
 
+  useEffect(() => {
+    setMemberPage(1);
+  }, [memberSearch, memberSort, memberAttentionFilter, groupId]);
+
+  const memberList = useEmployeeGroupMembers(
+    groupId,
+    memberSearch.trim() || undefined,
+    memberPage,
+    EMPLOYEE_FILE_LIST_PAGE_SIZE,
+    Boolean(groupId && group.data),
+    memberSort,
+    memberAttentionFilter,
+  );
+
+  const childGroups = useMemo(() => {
+    if (!group.data || !dimensionGroups.data?.length) return [];
+    return dimensionGroups.data
+      .filter((item) => item.parent_group_id === groupId)
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }, [dimensionGroups.data, group.data, groupId]);
+
   const memberFileIds = useMemo(
     () => new Set((group.data?.members ?? []).map((member) => member.id)),
     [group.data?.members],
   );
-
-  const explorerGroups = useMemo((): EmployeeFileGroup[] => {
-    if (!group.data) return [];
-    const stripMembers = (item: EmployeeFileGroup): EmployeeFileGroup => ({
-      ...item,
-      member_employee_ids: [],
-    });
-    if (group.data.group_kind === "custom") {
-      return [stripMembers(group.data)];
-    }
-    const siblings = dimensionGroups.data ?? [];
-    if (siblings.length) {
-      const subtree = filterGroupsToSubtree(siblings, groupId);
-      if (subtree.length) {
-        return subtree.map(stripMembers);
-      }
-    }
-    return [stripMembers(group.data)];
-  }, [dimensionGroups.data, group.data, groupId]);
 
   const toggleSelected = (id: number) => {
     setSelected((current) =>
@@ -226,6 +246,7 @@ export default function EmployeeGroupPage() {
       await api.addEmployeeFilesToGroup(groupId, selected);
       setSelected([]);
       queryClient.invalidateQueries({ queryKey: EMPLOYEE_FILES_KEYS.group(groupId) });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "group-members", groupId] });
     } finally {
       setAdding(false);
     }
@@ -237,14 +258,7 @@ export default function EmployeeGroupPage() {
 
   if (!group.isLoading && (group.isError || !group.data)) {
     return (
-      <div className="min-h-full mx-auto w-full max-w-[1650px] space-y-4 bg-slate-50 p-6 pb-10">
-        <Link
-          href="/pages/employee"
-          className={`${backButtonChromeClassName} no-underline hover:no-underline`}
-        >
-          <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
-          Employee Files
-        </Link>
+      <div className="app-page space-y-4">
         <p className="text-sm text-slate-600">
           This group is no longer available. It may have been replaced during an Employee Files
           reorganize.
@@ -254,17 +268,25 @@ export default function EmployeeGroupPage() {
   }
 
   return (
-    <div className="min-h-full mx-auto w-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
+    <div className="app-page space-y-6">
       <div>
-        <Link
-          href="/pages/employee"
-          className={`${backButtonChromeClassName} no-underline hover:no-underline`}
-        >
-          <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
-          Employee Files
-        </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <h1 className="text-xl font-bold text-slate-900">{group.data?.name}</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          {group.data ? (
+            <OrgFolderIcon
+              className="h-10 w-10 shrink-0"
+              hasContent={
+                group.data.document_count > 0 || group.data.employee_count > 0
+              }
+            />
+          ) : null}
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">{group.data?.name}</h1>
+            {group.data ? (
+              <p className="mt-1 text-sm text-slate-500">
+                {group.data.employee_count} people · {group.data.document_count} files
+              </p>
+            ) : null}
+          </div>
           {group.data?.group_kind === "custom" ? (
             <span className="employee-tree-badge probation text-[10px] uppercase tracking-wide">
               Custom
@@ -273,18 +295,58 @@ export default function EmployeeGroupPage() {
         </div>
       </div>
 
-      {explorerGroups.length ? (
-        <EmployeeFilesGroupExplorer groups={explorerGroups} search="" />
-      ) : group.isLoading || (isSystemManaged && dimensionGroups.isLoading) ? (
-        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
-          <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
-          <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
+      {childGroups.length ? (
+        <div className="flex flex-wrap gap-2">
+          {childGroups.map((child) => (
+            <Link
+              key={child.id}
+              href={`/pages/employee/group?id=${child.id}`}
+              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-brand-pink hover:text-brand-pink"
+            >
+              {child.name}
+              <span className="ml-1 text-slate-400">({child.employee_count})</span>
+            </Link>
+          ))}
         </div>
-      ) : (
-        <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
-          No employees are listed for this group yet.
-        </p>
-      )}
+      ) : null}
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3">
+          <label className="relative block min-w-[200px] flex-1 max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              className="field w-full pl-10 text-sm"
+              placeholder="Search people in this group…"
+              value={memberSearch}
+              onChange={(event) => setMemberSearch(event.target.value)}
+            />
+          </label>
+          <div className="w-44">
+            <ThemedSelect
+              value={memberAttentionFilter}
+              onChange={setMemberAttentionFilter}
+              options={[
+                { value: "all", label: "All statuses" },
+                { value: "needs_attention", label: "Needs attention" },
+                { value: "ok", label: "OK" },
+              ]}
+            />
+          </div>
+        </div>
+        <EmployeeFilesEmployeeResults
+          items={memberList.data?.items ?? []}
+          total={memberList.data?.total ?? 0}
+          page={memberPage}
+          pageSize={EMPLOYEE_FILE_LIST_PAGE_SIZE}
+          onPageChange={setMemberPage}
+          layoutMode="list"
+          visibleColumns={DEFAULT_EMPLOYEE_COLUMNS}
+          sortKey={memberSort}
+          onSortChange={setMemberSort}
+          isLoading={memberList.isLoading && !memberList.data}
+        />
+      </div>
 
       {!readOnly && group.data?.group_kind === "custom" ? (
         <AddEmployeeFilePicker

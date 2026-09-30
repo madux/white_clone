@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from odoo import api, fields, models, _
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class DocumentFolder(models.Model):
@@ -38,6 +38,28 @@ class DocumentFolder(models.Model):
         string="Folder Type",
         required=True,
         default="organizational",
+    )
+
+    folder_kind = fields.Selection(
+        [
+            ("folder", "Folder"),
+            ("project", "Project"),
+            ("vendor", "Vendor"),
+        ],
+        string="Organizational kind",
+        default="folder",
+    )
+    collection_code = fields.Char(string="Collection ID", copy=False, index=True)
+    organize_by = fields.Selection(
+        [
+            ("none", "None"),
+            ("department", "Department"),
+            ("grade", "Grade"),
+            ("location", "Location"),
+            ("employment_type", "Employment type"),
+        ],
+        default="none",
+        string="Organize by",
     )
 
     is_employee_file_v3 = fields.Boolean(
@@ -147,6 +169,7 @@ class DocumentFolder(models.Model):
             ("location", "By Location"),
             ("individual", "Individual Employees"),
             ("admin_only", "Admin Only"),
+            ("private", "Private (creator and administrators)"),
         ],
         string="Access Permission",
         required=True,
@@ -240,6 +263,8 @@ class DocumentFolder(models.Model):
     is_locked = fields.Boolean(
         string="Locked",
         default=False,
+        copy=False,
+        help="Blocks folder modifications and uploads. Does not hide the folder or change read access.",
     )
 
     distribution_status = fields.Selection(
@@ -259,6 +284,7 @@ class DocumentFolder(models.Model):
         "res.users",
         string="Locked By",
         readonly=True,
+        copy=False,
     )
 
     document_ids = fields.One2many(
@@ -468,8 +494,195 @@ class DocumentFolder(models.Model):
                     _("Select at least one grade for a grade-scoped folder.")
                 )
 
+    ORGANIZATIONAL_SCOPE_RANK = {
+        "all_staff": 0,
+        "department": 1,
+        "business_unit": 1,
+        "grade": 1,
+        "role": 1,
+        "employment_type": 1,
+        "location": 1,
+        "individual": 2,
+        "private": 3,
+        "admin_only": 4,
+    }
+    ORGANIZATIONAL_SCOPE_FIELDS = frozenset(
+        {
+            "parent_id",
+            "access_scope",
+            "department_ids",
+            "grade_ids",
+            "employee_ids",
+            "employment_type_ids",
+            "branch_ids",
+            "role_group_ids",
+        }
+    )
+    CHILD_SCOPE_EXCEEDS_PARENT = _(
+        "A subfolder cannot be more open than its parent folder."
+    )
+
+    def _organizational_scope_vals(self):
+        self.ensure_one()
+        return {
+            "access_scope": self.access_scope,
+            "department_ids": [fields.Command.set(self.department_ids.ids)],
+            "grade_ids": [fields.Command.set(self.grade_ids.ids)],
+            "employee_ids": [fields.Command.set(self.employee_ids.ids)],
+            "employment_type_ids": [fields.Command.set(self.employment_type_ids.ids)],
+            "branch_ids": [fields.Command.set(self.branch_ids.ids)],
+            "role_group_ids": [fields.Command.set(self.role_group_ids.ids)],
+        }
+
+    def _organizational_scope_exceeds(self, parent):
+        """Return True if this folder's audience is wider than the parent folder."""
+        self.ensure_one()
+        if (
+            not parent
+            or parent.folder_type != "organizational"
+            or self.folder_type != "organizational"
+        ):
+            return False
+        parent_rank = self.ORGANIZATIONAL_SCOPE_RANK.get(parent.access_scope, 0)
+        child_rank = self.ORGANIZATIONAL_SCOPE_RANK.get(self.access_scope, 0)
+        if child_rank < parent_rank:
+            return True
+        if parent.access_scope == "admin_only":
+            return self.access_scope != "admin_only"
+        if parent.access_scope == "private":
+            return self.access_scope not in ("private", "admin_only")
+        if parent.access_scope == "all_staff":
+            return False
+        if self.access_scope in ("admin_only", "private"):
+            return False
+        parent_employees = parent._get_scope_employees()
+        child_employees = self._get_scope_employees()
+        return bool(child_employees - parent_employees)
+
+    @api.constrains(
+        "parent_id",
+        "folder_type",
+        "access_scope",
+        "department_ids",
+        "grade_ids",
+        "employee_ids",
+        "employment_type_ids",
+        "branch_ids",
+        "role_group_ids",
+    )
+    def _check_child_scope_within_parent(self):
+        for folder in self:
+            if folder._organizational_scope_exceeds(folder.parent_id):
+                raise ValidationError(self.CHILD_SCOPE_EXCEEDS_PARENT)
+
+    def _clamp_children_to_parent_scope(self):
+        for folder in self:
+            if folder.folder_type != "organizational":
+                continue
+            children = folder.child_ids.filtered(
+                lambda child: child.folder_type == "organizational"
+            )
+            for child in children:
+                if child._organizational_scope_exceeds(folder):
+                    child.with_context(
+                        doc_skip_lock_for_scope_clamp=True
+                    ).write(folder._organizational_scope_vals())
+
+    LOCKED_FOLDER_ERROR = _(
+        "This folder is locked. Unlock it before making changes."
+    )
+    LOCKED_UPLOAD_ERROR = _(
+        "This folder is locked and cannot accept document uploads."
+    )
+    LOCKED_DUPLICATE_DOCS_ERROR = _(
+        "This folder is locked. Unlock it before duplicating with documents."
+    )
+    FOLDER_LOCK_FIELDS = frozenset({"is_locked", "locked_by"})
+    FOLDER_LIFECYCLE_FIELDS = frozenset(
+        {
+            "active",
+            "distribution_status",
+            "deleted_at",
+            "deleted_by",
+            "recycle_bin_until",
+        }
+    )
+    FOLDER_PERSONAL_FIELDS = frozenset({"favorite_user_ids", "pinned_user_ids"})
+    FOLDER_MODIFICATION_FIELDS = frozenset(
+        {
+            "folder_name",
+            "description",
+            "color",
+            "color_hex",
+            "parent_id",
+            "access_scope",
+            "department_ids",
+            "branch_ids",
+            "grade_ids",
+            "employment_type_ids",
+            "role_group_ids",
+            "allowed_user_ids",
+            "allowed_document_type_ids",
+            "employee_ids",
+            "retention_period",
+            "require_upload_approval",
+            "approval_flow",
+            "approver_ids",
+        }
+    )
+
     def _is_document_manager(self):
         return self.env.user.has_group("cleon_document_management.group_document_manager")
+
+    def _user_can_lock(self, user=None):
+        user = user or self.env.user
+        perm = self.env["doc.organizational.files.permission"]
+        for folder in self:
+            if folder.folder_type == "organizational":
+                if not perm.user_can_manage_folders(user):
+                    return False
+            elif not user.has_group("cleon_document_management.group_document_manager"):
+                return False
+        return True
+
+    def _check_lock_permission(self):
+        if not self._user_can_lock():
+            raise AccessError(
+                _("You do not have permission to lock or unlock this folder.")
+            )
+
+    def assert_unlocked(self, *, for_upload=False, for_documents_copy=False):
+        locked = self.filtered("is_locked")
+        if not locked:
+            return
+        if for_upload:
+            raise UserError(self.LOCKED_UPLOAD_ERROR)
+        if for_documents_copy:
+            raise UserError(self.LOCKED_DUPLICATE_DOCS_ERROR)
+        raise UserError(self.LOCKED_FOLDER_ERROR)
+
+    def _assert_unlocked_for_write(self, vals):
+        if self.env.context.get("doc_skip_lock_for_scope_clamp"):
+            return
+        pending = set(vals)
+        if not pending & self.FOLDER_MODIFICATION_FIELDS:
+            return
+        self.assert_unlocked()
+
+    def _create_lock_audit(self, action):
+        Audit = self.env["doc.folder.lock.audit"].sudo()
+        now = fields.Datetime.now()
+        Audit.create(
+            [
+                {
+                    "folder_id": folder.id,
+                    "action": action,
+                    "actor_id": self.env.user.id,
+                    "occurred_at": now,
+                }
+                for folder in self
+            ]
+        )
 
     def _user_can_access(self, user=None):
         """Return whether a document user can access this folder.
@@ -489,7 +702,21 @@ class DocumentFolder(models.Model):
         if self.folder_type == "employee":
             return employee in self.employee_ids
         if self.access_scope == "admin_only":
-            return False
+            perm = self.env["doc.organizational.files.permission"]
+            return (
+                user.has_group("cleon_document_management.group_document_admin")
+                or perm.user_is_platform_admin(user)
+                or perm.user_has_legacy_manager(user)
+            )
+        if self.access_scope == "private":
+            perm = self.env["doc.organizational.files.permission"]
+            if user == self.create_uid:
+                return True
+            return (
+                user.has_group("cleon_document_management.group_document_admin")
+                or perm.user_is_platform_admin(user)
+                or perm.user_has_legacy_manager(user)
+            )
         if self.access_scope == "all_staff":
             return True
         if not employee:
@@ -566,6 +793,7 @@ class DocumentFolder(models.Model):
             "location",
             "individual",
             "admin_only",
+            "private",
         }:
             scope = "all_staff"
 
@@ -628,15 +856,116 @@ class DocumentFolder(models.Model):
             raise AccessError(_("Only document managers can create folders."))
         for vals in vals_list:
             self._sanitize_organizational_vals(vals)
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        records._assign_collection_codes()
+        return records
+
+    def _assign_collection_codes(self):
+        prefixes = {"project": "PRJ", "vendor": "VND", "folder": "COL"}
+        for folder in self:
+            if folder.folder_type != "organizational" or folder.collection_code:
+                continue
+            prefix = prefixes.get(folder.folder_kind or "folder", "COL")
+            folder.collection_code = f"{prefix}-{folder.id:05d}"
+
+    def _breadcrumb_labels(self):
+        self.ensure_one()
+        names = []
+        current = self
+        seen = set()
+        while current and current.id not in seen:
+            seen.add(current.id)
+            names.append({"id": current.id, "name": current.folder_name})
+            current = current.parent_id
+        names.reverse()
+        return names
+
+    def _descendant_ids(self):
+        self.ensure_one()
+        found = set()
+        stack = list(self.child_ids)
+        while stack:
+            child = stack.pop()
+            if child.id in found:
+                continue
+            found.add(child.id)
+            stack.extend(child.child_ids)
+        return found
+
+    def _folder_tree_depth(self):
+        self.ensure_one()
+        depth = 0
+        current = self.parent_id
+        seen = set()
+        while current and current.id not in seen:
+            seen.add(current.id)
+            depth += 1
+            current = current.parent_id
+        return depth
+
+    def _expand_with_descendants(self):
+        all_ids = set(self.ids)
+        for folder in self:
+            all_ids |= folder._descendant_ids()
+        return self.browse(list(all_ids))
+
+    def action_move_folder(self, parent_folder):
+        self.ensure_one()
+        self.assert_unlocked()
+        new_parent = parent_folder if parent_folder else self.env["doc.folder"]
+        if new_parent:
+            if new_parent.folder_type != "organizational":
+                raise UserError(_("Folders can only be moved inside Organizational Files."))
+            if new_parent.id == self.id or new_parent.id in self._descendant_ids():
+                raise UserError(
+                    _("A folder cannot be moved under itself or one of its descendants.")
+                )
+            new_parent.assert_unlocked()
+        vals = {"parent_id": new_parent.id if new_parent else False}
+        if new_parent and self._organizational_scope_exceeds(new_parent):
+            vals.update(new_parent._organizational_scope_vals())
+        self.write(vals)
+        return True
 
     def write(self, vals):
+        vals = dict(vals)
+        pending = set(vals)
+        only_lock = pending <= self.FOLDER_LOCK_FIELDS and bool(
+            pending & self.FOLDER_LOCK_FIELDS
+        )
+        if only_lock:
+            self._check_lock_permission()
+            previous = {folder.id: folder.is_locked for folder in self}
+            result = super().write(vals)
+            changed_lock = self.filtered(
+                lambda folder: not previous.get(folder.id) and folder.is_locked
+            )
+            changed_unlock = self.filtered(
+                lambda folder: previous.get(folder.id) and not folder.is_locked
+            )
+            if changed_lock:
+                changed_lock._create_lock_audit("lock")
+            if changed_unlock:
+                changed_unlock._create_lock_audit("unlock")
+            return result
+
         if not self._is_document_manager():
-            allowed = {"favorite_user_ids", "pinned_user_ids"}
-            if set(vals) - allowed:
-                raise AccessError(_("You can only update your folder favorites and pins."))
+            allowed = set(self.FOLDER_PERSONAL_FIELDS)
+            org_only = (
+                self.filtered(lambda folder: folder.folder_type == "organizational")
+                == self
+            )
+            perm = self.env["doc.organizational.files.permission"]
+            if org_only and perm.user_can_manage_folders(self.env.user):
+                allowed |= self.FOLDER_MODIFICATION_FIELDS
+            if org_only and perm.user_can_folder_archive(self.env.user):
+                allowed |= self.FOLDER_LIFECYCLE_FIELDS
+            if pending - allowed:
+                raise AccessError(
+                    _("You can only update your folder favorites and pins.")
+                )
+        self._assert_unlocked_for_write(vals)
         if self.filtered(lambda folder: folder.folder_type == "organizational") == self:
-            vals = dict(vals)
             vals.update(self._clear_approval_values())
         result = super().write(vals)
         if {"deleted_at", "active", "distribution_status"} & set(vals):
@@ -652,6 +981,8 @@ class DocumentFolder(models.Model):
                 live.mapped("document_ids").with_context(ask_indexing=True).write(
                     {"ask_index_stamp": False}
                 )
+        if pending & self.ORGANIZATIONAL_SCOPE_FIELDS:
+            self._clamp_children_to_parent_scope()
         return result
 
     def unlink(self):
@@ -677,35 +1008,60 @@ class DocumentFolder(models.Model):
             )
             folder.write({"pinned_user_ids": [command]})
 
-    def action_duplicate(self):
+    def action_duplicate(self, include_documents=False):
         self.ensure_one()
-
-        return self.copy(
+        if include_documents:
+            self.assert_unlocked(for_documents_copy=True)
+        new_folder = self.with_context(include_documents=include_documents).copy(
             default={
                 "folder_name": _("%s (Copy)") % self.folder_name,
                 "favorite_user_ids": [fields.Command.clear()],
                 "pinned_user_ids": [fields.Command.clear()],
-            }
-        )
-
-    def action_lock(self):
-        self.write(
-            {
-                "is_locked": True,
-                "locked_by": self.env.user.id,
-            }
-        )
-
-    def action_unlock(self):
-        self.write(
-            {
                 "is_locked": False,
                 "locked_by": False,
             }
         )
+        if include_documents:
+            Document = self.env["doc.document"]
+            for document in self.document_ids.filtered(
+                lambda item: item.active and not item.deleted_at
+            ):
+                document.with_context(org_document_copy=True).copy(
+                    default={
+                        "folder_id": new_folder.id,
+                        "name": document.name,
+                    }
+                )
+        return new_folder
+
+    def action_lock(self):
+        self._check_lock_permission()
+        to_lock = self.filtered(lambda folder: not folder.is_locked)
+        if to_lock:
+            to_lock.write(
+                {
+                    "is_locked": True,
+                    "locked_by": self.env.user.id,
+                }
+            )
+
+    def action_unlock(self):
+        self._check_lock_permission()
+        to_unlock = self.filtered("is_locked")
+        if to_unlock:
+            to_unlock.write(
+                {
+                    "is_locked": False,
+                    "locked_by": False,
+                }
+            )
 
     def action_archive(self):
-        if not self._is_document_manager():
+        perm = self.env["doc.organizational.files.permission"]
+        if self.folder_type == "organizational":
+            if not perm.user_can_folder_archive(self.env.user):
+                raise AccessError(_("You do not have permission to archive this folder."))
+        elif not self._is_document_manager():
             raise AccessError(_("Only document managers can archive folders."))
         self.write({
             "active": False,
@@ -936,7 +1292,8 @@ class DocumentFolder(models.Model):
     def action_permanent_delete(self):
         if not self._is_document_manager():
             raise AccessError(_("Only document managers can delete folders."))
-        for folder in self:
+        subtree = self._expand_with_descendants()
+        for folder in subtree:
             if folder.is_pending_uploads:
                 raise ValidationError(
                     _("The pending uploads folder cannot be permanently deleted.")
@@ -951,6 +1308,8 @@ class DocumentFolder(models.Model):
                         count=len(linked_documents),
                     )
                 )
+        ordered = subtree.sorted(key=lambda folder: folder._folder_tree_depth(), reverse=True)
+        for folder in ordered:
             folder.document_ids.sudo().unlink()
             folder.sudo().unlink()
 
@@ -958,11 +1317,13 @@ class DocumentFolder(models.Model):
         """Permanently delete a recycled folder and every linked document."""
         if not self._is_document_manager():
             raise AccessError(_("Only document managers can delete folders."))
-        for folder in self:
-            if folder.is_pending_uploads:
-                raise ValidationError(
-                    _("The pending uploads folder cannot be permanently deleted.")
-                )
+        subtree = self._expand_with_descendants()
+        if any(folder.is_pending_uploads for folder in subtree):
+            raise ValidationError(
+                _("The pending uploads folder cannot be permanently deleted.")
+            )
+        ordered = subtree.sorted(key=lambda folder: folder._folder_tree_depth(), reverse=True)
+        for folder in ordered:
             linked_documents = folder._get_recycle_linked_documents()
             documents = (linked_documents | folder.document_ids.sudo()).exists()
             if documents:

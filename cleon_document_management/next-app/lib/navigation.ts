@@ -40,15 +40,25 @@ export function getNavigationLabel(
   if (route.startsWith("/pages/organization/folder")) return "Organizational folder";
   if (route === "/pages/organization") return "Organizational Files";
   if (route === "/pages/pending-uploads") return "Pending Uploads";
-  if (route === "/pages/recycle-bin") return "Recycle Bin";
-  if (route === "/pages/dashboard") return "Dashboard";
+  if (route === "/pages/recycle-bin" || (route === "/pages/my-workspace" && searchParams?.get("tab") === "recycle")) return "Recycle Bin";
+  if (route === "/pages/dashboard") {
+    return searchParams?.get("tab") === "activity" ? "Activity" : "Home";
+  }
   if (route === "/pages/activity") return "Activity";
-  if (route === "/pages/my-documents") return "My Documents";
+  if (route === "/pages/my-documents" || (route === "/pages/my-workspace" && (searchParams?.get("tab") === "documents" || !searchParams?.get("tab")))) return "Documents";
+  if (route === "/pages/my-workspace") {
+    const tab = searchParams?.get("tab");
+    if (tab === "archived") return "Archived";
+    if (tab === "quick-access") return "Quick Access";
+    if (tab === "compliance") return "My Compliance";
+    return "My Workspace";
+  }
   if (route === "/pages/quick-access") return "Quick Access";
   if (route === "/pages/archived") return "Archived Documents";
   if (route === "/pages/compliance") return "Compliance";
   if (route.startsWith("/pages/compliance/run")) return "Policy run";
   if (route === "/pages/settings") return "Settings";
+  if (route === "/pages/super-admin") return "Super Admin";
   if (route.startsWith("/pages/document-intelligence/datasets/new")) {
     return searchParams?.get("id") ? "Edit dataset" : "New dataset";
   }

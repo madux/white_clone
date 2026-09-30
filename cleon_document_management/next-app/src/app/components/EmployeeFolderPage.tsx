@@ -21,11 +21,12 @@ import { groupEmployeesInFolder } from "../../../lib/groupEmployeesInFolder";
 import type { ComplianceTargets, DocFolder } from "../../../lib/types";
 import MoveEmployeesDialog from "./MoveEmployeesDialog";
 import ModalDialog from "./ModalDialog";
-import BackButton from "./BackButton";
 import EmployeeFilterPanel from "./EmployeeFilterPanel";
 import FolderEmployeeFileTree from "./FolderEmployeeFileTree";
+import OrgFolderIcon from "./OrgFolderIcon";
 import ListPagination from "./ListPagination";
 import { useEmployeeFilesConfig } from "../../../hooks/useEmployeeFiles";
+import { useAppDialog } from "../../../hooks/useAppDialog";
 import { useRouter } from "next/navigation";
 
 const EMPLOYEE_PAGE_SIZE = 10;
@@ -61,6 +62,7 @@ export default function EmployeeFolderPage() {
     null,
   );
   const currentUser = useCurrentUser();
+  const { showConfirm } = useAppDialog();
   const folder = folders.data?.find((item) => item.id === folderId);
 
   const employees = useMemo(() => {
@@ -113,9 +115,10 @@ export default function EmployeeFolderPage() {
   const deleteSelectedEmployees = async () => {
     if (!selectedEmployees.length || !folderId) return;
     if (
-      !window.confirm(
+      !(await showConfirm(
         `Remove ${selectedEmployees.length} employee${selectedEmployees.length === 1 ? "" : "s"} and delete their files from this folder?`,
-      )
+        { title: "Remove employees", confirmLabel: "Remove" },
+      ))
     ) {
       return;
     }
@@ -124,10 +127,20 @@ export default function EmployeeFolderPage() {
   };
 
   return (
-    <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <BackButton variant="page" />
+    <div className="app-page space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div className="flex min-w-0 items-center gap-3">
+          {folder ? (
+            <OrgFolderIcon
+              className="h-10 w-10 shrink-0"
+              hasContent={
+                (documents.data?.length ?? 0) > 0 ||
+                (folder.employee_ids?.length ?? 0) > 0 ||
+                employees.length > 0
+              }
+              documents={documents.data ?? []}
+            />
+          ) : null}
           {folder?.folder_name ? (
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">
               {folder.folder_name}
@@ -207,6 +220,7 @@ export default function EmployeeFolderPage() {
             }
             singleFolderExpanded
             showFolderOpenLink={false}
+            showFolderHeader={false}
             emptyMessage={employeeTreeEmptyMessage}
           />
         ) : null}

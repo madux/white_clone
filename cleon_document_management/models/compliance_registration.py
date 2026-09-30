@@ -98,8 +98,40 @@ class CompliancePolicy(models.Model):
     )
     minimum_documents = fields.Integer(default=1)
     grace_period_days = fields.Integer(string="Grace Period (Days)", default=0)
-    effective_date = fields.Date(default=fields.Date.context_today)
+    effective_date = fields.Date(
+        string="Effective Date",
+        tracking=True,
+        help="Date this policy becomes effective. Future dates delay the first run.",
+    )
     active = fields.Boolean(default=True, tracking=True)
+    lifecycle_status = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("active", "Active"),
+            ("archived", "Archived"),
+        ],
+        default="active",
+        tracking=True,
+    )
+    policy_category = fields.Char(string="Category")
+    policy_visibility = fields.Selection(
+        [
+            ("employees", "Visible to employees"),
+            ("hr_only", "HR only"),
+        ],
+        default="employees",
+    )
+    policy_audience = fields.Selection(
+        [
+            ("everyone", "Everyone"),
+            ("employees", "Employees"),
+            ("hr_only", "HR only"),
+            ("department", "Departments"),
+        ],
+        default="everyone",
+    )
+    source_document_id = fields.Many2one("doc.document", ondelete="set null")
+    ai_drafted = fields.Boolean(default=False)
     last_run_at = fields.Datetime(readonly=True)
     next_run_at = fields.Datetime(readonly=True)
     evaluation_ids = fields.One2many(
@@ -254,9 +286,18 @@ class CompliancePolicy(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if not self._is_document_admin():
+        if not self.env.context.get("skip_policy_admin_check") and not self._is_document_admin():
             raise AccessError(_("Only document administrators can create compliance policies."))
-        policies = super().create(vals_list)
+        prepared = []
+        for vals in vals_list:
+            vals = dict(vals)
+            if not vals.get("ai_drafted") and vals.get("lifecycle_status") == "draft":
+                vals["lifecycle_status"] = "active"
+            if vals.get("lifecycle_status") == "draft":
+                vals["active"] = False
+                vals["ai_drafted"] = True
+            prepared.append(vals)
+        policies = super().create(prepared)
         Requirement = self.env["doc.compliance.requirement"]
         for policy in policies:
             policy.auto_requirement_id = Requirement.create(
@@ -269,12 +310,24 @@ class CompliancePolicy(models.Model):
                 }
             )
         policies.action_set_next_run()
-        policies.action_evaluate(run_type="automatic")
+        ready = policies.filtered(
+            lambda policy: policy.active and policy.lifecycle_status != "draft"
+        )
+        if ready:
+            ready.action_evaluate(run_type="automatic")
         return policies
 
     def write(self, vals):
-        if not self._is_document_admin():
+        if not self.env.context.get("skip_policy_admin_check") and not self._is_document_admin():
             raise AccessError(_("Only document administrators can edit compliance policies."))
+        vals = dict(vals)
+        if vals.get("lifecycle_status") == "draft" and any(not policy.ai_drafted for policy in self):
+            vals["lifecycle_status"] = "active"
+        if "active" in vals:
+            if vals.get("active"):
+                vals["lifecycle_status"] = "active"
+            elif any(policy.lifecycle_status == "draft" for policy in self):
+                vals["lifecycle_status"] = "active"
         result = super().write(vals)
         if {"schedule", "custom_schedule_days", "effective_date"}.intersection(vals):
             self.action_set_next_run()

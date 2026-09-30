@@ -81,7 +81,7 @@ export default function EmployeeFilesCustomGroupsSettings({
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+          <thead>
             <tr>
               <th className="px-4 py-3">Group</th>
               <th className="px-4 py-3">Members</th>

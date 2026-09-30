@@ -57,12 +57,25 @@ class DocEmployeeFilesRoleService(models.AbstractModel):
         self._require_author()
         Role = self.env["doc.employee.files.role"]
         role_id = payload.get("id")
+        org_actions = payload.get("organizational_actions") or {}
         values = {
             "name": (payload.get("name") or "").strip(),
             "description": payload.get("description") or "",
             "active": bool(payload.get("active", True)),
             "employee_scope": payload.get("employee_scope") or "own_team",
             "company_id": self.env.company.id,
+            "org_access_library": bool(org_actions.get("access_library")),
+            "org_create_folder": bool(org_actions.get("create_folder")),
+            "org_manage_folders": bool(org_actions.get("manage_folders")),
+            "org_share_manage_access": bool(org_actions.get("share_manage_access")),
+            "org_folder_archive": bool(org_actions.get("folder_archive")),
+            "org_folder_delete": bool(org_actions.get("folder_delete")),
+            "org_upload": bool(org_actions.get("upload")),
+            "org_document_manage": bool(org_actions.get("document_manage")),
+            "org_document_manage_access": bool(
+                org_actions.get("document_manage_access")
+            ),
+            "org_document_delete": bool(org_actions.get("document_delete")),
         }
         if not values["name"]:
             raise UserError(_("Role name is required."))
@@ -90,34 +103,27 @@ class DocEmployeeFilesRoleService(models.AbstractModel):
         return True
 
     @api.model
-    def list_members(self, search="", limit=50):
+    def list_members(self, search="", limit=10, offset=0, page=None, page_size=None):
         self._require_author()
-        domain = [
-            ("company_id", "in", [False, self.env.company.id]),
-            ("active", "=", True),
-        ]
-        if search:
-            domain = [
-                "&",
-                *domain,
-                "|",
-                "|",
-                ("name", "ilike", search),
-                ("work_email", "ilike", search),
-                ("user_id.login", "ilike", search),
-            ]
-        employees = (
-            self.env["hr.employee"]
-            .sudo()
-            .search(domain, order="name", limit=min(int(limit or 50), 200))
-        )
+        if page is not None:
+            page = max(int(page or 1), 1)
+            page_size = min(max(int(page_size or limit or 10), 1), 100)
+            offset = (page - 1) * page_size
+            limit = page_size
+        employees, total, limit, offset = self.env[
+            "doc.employee.files.service"
+        ].search_company_employees(search=search or "", limit=limit, offset=offset)
         roles = self.env["doc.employee.files.role"].search(
             [("company_id", "=", self.env.company.id), ("active", "=", True)],
             order="name",
         )
+        page = (offset // limit) + 1 if limit else 1
         return {
             "roles": [role.serialize_for_api() for role in roles],
             "members": [self._serialize_member(employee, roles) for employee in employees],
+            "total": total,
+            "page": page,
+            "page_size": limit,
         }
 
     @api.model
@@ -192,6 +198,31 @@ class DocEmployeeFilesRoleService(models.AbstractModel):
                             },
                         )
                     ],
+                    "org_access_library": True,
+                    "org_create_folder": True,
+                    "org_manage_folders": True,
+                    "org_share_manage_access": True,
+                    "org_folder_archive": True,
+                    "org_folder_delete": True,
+                    "org_upload": True,
+                    "org_document_manage": True,
+                    "org_document_manage_access": True,
+                    "org_document_delete": True,
+                }
+            )
+        elif role:
+            role.write(
+                {
+                    "org_access_library": True,
+                    "org_create_folder": True,
+                    "org_manage_folders": True,
+                    "org_share_manage_access": True,
+                    "org_folder_archive": True,
+                    "org_folder_delete": True,
+                    "org_upload": True,
+                    "org_document_manage": True,
+                    "org_document_manage_access": True,
+                    "org_document_delete": True,
                 }
             )
         manager_group = self.env.ref(

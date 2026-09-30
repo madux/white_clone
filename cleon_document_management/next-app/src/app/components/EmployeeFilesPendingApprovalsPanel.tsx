@@ -2,7 +2,6 @@
 
 import {
   AlertCircle,
-  CheckCircle2,
   Clock3,
   ExternalLink,
   FileText,
@@ -19,7 +18,12 @@ import {
   usePendingEmployeeUploads,
 } from "../../../hooks/useDocuments";
 import type { PendingEmployeeUpload } from "../../../lib/types";
+import { approvalInboxHref } from "../../../lib/documentLinks";
+import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
+import EmptyState from "./EmptyState";
+import PersonCell from "./PersonCell";
 import SectionTabs from "./SectionTabs";
+import StatusPill from "./StatusPill";
 
 const statusMeta = {
   pending_review: {
@@ -59,7 +63,7 @@ function actionForItem(item: PendingEmployeeUpload) {
   }
   if (item.status === "awaiting_folder_restore") {
     return {
-      href: "/pages/recycle-bin",
+      href: myWorkspaceHref("recycle"),
       label: "Manage in recycle bin",
       hint: "Restore the folder or move files before permanent delete",
     };
@@ -83,9 +87,10 @@ export default function EmployeeFilesPendingApprovalsPanel() {
   >("all");
 
   const uploadItems = uploads.data?.items ?? [];
-  const inboxDocumentIds = new Set(
-    (approvalInbox.data?.items ?? []).map((item) => item.document_id),
+  const inboxItems = (approvalInbox.data?.items ?? []).filter(
+    (item) => item.folder_type !== "organizational",
   );
+  const inboxDocumentIds = new Set(inboxItems.map((item) => item.document_id));
 
   const items = useMemo(() => {
     const rows = uploadItems.filter(
@@ -100,64 +105,56 @@ export default function EmployeeFilesPendingApprovalsPanel() {
       (item) => !inboxDocumentIds.has(item.id) || item.status !== "pending_review",
     );
     return {
-      all: rows.length + (approvalInbox.data?.count ?? 0),
+      all: rows.length + inboxItems.length,
       pending_review:
         rows.filter((item) => item.status === "pending_review").length +
-        (approvalInbox.data?.count ?? 0),
+        inboxItems.length,
       awaiting_folder: rows.filter((item) => item.status === "awaiting_folder")
         .length,
       awaiting_folder_restore: rows.filter(
         (item) => item.status === "awaiting_folder_restore",
       ).length,
     };
-  }, [uploadItems, approvalInbox.data?.count, inboxDocumentIds]);
+  }, [uploadItems, inboxItems.length, inboxDocumentIds]);
 
   const showInbox =
-    filter === "all" || filter === "pending_review"
-      ? approvalInbox.data?.items ?? []
-      : [];
+    filter === "all" || filter === "pending_review" ? inboxItems : [];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-end">
-        <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm">
-          <p className="text-2xl font-bold text-brand-text">{counts.all}</p>
-          <p className="text-xs font-semibold text-slate-400">open items</p>
-        </div>
-      </div>
-
       <SectionTabs
+        level="nested"
+        ariaLabel="Pending approval filters"
+        value={filter}
+        onChange={(value) =>
+          setFilter(
+            value as
+              | "all"
+              | "pending_review"
+              | "awaiting_folder"
+              | "awaiting_folder_restore",
+          )
+        }
         items={[
           { id: "all", label: "All", count: counts.all },
-          {
-            id: "pending_review",
-            label: "Pending approval",
-            count: counts.pending_review,
-          },
-          {
-            id: "awaiting_folder",
-            label: "Awaiting folder",
-            count: counts.awaiting_folder,
-          },
+          { id: "pending_review", label: "Pending approval", count: counts.pending_review },
+          { id: "awaiting_folder", label: "Awaiting folder", count: counts.awaiting_folder },
           {
             id: "awaiting_folder_restore",
             label: "Awaiting restore",
             count: counts.awaiting_folder_restore,
           },
         ]}
-        value={filter}
-        onChange={setFilter}
-        ariaLabel="Pending approval filters"
       />
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="app-page-body ef-table">
         {uploads.isLoading || approvalInbox.isLoading ? (
           <div className="p-10 text-center text-sm font-semibold text-slate-400">
             Loading pending approvals…
           </div>
         ) : showInbox.length || items.length ? (
           <div className="overflow-x-auto">
-            <table className="dms-table min-w-full">
+            <table className="dms-table ef-table min-w-full">
               <thead>
                 <tr>
                   <th>Document</th>
@@ -189,23 +186,29 @@ export default function EmployeeFilesPendingApprovalsPanel() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4 font-medium text-slate-700">
-                      {item.employee}
+                    <td>
+                      <PersonCell
+                        name={item.employee || "—"}
+                        subtitle={item.document_type || undefined}
+                      />
                     </td>
-                    <td className="px-5 py-4 text-slate-600">—</td>
-                    <td className="px-5 py-4">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
-                        <Clock3 className="h-3.5 w-3.5" />
-                        Pending approval
-                      </span>
+                    <td>—</td>
+                    <td>
+                      <StatusPill label="Pending approval" tone="pending" />
                     </td>
                     <td className="px-5 py-4 text-slate-500">
                       {formatDate(String(item.created_at))}
                     </td>
                     <td className="dms-col-actions">
                       <Link
-                        href={`/pages/employee/profile?employee=${item.employee_id ?? 0}&doc=${item.document_id}`}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                        href={approvalInboxHref({
+                          id: item.document_id,
+                          document_id: item.document_id,
+                          folder_id: item.folder_id,
+                          employee_id: item.employee_id,
+                          folder_type: item.folder_type,
+                        })}
+                        className="app-btn app-btn-primary"
                       >
                         Review
                         <ExternalLink className="h-3.5 w-3.5" />
@@ -215,7 +218,6 @@ export default function EmployeeFilesPendingApprovalsPanel() {
                 ))}
                 {items.map((item: PendingEmployeeUpload) => {
                   const meta = statusMeta[item.status];
-                  const StatusIcon = meta.icon;
                   const action = actionForItem(item);
                   return (
                     <tr
@@ -240,19 +242,20 @@ export default function EmployeeFilesPendingApprovalsPanel() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4 font-medium text-slate-700">
-                        {item.employee_name}
+                      <td>
+                        <PersonCell
+                          name={item.employee_name || "—"}
+                          subtitle={item.department || undefined}
+                          href={
+                            item.employee_id
+                              ? `/pages/employee/profile?employee=${item.employee_id}`
+                              : undefined
+                          }
+                        />
                       </td>
-                      <td className="px-5 py-4 text-slate-600">
-                        {item.department || "—"}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${meta.className}`}
-                        >
-                          <StatusIcon className="h-3.5 w-3.5" />
-                          {meta.label}
-                        </span>
+                      <td>{item.department || "—"}</td>
+                      <td>
+                        <StatusPill label={meta.label} />
                       </td>
                       <td className="px-5 py-4 text-slate-500">
                         {formatDate(item.created_at)}
@@ -270,7 +273,7 @@ export default function EmployeeFilesPendingApprovalsPanel() {
                                 });
                                 router.push(action.href);
                               }}
-                              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                              className="app-btn app-btn-primary"
                               title={action.hint}
                             >
                               {action.label}
@@ -279,7 +282,7 @@ export default function EmployeeFilesPendingApprovalsPanel() {
                           ) : (
                             <Link
                               href={action.href}
-                              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                              className="app-btn app-btn-primary"
                               title={action.hint}
                             >
                               {action.label}
@@ -303,15 +306,10 @@ export default function EmployeeFilesPendingApprovalsPanel() {
             </table>
           </div>
         ) : (
-          <div className="flex flex-col items-center px-6 py-16 text-center">
-            <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-            <p className="mt-4 text-sm font-semibold text-slate-800">
-              No pending approvals
-            </p>
-            <p className="mt-1 text-sm text-slate-500">
-              Uploads awaiting your decision will appear here.
-            </p>
-          </div>
+          <EmptyState
+            title="No pending approvals"
+            description="Uploads awaiting your decision will appear here."
+          />
         )}
       </section>
     </div>

@@ -133,3 +133,59 @@ class TestEmployeeFilesRoles(TransactionCase):
         service = self.env["doc.employee.files.role.service"]
         with self.assertRaises(AccessError):
             service.with_user(user).list_roles()
+
+    def test_org_only_role_does_not_grant_ef_home(self):
+        role = self.Role.create(
+            {
+                "name": "Org view only",
+                "company_id": self.company.id,
+                "employee_scope": "all",
+                "org_access_library": True,
+            }
+        )
+        user = self.env["res.users"].create(
+            {
+                "name": "Org Viewer",
+                "login": "ef_org_viewer_test",
+                "company_id": self.company.id,
+                "employee_files_role_ids": [(6, 0, [role.id])],
+                "groups_id": [(4, self.env.ref("base.group_user").id)],
+            }
+        )
+        self.assertFalse(self.permission.user_can_access_ef_home(user))
+
+    def test_serialize_includes_assigned_users(self):
+        role = self._create_role()
+        user = self.env["res.users"].create(
+            {
+                "name": "Assigned Viewer",
+                "login": "ef_assigned_viewer_test",
+                "company_id": self.company.id,
+                "groups_id": [(4, self.env.ref("base.group_user").id)],
+            }
+        )
+        self.env["hr.employee"].create(
+            {
+                "name": "Assigned Viewer",
+                "user_id": user.id,
+                "company_id": self.company.id,
+            }
+        )
+        user.write({"employee_files_role_ids": [(6, 0, [role.id])]})
+        payload = role.serialize_for_api()
+        self.assertEqual(payload["assigned_user_ids"], [user.id])
+        self.assertEqual(payload["assigned_users"][0]["login"], "ef_assigned_viewer_test")
+        self.assertEqual(payload["assigned_users"][0]["employee_name"], "Assigned Viewer")
+
+    def test_category_view_role_grants_ef_home(self):
+        role = self._create_role()
+        user = self.env["res.users"].create(
+            {
+                "name": "EF Viewer",
+                "login": "ef_viewer_home_test",
+                "company_id": self.company.id,
+                "employee_files_role_ids": [(6, 0, [role.id])],
+                "groups_id": [(4, self.env.ref("base.group_user").id)],
+            }
+        )
+        self.assertTrue(self.permission.user_can_access_ef_home(user))

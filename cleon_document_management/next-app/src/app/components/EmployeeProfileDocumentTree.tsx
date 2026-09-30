@@ -1,10 +1,12 @@
 "use client";
 
-import { Check, FileText, X } from "lucide-react";
+import { Check, X } from "lucide-react";
+import { FileTypeIcon } from "./FileTypeIcon";
 import {
   useDeleteDocumentVersion,
   useDocumentAction,
 } from "../../../hooks/useDocuments";
+import { useAppDialog } from "../../../hooks/useAppDialog";
 import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 import type { EmployeeDocumentGroup } from "../../../lib/groupEmployeeDocuments";
 import { approvalDisplayLabel, canReviewDocument } from "../../../lib/approvalHelpers";
@@ -96,6 +98,7 @@ function DocumentRowActions({
       <DocumentActions
         documentId={document.id}
         documentName={document.name}
+        document={document}
         active={document.active !== false}
         deleteRelatedIds={deleteRelatedIds}
       />
@@ -146,7 +149,13 @@ function ProfileDocumentRow({
         className={`h-4 w-4 accent-pink-600 ${employeeTreeCol.check}`}
       />
       <span className={employeeTreeCol.toggle} aria-hidden />
-      <FileText className={`h-4 w-4 shrink-0 text-brand-pink ${employeeTreeCol.icon}`} />
+      <FileTypeIcon
+        name={document.name}
+        mime_type={document.mime_type}
+        document_type={document.document_type}
+        source_url={document.source_url}
+        className={`h-8 w-6 shrink-0 ${employeeTreeCol.icon}`}
+      />
       <button
         type="button"
         onClick={onView}
@@ -225,12 +234,14 @@ export default function EmployeeProfileDocumentTree({
 }) {
   const documentAction = useDocumentAction();
   const deleteVersion = useDeleteDocumentVersion();
+  const { showConfirm } = useAppDialog();
 
   const handleDeleteVersion = async (versionId: number, versionNumber: number) => {
     if (
-      !window.confirm(
+      !(await showConfirm(
         `Delete version ${versionNumber}? This only removes that out-of-date version.`,
-      )
+        { title: "Delete version", confirmLabel: "Delete" },
+      ))
     ) {
       return;
     }
@@ -238,7 +249,12 @@ export default function EmployeeProfileDocumentTree({
   };
 
   const handleDeleteRelatedDocument = async (document: DocDocument) => {
-    if (!window.confirm(`Delete this earlier copy of "${document.name}"?`)) {
+    if (
+      !(await showConfirm(`Delete this earlier copy of "${document.name}"?`, {
+        title: "Delete document copy",
+        confirmLabel: "Delete",
+      }))
+    ) {
       return;
     }
     await documentAction.mutateAsync({ id: document.id, action: "delete" });

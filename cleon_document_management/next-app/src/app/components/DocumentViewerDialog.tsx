@@ -8,7 +8,10 @@ import {
   documentVersionPreviewUrl,
 } from "../../../lib/documentPreviewUrls";
 import DocumentVersionsFooter from "./DocumentVersionsFooter";
+import OrganizationalDocumentSummary from "./OrganizationalDocumentSummary";
 import ModalDialog from "./ModalDialog";
+import CompliancePolicyLink from "./CompliancePolicyLink";
+import DocumentShortcutNotice from "./DocumentShortcutNotice";
 
 type DocumentViewerDialogProps = {
   title: string;
@@ -25,6 +28,13 @@ type DocumentViewerDialogProps = {
   size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "5xl";
   backdropClassName?: string;
   iframeMinHeight?: string;
+  enableAiSummary?: boolean;
+  linkedPolicyId?: number | false;
+  linkedPolicyName?: string;
+  isShortcut?: boolean;
+  shortcutOfId?: number | false;
+  shortcutOfName?: string;
+  shortcutOfFolderId?: number | false;
 };
 
 export default function DocumentViewerDialog({
@@ -42,6 +52,13 @@ export default function DocumentViewerDialog({
   size = "2xl",
   backdropClassName = "bg-slate-950/60",
   iframeMinHeight = "min-h-[62vh]",
+  enableAiSummary = false,
+  linkedPolicyId,
+  linkedPolicyName,
+  isShortcut,
+  shortcutOfId,
+  shortcutOfName,
+  shortcutOfFolderId,
 }: DocumentViewerDialogProps) {
   const defaultPreview = useMemo(() => {
     if (previewUrl) return previewUrl;
@@ -65,9 +82,6 @@ export default function DocumentViewerDialog({
       : defaultPreview;
 
   const showPreview = activePreviewUrl && !placeholder;
-  const viewingLabel =
-    activeVersionId != null ? "Out-of-date version" : "Current file";
-
   const versionFooter =
     documentId != null && documentId > 0 ? (
       <DocumentVersionsFooter
@@ -96,6 +110,8 @@ export default function DocumentViewerDialog({
       size={size}
       backdropClassName={backdropClassName}
       titleClassName="text-lg"
+      panelClassName="h-[min(92vh,calc(100dvh-2rem))]"
+      bodyClassName="flex flex-col overflow-hidden"
       footer={resolvedFooter}
       headerActions={
         <>
@@ -113,20 +129,58 @@ export default function DocumentViewerDialog({
         </>
       }
     >
-      {showPreview ? (
-        <p className="mb-2 text-xs font-semibold text-slate-500">{viewingLabel}</p>
-      ) : null}
-      <div className="-mx-1 -mt-1 min-h-0 flex-1 overflow-hidden rounded-2xl bg-slate-100 p-1">
-        {showPreview ? (
-          <iframe
-            title={title}
-            src={activePreviewUrl}
-            className={`block h-full w-full pointer-events-auto rounded-2xl border border-slate-200 bg-white ${iframeMinHeight}`}
+      {linkedPolicyId ? (
+        <div className="mb-3 shrink-0">
+          <CompliancePolicyLink
+            policyId={Number(linkedPolicyId)}
+            policyName={linkedPolicyName}
+            className="w-full max-w-md"
           />
-        ) : (
-          placeholder
-        )}
-      </div>
+        </div>
+      ) : null}
+      {isShortcut ? (
+        <DocumentShortcutNotice
+          className="mb-3 shrink-0"
+          shortcutOfId={shortcutOfId}
+          shortcutOfName={shortcutOfName}
+          shortcutOfFolderId={shortcutOfFolderId}
+        />
+      ) : null}
+      {showPreview && activeVersionId != null ? (
+        <p className="mb-2 shrink-0 text-xs font-semibold text-amber-700">
+          Out-of-date version
+        </p>
+      ) : null}
+      {enableAiSummary && documentId != null && documentId > 0 ? (
+        <OrganizationalDocumentSummary
+          documentId={documentId}
+          documentName={title}
+        >
+          <div className="-mx-1 -mt-1 h-full min-h-0 overflow-hidden rounded-2xl bg-slate-100 p-1">
+            {showPreview ? (
+              <iframe
+                title={title}
+                src={activePreviewUrl}
+                className="pointer-events-auto block h-full min-h-0 w-full rounded-2xl border border-slate-200 bg-white"
+              />
+            ) : (
+              placeholder
+            )}
+          </div>
+        </OrganizationalDocumentSummary>
+      ) : (
+        <div className="-mx-1 -mt-1 min-h-0 flex-1 overflow-hidden rounded-2xl bg-slate-100 p-1">
+          {showPreview ? (
+            <iframe
+              title={title}
+              src={activePreviewUrl}
+              className={`pointer-events-auto block h-full w-full rounded-2xl border border-slate-200 bg-white ${iframeMinHeight}`}
+            />
+          ) : (
+            placeholder
+          )}
+        </div>
+      )}
     </ModalDialog>
   );
 }

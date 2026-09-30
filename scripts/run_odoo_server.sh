@@ -11,6 +11,15 @@ ODOO_UPDATE_MODULES="${ODOO_UPDATE_MODULES:-}"
 # Set ODOO_STOP_AFTER_UPDATE=1 to exit after upgrade (used by run_odoo_upgrade.sh).
 ODOO_STOP_AFTER_UPDATE="${ODOO_STOP_AFTER_UPDATE:-0}"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [[ -f "${REPO_ROOT}/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${REPO_ROOT}/.env"
+  set +a
+fi
+
 if [[ -x "${ODOO_HOME}/.venv/bin/python" ]]; then
   PYTHON="${ODOO_HOME}/.venv/bin/python"
 elif [[ -x "${ODOO_HOME}/venv/bin/python" ]]; then

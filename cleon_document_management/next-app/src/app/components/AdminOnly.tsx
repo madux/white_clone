@@ -9,7 +9,7 @@ export default function AdminOnly({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   useEffect(() => {
     if (!user.isPending && user.data?.is_document_admin !== true) {
-      router.replace("/pages/my-documents");
+      router.replace("/pages/my-workspace");
     }
   }, [router, user.data?.is_document_admin, user.isPending]);
   if (user.isPending || user.data?.is_document_admin !== true) {

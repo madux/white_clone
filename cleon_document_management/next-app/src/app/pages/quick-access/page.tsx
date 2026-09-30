@@ -1,5 +1,10 @@
-import QuickAccessPage from "@/app/components/QuickAccessPage";
+"use client";
+
+import QueryRedirect from "@/app/components/QueryRedirect";
+import { myWorkspaceHref } from "../../../../lib/workspaceRoutes";
 
 export default function QuickAccessRoute() {
-  return <QuickAccessPage />;
+  return (
+    <QueryRedirect href={() => myWorkspaceHref("quick-access")} />
+  );
 }

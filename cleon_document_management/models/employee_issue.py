@@ -4,6 +4,7 @@ from odoo import fields, models, _
 
 ISSUE_CLASSIFICATIONS = [
     ("inactive", "Inactive"),
+    ("excluded", "Excluded"),
     ("test_employee", "Test Employee"),
     ("manually_excluded", "Manually Excluded"),
     ("initialization_failed", "Initialization Failed"),
@@ -42,12 +43,12 @@ LEGACY_CATEGORY_TO_CLASSIFICATION = {
 }
 
 EXCLUSION_REASON_TO_CLASSIFICATION = {
-    "inactive": "inactive",
-    "test_employee": "test_employee",
-    "manual": "manually_excluded",
-    "init_failed": "initialization_failed",
-    "unresolved_data": "unresolved_data",
-    "awaiting_processing": "unresolved_data",
+    "inactive": "excluded",
+    "test_employee": "excluded",
+    "manual": "excluded",
+    "init_failed": "excluded",
+    "unresolved_data": "excluded",
+    "awaiting_processing": "excluded",
 }
 
 ISSUE_TAXONOMY = [
@@ -156,6 +157,8 @@ EXCLUSION_REASONS = [
     ("unresolved_data", "Unresolved data issue"),
 ]
 
+EXCLUSION_REASON_LABELS = dict(EXCLUSION_REASONS)
+
 
 def normalize_issue_classification(category):
     if category in CLASSIFICATION_LABELS:
@@ -254,7 +257,7 @@ class DocEmployeeExclusion(models.Model):
         self.ensure_one()
         employee = self.employee_id
         classification = EXCLUSION_REASON_TO_CLASSIFICATION.get(
-            self.reason, "unresolved_data"
+            self.reason, "excluded"
         )
         return {
             "id": self.id,

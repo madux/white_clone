@@ -1,5 +1,7 @@
 # Employee Files v3 — QA test matrix (living doc)
 
+**Full module checklist:** [DMS_COMPREHENSIVE_QA_TEST_MATRIX.md](./DMS_COMPREHENSIVE_QA_TEST_MATRIX.md) (EF + Org + workspace + compliance; excludes Document Intelligence and Templates).
+
 **Baseline:** **A (v3 PDF)** — [EMPLOYEE_FILES_QA_BASELINE.md](./EMPLOYEE_FILES_QA_BASELINE.md).  
 **Status legend:** `Pass` | `Partial` | `N/A` | `Deferred`  
 Update **Status** when you run tests.
@@ -11,10 +13,10 @@ Update **Status** when you run tests.
 | ID | Spec focus | Status | Where to test | Notes |
 |----|------------|--------|---------------|-------|
 | EF-A1 | Empty state; Set Up CTA | Pass | `/pages/employee` pre-setup | No folder list / manual create. |
-| EF-A2 | Choose organizing dimension | Pass | Setup wizard step 2 | Multi-select dimensions. |
-| EF-A3 | Inclusion/exclusion rules | Partial | Setup step 3; Settings | Manual exclusion API; no EMS picker UI in wizard yet. |
-| EF-A4 | Review & confirm live counts | Pass | Setup review step | `/api/employee-files/setup/preview` |
-| EF-A5 | Staged automatic processing | Pass | Setup confirm | Synchronous stages on server. |
+| EF-A2 | Choose organizing dimension | Pass | Setup wizard — Organization | EMS / custom / none; primary + optional subgroup. |
+| EF-A3 | Inclusion/exclusion rules | Pass | Setup — Initialization Rules | Include inactive, collect documents; searchable **Select employees** exclusion dialog. |
+| EF-A4 | Review & confirm live counts | Pass | Setup — Review | Impact metric cards; insight rows; review stat cards; **Will need attention** opens paginated list with search + **Filters** (issue cause checkboxes); `/api/employee-files/setup/preview` + `/api/employee-files/setup/preview/attention`. |
+| EF-A5 | Staged automatic processing | Pass | Setup confirm | Stage progress only (no leave-in-background banner); synchronous stages on server. |
 | EF-A6 | Setup complete + View Issues | Pass | Completion screen | Links to home + issues. |
 | EF-A7 | Exclusion report export | Pass | `/api/employee-files/exclusions/export` | CSV export. |
 | EF-A8 | Multi-dimension views | Pass | Home dimension tabs; Settings organizing panel | Nested sub-groups on primary view; settings preview via `/api/employee-files/config/preview`. |
@@ -33,7 +35,7 @@ Update **Status** when you run tests.
 
 | ID | Status | Where |
 |----|--------|-------|
-| EF-C1 | Pass | Home view switcher (groups / employees / documents) |
+| EF-C1 | Pass | Home view switcher (Employee files / Employees / Documents); group table + member list column sort (server order shared with Employees tab); group sort persisted in session prefs |
 | EF-C2 | Pass | System group page — no add/remove |
 | EF-C3 | Pass | Custom group create + add employee files |
 | EF-C4 | Partial | Overlap API; UI report minimal |
@@ -57,7 +59,7 @@ Update **Status** when you run tests.
 | EF-D3-E1 | — | `expiry_applicable` → upload without date blocked (UI + API) |
 | EF-D3-E2 | — | Expiry cron `_cron_send_expiry_alerts` / `expiry_alert_days` param |
 | EF-D4 | Partial | `classification_state`; reclassify API |
-| EF-D5 | Pass | Browse toolbar: search, filters, list/card, column picker, sort, pagination (groups/employees/documents) |
+| EF-D5 | Pass | Browse toolbar on Employees/Documents: search, filters, list/card, column picker, server sort (name, ID, department, documents, status on employees), pagination; Employee files tab uses tree sort + `/api/employee-files/group/members?order=` |
 | EF-D6 | Partial | Preview/actions; reclassify endpoint |
 | EF-D7 | Partial | Favourite API; export uses existing download |
 | EF-D8 | Pass | Relations UI in viewer; bidirectional list; add/remove link; version history current marker |
@@ -119,7 +121,8 @@ Update **Status** when you run tests.
 | # | Step |
 |---|------|
 | 1 | Pre-setup: `/pages/employee` shows single **Set Up Employee Files** CTA |
-| 2 | Complete wizard → home shows EMS reconciliation stats |
+| 2 | Complete wizard (review attention list + filters) → home shows EMS reconciliation stats |
+| 2b | Employee files tab: sort group columns; expand group → sort employee columns |
 | 3 | Open system-managed group → no membership edit controls |
 | 4 | Create custom group → add existing employee files |
 | 5 | Issues page loads; retry/resolve one item |
@@ -137,3 +140,4 @@ Update **Status** when you run tests.
 | 2026-03-16 | Baseline A implementation — v3 domain model + UI |
 | 2026-09-17 | EF-D2-U1–U4 — explicit per-row **Update** modal (profile + My Documents) |
 | 2026-09-17 | EF-D3 — per-type versioning/duplicate policy, upload conflicts (employee+type), server enforcement |
+| 2026-09-26 | EF-A3/A4/A5/C1/D5 — setup review UX, attention preview API + cause filters, processing copy, group/member sorting |

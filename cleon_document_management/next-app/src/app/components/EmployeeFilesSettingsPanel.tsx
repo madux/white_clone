@@ -1,26 +1,72 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   useEmployeeFilesConfig,
   useSaveEmployeeFilesConfig,
   useSaveEmployeeFilesHeaderFields,
 } from "../../../hooks/useEmployeeFiles";
+import SectionTabs from "./SectionTabs";
 import ThemedSelect from "./ThemedSelect";
+import UiSwitch from "./UiSwitch";
 import { useToast } from "../../../hooks/useToast";
 import type { EmployeeFilesConfig } from "../../../lib/types";
-import SectionTabs from "./SectionTabs";
 import EmployeeFilesCustomGroupsSettings from "./EmployeeFilesCustomGroupsSettings";
 import EmployeeFilesExclusionsSettings from "./EmployeeFilesExclusionsSettings";
-import EmployeeFilesOrganizingDimensionsSettings from "./EmployeeFilesOrganizingDimensionsSettings";
+import EmployeeFilesOrganizingDimensionsSettings, {
+  SettingsFieldHelp,
+} from "./EmployeeFilesOrganizingDimensionsSettings";
 import EmployeeFilesHeaderFieldsSettings from "./EmployeeFilesHeaderFieldsSettings";
 import { normalizeHeaderFieldKeys } from "../../../lib/employeeFileHeaderFields";
+import {
+  ALLOWED_FILE_TYPE_CATALOG,
+  parseAllowedFileTypes,
+  serializeAllowedFileTypes,
+} from "../../../lib/employeeFileDimensions";
 
 type SettingsTab =
   | "general"
   | "employee_information"
   | "custom_groups"
   | "excluded_employees";
+
+function SectionHeading({ title }: { title: string }) {
+  return (
+    <h2 className="mb-1 text-base font-semibold tracking-tight text-[var(--ink)]">
+      {title}
+    </h2>
+  );
+}
+
+function SettingRow({
+  label,
+  help,
+  children,
+  top,
+}: {
+  label: string;
+  help: string;
+  children: ReactNode;
+  top?: boolean;
+}) {
+  return (
+    <div
+      className={`flex gap-4 border-t border-[var(--rule)] py-3 first:border-t-0 first:pt-3 ${
+        top ? "items-start" : "items-center"
+      }`}
+    >
+      <span
+        className={`flex w-44 shrink-0 items-center gap-1.5 text-sm font-medium text-[var(--ink)] ${
+          top ? "pt-1.5" : ""
+        }`}
+      >
+        {label}
+        <SettingsFieldHelp label={label} text={help} />
+      </span>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
 
 export default function EmployeeFilesSettingsPanel() {
   const config = useEmployeeFilesConfig();
@@ -69,6 +115,8 @@ export default function EmployeeFilesSettingsPanel() {
     }
   };
 
+  const allowedTypes = parseAllowedFileTypes(String(values.allowed_file_types || ""));
+
   if (config.isLoading) {
     return <p className="text-sm text-slate-500">Loading Employee Files settings…</p>;
   }
@@ -76,9 +124,10 @@ export default function EmployeeFilesSettingsPanel() {
   return (
     <div className="space-y-6">
       <SectionTabs
+        level="nested"
         ariaLabel="Employee Files settings"
         value={tab}
-        onChange={(value) => setTab(value as SettingsTab)}
+        onChange={setTab}
         items={[
           { id: "general", label: "General" },
           { id: "employee_information", label: "Employee information" },
@@ -120,158 +169,216 @@ export default function EmployeeFilesSettingsPanel() {
       ) : null}
 
       {tab === "general" ? (
-      <>
-      {config.data?.setup_complete ? (
-        <EmployeeFilesOrganizingDimensionsSettings
-          organizingDimensions={values.organizing_dimensions ?? []}
-          subOrganizingDimension={values.sub_organizing_dimension ?? "none"}
-          includeInactive={Boolean(values.include_inactive)}
-          excludeTestEmployees={Boolean(values.exclude_test_employees)}
-          onOrganizingDimensionsChange={(dimensions) =>
-            update("organizing_dimensions", dimensions)
-          }
-          onSubOrganizingDimensionChange={(value) =>
-            update("sub_organizing_dimension", value)
-          }
-        />
-      ) : null}
+        <form
+          className="w-full rounded-xl border border-[var(--rule)] bg-white"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void onSave();
+          }}
+        >
+          {config.data?.setup_complete ? (
+            <section className="px-6 pt-5 pb-2">
+              <SectionHeading title="Organizing dimensions" />
+              <EmployeeFilesOrganizingDimensionsSettings
+                organizingDimensions={values.organizing_dimensions ?? []}
+                subOrganizingDimension={values.sub_organizing_dimension ?? "none"}
+                onOrganizingDimensionsChange={(dimensions) =>
+                  update("organizing_dimensions", dimensions)
+                }
+                onSubOrganizingDimensionChange={(value) =>
+                  update("sub_organizing_dimension", value)
+                }
+              />
+            </section>
+          ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={Boolean(values.include_inactive)}
-            onChange={(event) => update("include_inactive", event.target.checked)}
-          />
-          Include inactive employees in sync
-        </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={Boolean(values.exclude_test_employees)}
-            onChange={(event) => update("exclude_test_employees", event.target.checked)}
-          />
-          Exclude test employees
-        </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={Boolean(values.enable_custom_groups)}
-            onChange={(event) => update("enable_custom_groups", event.target.checked)}
-          />
-          Enable custom groups
-        </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={Boolean(values.enable_esign)}
-            onChange={(event) => update("enable_esign", event.target.checked)}
-          />
-          Enable e-signature entry (EF-F8)
-        </label>
-      </div>
+          <section className="px-6 pt-5 pb-2">
+            <SectionHeading title="People" />
+            <SettingRow
+              label="Inactive employees"
+              help="Keep folders for people who have left."
+            >
+              <div className="flex justify-end">
+                <UiSwitch
+                  checked={Boolean(values.include_inactive)}
+                  label="Inactive employees"
+                  onChange={() => update("include_inactive", !values.include_inactive)}
+                />
+              </div>
+            </SettingRow>
+            <SettingRow
+              label="Custom groups"
+              help="Folders you create that are not from EMS."
+            >
+              <div className="flex justify-end">
+                <UiSwitch
+                  checked={Boolean(values.enable_custom_groups)}
+                  label="Custom groups"
+                  onChange={() =>
+                    update("enable_custom_groups", !values.enable_custom_groups)
+                  }
+                />
+              </div>
+            </SettingRow>
+            <SettingRow
+              label="E-signature"
+              help="Let people sign documents in Employee Files."
+            >
+              <div className="flex justify-end">
+                <UiSwitch
+                  checked={Boolean(values.enable_esign)}
+                  label="E-signature"
+                  onChange={() => update("enable_esign", !values.enable_esign)}
+                />
+              </div>
+            </SettingRow>
+          </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div>
-          <p className="mb-2 text-xs font-bold uppercase text-slate-400">
-            Default duplicate policy (types set to Inherit)
-          </p>
-          <ThemedSelect
-            value={String(values.duplicate_detection_mode || "warn")}
-            onChange={(value) => update("duplicate_detection_mode", value)}
-            options={[
-              { value: "warn", label: "Warn user" },
-              { value: "prevent", label: "Prevent duplicate" },
-              { value: "allow_confirm", label: "Allow with confirmation" },
-            ]}
-          />
-        </div>
-        <div>
-          <p className="mb-2 text-xs font-bold uppercase text-slate-400">Group name display</p>
-          <ThemedSelect
-            value={String(values.group_name_display || "name")}
-            onChange={(value) => update("group_name_display", value)}
-            options={[
-              { value: "name", label: "Full name" },
-              { value: "code", label: "Code" },
-            ]}
-          />
-        </div>
-      </div>
+          <section className="px-6 pt-5 pb-2">
+            <SectionHeading title="Uploads" />
+            <SettingRow
+              label="Duplicates"
+              help="What happens if a similar file already exists."
+            >
+              <ThemedSelect
+                value={String(values.duplicate_detection_mode || "warn")}
+                onChange={(value) => update("duplicate_detection_mode", value)}
+                ariaLabel="Duplicates"
+                className="field"
+                options={[
+                  { value: "warn", label: "Warn" },
+                  { value: "prevent", label: "Block" },
+                  { value: "allow_confirm", label: "Ask first" },
+                ]}
+              />
+            </SettingRow>
+            <SettingRow
+              label="Max size"
+              help="Largest file that can be uploaded."
+            >
+              <div className="flex max-w-[160px] overflow-hidden rounded-lg border border-[var(--rule)] bg-white">
+                <input
+                  type="number"
+                  min={1}
+                  className="min-w-0 flex-1 border-0 px-3 py-2 text-sm outline-none"
+                  value={Number(values.max_file_size_mb || 25)}
+                  onChange={(event) =>
+                    update("max_file_size_mb", Number(event.target.value))
+                  }
+                />
+                <span className="bg-[#f4f2f6] px-3 py-2 text-xs font-semibold text-slate-600">
+                  MB
+                </span>
+              </div>
+            </SettingRow>
+            <SettingRow
+              label="Folder names"
+              help="Show the full name or the code."
+            >
+              <ThemedSelect
+                value={String(values.group_name_display || "name")}
+                onChange={(value) => update("group_name_display", value)}
+                ariaLabel="Folder names"
+                className="field"
+                options={[
+                  { value: "name", label: "Full name" },
+                  { value: "code", label: "Code" },
+                ]}
+              />
+            </SettingRow>
+            <SettingRow
+              label="File types"
+              help="Formats that can be uploaded."
+              top
+            >
+              <div className="flex flex-wrap gap-2">
+                {ALLOWED_FILE_TYPE_CATALOG.map((type) => {
+                  const on = allowedTypes.includes(type);
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        const next = on
+                          ? allowedTypes.filter((item) => item !== type)
+                          : [...allowedTypes, type];
+                        update("allowed_file_types", serializeAllowedFileTypes(next));
+                      }}
+                      className={`rounded-lg border px-2.5 py-1.5 text-[13px] font-medium ${
+                        on
+                          ? "border-brand-pink bg-pink-50 text-brand-text"
+                          : "border-[var(--rule)] bg-white text-slate-600"
+                      }`}
+                    >
+                      {type.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
+            </SettingRow>
+          </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div>
-          <p className="mb-2 text-xs font-bold uppercase text-slate-400">Max file size (MB)</p>
-          <input
-            type="number"
-            className="field w-full"
-            value={Number(values.max_file_size_mb || 25)}
-            onChange={(event) => update("max_file_size_mb", Number(event.target.value))}
-          />
-        </div>
-        <div>
-          <p className="mb-2 text-xs font-bold uppercase text-slate-400">Max issue retries</p>
-          <input
-            type="number"
-            className="field w-full"
-            value={Number(values.max_issue_retry_attempts || 3)}
-            onChange={(event) =>
-              update("max_issue_retry_attempts", Number(event.target.value))
-            }
-          />
-        </div>
-      </div>
+          <details className="mx-6 mb-4 border-t border-[var(--rule)] pt-3.5">
+            <summary className="cursor-pointer text-[13px] font-semibold text-slate-500">
+              Advanced
+            </summary>
+            <div className="mt-3 space-y-3">
+              <div>
+                <p className="mb-1.5 text-xs font-semibold text-slate-500">
+                  Max issue retries
+                </p>
+                <input
+                  type="number"
+                  className="field w-full"
+                  value={Number(values.max_issue_retry_attempts || 3)}
+                  onChange={(event) =>
+                    update("max_issue_retry_attempts", Number(event.target.value))
+                  }
+                />
+              </div>
+              <div>
+                <p className="mb-1.5 text-xs font-semibold text-slate-500">
+                  Category action matrix
+                </p>
+                <textarea
+                  className="field min-h-[90px] w-full font-mono text-xs"
+                  value={String(values.category_action_matrix_json || "{}")}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      category_action_matrix_json: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <p className="mb-1.5 text-xs font-semibold text-slate-500">
+                  Integration mapping
+                </p>
+                <textarea
+                  className="field min-h-[90px] w-full font-mono text-xs"
+                  value={String(values.integration_mapping_json || "{}")}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      integration_mapping_json: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          </details>
 
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase text-slate-400">Allowed file types</p>
-        <input
-          className="field w-full"
-          value={String(values.allowed_file_types || "")}
-          onChange={(event) => update("allowed_file_types", event.target.value)}
-        />
-      </div>
-
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase text-slate-400">
-          Category action matrix (JSON, EF-F5)
-        </p>
-        <textarea
-          className="field min-h-[120px] w-full font-mono text-xs"
-          value={String(values.category_action_matrix_json || "{}")}
-          onChange={(event) =>
-            setValues((current) => ({
-              ...current,
-              category_action_matrix_json: event.target.value,
-            }))
-          }
-        />
-      </div>
-
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase text-slate-400">
-          Integration mapping (JSON, EF-F7)
-        </p>
-        <textarea
-          className="field min-h-[120px] w-full font-mono text-xs"
-          value={String(values.integration_mapping_json || "{}")}
-          onChange={(event) =>
-            setValues((current) => ({
-              ...current,
-              integration_mapping_json: event.target.value,
-            }))
-          }
-        />
-      </div>
-
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={save.isPending}
-        className="rounded-xl bg-brand-pink px-5 py-2.5 text-sm font-semibold text-white"
-      >
-        {save.isPending ? "Saving…" : "Save Employee Files settings"}
-      </button>
-      </>
+          <div className="flex items-center border-t border-[var(--rule)] px-6 py-4">
+            <button
+              type="submit"
+              disabled={save.isPending}
+              className="app-btn app-btn-primary"
+            >
+              {save.isPending ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </form>
       ) : null}
     </div>
   );

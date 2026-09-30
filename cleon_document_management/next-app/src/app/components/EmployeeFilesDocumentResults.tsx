@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileTypeIcon } from "./FileTypeIcon";
 import type { DocDocument } from "../../../lib/types";
 import type { EmployeeFilesDocumentColumnId } from "../../../lib/employeeFilesBrowsePreferences";
 import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
 import ListPagination from "./ListPagination";
+import PersonCell from "./PersonCell";
+import { tableSortMark, toggleTableSortKey } from "../../../lib/tableSortKey";
 import SortableTable from "./SortableTable";
+import StatusPill from "./StatusPill";
 
 const SORTABLE: Record<string, string> = {
   Document: "name",
@@ -51,9 +54,7 @@ export default function EmployeeFilesDocumentResults({
   const headerSort = (label: string) => {
     const field = SORTABLE[label];
     if (!field) return undefined;
-    const asc = `${field} asc`;
-    const desc = `${field} desc`;
-    return () => onSortChange(sortKey === asc ? desc : asc);
+    return () => onSortChange(toggleTableSortKey(sortKey, field));
   };
 
   if (isLoading) {
@@ -83,9 +84,12 @@ export default function EmployeeFilesDocumentResults({
               className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-pink-200 hover:shadow-md"
             >
               <div className="flex items-start gap-3">
-                <span className="rounded-xl bg-pink-50 p-2 text-brand-pink">
-                  <FileText className="h-5 w-5" />
-                </span>
+                <FileTypeIcon
+                  name={doc.name}
+                  mime_type={doc.mime_type}
+                  document_type={doc.document_type}
+                  source_url={doc.source_url}
+                />
                 <div className="min-w-0">
                   <p className="font-semibold text-slate-900">{doc.name}</p>
                   <p className="mt-1 text-xs text-slate-500">{doc.employee_name}</p>
@@ -111,7 +115,10 @@ export default function EmployeeFilesDocumentResults({
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="dms-table-wrap">
-        <SortableTable className="dms-table--employee-files-docs min-w-[900px]">
+        <SortableTable
+          className="ef-table dms-table--employee-files-docs min-w-[900px]"
+          managedSort
+        >
           <thead>
             <tr>
               {show("name") ? (
@@ -122,7 +129,7 @@ export default function EmployeeFilesDocumentResults({
                     onClick={headerSort("Document")}
                   >
                     Document
-                    {sortKey.startsWith("name") ? (sortKey.includes("desc") ? " ↓" : " ↑") : ""}
+                    {tableSortMark(sortKey, "name")}
                   </button>
                 </th>
               ) : null}
@@ -130,7 +137,7 @@ export default function EmployeeFilesDocumentResults({
                 <th className="dms-col-employee-name">
                   <button type="button" onClick={headerSort("Employee")}>
                     Employee
-                    {sortKey.startsWith("employee") ? (sortKey.includes("desc") ? " ↓" : " ↑") : ""}
+                    {tableSortMark(sortKey, "employee")}
                   </button>
                 </th>
               ) : null}
@@ -141,7 +148,7 @@ export default function EmployeeFilesDocumentResults({
                 <th>
                   <button type="button" onClick={headerSort("Status")}>
                     Status
-                    {sortKey.startsWith("status") ? (sortKey.includes("desc") ? " ↓" : " ↑") : ""}
+                    {tableSortMark(sortKey, "status")}
                   </button>
                 </th>
               ) : null}
@@ -149,7 +156,7 @@ export default function EmployeeFilesDocumentResults({
                 <th>
                   <button type="button" onClick={headerSort("Upload date")}>
                     Upload date
-                    {sortKey.startsWith("upload_date") ? (sortKey.includes("desc") ? " ↓" : " ↑") : ""}
+                    {tableSortMark(sortKey, "upload_date")}
                   </button>
                 </th>
               ) : null}
@@ -157,7 +164,7 @@ export default function EmployeeFilesDocumentResults({
                 <th>
                   <button type="button" onClick={headerSort("Expiry")}>
                     Expiry
-                    {sortKey.startsWith("expiry") ? (sortKey.includes("desc") ? " ↓" : " ↑") : ""}
+                    {tableSortMark(sortKey, "expiry")}
                   </button>
                 </th>
               ) : null}
@@ -173,8 +180,15 @@ export default function EmployeeFilesDocumentResults({
                   </td>
                 ) : null}
                 {show("employee") ? (
-                  <td className="dms-col-employee-name text-slate-600">
-                    {doc.employee_name}
+                  <td className="dms-col-employee-name">
+                    <PersonCell
+                      name={doc.employee_name || "—"}
+                      href={
+                        doc.employee_id
+                          ? `/pages/employee/profile?employee=${doc.employee_id}`
+                          : undefined
+                      }
+                    />
                   </td>
                 ) : null}
                 {show("category") ? (
@@ -192,7 +206,9 @@ export default function EmployeeFilesDocumentResults({
                   </td>
                 ) : null}
                 {show("status") ? (
-                  <td className="text-slate-600">{statusLabel(doc)}</td>
+                  <td>
+                    <StatusPill label={statusLabel(doc)} />
+                  </td>
                 ) : null}
                 {show("uploadDate") ? (
                   <td className="text-slate-500">

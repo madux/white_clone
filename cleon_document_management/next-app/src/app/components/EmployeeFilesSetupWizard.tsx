@@ -3,12 +3,18 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
+  Building2,
   CheckCircle2,
   ChevronRight,
+  FileText,
+  Filter,
   FolderTree,
+  Info,
   Loader2,
   Sparkles,
+  UserMinus,
   Users,
+  X,
 } from "lucide-react";
 import { api } from "../../../lib/api";
 import {
@@ -20,31 +26,53 @@ import {
 } from "../../../hooks/useEmployeeFiles";
 import EmployeeFilesExclusionDialog from "./EmployeeFilesExclusionDialog";
 import { useQueryClient } from "@tanstack/react-query";
-import type { EmployeeFilesSetupPreview, EmployeeFilesSetupRun } from "../../../lib/types";
+import type {
+  EmployeeFilesSetupAttentionEmployee,
+  EmployeeFilesSetupPreview,
+  EmployeeFilesSetupRun,
+} from "../../../lib/types";
+import { EMPLOYEE_FILE_LIST_PAGE_SIZE } from "../../../lib/employeeFileListPageSize";
+import AppToolbar from "./AppToolbar";
+import ListPagination from "./ListPagination";
+import PersonCell from "./PersonCell";
+import StatusPill from "./StatusPill";
+import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "../../../hooks/useDocuments";
 import UiSwitch from "./UiSwitch";
 import ThemedSelect from "./ThemedSelect";
-import { employeeFileDimensionLabel } from "../../../lib/employeeFileDimensions";
+import CheckboxDropdown from "./CheckboxDropdown";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
+  employeeFileDimensionLabel,
+  orderOrganizingDimensions,
+  organizingDimensionRole,
+} from "../../../lib/employeeFileDimensions";
 
 type Step = "empty" | "dimension" | "options" | "review" | "processing" | "complete";
 
-const WIZARD_PAGE_CLASS =
-  "min-h-full mx-auto w-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10";
+const WIZARD_PAGE_CLASS = "app-page space-y-6";
 
 const FLOW_STEPS = [
   { id: "dimension", label: "Organization" },
-  { id: "options", label: "Options" },
+  { id: "options", label: "Initialization Rules" },
   { id: "review", label: "Review" },
-  { id: "processing", label: "Setup" },
+  { id: "processing", label: "Processing" },
 ] as const;
 
 type FlowStepId = (typeof FLOW_STEPS)[number]["id"];
 
 const PRIMARY_BTN =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(232,62,140,0.18)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-md bg-brand-pink px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-text disabled:cursor-not-allowed disabled:opacity-50";
 
 const SECONDARY_BTN =
-  "inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-pink-200 hover:bg-pink-50/30";
+  "inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-pink-200 hover:bg-pink-50/40";
 
 function stepIndex(step: Step): number {
   if (step === "dimension") return 0;
@@ -55,6 +83,8 @@ function stepIndex(step: Step): number {
 }
 
 function WizardPage({
+  title,
+  description,
   step,
   children,
   footer,
@@ -71,23 +101,10 @@ function WizardPage({
 }) {
   const active = stepIndex(step);
 
-  const stepClass = (isCurrent: boolean, isDone: boolean, clickable: boolean) => {
-    if (isCurrent) {
-      return "border-brand-pink bg-pink-50 text-brand-text";
-    }
-    if (isDone) {
-      return "border-slate-200 bg-white text-slate-700";
-    }
-    if (clickable) {
-      return "border-slate-200 bg-white text-slate-600 hover:border-pink-200 hover:bg-pink-50/40";
-    }
-    return "border-slate-100 bg-slate-50 text-slate-400";
-  };
-
   return (
     <div className={WIZARD_PAGE_CLASS}>
       {active >= 0 ? (
-        <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-1 py-2">
           {FLOW_STEPS.map((item, index) => {
             const isCurrent = index === active;
             const isDone = index < active || step === "complete";
@@ -95,29 +112,39 @@ function WizardPage({
               item.id !== "processing" &&
               Boolean(onFlowStepClick) &&
               (canNavigateToFlowStep?.(index, item.id) ?? false);
-            const className = `rounded-xl border px-3 py-2.5 text-xs font-bold transition ${stepClass(
-              isCurrent,
-              isDone,
-              clickable,
-            )}`;
-
+            const className = `inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-bold ${
+              isCurrent
+                ? "bg-pink-50 text-brand-text"
+                : isDone
+                  ? "text-slate-700"
+                  : clickable
+                    ? "text-slate-600 hover:bg-pink-50/50"
+                    : "text-slate-400"
+            }`;
             const content = (
-              <span className="flex items-center gap-2">
-                {isDone && !isCurrent ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-brand-pink" />
-                ) : (
-                  <span className="text-[10px] opacity-80">{index + 1}.</span>
-                )}
+              <>
+                <span
+                  className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${
+                    isCurrent || isDone
+                      ? "bg-brand-pink text-white"
+                      : "bg-slate-200 text-slate-600"
+                  }`}
+                >
+                  {isDone && !isCurrent ? (
+                    <CheckCircle2 className="h-3 w-3" />
+                  ) : (
+                    index + 1
+                  )}
+                </span>
                 {item.label}
-              </span>
+              </>
             );
-
             return (
-              <li key={item.id}>
+              <li key={item.id} className="flex items-center gap-2">
                 {clickable ? (
                   <button
                     type="button"
-                    className={`${className} w-full text-left`}
+                    className={className}
                     onClick={() => onFlowStepClick?.(item.id)}
                     aria-current={isCurrent ? "step" : undefined}
                   >
@@ -128,19 +155,33 @@ function WizardPage({
                     {content}
                   </div>
                 )}
+                {index < FLOW_STEPS.length - 1 ? (
+                  <span className="hidden h-px w-8 bg-slate-200 sm:block" aria-hidden />
+                ) : null}
               </li>
             );
           })}
         </ol>
       ) : null}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        {children}
+      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+        {title || description ? (
+          <header className="border-b border-slate-200 px-5 py-4 sm:px-6">
+            {title ? (
+              <h1 className="text-lg font-bold text-slate-900">{title}</h1>
+            ) : null}
+            {description ? (
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">{description}</p>
+            ) : null}
+          </header>
+        ) : null}
+        <div className="p-5 sm:p-6">{children}</div>
+        {footer ? (
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-5 py-3 sm:px-6">
+            {footer}
+          </div>
+        ) : null}
       </section>
-
-      {footer ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">{footer}</div>
-      ) : null}
     </div>
   );
 }
@@ -155,12 +196,14 @@ export default function EmployeeFilesSetupWizard() {
   const [step, setStep] = useState<Step>("empty");
   const [exclusionDialog, setExclusionDialog] = useState<"select" | "view" | null>(null);
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
+  const [primaryDimension, setPrimaryDimension] = useState("");
   const [subOrganizingDimension, setSubOrganizingDimension] = useState("none");
+  const [groupingMode, setGroupingMode] = useState<"ems" | "custom" | "none">("ems");
   const [includeInactive, setIncludeInactive] = useState(false);
-  const [excludeTest, setExcludeTest] = useState(true);
   const [collectDocs, setCollectDocs] = useState(true);
   const [preview, setPreview] = useState<EmployeeFilesSetupPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [selectedReviewCard, setSelectedReviewCard] = useState<string | null>(null);
   const [run, setRun] = useState<EmployeeFilesSetupRun | null>(null);
   const [liveRun, setLiveRun] = useState<EmployeeFilesSetupRun | null>(null);
   const [activeRunId, setActiveRunId] = useState<number | null>(null);
@@ -183,32 +226,54 @@ export default function EmployeeFilesSetupWizard() {
     };
   }, [config.isLoading, config.data?.setup_complete, step]);
 
+  useEffect(() => {
+    if (groupingMode !== "ems") return;
+    const options = dimensions.data ?? [];
+    if (!options.length || selectedDimensions.length) return;
+    const department = options.find((item) => item.key === "department" && item.populated);
+    if (department) {
+      setSelectedDimensions(["department"]);
+      setPrimaryDimension("department");
+    }
+  }, [dimensions.data, groupingMode, selectedDimensions.length]);
+
   const refreshExclusions = () => {
     queryClient.invalidateQueries({ queryKey: ["employee-files", "exclusions"] });
   };
+
+  const primary = selectedDimensions.includes(primaryDimension)
+    ? primaryDimension
+    : selectedDimensions[0] || "";
   const subDimensionOptions = useMemo(() => {
-    const primary = selectedDimensions[0];
     return [
-      { value: "none", label: "None (flat groups only)" },
+      { value: "none", label: "None — keep other views independent" },
       ...selectedDimensions
         .filter((key) => key && key !== primary)
         .map((key) => ({ value: key, label: employeeFileDimensionLabel(key) })),
     ];
-  }, [selectedDimensions]);
+  }, [primary, selectedDimensions]);
 
   const wizardPayload = useMemo(
     () => ({
-      organizing_dimensions: selectedDimensions,
-      sub_organizing_dimension: subOrganizingDimension,
+      organizing_dimensions:
+        groupingMode === "none"
+          ? []
+          : orderOrganizingDimensions(
+              selectedDimensions,
+              primary,
+              subOrganizingDimension,
+            ),
+      sub_organizing_dimension:
+        groupingMode === "none" ? "none" : subOrganizingDimension,
       include_inactive: includeInactive,
-      exclude_test_employees: excludeTest,
       collect_existing_documents: collectDocs,
     }),
     [
+      groupingMode,
+      primary,
       selectedDimensions,
       subOrganizingDimension,
       includeInactive,
-      excludeTest,
       collectDocs,
     ],
   );
@@ -229,7 +294,7 @@ export default function EmployeeFilesSetupWizard() {
   }, [wizardPayload]);
 
   useEffect(() => {
-    if (step !== "review") return;
+    if (step !== "review" && step !== "options") return;
     void refreshPreview();
   }, [step, refreshPreview]);
 
@@ -299,10 +364,8 @@ export default function EmployeeFilesSetupWizard() {
     };
   }, [step, activeRunId, queryClient]);
 
-  const toggleDimension = (key: string) => {
-    setSelectedDimensions((current) =>
-      current.includes(key) ? current.filter((value) => value !== key) : [...current, key],
-    );
+  const selectReviewCard = (key: string) => {
+    setSelectedReviewCard((current) => (current === key ? null : key));
   };
 
   const canNavigateToFlowStep = useCallback(
@@ -310,6 +373,7 @@ export default function EmployeeFilesSetupWizard() {
       if (step === "processing" || step === "complete") return false;
       if (flowStepId === "processing") return false;
       if (flowStepId === "dimension") return true;
+      if (groupingMode === "none") return true;
       return selectedDimensions.length > 0;
     },
     [selectedDimensions.length, step],
@@ -319,7 +383,7 @@ export default function EmployeeFilesSetupWizard() {
     (flowStepId: FlowStepId) => {
       if (flowStepId === "processing") return;
       if (step === "processing" || step === "complete") return;
-      if (flowStepId !== "dimension" && !selectedDimensions.length) return;
+      if (flowStepId !== "dimension" && groupingMode !== "none" && !selectedDimensions.length) return;
       setStep(flowStepId);
     },
     [selectedDimensions.length, step],
@@ -336,64 +400,28 @@ export default function EmployeeFilesSetupWizard() {
 
   if (step === "empty") {
     return (
-      <div className={WIZARD_PAGE_CLASS}>
-        <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-2xl border border-pink-100 bg-gradient-to-br from-pink-50/80 to-white p-8 shadow-sm">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-brand-pink shadow-sm">
-              <Users className="h-6 w-6" />
-            </div>
-            <h2 className="mt-6 text-xl font-bold tracking-tight text-slate-900">
-              No Employee Files have been organized yet
-            </h2>
-            <p className="mt-3 max-w-lg text-sm leading-6 text-slate-500">
-              Run the guided setup to choose how groups are built from EMS, which employees to
-              include, and whether to link existing documents into the new structure.
-            </p>
+      <div className={`${WIZARD_PAGE_CLASS} flex min-h-[60vh] items-center justify-center`}>
+        <Empty className="max-w-lg border border-dashed">
+          <EmptyHeader>
+            <EmptyTitle className="text-xl">No Employee Files yet</EmptyTitle>
+            <EmptyDescription>
+              There are currently no Employee Files in the system. Would you like to bring
+              employee records from EMS into Employee Files?
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
             {canSetup ? (
-              <button
-                type="button"
-                className={`mt-8 ${PRIMARY_BTN}`}
-                onClick={() => setStep("dimension")}
-              >
+              <Button onClick={() => setStep("dimension")}>
                 Set Up Employee Files
-                <ChevronRight className="h-4 w-4" />
-              </button>
+                <ChevronRight data-icon="inline-end" />
+              </Button>
             ) : (
-              <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <p className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                 You do not have permission to run setup. Contact a document administrator.
               </p>
             )}
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-8">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-              What happens
-            </p>
-            <ul className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
-              <li className="flex gap-3">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-brand-pink" />
-                <span>
-                  <strong className="text-slate-800">EMS sync:</strong> Employee records drive
-                  membership and system-managed groups.
-                </span>
-              </li>
-              <li className="flex gap-3">
-                <FolderTree className="mt-0.5 h-4 w-4 shrink-0 text-brand-pink" />
-                <span>
-                  <strong className="text-slate-800">Automatic folders:</strong> Each included
-                  employee gets a dedicated file storage folder.
-                </span>
-              </li>
-              <li className="flex gap-3">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-pink" />
-                <span>
-                  <strong className="text-slate-800">Reconciliation:</strong> Issues are logged for
-                  anything that needs attention after setup.
-                </span>
-              </li>
-            </ul>
-          </div>
-        </section>
+          </EmptyContent>
+        </Empty>
       </div>
     );
   }
@@ -404,58 +432,130 @@ export default function EmployeeFilesSetupWizard() {
         step={step}
         {...wizardChrome}
         title="How should Employee Files be organized?"
-        description="Choose one or more EMS dimensions. System-managed groups are created from the values in each dimension you select."
+        description="Choose one primary EMS grouping. You may add a single subgroup. Remaining attributes stay independent views."
         footer={
-          <div className="flex w-full flex-wrap items-center justify-end gap-3">
-            <button
-              type="button"
-              disabled={!selectedDimensions.length}
-              className={PRIMARY_BTN}
-              onClick={() => setStep("options")}
-            >
-              Continue
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            disabled={groupingMode !== "none" && !selectedDimensions.length}
+            className={PRIMARY_BTN}
+            onClick={() => setStep("options")}
+          >
+            Continue
+            <ChevronRight className="h-4 w-4" />
+          </button>
         }
       >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {(dimensions.data ?? []).map((option) => {
-            const active = selectedDimensions.includes(option.key);
-            const disabled = !option.populated;
-            return (
-              <button
-                key={option.key}
-                type="button"
-                disabled={disabled}
-                onClick={() => !disabled && toggleDimension(option.key)}
-                className={`flex items-start gap-4 rounded-2xl border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                  active
-                    ? "border-brand-pink bg-pink-50/60 shadow-sm"
-                    : "border-slate-200 bg-white hover:border-pink-200 hover:bg-pink-50/20"
-                }`}
-              >
-                <span
-                  className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${
-                    active ? "border-brand-pink" : "border-slate-300"
-                  }`}
-                >
-                  {active ? <span className="h-2.5 w-2.5 rounded-full bg-brand-pink" /> : null}
+        <div className="max-w-xl space-y-5">
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+              Organization mode
+            </p>
+            <RadioGroup
+              value={groupingMode}
+              onValueChange={(value) => {
+                const next = (Array.isArray(value) ? value[0] : value) as "ems" | "custom" | "none";
+                setGroupingMode(next);
+                if (next === "none") {
+                  setSelectedDimensions([]);
+                  setPrimaryDimension("");
+                  setSubOrganizingDimension("none");
+                }
+              }}
+            >
+              <label className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <RadioGroupItem value="ems" className="mt-0.5" />
+                <span>
+                  <span className="block text-sm font-semibold">Organize by EMS Attributes</span>
+                  <span className="text-xs text-muted-foreground">Default. Department is used when that data exists.</span>
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-bold text-slate-800">{option.label}</span>
-                  <span className="mt-1 block text-xs leading-5 text-slate-500">
-                    {option.populated
-                      ? "EMS data available for this dimension"
-                      : "No EMS data — cannot select"}
-                  </span>
+              </label>
+              <label className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <RadioGroupItem value="custom" className="mt-0.5" />
+                <span>
+                  <span className="block text-sm font-semibold">Custom Grouping</span>
+                  <span className="text-xs text-muted-foreground">Configure custom groups after setup.</span>
                 </span>
-              </button>
-            );
-          })}
+              </label>
+              <label className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <RadioGroupItem value="none" className="mt-0.5" />
+                <span>
+                  <span className="block text-sm font-semibold">No Grouping</span>
+                  <span className="text-xs text-muted-foreground">Skip hierarchy and continue to initialization rules.</span>
+                </span>
+              </label>
+            </RadioGroup>
+          </div>
+          {groupingMode !== "none" ? (
+            <>
+              <CheckboxDropdown
+                label="EMS attributes"
+                placeholder="Select organizing dimensions"
+                values={selectedDimensions}
+                onChange={(values) => {
+                  setSelectedDimensions(values);
+                  if (!values.includes(primaryDimension)) {
+                    setPrimaryDimension(values[0] || "");
+                  }
+                  if (
+                    subOrganizingDimension !== "none" &&
+                    (!values.includes(subOrganizingDimension) ||
+                      subOrganizingDimension === (values.includes(primaryDimension) ? primaryDimension : values[0]))
+                  ) {
+                    setSubOrganizingDimension("none");
+                  }
+                }}
+                options={(dimensions.data ?? []).map((option) => ({
+                  value: option.key,
+                  label: option.label,
+                  disabled: !option.populated,
+                  hint: option.populated
+                    ? "EMS data available"
+                    : option.unavailable_reason || `No populated ${option.label} data was found in EMS.`,
+                }))}
+              />
+              <div>
+                <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Primary group
+                </p>
+                <ThemedSelect
+                  value={primary}
+                  onChange={setPrimaryDimension}
+                  ariaLabel="Primary dimension"
+                  options={
+                    selectedDimensions.length
+                      ? selectedDimensions.map((key) => ({
+                          value: key,
+                          label: employeeFileDimensionLabel(key),
+                        }))
+                      : [{ value: "", label: "Select dimensions first" }]
+                  }
+                />
+              </div>
+              <div className="ml-4 rounded-lg border border-border bg-muted/30 p-3">
+                <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Add subgroup
+                </p>
+                <ThemedSelect
+                  value={subOrganizingDimension}
+                  onChange={setSubOrganizingDimension}
+                  options={subDimensionOptions}
+                  ariaLabel="Subgroup"
+                  disabled={selectedDimensions.length < 2}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Optional. One nested subgroup under the primary group.
+                </p>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Employee Files will be created without a department hierarchy. You can still set
+              inclusion, exclusions, and document collection next.
+            </p>
+          )}
         </div>
         {error ? (
-          <p className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <p className="mt-4 rounded-md border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </p>
         ) : null}
@@ -468,8 +568,8 @@ export default function EmployeeFilesSetupWizard() {
       <WizardPage
         step={step}
         {...wizardChrome}
-        title="Additional options"
-        description="Fine-tune who is included and how existing documents are handled during the first sync."
+        title="Initialization Rules"
+        description="Population rules, document collection, and employee exclusions. Each change updates the impact counts below."
         footer={
           <div className="flex w-full flex-wrap items-center justify-end gap-3">
             <button type="button" className={PRIMARY_BTN} onClick={goToReview}>
@@ -479,32 +579,12 @@ export default function EmployeeFilesSetupWizard() {
           </div>
         }
       >
-        {selectedDimensions.length > 1 ? (
-          <div className="mb-6 max-w-md">
-            <p className="mb-2 text-xs font-bold uppercase text-slate-400">
-              Sub-group within primary view
-            </p>
-            <ThemedSelect
-              value={subOrganizingDimension}
-              onChange={setSubOrganizingDimension}
-              options={subDimensionOptions}
-              ariaLabel="Sub-group within primary view"
-            />
-          </div>
-        ) : null}
-
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-2">
           <OptionCard
-            title="Inactive employees"
-            description="Create Employee Files for employees marked inactive in EMS."
+            title="Include inactive employees"
+            description="When on, employees currently marked inactive in EMS are included. Leave off to initialize current staff only."
             checked={includeInactive}
             onChange={() => setIncludeInactive((value) => !value)}
-          />
-          <OptionCard
-            title="Exclude test employees"
-            description="Skip employees flagged as test records when EMS provides that signal."
-            checked={excludeTest}
-            onChange={() => setExcludeTest((value) => !value)}
           />
           <OptionCard
             title="Collect existing documents"
@@ -513,6 +593,37 @@ export default function EmployeeFilesSetupWizard() {
             onChange={() => setCollectDocs((value) => !value)}
           />
         </div>
+
+        {preview ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <WizardImpactMetric
+              icon={Users}
+              label="Employees included"
+              value={`+${preview.employees_included}`}
+              detail="will be initialized from EMS"
+              tone="emerald"
+            />
+            <WizardImpactMetric
+              icon={UserMinus}
+              label="Employees excluded"
+              value={String(preview.excluded_total)}
+              detail="skipped by rules or manual list"
+              tone="slate"
+            />
+            <WizardImpactMetric
+              icon={FileText}
+              label="Documents to collect"
+              value={String(preview.documents_expected)}
+              detail={collectDocs ? "existing employee documents" : "collection turned off"}
+              tone="sky"
+            />
+          </div>
+        ) : previewLoading ? (
+          <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="size-3.5 animate-spin" />
+            Updating impact counts…
+          </p>
+        ) : null}
 
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/60 p-5 sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
@@ -599,18 +710,76 @@ export default function EmployeeFilesSetupWizard() {
               </p>
             ) : null}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              <Stat label="Groups to create" value={preview.groups_to_create} />
-              <Stat label="Employees included" value={preview.employees_included} />
-              <Stat label="Documents to collect" value={preview.documents_expected} />
-              <Stat label="Will need attention" value={preview.need_attention_expected} highlight />
-              <Stat label="Will be excluded" value={preview.excluded_total} />
+              <ReviewStatCard
+                cardKey="groups"
+                label="Groups to create"
+                value={preview.groups_to_create}
+                selected={selectedReviewCard === "groups"}
+                onSelect={selectReviewCard}
+              />
+              <ReviewStatCard
+                cardKey="employees"
+                label="Employees included"
+                value={preview.employees_included}
+                selected={selectedReviewCard === "employees"}
+                onSelect={selectReviewCard}
+              />
+              <ReviewStatCard
+                cardKey="documents"
+                label="Documents to collect"
+                value={preview.documents_expected}
+                selected={selectedReviewCard === "documents"}
+                onSelect={selectReviewCard}
+              />
+              <ReviewStatCard
+                cardKey="attention"
+                label="Will need attention"
+                value={preview.need_attention_expected}
+                selected={selectedReviewCard === "attention"}
+                onSelect={selectReviewCard}
+                highlight
+              />
+              <ReviewStatCard
+                cardKey="excluded"
+                label="Will be excluded"
+                value={preview.excluded_total}
+                selected={selectedReviewCard === "excluded"}
+                onSelect={selectReviewCard}
+              />
             </div>
+            {preview.dimension_summaries?.[0] ? (
+              <WizardReviewInsight
+                icon={Building2}
+                title={`${preview.dimension_summaries[0].groups_to_create} ${employeeFileDimensionLabel(preview.dimension_summaries[0].dimension).toLowerCase()}s identified from EMS data`}
+                description="These groups will be created when setup runs, based on current EMS attributes."
+              />
+            ) : null}
+            {preview.documents_expected === 0 ? (
+              <WizardReviewInsight
+                icon={Info}
+                title={`${preview.employees_included} employees selected`}
+                description="No existing documents were found for collection. You can still add documents after setup."
+                tone="muted"
+              />
+            ) : null}
+            {selectedReviewCard ? (
+              <ReviewCardDetail
+                key={selectedReviewCard}
+                preview={preview}
+                cardKey={selectedReviewCard}
+                wizardPayload={wizardPayload}
+              />
+            ) : (
+              <p className="mt-3 text-xs text-slate-500">
+                Select a card to inspect the supporting table.
+              </p>
+            )}
             {preview.employees_included === 0 &&
             (preview.ems_employees_in_company ?? 0) > 0 ? (
               <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                 EMS has {preview.ems_employees_in_company} employee(s) for this company, but none
-                match your inclusion rules. Try enabling &quot;Include inactive employees&quot;, turn
-                off &quot;Exclude test employees&quot;, or check manual exclusions.
+                match your inclusion rules. Try enabling &quot;Include inactive employees&quot;, or
+                check manual exclusions.
               </p>
             ) : null}
             {preview.employees_included === 0 &&
@@ -639,13 +808,7 @@ export default function EmployeeFilesSetupWizard() {
         step={step}
         {...wizardChrome}
         title="Setting up Employee Files"
-        description="Processing continues on the server if you leave this page. You can return anytime to see live progress."
       >
-        <div className="mb-6 rounded-xl border border-sky-100 bg-sky-50/80 px-4 py-3 text-sm text-sky-900">
-          Automatic processing is running in the background. Stage counters update as EMS employees
-          and documents are handled.
-        </div>
-
         {stages.length ? (
           <SetupStagesProgress stages={stages} />
         ) : (
@@ -739,7 +902,7 @@ function OptionCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-5 transition ${
+      className={`rounded-lg border p-4 transition ${
         checked ? "border-pink-200 bg-pink-50/40" : "border-slate-200 bg-white"
       }`}
     >
@@ -841,6 +1004,534 @@ function StageStatusBadge({ status }: { status: SetupStage["status"] }) {
       ) : null}
       {stageStatusLabel(status)}
     </span>
+  );
+}
+
+function ReviewStatCard({
+  cardKey,
+  label,
+  value,
+  selected,
+  onSelect,
+  highlight,
+}: {
+  cardKey: string;
+  label: string;
+  value: number;
+  selected: boolean;
+  onSelect: (key: string) => void;
+  highlight?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(cardKey)}
+      aria-pressed={selected}
+      className={`review-card ${selected ? "is-active" : ""} ${
+        highlight && !selected ? "is-highlight" : ""
+      }`}
+    >
+      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
+      <p className="mt-2 text-[11px] font-semibold text-brand-pink">
+        {selected ? "Hide details" : "View details"}
+      </p>
+    </button>
+  );
+}
+
+function WizardImpactMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: string;
+  detail: string;
+  tone: "emerald" | "slate" | "sky";
+}) {
+  const styles =
+    tone === "emerald"
+      ? "border-emerald-200/80 bg-gradient-to-br from-emerald-50/90 to-white"
+      : tone === "sky"
+        ? "border-sky-200/80 bg-gradient-to-br from-sky-50/90 to-white"
+        : "border-slate-200 bg-gradient-to-br from-slate-50/80 to-white";
+  const iconStyles =
+    tone === "emerald"
+      ? "bg-emerald-100 text-emerald-700"
+      : tone === "sky"
+        ? "bg-sky-100 text-sky-700"
+        : "bg-slate-100 text-slate-600";
+  return (
+    <div className={`rounded-xl border p-4 shadow-sm ${styles}`}>
+      <div className="flex items-start gap-3">
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconStyles}`}
+        >
+          <Icon className="h-4 w-4" aria-hidden />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</p>
+          <p className="mt-0.5 text-2xl font-bold tabular-nums text-slate-900">{value}</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WizardReviewInsight({
+  icon: Icon,
+  title,
+  description,
+  tone = "default",
+}: {
+  icon: typeof Building2;
+  title: string;
+  description: string;
+  tone?: "default" | "muted";
+}) {
+  const box =
+    tone === "muted"
+      ? "border-slate-200 bg-slate-50/70"
+      : "border-pink-100 bg-gradient-to-r from-pink-50/60 to-white";
+  return (
+    <div className={`mt-4 flex gap-3 rounded-xl border px-4 py-3.5 ${box}`}>
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-brand-pink shadow-sm">
+        <Icon className="h-4 w-4" aria-hidden />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-slate-900">{title}</p>
+        <p className="mt-0.5 text-sm leading-6 text-slate-600">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function SetupPreviewAttentionPanel({
+  wizardPayload,
+  expectedCount,
+}: {
+  wizardPayload: Record<string, unknown>;
+  expectedCount: number;
+}) {
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [rows, setRows] = useState<EmployeeFilesSetupAttentionEmployee[]>([]);
+  const [total, setTotal] = useState(0);
+  const [categories, setCategories] = useState<
+    Array<{ issue_type: string; label: string; count: number }>
+  >([]);
+  const [issueTypes, setIssueTypes] = useState<string[]>([]);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => setSearch(searchInput), 300);
+    return () => window.clearTimeout(handle);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, wizardPayload, issueTypes]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+    void api
+      .listEmployeeFilesSetupAttention(wizardPayload, {
+        search,
+        issue_types: issueTypes,
+        limit: EMPLOYEE_FILE_LIST_PAGE_SIZE,
+        offset: (page - 1) * EMPLOYEE_FILE_LIST_PAGE_SIZE,
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setRows(data.items);
+        setTotal(data.total);
+        setCategories(data.categories ?? []);
+      })
+      .catch((err: Error) => {
+        if (cancelled) return;
+        setError(err?.message || "Unable to load employees.");
+        setRows([]);
+        setTotal(0);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wizardPayload, search, page, issueTypes]);
+
+  const categoryTotal = useMemo(
+    () => categories.reduce((sum, row) => sum + row.count, 0),
+    [categories],
+  );
+
+  const activeFilterCount = issueTypes.length;
+
+  const toggleIssueType = (issueType: string) => {
+    setIssueTypes((current) =>
+      current.includes(issueType)
+        ? current.filter((item) => item !== issueType)
+        : [...current, issueType],
+    );
+  };
+
+  const clearCauseFilters = () => setIssueTypes([]);
+
+  const causeLabel = (issueType: string) =>
+    categories.find((row) => row.issue_type === issueType)?.label ?? issueType;
+
+  if (expectedCount === 0) {
+    return (
+      <div className="review-detail mt-4 rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-6 text-center text-sm text-emerald-900">
+        No employees are expected to need attention for the current rules.
+      </div>
+    );
+  }
+
+  return (
+    <div className="review-detail mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white app-table-well">
+      <AppToolbar
+        search={searchInput}
+        onSearchChange={setSearchInput}
+        searchPlaceholder="Search name, department, job title, email, ID, branch, grade…"
+        extras={
+          categories.length > 0 ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFiltersExpanded((open) => !open)}
+              >
+                <Filter data-icon="inline-start" />
+                Filters
+                {activeFilterCount > 0 ? (
+                  <span className="text-xs">{activeFilterCount}</span>
+                ) : null}
+              </Button>
+              {activeFilterCount > 0 ? (
+                <Button type="button" variant="ghost" onClick={clearCauseFilters}>
+                  <X data-icon="inline-start" />
+                  Reset
+                </Button>
+              ) : null}
+            </>
+          ) : null
+        }
+        footer={
+          <>
+            {filtersExpanded && categories.length > 0 ? (
+              <div
+                className="employee-filter-panel w-full"
+                role="region"
+                aria-label="Issue cause filters"
+              >
+                <section className="employee-filter-section">
+                  <h3 className="employee-filter-section-title">Issue cause</h3>
+                  <div className="employee-filter-options">
+                    {categories.map((row) => (
+                      <label key={row.issue_type} className="employee-filter-checkbox">
+                        <input
+                          type="checkbox"
+                          name={`cause-${row.issue_type}`}
+                          checked={issueTypes.includes(row.issue_type)}
+                          onChange={() => toggleIssueType(row.issue_type)}
+                          className="h-4 w-4 rounded border-slate-300 accent-pink-600"
+                        />
+                        <span>
+                          {row.label}{" "}
+                          <span className="text-slate-400">({row.count})</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            ) : null}
+            {activeFilterCount > 0 || search.trim() ? (
+              <div className="flex w-full flex-wrap items-center gap-2">
+                {search.trim() ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-semibold text-brand-pink">
+                    Search: {search.trim()}
+                    <button type="button" onClick={() => setSearchInput("")}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ) : null}
+                {issueTypes.map((issueType) => (
+                  <span
+                    key={issueType}
+                    className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-semibold text-brand-pink"
+                  >
+                    {causeLabel(issueType)}
+                    <button type="button" onClick={() => toggleIssueType(issueType)}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput("");
+                    clearCauseFilters();
+                  }}
+                  className="ml-auto text-xs font-semibold text-slate-500 hover:text-brand-pink"
+                >
+                  Clear all
+                </button>
+              </div>
+            ) : null}
+            <p className="text-xs text-slate-500">
+              Showing {total} of {categoryTotal} employee
+              {categoryTotal === 1 ? "" : "s"}
+            </p>
+          </>
+        }
+      />
+      {error ? (
+        <p className="border-b border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+      ) : null}
+      {loading && !rows.length ? (
+        <div className="flex items-center justify-center gap-2 px-4 py-12 text-sm text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin text-brand-pink" />
+          Loading employees…
+        </div>
+      ) : (
+        <table className="app-table w-full text-sm">
+          <thead>
+            <tr>
+              <th className="px-4 py-2.5 text-left">Employee</th>
+              <th className="px-4 py-2.5 text-left">Issue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.employee_id} className="border-t border-slate-100">
+                <td className="px-4 py-2.5">
+                  <PersonCell
+                    name={row.employee_name}
+                    subtitle={
+                      [row.job_title, row.department_name].filter(Boolean).join(" · ") ||
+                      undefined
+                    }
+                  />
+                </td>
+                <td className="px-4 py-3 align-top">
+                  <div className="ef-issue-summary max-w-md">
+                    <p className="ef-issue-summary__title">{causeLabel(row.issue_type)}</p>
+                    {row.issue && row.issue !== causeLabel(row.issue_type) ? (
+                      <p className="ef-issue-summary__name">{row.issue}</p>
+                    ) : null}
+                    <div className="ef-issue-summary__meta">
+                      <StatusPill tone="attention" label="Needs attention" />
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {!loading && !rows.length ? (
+              <tr className="border-t border-slate-100">
+                <td className="px-4 py-8 text-center text-slate-500" colSpan={2}>
+                  No employees match your search.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      )}
+      <div className="border-t border-slate-100 px-2">
+        <ListPagination
+          page={page}
+          pageSize={EMPLOYEE_FILE_LIST_PAGE_SIZE}
+          total={total}
+          onPageChange={setPage}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ReviewCardDetail({
+  preview,
+  cardKey,
+  wizardPayload,
+}: {
+  preview: EmployeeFilesSetupPreview;
+  cardKey: string;
+  wizardPayload: Record<string, unknown>;
+}) {
+  const summaries = preview.dimension_summaries ?? [];
+  const groups = preview.group_breakdown ?? [];
+  const excludedRows = Object.entries(preview.excluded_breakdown || {}).map(
+    ([reason, count]) => ({
+      reason: reason.replace(/_/g, " "),
+      count,
+    }),
+  );
+
+  if (cardKey === "groups") {
+    return (
+      <div className="review-detail mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <th className="px-4 py-2.5">Dimension</th>
+              <th className="px-4 py-2.5">Group</th>
+              <th className="px-4 py-2.5">Employees</th>
+              <th className="px-4 py-2.5">Documents</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(summaries.length
+              ? summaries.flatMap((summary) =>
+                  summary.group_breakdown.map((row) => ({
+                    dimension: `${employeeFileDimensionLabel(summary.dimension)} (${organizingDimensionRole(
+                      summary.dimension,
+                      preview.primary_organizing_dimension || preview.organizing_dimensions[0],
+                      preview.sub_organizing_dimension,
+                    )})`,
+                    ...row,
+                  })),
+                )
+              : groups.map((row) => ({ dimension: "Primary", ...row }))
+            ).map((row, index) => (
+              <tr key={`${row.dimension}-${row.name}-${index}`} className="border-t border-slate-100">
+                <td className="px-4 py-2.5 text-slate-600">{row.dimension}</td>
+                <td className="px-4 py-2.5 font-semibold text-slate-800">{row.name}</td>
+                <td className="px-4 py-2.5 tabular-nums">{row.employees}</td>
+                <td className="px-4 py-2.5 tabular-nums">{row.documents}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  if (cardKey === "employees") {
+    return (
+      <div className="review-detail mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <th className="px-4 py-2.5">View</th>
+              <th className="px-4 py-2.5">Groups</th>
+              <th className="px-4 py-2.5">Employees in groups</th>
+            </tr>
+          </thead>
+          <tbody>
+            {summaries.map((summary) => (
+              <tr key={summary.dimension} className="border-t border-slate-100">
+                <td className="px-4 py-2.5 font-semibold text-slate-800">
+                  {employeeFileDimensionLabel(summary.dimension)}{" "}
+                  <span className="font-normal text-slate-500">
+                    (
+                    {organizingDimensionRole(
+                      summary.dimension,
+                      preview.primary_organizing_dimension || preview.organizing_dimensions[0],
+                      preview.sub_organizing_dimension,
+                    )}
+                    )
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 tabular-nums">{summary.groups_to_create}</td>
+                <td className="px-4 py-2.5 tabular-nums">
+                  {summary.group_breakdown.reduce((sum, row) => sum + row.employees, 0)}
+                </td>
+              </tr>
+            ))}
+            {!summaries.length ? (
+              <tr className="border-t border-slate-100">
+                <td className="px-4 py-2.5" colSpan={3}>
+                  {preview.employees_included} employees match the current inclusion rules.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  if (cardKey === "documents") {
+    return (
+      <div className="review-detail mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <th className="px-4 py-2.5">Group</th>
+              <th className="px-4 py-2.5">Documents</th>
+              <th className="px-4 py-2.5">Employees</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((row) => (
+              <tr key={row.name} className="border-t border-slate-100">
+                <td className="px-4 py-2.5 font-semibold text-slate-800">{row.name}</td>
+                <td className="px-4 py-2.5 tabular-nums">{row.documents}</td>
+                <td className="px-4 py-2.5 tabular-nums">{row.employees}</td>
+              </tr>
+            ))}
+            {!groups.length ? (
+              <tr className="border-t border-slate-100">
+                <td className="px-4 py-2.5" colSpan={3}>
+                  {preview.documents_expected} existing documents will be collected.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  if (cardKey === "attention") {
+    return (
+      <SetupPreviewAttentionPanel
+        wizardPayload={wizardPayload}
+        expectedCount={preview.need_attention_expected}
+      />
+    );
+  }
+
+  return (
+    <div className="review-detail mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <table className="w-full text-sm">
+        <thead>
+          <tr>
+            <th className="px-4 py-2.5">Exclusion reason</th>
+            <th className="px-4 py-2.5">Employees</th>
+          </tr>
+        </thead>
+        <tbody>
+          {excludedRows.map((row) => (
+            <tr key={row.reason} className="border-t border-slate-100">
+              <td className="px-4 py-2.5 font-semibold capitalize text-slate-800">
+                {row.reason}
+              </td>
+              <td className="px-4 py-2.5 tabular-nums">{row.count}</td>
+            </tr>
+          ))}
+          {!excludedRows.length ? (
+            <tr className="border-t border-slate-100">
+              <td className="px-4 py-2.5" colSpan={2}>
+                No employees are currently excluded.
+              </td>
+            </tr>
+          ) : null}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

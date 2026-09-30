@@ -8,7 +8,7 @@ export default function EmployeeFilesWorkspace() {
 
   if (config.isLoading) {
     return (
-      <div className="min-h-full mx-auto w-full max-w-[1650px] bg-slate-50 p-6 pb-10">
+      <div className="app-page">
         <p className="text-sm text-slate-500">Loading Employee Files configuration…</p>
       </div>
     );
