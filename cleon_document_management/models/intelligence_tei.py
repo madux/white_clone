@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import os
 import threading
 
 _logger = logging.getLogger(__name__)
@@ -19,6 +20,12 @@ _rerank_error = ""
 _preload_started = False
 
 
+def local_rag_enabled():
+    """Set CLEON_LOCAL_RAG=0 in .env to skip torch/Hugging Face on your machine."""
+    flag = (os.environ.get("CLEON_LOCAL_RAG") or "1").strip().lower()
+    return flag not in ("0", "false", "no", "off")
+
+
 def current_embed_model():
     return EMBED_MODEL
 
@@ -34,6 +41,14 @@ def _device():
     except Exception:
         pass
     return "cpu"
+
+
+def _require_local_rag():
+    if not local_rag_enabled():
+        raise RuntimeError(
+            "Local Ask RAG is disabled (CLEON_LOCAL_RAG=0). "
+            "Unset it to use embeddings on this server."
+        )
 
 
 def _load_sentence_transformer(model_id):
@@ -68,6 +83,7 @@ def _load_cross_encoder(model_id):
 
 def _get_embedder():
     global _embedder, _embed_error
+    _require_local_rag()
     if _embedder is not None:
         return _embedder
     with _lock:
@@ -86,6 +102,7 @@ def _get_embedder():
 
 def _get_reranker():
     global _reranker, _rerank_error
+    _require_local_rag()
     if _reranker is not None:
         return _reranker
     with _lock:
@@ -104,6 +121,8 @@ def _get_reranker():
 
 def preload_local_models(background=True):
     """Read Qwen3 weights once when the server starts, not on the first Ask."""
+    if not local_rag_enabled():
+        return
     global _preload_started
     libraries_ok, error = _libraries_ok()
     if not libraries_ok:
@@ -204,10 +223,27 @@ def _model_cached(model_id):
 
 
 def embed_health(env=None):
+    if not local_rag_enabled():
+        return {
+            "local_rag_enabled": False,
+            "embedding_model": EMBED_MODEL,
+            "rerank_model": RERANK_MODEL,
+            "embed_ok": False,
+            "rerank_ok": False,
+            "embed_loaded": False,
+            "rerank_loaded": False,
+            "embed_cached": False,
+            "rerank_cached": False,
+            "libraries_ok": False,
+            "embed_error": "CLEON_LOCAL_RAG=0",
+            "rerank_error": "CLEON_LOCAL_RAG=0",
+            "device": "",
+        }
     libraries_ok, library_error = _libraries_ok()
     embed_cached = _model_cached(EMBED_MODEL)
     rerank_cached = _model_cached(RERANK_MODEL)
     return {
+        "local_rag_enabled": True,
         "embedding_model": EMBED_MODEL,
         "rerank_model": RERANK_MODEL,
         "embed_ok": libraries_ok and (_embedder is not None or embed_cached),

@@ -1714,6 +1714,12 @@ class Document(models.Model):
 
     @api.model
     def _cron_index_ask_library(self):
+        from odoo.addons.cleon_document_management.models.intelligence_tei import (
+            local_rag_enabled,
+        )
+
+        if not local_rag_enabled():
+            return True
         _logger.info("Ask library index cron started")
         live = [
             ("active", "=", True),

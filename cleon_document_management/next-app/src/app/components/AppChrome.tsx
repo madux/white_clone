@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import Header from "@/app/components/Header";
-import Sidebar from "@/app/components/Sidebar";
+import OfflineBanner from "@/app/components/OfflineBanner";
 
 function isImmersive(pathname: string) {
   return (
@@ -20,16 +20,12 @@ export default function AppChrome({ children }: { children: ReactNode }) {
     return <div className="h-screen overflow-hidden bg-[#f4f5f8]">{children}</div>;
   }
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-1 flex-col gap-4 overflow-hidden">
-        <Suspense fallback={null}>
-          <Header />
-        </Suspense>
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50">
-          <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
-        </main>
-      </div>
+    <div className="flex h-screen flex-col overflow-hidden bg-white">
+      <Suspense fallback={null}>
+        <Header />
+      </Suspense>
+      <OfflineBanner />
+      <main className="min-h-0 flex-1 overflow-y-auto bg-slate-50">{children}</main>
     </div>
   );
 }

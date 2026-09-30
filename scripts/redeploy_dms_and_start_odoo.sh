@@ -13,8 +13,13 @@ npm run deploy
 
 echo "==> Stop any running Odoo on database ${ODOO_DB}" >&2
 if pgrep -f "odoo-bin.*-d[ =]${ODOO_DB}" >/dev/null 2>&1 || pgrep -f "odoo-bin.*-d ${ODOO_DB}" >/dev/null 2>&1; then
-  pkill -f "odoo-bin.*${ODOO_DB}" || true
-  sleep 2
+  pkill -TERM -f "odoo-bin.*${ODOO_DB}" 2>/dev/null || true
+  for _ in $(seq 1 20); do
+    pgrep -f "odoo-bin.*${ODOO_DB}" >/dev/null 2>&1 || break
+    sleep 1
+  done
+  pkill -KILL -f "odoo-bin.*${ODOO_DB}" 2>/dev/null || true
+  sleep 1
 fi
 
 echo "==> Upgrade Odoo modules" >&2

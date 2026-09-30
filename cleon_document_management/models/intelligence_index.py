@@ -454,7 +454,15 @@ class IntelligenceLibraryChunk(models.Model):
 
     def _register_hook(self):
         super()._register_hook()
-        from .intelligence_tei import preload_local_models
+        import os
+
+        from .intelligence_tei import local_rag_enabled, preload_local_models
+
+        if not local_rag_enabled():
+            return
+        flag = (os.environ.get("CLEON_RAG_PRELOAD") or "").strip().lower()
+        if flag not in ("1", "true", "yes", "on"):
+            return
 
         preload_local_models(background=True)
 

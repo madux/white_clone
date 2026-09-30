@@ -6,4 +6,5 @@ export ODOO_UPDATE_MODULES="${ODOO_UPDATE_MODULES:-cleon_document_management,cle
 export ODOO_STOP_AFTER_UPDATE=1
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"${SCRIPT_DIR}/ensure_odoo_python_deps.sh"
 exec "${SCRIPT_DIR}/run_odoo_server.sh"
