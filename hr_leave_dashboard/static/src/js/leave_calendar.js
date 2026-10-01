@@ -9,10 +9,12 @@ import { EmployeeRequestModal } from "../components/employee_request_modal/emplo
 import { CalendarDayPanel } from "../components/calendar_day_panel/calendar_day_panel";
 import { SmartDateRecommendationsModal } from "../components/smart_date_modal/smart_date_modal";
 import { AdminBookTimeOffModal } from "../components/admin_book_modal/admin_book_modal";
+import { CleonCalendar } from "@cleon_calendar/calendar/calendar";
+import { eventInRange, formatYMD, getViewRange } from "@cleon_calendar/calendar/calendar_utils";
 
 export class LeaveCalendarPage extends Component {
     static template = "hr_leave_dashboard.LeaveCalendarPage";
-    static components = { CalendarSidebar, LeaveRequestDetailModal, EmployeeRequestModal, CalendarDayPanel, SmartDateRecommendationsModal, AdminBookTimeOffModal };
+    static components = { CleonCalendar, CalendarSidebar, LeaveRequestDetailModal, EmployeeRequestModal, CalendarDayPanel, SmartDateRecommendationsModal, AdminBookTimeOffModal };
     static props = {
         embedded: { type: Boolean, optional: true },
         forceEmployee: { type: Boolean, optional: true },
@@ -54,7 +56,6 @@ export class LeaveCalendarPage extends Component {
             selectedCountryId: null,
 
             filterPanelOpen: false,
-            periodPickerOpen: false,
             downloadDropdownOpen: false,
 
             filterDraft: {
@@ -80,8 +81,6 @@ export class LeaveCalendarPage extends Component {
             dayPanelOpen: false,
             dayPanelDateFrom: "",
             dayPanelDateTo: "",
-            selectionStart: "",
-            selectionCurrent: "",
             employeeRequestOpen: false,
             employeeRequestInitial: {},
             loadError: "",
@@ -207,49 +206,20 @@ export class LeaveCalendarPage extends Component {
     }
 
     getRangeForView() {
-        const d = this.state.currentDate;
-        const year = d.getFullYear();
-        const month = d.getMonth();
-
-        if (this.state.viewMode === "month") {
-            const firstDayOfMonth = new Date(year, month, 1);
-            const startDay = new Date(firstDayOfMonth);
-            startDay.setDate(startDay.getDate() - startDay.getDay()); // Sunday start
-
-            const lastDayOfMonth = new Date(year, month + 1, 0);
-            const endDay = new Date(lastDayOfMonth);
-            endDay.setDate(endDay.getDate() + (6 - endDay.getDay())); // Saturday end
-
-            return {
-                dateFrom: this.formatYMD(startDay),
-                dateTo: this.formatYMD(endDay),
-            };
-        } else if (this.state.viewMode === "week") {
-            const startDay = new Date(d);
-            startDay.setDate(startDay.getDate() - startDay.getDay());
-            const endDay = new Date(startDay);
-            endDay.setDate(endDay.getDate() + 6);
-
-            return {
-                dateFrom: this.formatYMD(startDay),
-                dateTo: this.formatYMD(endDay),
-            };
-        } else {
-            // Day view
-            return {
-                dateFrom: this.formatYMD(d),
-                dateTo: this.formatYMD(d),
-            };
-        }
+        return getViewRange(this.state.viewMode, this.state.currentDate);
     }
 
     // ---------------------------------------------------------
     // VIEW SWITCHING & NAVIGATION
     // ---------------------------------------------------------
 
-    setViewMode(mode) {
-        if (this.state.employeeView && mode === "year") return;
-        this.state.viewMode = mode;
+    get availableViews() {
+        return this.state.employeeView ? ["month", "week", "day"] : ["month", "week", "day", "year"];
+    }
+
+    onRangeChange({ view, date }) {
+        this.state.viewMode = view;
+        this.state.currentDate = date;
         this.loadCalendarData();
     }
 
@@ -299,39 +269,23 @@ export class LeaveCalendarPage extends Component {
         const to = this.state.dayPanelDateTo || from;
         return this.visibleHolidays.filter(holiday => holiday.date_from <= to && holiday.date_to >= from);
     }
-    beginDateSelection(ymd, event) {
-        if (event.button !== 0 || !this.state.canRequest && !this.state.canBook) return;
-        this.state.selectionStart = ymd;
-        this.state.selectionCurrent = ymd;
+    get canSelectDates() {
+        return this.state.canRequest || this.state.canBook;
     }
-    extendDateSelection(ymd) {
-        if (this.state.selectionStart) this.state.selectionCurrent = ymd;
-    }
-    finishDateSelection(ymd) {
-        if (!this.state.selectionStart) return;
-        const values = [this.state.selectionStart, ymd].sort();
-        const isRange = values[0] !== values[1];
-        this.state.selectionStart = "";
-        this.state.selectionCurrent = "";
-        if (isRange) {
-            // In organisation view, date-range drag opens admin booking
-            if (!this.state.employeeView && this.state.canBook) {
-                this.openAdminBooking(values[0], values[1]);
-            } else if (this.state.canRequest) {
-                this.openRequestRange(values[0], values[1]);
-            } else {
-                this.openDayPanel(values[0], values[1]);
-            }
-            return;
+    onSelectRange(dateFrom, dateTo) {
+        // In organisation view, date-range drag opens admin booking
+        if (!this.state.employeeView && this.state.canBook) {
+            this.openAdminBooking(dateFrom, dateTo);
+        } else if (this.state.canRequest) {
+            this.openRequestRange(dateFrom, dateTo);
+        } else {
+            this.openDayPanel(dateFrom, dateTo);
         }
+    }
+    onDayClick(ymd) {
         const hasEntries = this.getDayLeaves(ymd).length || this.getDayHolidays(ymd).length;
         if (!this.state.employeeView || hasEntries) this.openDayPanel(ymd);
         else this.openRequestRange(ymd);
-    }
-    isDateSelected(ymd) {
-        if (!this.state.selectionStart) return false;
-        const [from, to] = [this.state.selectionStart, this.state.selectionCurrent].sort();
-        return ymd >= from && ymd <= to;
     }
     closeEmployeeRequest() {
         this.state.employeeRequestOpen = false;
@@ -349,138 +303,47 @@ export class LeaveCalendarPage extends Component {
         this.state.adminBookDateTo = "";
     }
 
-    navigate(direction) {
-        const d = new Date(this.state.currentDate);
-        if (this.state.viewMode === "month") {
-            d.setMonth(d.getMonth() + direction);
-        } else if (this.state.viewMode === "week") {
-            d.setDate(d.getDate() + direction * 7);
-        } else if (this.state.viewMode === "day") {
-            d.setDate(d.getDate() + direction);
-        } else if (this.state.viewMode === "year") {
-            d.setFullYear(d.getFullYear() + direction);
-        }
-        this.state.currentDate = d;
-        this.loadCalendarData();
-    }
-
-    goToToday() {
-        const today = new Date();
-        this.state.currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        this.loadCalendarData();
-    }
-
-    togglePeriodPicker() {
-        this.state.periodPickerOpen = !this.state.periodPickerOpen;
-    }
-
-    selectMonthYear(year, monthIdx) {
-        this.state.currentDate = new Date(year, monthIdx, 1);
-        this.state.periodPickerOpen = false;
-        this.loadCalendarData();
-    }
-
     selectCountry(countryId) {
         this.state.selectedCountryId = Number(countryId);
         this.loadCalendarData();
     }
 
-    get periodLabel() {
-        const d = this.state.currentDate;
-        if (this.state.viewMode === "month") {
-            return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-        } else if (this.state.viewMode === "week") {
-            const startDay = new Date(d);
-            startDay.setDate(startDay.getDate() - startDay.getDay());
-            const endDay = new Date(startDay);
-            endDay.setDate(endDay.getDate() + 6);
-            return `${startDay.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${endDay.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
-        } else if (this.state.viewMode === "day") {
-            return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-        } else {
-            return `${d.getFullYear()}`;
-        }
-    }
-
     // ---------------------------------------------------------
-    // MONTH VIEW GRID COMPUTATION (FR-146 to FR-151)
-
+    // SHARED CALENDAR ADAPTER (holidays -> markers, leaves -> events)
     // ---------------------------------------------------------
 
-    get monthGridWeeks() {
-        const d = this.state.currentDate;
-        const year = d.getFullYear();
-        const month = d.getMonth();
-
-        const firstDayOfMonth = new Date(year, month, 1);
-        const lastDayOfMonth = new Date(year, month + 1, 0);
-        const daysInMonth = lastDayOfMonth.getDate();
-        const startDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sun
-
-        const totalCells = Math.ceil((startDayOfWeek + daysInMonth) / 7) * 7;
-        const numWeeks = totalCells / 7;
-
-        const startDate = new Date(firstDayOfMonth);
-        startDate.setDate(startDate.getDate() - startDayOfWeek);
-
-        const weeks = [];
-        const curr = new Date(startDate);
-        const todayStr = this.formatYMD(new Date());
-
-        for (let w = 0; w < numWeeks; w++) {
-            const weekDays = [];
-            for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
-                const dayYMD = this.formatYMD(curr);
-                weekDays.push({
-                    date: new Date(curr),
-                    ymd: dayYMD,
-                    dayNumber: curr.getDate(),
-                    isCurrentMonth: curr.getMonth() === month,
-                    isToday: dayYMD === todayStr,
-                });
-                curr.setDate(curr.getDate() + 1);
-            }
-            weeks.push(weekDays);
-        }
-        return weeks;
-    }
-
-    // FR-150: Preprocess multi-day continuous blocks for a given week.
-
-    getWeekSegments(weekDays) {
-        const weekStartStr = weekDays[0].ymd;
-        const weekEndStr = weekDays[6].ymd;
-
-        const matchingLeaves = this.visibleLeaves.filter(l => l.date_from <= weekEndStr && l.date_to >= weekStartStr);
-
-        const segments = [];
-        for (const leave of matchingLeaves) {
-            const segStartStr = leave.date_from < weekStartStr ? weekStartStr : leave.date_from;
-            const segEndStr = leave.date_to > weekEndStr ? weekEndStr : leave.date_to;
-
-            const startIndex = weekDays.findIndex(d => d.ymd === segStartStr);
-            const endIndex = weekDays.findIndex(d => d.ymd === segEndStr);
-
-            if (startIndex !== -1 && endIndex !== -1) {
-                segments.push({
-                    leave: leave,
-                    startIndex: startIndex, // 0 to 6
-                    endIndex: endIndex,     // 0 to 6
-                    span: endIndex - startIndex + 1,
-                    isStartOfLeave: leave.date_from === segStartStr,
-                });
-            }
-        }
-        return segments;
+    get calendarEvents() {
+        const markers = this.visibleHolidays.map(holiday => ({
+            id: `holiday-${holiday.id}`,
+            type: "marker",
+            title: holiday.name,
+            subtitle: "Public holiday",
+            icon: "fa-star text-warning",
+            start: holiday.date_from,
+            end: holiday.date_to,
+        }));
+        const leaves = this.visibleLeaves.map(leave => ({
+            id: leave.id,
+            title: leave.employee_name,
+            subtitle: leave.leave_type_name,
+            detail: leave.department_name,
+            tooltip: `${leave.employee_name} (${leave.leave_type_name})`,
+            start: leave.date_from,
+            end: leave.date_to,
+            color: this.getLeaveTypeColor(leave.color_hex),
+            className: leave.status === "pending" ? "o_ccal_dashed" : "",
+            badge: { label: leave.status, className: leave.status === "approved" ? "bg-success" : "bg-warning text-dark" },
+        }));
+        return [...markers, ...leaves];
     }
 
     // Get leaves specifically for a day cell
     getDayLeaves(ymdStr) {
-        return this.visibleLeaves.filter(l => l.date_from <= ymdStr && l.date_to >= ymdStr);
+        return this.visibleLeaves.filter(l => eventInRange({ start: l.date_from, end: l.date_to }, ymdStr));
     }
 
     getDayHolidays(ymdStr) {
-        return this.visibleHolidays.filter(h => h.date_from <= ymdStr && h.date_to >= ymdStr);
+        return this.visibleHolidays.filter(h => eventInRange({ start: h.date_from, end: h.date_to }, ymdStr));
     }
 
     get visibleLeaves() {
@@ -529,100 +392,19 @@ export class LeaveCalendarPage extends Component {
     }
 
     // ---------------------------------------------------------
-    // WEEK & DAY VIEW DATA
+    // YEAR VIEW (server-aggregated occupancy, FR-162 to FR-168)
     // ---------------------------------------------------------
 
-    get weekViewDays() {
-        const d = new Date(this.state.currentDate);
-        d.setDate(d.getDate() - d.getDay());
-        const days = [];
-        const todayStr = this.formatYMD(new Date());
-
-        for (let i = 0; i < 7; i++) {
-            const dayYMD = this.formatYMD(d);
-            days.push({
-                date: new Date(d),
-                ymd: dayYMD,
-                dayName: d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(),
-                dayNumber: d.getDate(),
-                isToday: dayYMD === todayStr,
-                leaves: this.getDayLeaves(dayYMD),
-                holidays: this.getDayHolidays(dayYMD),
-            });
-            d.setDate(d.getDate() + 1);
-        }
-        return days;
+    yearDayCount(ymd) {
+        return this.state.yearData?.day_occupancy?.[ymd]?.total || 0;
     }
 
-    get dayViewLeaves() {
-        const todayYMD = this.formatYMD(this.state.currentDate);
-        return this.getDayLeaves(todayYMD);
+    getYearMonthSummary(monthNumber) {
+        return this.state.yearData?.month_summary?.[monthNumber] || { approved: 0, pending: 0, holidays: 0 };
     }
 
-    get dayViewHolidays() {
-        return this.getDayHolidays(this.formatYMD(this.state.currentDate));
-    }
-
-    // ---------------------------------------------------------
-    // YEAR VIEW MINI-CALENDAR GRID GENERATOR (FR-162 to FR-168)
-
-    // ---------------------------------------------------------
-
-    get yearMonths() {
-        if (!this.state.yearData) return [];
-        const year = this.state.yearData.year;
-        const monthNames = [
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
-        ];
-        const todayYMD = this.formatYMD(new Date());
-
-        return monthNames.map((name, idx) => {
-            const mNum = idx + 1;
-            const summary = this.state.yearData.month_summary[mNum] || { approved: 0, pending: 0, holidays: 0 };
-            const firstDay = new Date(year, idx, 1);
-            const daysInMonth = new Date(year, idx + 1, 0).getDate();
-            const startDayOfWeek = firstDay.getDay();
-
-            const totalCells = Math.ceil((startDayOfWeek + daysInMonth) / 7) * 7;
-            const startDay = new Date(firstDay);
-            startDay.setDate(startDay.getDate() - startDayOfWeek);
-
-            const days = [];
-            const curr = new Date(startDay);
-            for (let i = 0; i < totalCells; i++) {
-                const dayYMD = this.formatYMD(curr);
-                const occ = this.state.yearData.day_occupancy[dayYMD] || { approved: 0, pending: 0, total: 0 };
-                days.push({
-                    date: new Date(curr),
-                    ymd: dayYMD,
-                    dayNumber: curr.getDate(),
-                    isCurrentMonth: curr.getMonth() === idx,
-                    isToday: dayYMD === todayYMD,
-                    totalLeaves: occ.total,
-                });
-                curr.setDate(curr.getDate() + 1);
-            }
-
-            const monthHolidays = (this.state.yearData.holidays || []).filter(h => h.month === mNum);
-
-            return {
-                number: mNum,
-                name: name,
-                summary: summary,
-                days: days,
-                holidays: monthHolidays,
-            };
-        });
-    }
-
-    getYearDayClass(day) {
-        if (!day.isCurrentMonth) return "other-month";
-        if (day.isToday) return "today-highlight";
-        if (day.totalLeaves >= 3) return "leave-intense-3";
-        if (day.totalLeaves === 2) return "leave-intense-2";
-        if (day.totalLeaves === 1) return "leave-intense-1";
-        return "";
+    getYearMonthHolidays(monthNumber) {
+        return (this.state.yearData?.holidays || []).filter(h => h.month === monthNumber);
     }
 
     // ---------------------------------------------------------
@@ -797,6 +579,10 @@ export class LeaveCalendarPage extends Component {
 
     // ---------------------------------------------------------
 
+    onCalendarEventClick(event) {
+        this.openLeaveDetail(event.id);
+    }
+
     openLeaveDetail(id) {
         const leave = this.state.leaves.find(item => item.id === id);
         if (this.state.employeeView && leave && !leave.can_open_detail) {
@@ -903,10 +689,7 @@ export class LeaveCalendarPage extends Component {
     }
 
     formatYMD(dateObj) {
-        const y = dateObj.getFullYear();
-        const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-        const d = String(dateObj.getDate()).padStart(2, "0");
-        return `${y}-${m}-${d}`;
+        return formatYMD(dateObj);
     }
 }
 

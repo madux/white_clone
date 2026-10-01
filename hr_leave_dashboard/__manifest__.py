@@ -3,7 +3,7 @@
     'version': '17.0.1.3.1',
     'post_init_hook': 'post_init_hook',
     'category': 'CleonHR-HR ADMIN',
-    'depends': ['hr_holidays', 'web', 'hr_company_calendar', 'hr_administration', 'hr_employee', 'cleon_ai', 'cleon_approval'],
+    'depends': ['hr_holidays', 'web', 'cleon_calendar', 'hr_company_calendar', 'hr_administration', 'hr_employee', 'cleon_ai', 'cleon_approval'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',

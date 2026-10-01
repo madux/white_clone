@@ -10,411 +10,161 @@
             <!-- Main Content Area -->
             <div class="o_leave_dashboard">
 
-                <!-- ════════════════════════════════════════════════════
-                     PAGE HEADER & CONTROLS (FR-138 to FR-145)
-                     ════════════════════════════════════════════════════ -->
-                <header class="o_cc_header border-bottom pb-2 mb-2">
-                    <div class="d-flex align-items-center flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                <CleonCalendar
+                    events="calendarEvents"
+                    date="state.currentDate"
+                    view="state.viewMode"
+                    views="availableViews"
+                    loading="state.loading"
+                    error="state.loadError"
+                    selectable="canSelectDates"
+                    showDayContent="state.coverageMode"
+                    dayTitle="state.employeeView ? 'Click for day details; drag to request a date range' : 'Click for roster; drag to book a date range'"
+                    emptyText="state.viewMode === 'day' ? 'No employees are on leave on this day.' : 'No leaves'"
+                    dayHeading="'Schedules for'"
+                    yearDayCount.bind="yearDayCount"
+                    onRangeChange.bind="onRangeChange"
+                    onDayClick.bind="onDayClick"
+                    onSelectRange.bind="onSelectRange"
+                    onEventClick.bind="onCalendarEventClick"
+                    onMoreClick.bind="openDayPanel"
+                    onRetry.bind="loadCalendarData">
 
-                            <div t-if="state.canSwitchPerspective" class="o_cc_perspective">
-                                <button t-if="state.canUseOrganisation" t-att-class="state.calendarScope === 'organisation' ? 'active' : ''" t-on-click="() => this.setPerspective('organisation')">Organisation</button>
-                                <button t-if="state.canUseTeam" t-att-class="state.calendarScope === 'team' ? 'active' : ''" t-on-click="() => this.setPerspective('team')">Team</button>
-                                <button t-if="state.canUsePersonal" t-att-class="state.calendarScope === 'personal' ? 'active' : ''" t-on-click="() => this.setPerspective('personal')">My Calendar</button>
-                            </div>
-
-                            <!-- View Mode Icon Switcher -->
-                            <div class="btn-group btn-group-sm ms-2" role="group">
-                                <button type="button"
-                                        t-att-class="'btn ' + (state.viewMode === 'month' ? 'btn-primary' : 'btn-outline-secondary')"
-                                        t-on-click="() => this.setViewMode('month')"
-                                        title="Month View">
-                                    <i class="fa fa-th-large"/>
-                                </button>
-                                <button type="button"
-                                        t-att-class="'btn ' + (state.viewMode === 'week' ? 'btn-primary' : 'btn-outline-secondary')"
-                                        t-on-click="() => this.setViewMode('week')"
-                                        title="Week View">
-                                    <i class="fa fa-th-list"/>
-                                </button>
-                                <button type="button"
-                                        t-att-class="'btn ' + (state.viewMode === 'day' ? 'btn-primary' : 'btn-outline-secondary')"
-                                        t-on-click="() => this.setViewMode('day')"
-                                        title="Day View">
-                                    <i class="fa fa-calendar-minus-o"/>
-                                </button>
-                                <button t-if="!state.employeeView" type="button"
-                                        t-att-class="'btn ' + (state.viewMode === 'year' ? 'btn-primary' : 'btn-outline-secondary')"
-                                        t-on-click="() => this.setViewMode('year')"
-                                        title="Year View">
-                                    <i class="fa fa-calendar"/>
-                                </button>
-                            </div>
-
-                            <!-- Coverage Analysis Toggle Button -->
-                            <button t-if="state.canViewCoverage and state.calendarScope !== 'personal'" type="button"
-                                    t-att-class="'btn btn-sm ' + (state.coverageMode ? 'btn-pink-active' : 'btn-outline-secondary')"
-                                    t-on-click="toggleCoverageMode">
-                                <i class="fa fa-line-chart me-1"/> Coverage Analysis
-                            </button>
-
-                            <!-- AI Summary Button (LM-044) -->
-                            <button t-if="state.canViewAiSummary"
-                                    type="button"
-                                    t-att-class="'btn btn-sm ' + (state.aiSummary.open ? 'btn-pink-active' : 'btn-outline-secondary')"
-                                    t-on-click="showAiSummary"
-                                    title="AI Calendar &amp; Availability Summary">
-                                <i class="fa fa-magic me-1"/> AI Summary
-                            </button>
-
-                            <!-- Smart Date Recommendations (LM-040) -->
-                            <button t-if="state.canDateRec"
-                                    type="button"
-                                    class="btn btn-sm btn-outline-secondary"
-                                    t-on-click="() => this.state.showDateRecModal = true"
-                                    title="Smart Leave Date Recommendations">
-                                <i class="fa fa-calendar-check-o me-1 text-purple"/> Suggest Best Dates
-                            </button>
-
-                            <!-- Filters Button -->
-                            <button type="button" class="btn btn-sm btn-outline-secondary position-relative" t-on-click="openFilters">
-                                <i class="fa fa-filter me-1"/> Filters
-                                <t t-if="this.activeFilterCount > 0">
-                                    <span class="badge rounded-pill bg-danger ms-1"><t t-esc="this.activeFilterCount"/></span>
-                                </t>
-                            </button>
-
-                            <!-- Download Dropdown Button -->
-                            <button t-if="state.canRequest and state.employeeView" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="openEmployeeRequest"><i class="fa fa-plus"/> Request Leave</button>
-                            <button t-if="state.canBook and state.calendarScope === 'organisation'" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="() => this.openAdminBooking()"><i class="fa fa-plus"/> Book Time Off</button>
-                            <div t-if="state.canExport" class="dropdown d-inline-block">
-                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleDownloadDropdown">
-                                    <i class="fa fa-download me-1"/> Download
-                                </button>
-                                <ul t-att-class="'dropdown-menu dropdown-menu-end ' + (state.downloadDropdownOpen ? 'show' : '')">
-                                    <li><a class="dropdown-item small" href="#" t-on-click="() => this.exportCalendar('pdf')"><i class="fa fa-file-pdf-o me-2 text-danger"/> Export PDF</a></li>
-                                    <li><a class="dropdown-item small" href="#" t-on-click="() => this.exportCalendar('excel')"><i class="fa fa-file-excel-o me-2 text-success"/> Export Excel (.xlsx)</a></li>
-                                    <li><a class="dropdown-item small" href="#" t-on-click="() => this.exportCalendar('ics')"><i class="fa fa-calendar-check-o me-2 text-primary"/> Export iCal (.ics)</a></li>
-                                </ul>
-                            </div>
-
+                    <t t-set-slot="toolbarStart">
+                        <div t-if="state.canSwitchPerspective" class="o_cc_perspective me-2">
+                            <button t-if="state.canUseOrganisation" t-att-class="state.calendarScope === 'organisation' ? 'active' : ''" t-on-click="() => this.setPerspective('organisation')">Organisation</button>
+                            <button t-if="state.canUseTeam" t-att-class="state.calendarScope === 'team' ? 'active' : ''" t-on-click="() => this.setPerspective('team')">Team</button>
+                            <button t-if="state.canUsePersonal" t-att-class="state.calendarScope === 'personal' ? 'active' : ''" t-on-click="() => this.setPerspective('personal')">My Calendar</button>
                         </div>
-                    </div>
+                    </t>
 
-                    <!-- Navigation Toolbar -->
-                    <div class="d-flex align-items-center gap-2 mt-2">
-                        <button type="button" class="btn btn-sm btn-light border" t-on-click="() => this.navigate(-1)" title="Previous">
-                            <i class="fa fa-chevron-left"/>
+                    <t t-set-slot="actions">
+                        <!-- Coverage Analysis Toggle Button -->
+                        <button t-if="state.canViewCoverage and state.calendarScope !== 'personal'" type="button"
+                                t-att-class="'btn btn-sm ' + (state.coverageMode ? 'btn-pink-active' : 'btn-outline-secondary')"
+                                t-on-click="toggleCoverageMode">
+                            <i class="fa fa-line-chart me-1"/> Coverage Analysis
                         </button>
-                        <div class="position-relative">
-                            <button type="button" class="btn btn-sm btn-light border font-weight-bold dropdown-toggle" t-on-click="togglePeriodPicker">
-                                <t t-esc="this.periodLabel"/>
-                            </button>
-                            <!-- Period Month/Year Picker Dropdown -->
-                            <t t-if="state.periodPickerOpen">
-                                <div class="period-picker-dropdown shadow p-3 bg-white border rounded">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <button type="button" class="btn btn-sm btn-link p-0 text-dark" t-on-click="() => this.navigate(-1)"><i class="fa fa-chevron-left"/></button>
-                                        <strong class="small"><t t-esc="state.currentDate.getFullYear()"/></strong>
-                                        <button type="button" class="btn btn-sm btn-link p-0 text-dark" t-on-click="() => this.navigate(1)"><i class="fa fa-chevron-right"/></button>
-                                    </div>
-                                    <div class="period-month-grid">
-                                        <t t-foreach="['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']" t-as="mName" t-key="mName_index">
-                                            <button type="button"
-                                                    t-att-class="'btn btn-sm period-month-btn ' + (state.currentDate.getMonth() === mName_index ? 'btn-primary' : 'btn-light')"
-                                                    t-on-click="() => this.selectMonthYear(state.currentDate.getFullYear(), mName_index)">
-                                                <t t-esc="mName"/>
-                                            </button>
-                                        </t>
-                                    </div>
-                                </div>
+
+                        <!-- AI Summary Button (LM-044) -->
+                        <button t-if="state.canViewAiSummary"
+                                type="button"
+                                t-att-class="'btn btn-sm ' + (state.aiSummary.open ? 'btn-pink-active' : 'btn-outline-secondary')"
+                                t-on-click="showAiSummary"
+                                title="AI Calendar &amp; Availability Summary">
+                            <i class="fa fa-magic me-1"/> AI Summary
+                        </button>
+
+                        <!-- Smart Date Recommendations (LM-040) -->
+                        <button t-if="state.canDateRec"
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                t-on-click="() => this.state.showDateRecModal = true"
+                                title="Smart Leave Date Recommendations">
+                            <i class="fa fa-calendar-check-o me-1 text-purple"/> Suggest Best Dates
+                        </button>
+
+                        <!-- Filters Button -->
+                        <button type="button" class="btn btn-sm btn-outline-secondary position-relative" t-on-click="openFilters">
+                            <i class="fa fa-filter me-1"/> Filters
+                            <t t-if="this.activeFilterCount > 0">
+                                <span class="badge rounded-pill bg-danger ms-1"><t t-esc="this.activeFilterCount"/></span>
                             </t>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-light border" t-on-click="() => this.navigate(1)" title="Next">
-                            <i class="fa fa-chevron-right"/>
                         </button>
-                        <button type="button" class="btn btn-sm btn-light border font-weight-bold ms-2" t-on-click="goToToday">
-                            Today
-                        </button>
-                    </div>
-                </header>
 
-                <!-- AI Calendar Summary Panel (LM-044) -->
-                <div t-if="state.aiSummary.open" class="o_cal_ai_summary">
-                    <div class="o_cal_ai_summary_header">
-                        <span><i class="fa fa-magic text-purple"/> <strong t-esc="state.aiSummary.heading || 'Calendar Summary'"/></span>
-                        <div class="d-flex align-items-center gap-2">
-                            <button type="button" class="btn btn-xs btn-outline-secondary" t-on-click="refreshAiSummary" title="Refresh Summary">
-                                <i class="fa fa-refresh"/> Refresh
+                        <!-- Download Dropdown Button -->
+                        <button t-if="state.canRequest and state.employeeView" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="openEmployeeRequest"><i class="fa fa-plus"/> Request Leave</button>
+                        <button t-if="state.canBook and state.calendarScope === 'organisation'" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="() => this.openAdminBooking()"><i class="fa fa-plus"/> Book Time Off</button>
+                        <div t-if="state.canExport" class="dropdown d-inline-block">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleDownloadDropdown">
+                                <i class="fa fa-download me-1"/> Download
                             </button>
-                            <button type="button" class="btn btn-xs btn-outline-secondary" t-on-click="copyAiSummary" title="Copy to Clipboard">
-                                <i class="fa fa-clipboard"/> Copy
-                            </button>
-                            <button type="button" t-on-click="closeAiSummary" class="o_cal_ai_close" title="Close"><i class="fa fa-times"/></button>
+                            <ul t-att-class="'dropdown-menu dropdown-menu-end ' + (state.downloadDropdownOpen ? 'show' : '')">
+                                <li><a class="dropdown-item small" href="#" t-on-click="() => this.exportCalendar('pdf')"><i class="fa fa-file-pdf-o me-2 text-danger"/> Export PDF</a></li>
+                                <li><a class="dropdown-item small" href="#" t-on-click="() => this.exportCalendar('excel')"><i class="fa fa-file-excel-o me-2 text-success"/> Export Excel (.xlsx)</a></li>
+                                <li><a class="dropdown-item small" href="#" t-on-click="() => this.exportCalendar('ics')"><i class="fa fa-calendar-check-o me-2 text-primary"/> Export iCal (.ics)</a></li>
+                            </ul>
                         </div>
-                    </div>
-                    <div t-if="state.aiSummary.loading" class="o_cal_ai_loading">
-                        <i class="fa fa-spinner fa-spin"/> Generating summary…
-                    </div>
-                    <div t-elif="state.aiSummary.error" class="o_cal_ai_error">
-                        <i class="fa fa-exclamation-circle"/> <t t-esc="state.aiSummary.error"/>
-                    </div>
-                    <ul t-else="" class="o_cal_ai_bullets_list">
-                        <li t-foreach="state.aiSummary.bullets" t-as="bullet" t-key="bullet_index"
-                            t-att-class="bullet.includes('risk') || bullet.includes('coverage') ? 'o_cal_ai_risk_bullet' : ''"
-                            t-esc="bullet"/>
-                    </ul>
-                </div>
+                    </t>
 
-                <!-- Loading Spinner -->
-                <t t-if="state.loading">
-                    <div class="text-center py-5 text-muted">
-                        <i class="fa fa-circle-o-notch fa-spin fa-2x mb-2"/>
-                        <p class="mb-0">Loading calendar schedules...</p>
-                    </div>
-                </t>
-
-                <div t-if="state.loadError and !state.loading" class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
-                    <span><i class="fa fa-exclamation-triangle me-2"/><t t-esc="state.loadError"/></span>
-                    <button type="button" class="btn btn-sm btn-outline-danger" t-on-click="loadCalendarData">Retry</button>
-                </div>
-
-                <t t-if="!state.loading and !state.loadError">
-
-                    <!-- ════════════════════════════════════════════════════
-                         MONTH VIEW (Fig 11.1, Fig 11.2, FR-146 to FR-157)
-                         ════════════════════════════════════════════════════ -->
-                    <t t-if="state.viewMode === 'month'">
-                        <div class="calendar-month-grid border rounded shadow-sm bg-white overflow-hidden">
-                            <!-- Days Header Row -->
-                            <div class="calendar-days-header">
-                                <div class="day-header-col">Sun</div>
-                                <div class="day-header-col">Mon</div>
-                                <div class="day-header-col">Tue</div>
-                                <div class="day-header-col">Wed</div>
-                                <div class="day-header-col">Thu</div>
-                                <div class="day-header-col">Fri</div>
-                                <div class="day-header-col">Sat</div>
+                    <t t-set-slot="banner">
+                        <!-- AI Calendar Summary Panel (LM-044) -->
+                        <div t-if="state.aiSummary.open" class="o_cal_ai_summary">
+                            <div class="o_cal_ai_summary_header">
+                                <span><i class="fa fa-magic text-purple"/> <strong t-esc="state.aiSummary.heading || 'Calendar Summary'"/></span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-xs btn-outline-secondary" t-on-click="refreshAiSummary" title="Refresh Summary">
+                                        <i class="fa fa-refresh"/> Refresh
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary" t-on-click="copyAiSummary" title="Copy to Clipboard">
+                                        <i class="fa fa-clipboard"/> Copy
+                                    </button>
+                                    <button type="button" t-on-click="closeAiSummary" class="o_cal_ai_close" title="Close"><i class="fa fa-times"/></button>
+                                </div>
                             </div>
+                            <div t-if="state.aiSummary.loading" class="o_cal_ai_loading">
+                                <i class="fa fa-spinner fa-spin"/> Generating summary…
+                            </div>
+                            <div t-elif="state.aiSummary.error" class="o_cal_ai_error">
+                                <i class="fa fa-exclamation-circle"/> <t t-esc="state.aiSummary.error"/>
+                            </div>
+                            <ul t-else="" class="o_cal_ai_bullets_list">
+                                <li t-foreach="state.aiSummary.bullets" t-as="bullet" t-key="bullet_index"
+                                    t-att-class="bullet.includes('risk') || bullet.includes('coverage') ? 'o_cal_ai_risk_bullet' : ''"
+                                    t-esc="bullet"/>
+                            </ul>
+                        </div>
+                    </t>
 
-                            <!-- 5-Week Grid Rows -->
-                            <t t-foreach="this.monthGridWeeks" t-as="week" t-key="week_index">
-                                <div class="calendar-week-row">
-                                    <t t-foreach="week" t-as="day" t-key="day.ymd">
-                                        <div t-att-class="'calendar-day-cell ' + (day.isCurrentMonth ? '' : 'other-month ') + (day.isToday ? 'today-highlight ' : '') + (this.isDateSelected(day.ymd) ? 'range-selected ' : '')"
-                                             t-on-mousedown="(event) => this.beginDateSelection(day.ymd, event)"
-                                             t-on-mouseenter="() => this.extendDateSelection(day.ymd)"
-                                             t-on-mouseup="() => this.finishDateSelection(day.ymd)"
-                                             t-att-title="state.employeeView ? 'Click for day details; drag to request a date range' : 'Click for roster; drag to book a date range'">
+                    <!-- COVERAGE ANALYSIS OVERLAY MODE (Fig 11.2) -->
+                    <t t-set-slot="dayContent" t-slot-scope="cell">
+                        <t t-set="cov" t-value="this.getDayCoverageInfo(cell.day.ymd)"/>
+                        <div t-att-class="'coverage-tile-cell ' + cov.level">
+                            <strong class="coverage-avail-text"><t t-esc="cov.percentage"/>% Available</strong>
+                            <span class="coverage-absent-text"><t t-esc="cov.absentCount"/> on leave</span>
+                        </div>
+                    </t>
 
-                                            <!-- Day Number in Top Left -->
-                                            <span class="day-number-label"><t t-esc="day.dayNumber"/></span>
-
-                                            <!-- COVERAGE ANALYSIS OVERLAY MODE (Fig 11.2) -->
-                                            <t t-if="state.coverageMode">
-                                                <t t-set="cov" t-value="this.getDayCoverageInfo(day.ymd)"/>
-                                                <div t-att-class="'coverage-tile-cell ' + cov.level">
-                                                    <strong class="coverage-avail-text"><t t-esc="cov.percentage"/>% Available</strong>
-                                                    <span class="coverage-absent-text"><t t-esc="cov.absentCount"/> on leave</span>
-                                                </div>
-                                            </t>
-
-                                            <!-- STANDARD LEAVE BLOCKS MODE (Fig 11.1) -->
-                                            <t t-else="">
-                                                <div class="day-cell-leave-stack">
-                                                    <t t-foreach="this.getDayHolidays(day.ymd)" t-as="holiday" t-key="'holiday-' + holiday.id">
-                                                        <div class="calendar-leave-block bg-light text-dark border" t-on-mousedown.stop="" t-att-title="holiday.name">
-                                                            <i class="fa fa-star me-1 text-warning"/><span class="leave-block-name"><t t-esc="holiday.name"/></span>
-                                                        </div>
-                                                    </t>
-                                                    <t t-set="dayLeaves" t-value="this.getDayLeaves(day.ymd)"/>
-                                                    <!-- Render up to 3 visible leave blocks -->
-                                                    <t t-foreach="dayLeaves.slice(0, 3)" t-as="leave" t-key="leave.id">
-                                                        <div t-att-class="'calendar-leave-block ' + (leave.status === 'pending' ? 'pending ' : '')"
-                                                             t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color_hex)"
-                                                             t-on-mousedown.stop=""
-                                                             t-on-click.stop="() => this.openLeaveDetail(leave.id)"
-                                                             t-att-title="leave.employee_name + ' (' + leave.leave_type_name + ')'">
-                                                            <span class="leave-block-name"><t t-esc="leave.employee_name"/></span>
-                                                        </div>
-                                                    </t>
-
-                                                    <!-- Stack Overflow Indicator "+N more" -->
-                                                    <t t-if="dayLeaves.length > 3">
-                                                        <div class="leave-overflow-badge" t-on-mousedown.stop="" t-on-click.stop="() => this.openDayPanel(day.ymd)">
-                                                            +<t t-esc="dayLeaves.length - 3"/> more
-                                                        </div>
-                                                    </t>
-                                                </div>
-                                            </t>
-
-                                        </div>
+                    <!-- YEAR VIEW extras (Fig 11.4, FR-162 to FR-168) -->
+                    <t t-set-slot="yearHeader">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="h5 font-weight-bold mb-0"><t t-esc="state.currentDate.getFullYear()"/> Annual Leave Overview</h3>
+                            <div class="country-region-selector d-flex align-items-center gap-2">
+                                <span class="small font-weight-bold text-muted"><i class="fa fa-globe"/> Region:</span>
+                                <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.selectCountry(ev.target.value)">
+                                    <t t-foreach="state.yearData and state.yearData.all_countries ? state.yearData.all_countries : []" t-as="c" t-key="c.id">
+                                        <option t-att-value="c.id" t-att-selected="state.yearData and state.yearData.country and c.id === state.yearData.country.id">
+                                            <t t-esc="c.name"/> (<t t-esc="c.code"/>)
+                                        </option>
                                     </t>
-                                </div>
-                            </t>
-                        </div>
-                    </t>
-
-                    <!-- ════════════════════════════════════════════════════
-                         WEEK VIEW (Fig 11.3, FR-158 to FR-161)
-                         ════════════════════════════════════════════════════ -->
-                    <t t-if="state.viewMode === 'week'">
-                        <div class="calendar-week-grid border rounded shadow-sm bg-white overflow-hidden">
-                            <div class="calendar-week-header-row">
-                                <t t-foreach="this.weekViewDays" t-as="day" t-key="day.ymd">
-                                    <div t-att-class="'week-header-col ' + (day.isToday ? 'today-highlight' : '')">
-                                        <span class="week-day-name"><t t-esc="day.dayName"/></span>
-                                        <strong class="week-day-num"><t t-esc="day.dayNumber"/></strong>
-                                    </div>
-                                </t>
-                            </div>
-                            <div class="calendar-week-body-row">
-                                <t t-foreach="this.weekViewDays" t-as="day" t-key="day.ymd">
-                                    <div class="week-day-column">
-                                        <t t-foreach="day.holidays" t-as="holiday" t-key="'week-holiday-' + holiday.id">
-                                            <div class="week-expanded-card bg-light border">
-                                                <strong class="card-emp-name"><i class="fa fa-star text-warning me-1"/><t t-esc="holiday.name"/></strong>
-                                                <span class="card-leave-type">Public holiday</span>
-                                            </div>
-                                        </t>
-                                        <t t-if="day.leaves.length === 0 and day.holidays.length === 0">
-                                            <div class="no-leaves-placeholder">No leaves</div>
-                                        </t>
-                                        <t t-else="">
-                                            <t t-foreach="day.leaves" t-as="leave" t-key="leave.id">
-                                                <div t-att-class="'week-expanded-card ' + (leave.status === 'pending' ? 'pending' : '')"
-                                                     t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color_hex)"
-                                                     t-on-click="() => this.openLeaveDetail(leave.id)">
-                                                    <strong class="card-emp-name"><t t-esc="leave.employee_name"/></strong>
-                                                    <span class="card-leave-type"><t t-esc="leave.leave_type_name"/></span>
-                                                    <span class="card-dept-name"><t t-esc="leave.department_name"/></span>
-                                                </div>
-                                            </t>
-                                        </t>
-                                    </div>
-                                </t>
+                                </select>
                             </div>
                         </div>
                     </t>
-
-                    <!-- ════════════════════════════════════════════════════
-                         DAY VIEW (FR-140 minimal implementation)
-                         ════════════════════════════════════════════════════ -->
-                    <t t-if="state.viewMode === 'day'">
-                        <div class="calendar-day-view-box border rounded p-4 bg-white shadow-sm">
-                            <h4 class="h5 font-weight-bold mb-3">Schedules for <t t-esc="this.periodLabel"/></h4>
-                            <t t-foreach="this.dayViewHolidays" t-as="holiday" t-key="'day-holiday-' + holiday.id">
-                                <div class="alert alert-light border"><i class="fa fa-star text-warning me-2"/><strong><t t-esc="holiday.name"/></strong> · Public holiday</div>
-                            </t>
-                            <t t-if="this.dayViewLeaves.length === 0 and this.dayViewHolidays.length === 0">
-                                <div class="text-center py-5 text-muted">
-                                    <i class="fa fa-smile-o fa-2x mb-2 text-success"/>
-                                    <p class="mb-0">No employees are on leave on this day.</p>
-                                </div>
-                            </t>
-                            <t t-else="">
-                                <div class="day-leaves-list gap-3 d-flex flex-column">
-                                    <t t-foreach="this.dayViewLeaves" t-as="leave" t-key="leave.id">
-                                        <div class="day-leave-card-large p-3 border rounded d-flex align-items-center justify-content-between"
-                                             t-on-click="() => this.openLeaveDetail(leave.id)">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <span class="leave-type-dot-lg" t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color_hex)"/>
-                                                <div>
-                                                    <h5 class="mb-0 font-weight-bold text-dark"><t t-esc="leave.employee_name"/></h5>
-                                                    <span class="text-muted small"><t t-esc="leave.department_name"/> · <t t-esc="leave.leave_type_name"/></span>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <span t-att-class="'badge ' + (leave.status === 'approved' ? 'bg-success' : 'bg-warning text-dark')">
-                                                    <t t-esc="leave.status"/>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </t>
+                    <t t-set-slot="yearMonthSummary" t-slot-scope="scope">
+                        <t t-set="summary" t-value="this.getYearMonthSummary(scope.month.number)"/>
+                        <div class="month-summary-line small text-muted mb-2">
+                            <span class="dot-approved">• <t t-esc="summary.approved"/> approved</span>
+                            <span class="dot-pending ms-2">• <t t-esc="summary.pending"/> pending</span>
+                            <span class="dot-holiday ms-2">• <t t-esc="summary.holidays"/> holidays</span>
+                        </div>
+                    </t>
+                    <t t-set-slot="yearMonthFooter" t-slot-scope="scope">
+                        <t t-set="monthHolidays" t-value="this.getYearMonthHolidays(scope.month.number)"/>
+                        <div t-if="monthHolidays.length" class="holiday-annotations-box mt-2 pt-2 border-top">
+                            <t t-foreach="monthHolidays" t-as="h" t-key="h.date">
+                                <div class="holiday-annotation-item text-muted">
+                                    • <t t-esc="h.date.split('-')[2]"/> <t t-esc="h.name"/>
                                 </div>
                             </t>
                         </div>
-                    </t>
-
-                    <!-- ════════════════════════════════════════════════════
-                         YEAR VIEW (Fig 11.4, FR-162 to FR-168)
-                         ════════════════════════════════════════════════════ -->
-                    <t t-if="state.viewMode === 'year'">
-                        <div class="year-view-container">
-
-                            <!-- Header Country / Region Selector Dropdown -->
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h3 class="h5 font-weight-bold mb-0"><t t-esc="state.currentDate.getFullYear()"/> Annual Leave Overview</h3>
-                                <div class="country-region-selector d-flex align-items-center gap-2">
-                                    <span class="small font-weight-bold text-muted"><i class="fa fa-globe"/> Region:</span>
-                                    <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.selectCountry(ev.target.value)">
-                                        <t t-foreach="state.yearData and state.yearData.all_countries ? state.yearData.all_countries : []" t-as="c" t-key="c.id">
-                                            <option t-att-value="c.id" t-att-selected="state.yearData and state.yearData.country and c.id === state.yearData.country.id">
-                                                <t t-esc="c.name"/> (<t t-esc="c.code"/>)
-                                            </option>
-                                        </t>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- 4-Column 12-Month Grid -->
-                            <div class="year-grid-4col">
-                                <t t-foreach="this.yearMonths" t-as="m" t-key="m.number">
-                                    <div class="year-month-card border rounded p-3 bg-white shadow-sm">
-                                        <div class="month-card-header d-flex justify-content-between align-items-center mb-2">
-                                            <strong class="month-title"><t t-esc="m.name"/></strong>
-                                        </div>
-                                        <!-- Per-Month Leave Counter Badges -->
-                                        <div class="month-summary-line small text-muted mb-2">
-                                            <span class="dot-approved">• <t t-esc="m.summary.approved"/> approved</span>
-                                            <span class="dot-pending ms-2">• <t t-esc="m.summary.pending"/> pending</span>
-                                            <span class="dot-holiday ms-2">• <t t-esc="m.summary.holidays"/> holidays</span>
-                                        </div>
-
-                                        <!-- Mini-Calendar Day Grid -->
-                                        <div class="mini-calendar-grid">
-                                            <div class="mini-day-hdr">S</div>
-                                            <div class="mini-day-hdr">M</div>
-                                            <div class="mini-day-hdr">T</div>
-                                            <div class="mini-day-hdr">W</div>
-                                            <div class="mini-day-hdr">T</div>
-                                            <div class="mini-day-hdr">F</div>
-                                            <div class="mini-day-hdr">S</div>
-
-                                            <t t-foreach="m.days" t-as="d" t-key="d.ymd">
-                                                <div t-att-class="'mini-day-cell ' + this.getYearDayClass(d)">
-                                                    <t t-esc="d.dayNumber"/>
-                                                </div>
-                                            </t>
-                                        </div>
-
-                                        <!-- Public Holiday Annotations -->
-                                        <t t-if="m.holidays and m.holidays.length">
-                                            <div class="holiday-annotations-box mt-2 pt-2 border-top">
-                                                <t t-foreach="m.holidays" t-as="h" t-key="h.date">
-                                                    <div class="holiday-annotation-item text-muted">
-                                                        • <t t-esc="h.date.split('-')[2]"/> <t t-esc="h.name"/>
-                                                    </div>
-                                                </t>
-                                            </div>
-                                        </t>
-                                        <t t-else="">
-                                            <div class="holiday-annotations-box mt-2 pt-2 border-top text-muted small italic">
-                                                No public holidays configured
-                                            </div>
-                                        </t>
-
-                                    </div>
-                                </t>
-                            </div>
-
+                        <div t-else="" class="holiday-annotations-box mt-2 pt-2 border-top text-muted small italic">
+                            No public holidays configured
                         </div>
                     </t>
 
-                    <!-- ════════════════════════════════════════════════════
-                         CALENDAR LEGEND BAR (FR-153, FR-156)
-                         ════════════════════════════════════════════════════ -->
-                    <div class="calendar-legend-bar border rounded p-3 bg-white mt-4 shadow-sm">
+                    <!-- CALENDAR LEGEND BAR (FR-153, FR-156) -->
+                    <t t-set-slot="legend">
                         <div class="legend-title font-weight-bold small mb-2 text-uppercase text-muted">Legend</div>
                         <div class="d-flex align-items-center gap-3 flex-wrap small">
                             <t t-foreach="state.leaveTypes" t-as="leaveType" t-key="leaveType.id">
@@ -438,9 +188,8 @@
                                 </div>
                             </t>
                         </div>
-                    </div>
-
-                </t>
+                    </t>
+                </CleonCalendar>
 
             </div>
 
