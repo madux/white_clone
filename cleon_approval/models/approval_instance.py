@@ -298,7 +298,7 @@ class CleonApprovalInstance(models.Model):
                     "step_code": step.step_code or False,
                     "resolved_user_ids": [(6, 0, resolved_users.ids)],
                     "state": "waiting",
-                    "sla_timeout_hours": escalation.timeout_hours() if escalation else (wft.global_sla_hours if wft.use_global_sla else step.sla_timeout_hours),
+                    "sla_timeout_hours": (escalation.timeout_hours() if escalation else (wft.global_sla_hours if wft.use_global_sla else step.sla_timeout_hours)) if wft.escalation_enabled else 0,
                     "sla_action": escalation_action,
                     "escalation_rule_id": escalation.id,
                     "escalation_target_group_id": escalation.target_group_id.id,
@@ -409,6 +409,10 @@ class CleonApprovalInstance(models.Model):
 
     def action_decide(self, decision, comment=False, automated=False):
         """Decides an approval instance step with database concurrency locking and strict role checks."""
+        if automated and not self.env.su:
+            raise AccessError(_("Automated decisions are reserved for trusted server-side execution."))
+        if decision not in ("approve", "reject", "request_changes"):
+            raise ValidationError(_("Unsupported approval decision."))
         self.ensure_one()
         self.env.flush_all()
 
@@ -607,9 +611,9 @@ class CleonApprovalInstance(models.Model):
             try:
                 with self.env.cr.savepoint():
                     if step.sla_action == "auto_approve":
-                        instance.action_decide("approve", comment=_("Auto-approved by SLA escalation runner."), automated=True)
+                        instance.sudo().action_decide("approve", comment=_("Auto-approved by SLA escalation runner."), automated=True)
                     elif step.sla_action == "auto_reject":
-                        instance.action_decide("reject", comment=_("Auto-rejected by SLA escalation runner."), automated=True)
+                        instance.sudo().action_decide("reject", comment=_("Auto-rejected by SLA escalation runner."), automated=True)
                     elif step.sla_action == "escalate_next":
                         next_steps = instance.step_ids.filtered(lambda s: s.sequence > step.sequence and s.state == "waiting").sorted("sequence")
                         if next_steps:
@@ -620,7 +624,8 @@ class CleonApprovalInstance(models.Model):
                             next_step.action_activate()
                             instance.sudo().write({"current_step_sequence": next_step.sequence})
                         else:
-                            instance.action_decide("reject", comment=_("Auto-rejected: SLA expired on final step with no further escalation target."), automated=True)
+                            step.sudo().write({"escalated_once": True, "deadline": False})
+                            instance.message_post(body=_("SLA expired at the final level. No next level exists; the request remains pending for an authorized decision."))
                     elif step.sla_action in ("reassign_role", "reassign_user"):
                         users = (step.escalation_target_group_id.users if step.sla_action == "reassign_role"
                                  else step.escalation_target_user_id)
@@ -727,6 +732,9 @@ class CleonApprovalInstanceStep(models.Model):
             "deadline": deadline,
         })
         # Create pending decision records for all resolved users if not already present
+        self.decision_ids.filtered(
+            lambda decision: decision.user_id in self.resolved_user_ids and decision.state == "skipped"
+        ).sudo().write({"state": "pending"})
         existing_users = self.decision_ids.mapped("user_id")
         new_decisions = []
         for u in self.resolved_user_ids:

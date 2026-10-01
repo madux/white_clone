@@ -77,7 +77,9 @@ class CleonApprovalRuleCondition(models.Model):
 
     def _matches(self, context):
         self.ensure_one()
-        actual = context.get(self.field_name)
+        if self.field_name not in context or context[self.field_name] is None:
+            return False
+        actual = context[self.field_name]
         expected = self.value or ""
         if self.operator == "in":
             return str(actual) in {item.strip() for item in expected.split(",")}
@@ -88,7 +90,7 @@ class CleonApprovalRuleCondition(models.Model):
                 return False
             return {"gt": actual > expected, "gte": actual >= expected,
                     "lt": actual < expected, "lte": actual <= expected}[self.operator]
-        actual_text = str(bool(actual)).lower() if isinstance(actual, bool) else str(actual or "")
+        actual_text = str(bool(actual)).lower() if isinstance(actual, bool) else str(actual)
         matched = actual_text.lower() == expected.strip().lower()
         return not matched if self.operator == "ne" else matched
 
@@ -149,9 +151,17 @@ class CleonApprovalDelegation(models.Model):
     reason = fields.Char()
     active = fields.Boolean(default=True)
 
-    @api.constrains("user_id", "delegate_user_id", "date_from", "date_to", "company_id")
+    @api.constrains("user_id", "delegate_user_id", "date_from", "date_to", "company_id", "active")
     def _check_delegation(self):
         for delegation in self:
+            if delegation.active and self.sudo().search_count([
+                ("id", "!=", delegation.id), ("company_id", "=", delegation.company_id.id),
+                ("user_id", "=", delegation.user_id.id), ("active", "=", True),
+                ("date_from", "<=", delegation.date_to), ("date_to", ">=", delegation.date_from),
+            ]):
+                raise ValidationError(_("An approver cannot have overlapping active delegations in the same company."))
+            if delegation.user_id.share or delegation.delegate_user_id.share:
+                raise ValidationError(_("Approval delegation requires internal users."))
             if delegation.user_id == delegation.delegate_user_id:
                 raise ValidationError(_("An approver cannot delegate to themselves."))
             if delegation.date_to < delegation.date_from:
@@ -169,6 +179,6 @@ class CleonApprovalDelegation(models.Model):
                 ("date_from", "<=", today), ("date_to", ">=", today),
             ], order="date_from desc, id desc", limit=1)
             candidate = delegation.delegate_user_id if delegation else user
-            if candidate.active and candidate != excluded_user:
+            if candidate.active and not candidate.share and company in candidate.company_ids and candidate != excluded_user:
                 result |= candidate
         return result
