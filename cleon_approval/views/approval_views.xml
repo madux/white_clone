@@ -99,7 +99,7 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="Route Settings"><group><field name="description"/><field name="on_approval"/><field name="on_rejection"/><field name="remarks"/></group></page>
+                        <page string="Route Settings"><group><field name="description"/><field name="on_approval" readonly="1"/><field name="on_rejection" readonly="1"/><field name="remarks"/></group></page>
                     </notebook>
                 </sheet>
             </form>
@@ -228,15 +228,11 @@
     <!-- Menus -->
     <menuitem id="menu_cleon_approval_root"
               name="Workflows &amp; Approvals"
-              parent="hr_administration.hr_administration_dashboard"
               action="action_cleon_workflows_app"
               sequence="50"/>
 
     <record id="menu_cleon_approval_root" model="ir.ui.menu">
-        <field name="icon_class">fa fa-sitemap</field>
-        <field name="icon_color">#EC4899</field>
-        <field name="category_name">CleonHR-HR Admin</field>
-        <field name="sequence">50</field>
+        <field name="parent_id" eval="False"/>
     </record>
 
     <menuitem id="menu_cleon_approval_chain" name="Approval Chains" parent="menu_cleon_approval_root" action="action_cleon_approval_chain" sequence="10"/>

@@ -252,11 +252,17 @@ class TestApprovalEngine(TransactionCase):
         self.assertFalse(instance.open_key)
 
     def test_09_app_launcher_menu_metadata(self):
-        """Test Workflows & Approvals menu has parent_id, action, and category_name ilike 'CleonHR' for custom app drawer discovery."""
+        """The core menu works without Cleon-specific menu extensions."""
         menu = self.env.ref("cleon_approval.menu_cleon_approval_root")
-        self.assertTrue(menu.parent_id, "Menu root must have a parent_id to be discovered by CleonHR app drawer.")
-        self.assertTrue(menu.action, "Menu root must have an action assigned.")
-        self.assertTrue(menu.category_name and "cleonhr" in menu.category_name.lower(), "Menu root category_name must contain 'CleonHR'.")
+        self.assertEqual(menu.action, self.env.ref("cleon_approval.action_cleon_workflows_app"))
+        bridge = self.env["ir.module.module"].search([
+            ("name", "=", "cleon_approval_hr_administration"), ("state", "=", "installed")
+        ], limit=1)
+        if bridge:
+            self.assertEqual(menu.parent_id, self.env.ref("hr_administration.hr_administration_dashboard"))
+            self.assertIn("CleonHR", menu.category_name)
+        elif not self.env.ref("hr_administration.hr_administration_dashboard", raise_if_not_found=False):
+            self.assertFalse(menu.parent_id)
 
     def test_10_cross_user_instance_step_visibility(self):
         """Test ordinary user cannot read unrelated employee's instance step records."""
@@ -610,3 +616,14 @@ class TestApprovalEngine(TransactionCase):
         with self.assertRaises(ValidationError):
             self.env["cleon.approval.instance"].action_start(
                 self.env["res.partner"].create({"name": "Wrong company route"}))
+
+    def test_31_complete_behavior_supported_for_single_level_only(self):
+        self.chain.on_approval = "complete"
+        with self.assertRaises(ValidationError):
+            self.env["cleon.approval.instance"].action_start(
+                self.env["res.partner"].create({"name": "Unsupported early completion"}))
+        self.chain.step_ids.filtered(lambda step: step.sequence == 20).unlink()
+        instance = self.env["cleon.approval.instance"].action_start(
+            self.env["res.partner"].create({"name": "Single level completion"}))
+        instance.with_user(self.manager_user).action_decide("approve")
+        self.assertEqual(instance.state, "approved")

@@ -69,3 +69,20 @@ Before publishing: test a clean install without Leave, simultaneous decisions an
 workers, actual mail delivery, delegation lifecycle for open requests, and migration
 of legacy unsupported routing/deadline settings. Run consumer-module tests as well.
 No compatibility or production-readiness guarantee is implied by unit tests alone.
+
+## Optional HR Administration integration
+
+Install cleon_approval_hr_administration alongside both modules to attach the core menu
+to HR Administration and apply its custom menu metadata. It auto-installs when both
+dependencies are installed. Upgrade the bridge together with the core so menu parenting
+is reapplied. The core itself does not depend on Cleon menu customizations.
+
+Legacy routing enum values are retained for data preservation, labelled unsupported,
+and shown read-only. Submission fails with a configuration error until an administrator
+reviews the intended policy and explicitly changes it to supported next/stop behavior.
+The audit found three complete-on-approval routes. Complete is supported for a single
+level (normal final-step completion), but rejected for multiple levels. No stored policy
+settings were rewritten.
+
+Complete Workflow is supported for a single approval level only; early completion of
+a multi-level route remains unsupported.

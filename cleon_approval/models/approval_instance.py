@@ -189,7 +189,10 @@ class CleonApprovalInstance(models.Model):
         if chain:
             if chain.company_id != company or chain.workflow_type_id != wft:
                 raise ValidationError(_("The selected approval route must belong to the request's company and workflow type."))
-            if chain.on_approval != "next" or chain.on_rejection != "stop":
+            supported_approval = chain.on_approval == "next" or (
+                chain.on_approval == "complete" and len(chain.step_ids) == 1
+            )
+            if not supported_approval or chain.on_rejection != "stop":
                 raise ValidationError(_("This route uses unsupported decision behavior. Configure next-level approval and stop-on-rejection."))
             if not chain.step_ids:
                 raise ValidationError(_("Approval chain '%s' has no configured steps.") % chain.name)

@@ -24,9 +24,14 @@ class CleonApprovalChain(models.Model):
     ], default="multi", required=True)
     on_approval = fields.Selection([
         ("next", "Move to Next Level"),
+        ("complete", "Complete Workflow (single-level only)"),
+        ("custom", "Legacy: Custom Action (unsupported — reconfigure)"),
     ], default="next", required=True)
     on_rejection = fields.Selection([
         ("stop", "Stop and Notify Requester"),
+        ("return", "Legacy: Return to Previous Level (unsupported — reconfigure)"),
+        ("specific", "Legacy: Return to Specific Level (unsupported — reconfigure)"),
+        ("custom", "Legacy: Custom Action (unsupported — reconfigure)"),
     ], default="stop", required=True)
     remarks = fields.Text()
     is_default = fields.Boolean(default=True, string="Default Active Chain")
