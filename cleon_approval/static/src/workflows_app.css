@@ -223,3 +223,78 @@
 .cleon-template-menu button:hover { background: #F9FAFB; }
 .cleon-template-pager { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; color: #6B7280; font-size: 12px; }
 .cleon-template-pager button { margin: 0 4px; border: 1px solid #E5E7EB; background: #fff; border-radius: 5px; padding: 2px 9px; }
+
+/* Shared Odoo Pager/Dropdown handle interaction; these rules own only approval layout. */
+.cleon-wf-toolbar { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.cleon-wf-toolbar input { max-width: 360px; }
+.cleon-wf-toolbar select { width: 160px; }
+.cleon-wf-table-wrap { border: 1px solid #e5e7eb; border-radius: 9px; }
+.cleon-wf-routes { min-width: 900px; }
+.cleon-wf-routes tbody tr:not(.cleon-wf-detail-row):hover { background: #fdf7fb; }
+.cleon-wf-name { background: none; border: 0; padding: 0; color: #17243c; font-weight: 600; text-align: left; }
+.cleon-wf-name:hover { color: #db2777; text-decoration: underline; }
+.cleon-wf-approvers { display: block; max-width: 250px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cleon-wf-levels { border: 1px solid #e5e7eb; background: #f9fafb; border-radius: 6px; padding: 3px 9px; white-space: nowrap; }
+.cleon-wf-menu-button { min-width: 32px; }
+.cleon-wf-detail-row { background: #f8fafc; }
+.cleon-wf-list-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; color: #6b7280; font-size: 12px; }
+.cleon-wf-list-footer select { width: 72px; }
+@media (max-width: 768px) {
+    .cleon-wf-app-container { padding: 16px; }
+    .cleon-wf-content { padding: 16px; }
+    .cleon-wf-head { align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+}
+
+/* Compact route overview; deliberately scoped above theme-wide table rules. */
+.cleon-wf-app-container .cleon-wf-routes > thead > tr > th { padding: 11px 14px; font-size: 11px; color: #718096; letter-spacing: .045em; }
+.cleon-wf-app-container .cleon-wf-routes > tbody > tr > td { padding: 11px 14px; font-size: 13px; }
+.cleon-wf-app-container .cleon-wf-menu-button { height: 30px; width: 30px; padding: 3px; border-radius: 7px; }
+.cleon-wf-app-container .cleon-wf-routes .cleon-code { font-size: 11px; padding: 3px 6px; }
+.cleon-wf-app-container .cleon-wf-detail-row > td { padding: 18px 22px !important; background: #f8fafc; }
+.cleon-wf-detail-row p { margin: 0 0 14px; color: #64748b; font-size: 12px; }
+.cleon-wf-level-list { list-style: none; padding: 0; margin: 0; max-width: 980px; }
+.cleon-wf-level-list li { display: flex; align-items: center; gap: 12px; padding: 10px 0; margin: 0; }
+.cleon-wf-level-list li + li { border-top: 1px solid #e7ecf2; }
+.cleon-wf-step-number { flex: 0 0 24px; height: 24px; display: grid; place-items: center; color: #64748b; background: #eaf0f6; border-radius: 6px; font-size: 11px; font-weight: 600; }
+.cleon-wf-step-content { display: grid; grid-template-columns: minmax(180px, 1.3fr) minmax(150px, 1fr) 155px; align-items: center; gap: 20px; flex: 1; min-width: 0; }
+.cleon-wf-step-content strong { font-size: 12px; font-weight: 600; color: #334155; }
+.cleon-wf-step-person { color: #718096; font-size: 12px; }
+.cleon-wf-step-person i { margin-right: 5px; color: #94a3b8; }
+.cleon-wf-step-mode { font-size: 11px; color: #8390a2; text-align: right; }
+
+/* Workflow dialog only: retain the tested form renderer, replace its visual shell. */
+.modal-content.cleon-workflow-dialog { border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 24px 80px #0f172a40; }
+.cleon-workflow-dialog > .modal-header { background: #fff !important; color: #17243c !important; border-bottom: 1px solid #e8edf3; padding: 18px 26px; }
+.cleon-workflow-dialog .modal-title { color: #17243c; font-size: 18px; font-weight: 650; }
+.cleon-workflow-dialog > .modal-body { background: #f6f8fb; }
+.cleon-workflow-intro { display: flex; align-items: center; gap: 12px; padding: 18px 26px; border-bottom: 1px solid #e8edf3; }
+.cleon-workflow-emblem { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: #fcebf4; color: #d6297b; }
+.cleon-workflow-intro strong { color: #334155; font-size: 13px; }
+.cleon-workflow-intro p { margin: 3px 0 0; color: #758397; font-size: 12px; }
+.cleon-workflow-mode { margin-left: auto; padding: 4px 9px; border: 1px solid #dfe6ef; border-radius: 5px; color: #64748b; font-size: 11px; white-space: nowrap; }
+.cleon-workflow-dialog .o_form_view .o_form_sheet_bg { background: #f6f8fb; border: 0; padding: 20px 24px; }
+.cleon-workflow-dialog .o_form_view .o_form_sheet { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: none; padding: 24px; margin: 0 auto; max-width: none; min-width: 0; }
+.cleon-workflow-dialog .oe_title { max-width: none; margin-bottom: 20px; }
+.cleon-workflow-dialog .oe_title h1 { font-size: 21px; font-weight: 650; color: #17243c; }
+.cleon-workflow-dialog .o_form_label { color: #718096; font-size: 12px; font-weight: 500; }
+.cleon-workflow-dialog .o_field_widget { font-size: 13px; color: #27364b; }
+.cleon-workflow-dialog .o_input { background: #fff; border: 1px solid #dce3ed; border-radius: 6px; padding: 7px 9px; min-height: 34px; box-shadow: none; }
+.cleon-workflow-dialog .o_input:focus { border-color: #e67aaa; outline: 2px solid #fcebf4; outline-offset: 1px; }
+.cleon-workflow-dialog .o_field_many2many_tags .o_input { min-height: 26px; padding: 3px 5px; }
+.cleon-workflow-dialog .o_horizontal_separator { color: #475569; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-top: 18px; }
+.cleon-workflow-dialog .o_notebook .nav-tabs { gap: 16px; border-bottom: 1px solid #e2e8f0; }
+.cleon-workflow-dialog .o_notebook .nav-link { border: 0; border-bottom: 2px solid transparent; background: transparent; border-radius: 0; color: #718096; font-size: 13px; padding: 12px 3px; box-shadow: none; }
+.cleon-workflow-dialog .o_notebook .nav-link.active { color: #d6297b; border-bottom-color: #e7358b; }
+.cleon-workflow-dialog .o_list_table thead th { background: #f8fafc; color: #64748b; font-size: 11px; }
+.cleon-workflow-dialog > .modal-footer { padding: 14px 26px; background: #fff; border-top: 1px solid #e8edf3; gap: 8px; }
+.cleon-workflow-dialog > .modal-footer .btn { border-radius: 7px; padding: 8px 18px; font-size: 13px; font-weight: 600; box-shadow: none; }
+.cleon-workflow-dialog > .modal-footer .btn-primary { background: #e7358b; border-color: #e7358b; color: #fff; }
+.cleon-workflow-dialog > .modal-footer .btn-secondary { background: #fff; border: 1px solid #dce3ed; color: #475569; }
+@media (max-width: 767px) {
+    .cleon-workflow-intro { padding: 14px 16px; }
+    .cleon-workflow-mode { display: none; }
+    .cleon-workflow-dialog .o_form_view .o_form_sheet_bg { padding: 12px; }
+    .cleon-workflow-dialog .o_form_view .o_form_sheet { padding: 16px; }
+    .cleon-wf-step-content { grid-template-columns: 1fr; gap: 4px; }
+    .cleon-wf-step-mode { text-align: left; }
+}

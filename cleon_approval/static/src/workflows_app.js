@@ -6,10 +6,18 @@ import { useService } from "@web/core/utils/hooks";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
+import { Pager } from "@web/core/pager/pager";
+import { FormViewDialog } from "@web/views/view_dialogs/form_view_dialog";
+
+// Keep relational fields, access checks and save/discard in the standard controller.
+// Only this workflow dialog receives the custom presentation.
+class WorkflowFormDialog extends FormViewDialog {
+    static template = "cleon_approval.WorkflowFormDialog";
+}
 
 export class WorkflowsApp extends Component {
     static template = "cleon_approval.WorkflowsApp";
-    static components = { Dropdown, DropdownItem };
+    static components = { Dropdown, DropdownItem, Pager };
     static props = ["*"];
 
     setup() {
@@ -25,6 +33,11 @@ export class WorkflowsApp extends Component {
             activeTab: "chains",
             scoped: Boolean(this.targetModel),
             loading: false,
+            loadError: false,
+            search: "",
+            status: "all",
+            offset: 0,
+            limit: 10,
             approvalChains: [],
             workflowTypes: [],
             expandedChainIds: [],
@@ -41,6 +54,7 @@ export class WorkflowsApp extends Component {
 
     async loadData() {
         this.state.loading = true;
+        this.state.loadError = false;
         try {
             const workflowTypeDomain = this.targetModel ? [["model_name", "=", this.targetModel]] : [];
             const relatedDomain = this.targetModel ? [["workflow_type_id.model_name", "=", this.targetModel]] : [];
@@ -49,8 +63,9 @@ export class WorkflowsApp extends Component {
                 this.targetModelId = models[0]?.id || false;
             }
             const dbChains = await this.orm.call("cleon.approval.chain", "search_read", [], {
-                fields: ["id", "name", "code", "description", "workflow_type_id", "route_type", "lifecycle_state", "active", "is_default", "step_ids", "backup_approver_ids", "escalation_days", "auto_approve_days", "applies_to", "department_ids", "employee_ids", "create_uid", "write_date"],
+                fields: ["id", "name", "code", "description", "workflow_type_id", "route_type", "lifecycle_state", "active", "is_default", "step_ids", "create_uid", "write_date"],
                 domain: relatedDomain,
+                context: { active_test: false },
             });
 
             const dbSteps = await this.orm.call("cleon.approval.step", "search_read", [], {
@@ -93,6 +108,8 @@ export class WorkflowsApp extends Component {
                     } else if (step.approver_type === "job") {
                         approverDesc = step.approver_job_id ? `Position: ${step.approver_job_id[1]}` : "Position / Job";
                     }
+                    if (step.approver_type === "specific_users") approverDesc = "Selected Approvers";
+                    if (step.approver_type === "target_resolver") approverDesc = "Determined by Request";
                     stepsByChain[chainId].push({
                         id: step.id,
                         sequence: step.sequence,
@@ -119,11 +136,6 @@ export class WorkflowsApp extends Component {
                     lifecycleState: c.lifecycle_state,
                     steps: chainSteps,
                     approvers: chainSteps.map(step => step.approverTypeLabel).join(" → "),
-                    backups: c.backup_approver_ids?.length || 0,
-                    escalationDays: c.escalation_days || 0,
-                    autoApproveDays: c.auto_approve_days || 0,
-                    appliesTo: c.applies_to,
-                    coverage: c.applies_to === "departments" ? c.department_ids.length : c.applies_to === "employees" ? c.employee_ids.length : "All",
                     createdBy: c.create_uid?.[1] || "",
                     lastUpdated: c.write_date || "",
                 };
@@ -151,6 +163,7 @@ export class WorkflowsApp extends Component {
 
         } catch (e) {
             console.warn("Failed to load approval data", e);
+            this.state.loadError = true;
         } finally {
             this.state.loading = false;
         }
@@ -160,6 +173,33 @@ export class WorkflowsApp extends Component {
         this.state.activeTab = tab;
     }
 
+
+    get filteredChains() {
+        const query = this.state.search.trim().toLowerCase();
+        return this.state.approvalChains.filter(chain =>
+            (this.state.status === "all" || chain.lifecycleState === this.state.status) &&
+            (!query || [chain.name, chain.code, chain.module, chain.approvers].some(value => value.toLowerCase().includes(query)))
+        );
+    }
+
+    get chainOffset() {
+        const lastPage = Math.max(0, Math.ceil(this.filteredChains.length / this.state.limit) - 1);
+        return Math.min(this.state.offset, lastPage * this.state.limit);
+    }
+
+    get visibleChains() {
+        return this.filteredChains.slice(this.chainOffset, this.chainOffset + this.state.limit);
+    }
+
+    filterChains(field, value) {
+        this.state[field] = value;
+        this.state.offset = 0;
+    }
+
+    updatePager({ offset, limit }) {
+        this.state.offset = offset;
+        this.state.limit = limit;
+    }
 
     toggleExpandChain(chainId) {
         if (this.state.expandedChainIds.includes(chainId)) {
@@ -173,44 +213,23 @@ export class WorkflowsApp extends Component {
         return this.targetModel ? {approval_target_model: this.targetModel, default_model_id: this.targetModelId, default_module_code: this.targetModel === "hr.leave" ? "leave" : false} : {};
     }
 
-    addApprovalChain() {
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            name: "New Approval Chain",
-            res_model: "cleon.approval.chain",
-            views: [[false, "form"]],
-            target: "new",
+    openWorkflowDialog(chainId = false, readonly = false) {
+        this.dialog.add(WorkflowFormDialog, {
+            resModel: "cleon.approval.chain",
+            resId: chainId,
+            title: readonly ? "Workflow details" : chainId ? "Edit approval workflow" : "New approval workflow",
             context: this.scopedActionContext(),
-        }, {
-            onClose: () => this.loadData(),
+            mode: readonly ? "readonly" : "edit",
+            preventEdit: readonly,
+            preventCreate: readonly,
+            size: "xl",
+            onRecordSaved: () => this.loadData(),
         });
     }
 
-    editApprovalChain(chainId) {
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            name: "Edit Approval Chain",
-            res_model: "cleon.approval.chain",
-            res_id: chainId,
-            views: [[false, "form"]],
-            target: "new",
-            context: this.scopedActionContext(),
-        }, {
-            onClose: () => this.loadData(),
-        });
-    }
-
-    viewApprovalChain(chainId) {
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            name: "Approval Workflow Details",
-            res_model: "cleon.approval.chain",
-            res_id: chainId,
-            views: [[false, "form"]],
-            target: "new",
-            context: { form_view_initial_mode: "view" },
-        });
-    }
+    addApprovalChain() { this.openWorkflowDialog(); }
+    editApprovalChain(chainId) { this.openWorkflowDialog(chainId); }
+    viewApprovalChain(chainId) { this.openWorkflowDialog(chainId, true); }
 
     addWorkflowType() {
         this.action.doAction({
@@ -278,7 +297,13 @@ export class WorkflowsApp extends Component {
     }
 
     async duplicateApprovalChain(chainId) {
-        const duplicateId = await this.orm.call("cleon.approval.chain", "action_duplicate_leave_workflow", [[chainId]]);
+        let duplicateId;
+        try {
+            duplicateId = await this.orm.call("cleon.approval.chain", "action_duplicate_workflow", [[chainId]]);
+        } catch (error) {
+            this.notification.add(error?.data?.message || "Could not duplicate workflow.", { type: "danger" });
+            return;
+        }
         this.notification.add("Approval workflow duplicated as inactive.", { type: "success" });
         await this.loadData();
         if (duplicateId) this.editApprovalChain(duplicateId);

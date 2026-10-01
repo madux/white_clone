@@ -33,6 +33,22 @@ class CleonApprovalChain(models.Model):
     is_default = fields.Boolean(default=True, string="Default Active Chain")
     step_ids = fields.One2many("cleon.approval.step", "chain_id", string="Approval Steps")
 
+    def action_duplicate_workflow(self):
+        """Copy route configuration and levels, never live approval instances."""
+        self.ensure_one()
+        steps = []
+        for step in self.step_ids:
+            values = step.copy_data()[0]
+            values.pop("chain_id", None)
+            steps.append((0, 0, values))
+        return self.copy({
+            "name": _("%s (Copy)") % self.name,
+            "code": False,
+            "active": False,
+            "is_default": False,
+            "step_ids": steps,
+        }).id
+
     @api.constrains("company_id", "workflow_type_id", "active", "is_default")
     def _check_unique_default_chain(self):
         for chain in self:

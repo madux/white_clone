@@ -610,8 +610,7 @@ class CleonApprovalChainLeaveSettings(models.Model):
         return employees
 
     def action_duplicate_leave_workflow(self):
-        self.ensure_one()
-        return self.copy({"name": _("%s (Copy)") % self.name, "active": False, "is_default": False}).id
+        return self.action_duplicate_workflow()
 
 
 class CleonApprovalInstanceLeaveTimers(models.Model):

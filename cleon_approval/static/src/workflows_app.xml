@@ -29,55 +29,72 @@
                         <button class="cleon-btn pink" t-on-click="() => this.addApprovalChain()"><i class="fa fa-plus"/> Add Approval Workflow</button>
                     </div>
 
-                    <div t-if="!state.approvalChains.length" class="text-center p-5 text-muted">
-                        <i class="fa fa-sitemap fa-3x mb-3" style="color: #D1D5DB;"/>
-                        <h4>No Approval Workflows Configured</h4>
-                        <p>Create a single-level, multi-level, or custom approval workflow.</p>
+                    <div class="cleon-wf-toolbar">
+                        <input type="search" class="form-control" placeholder="Search workflows, codes or approvers…" aria-label="Search approval workflows" t-att-value="state.search" t-on-input="ev => this.filterChains('search', ev.target.value)"/>
+                        <select class="form-select" aria-label="Filter workflow status" t-att-value="state.status" t-on-change="ev => this.filterChains('status', ev.target.value)">
+                            <option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="draft">Draft</option><option value="archived">Archived</option>
+                        </select>
                     </div>
-
-                    <div t-else="" class="cleon-wf-list">
-                        <div t-foreach="state.approvalChains" t-as="chain" t-key="chain.id" class="cleon-wf-card flex-column align-items-stretch">
-                            <div class="d-flex justify-content-between align-items-center w-100">
-                                <div class="cleon-wf-info" t-on-click="() => this.toggleExpandChain(chain.id)" style="cursor: pointer;">
-                                    <div>
-                                        <strong t-esc="chain.name"/> <code class="cleon-code" t-esc="chain.code"/>
-                                        <span t-att-class="'cleon-cfg-badge ' + (chain.active ? 'active' : 'inactive')" t-esc="chain.active ? 'active' : 'inactive'"/>
-                                    </div>
-                                    <small><t t-esc="chain.module"/> • <t t-esc="chain.routeType"/> route • <t t-esc="chain.levels"/> approval level(s) • Approvers: <t t-esc="chain.approvers"/> • Applies to: <t t-esc="chain.appliesTo"/> (<t t-esc="chain.coverage"/>) • Backups: <t t-esc="chain.backups"/> • Escalation: <t t-esc="chain.escalationDays || '—'"/> days • Auto-approve: <t t-esc="chain.autoApproveDays || '—'"/> days</small>
-                                    <small t-if="chain.description" t-esc="chain.description"/>
-                                </div>
-                                <div class="cleon-wf-actions">
-                                    <button class="btn btn-link btn-sm p-0 me-3 text-secondary" t-on-click="() => this.viewApprovalChain(chain.id)" title="View workflow details"><i class="fa fa-eye me-1"/> View details</button>
-                                    <i t-att-class="'fa ' + (state.expandedChainIds.includes(chain.id) ? 'fa-chevron-up' : 'fa-chevron-down')" style="color: #9CA3AF; margin-right: 14px; cursor: pointer;" t-on-click="() => this.toggleExpandChain(chain.id)" title="Expand approval levels"/>
-                                    <button class="btn btn-link btn-sm p-0 me-3 text-secondary" t-on-click="() => this.editApprovalChain(chain.id)" title="Edit Chain"><i class="fa fa-pencil"/></button>
-                                    <button class="btn btn-link btn-sm p-0 me-3 text-secondary" t-on-click="() => this.duplicateApprovalChain(chain.id)" title="Duplicate Workflow"><i class="fa fa-copy"/></button>
-                                    <button class="btn btn-link btn-sm p-0 me-3" t-on-click="() => this.toggleApprovalChain(chain.id)" t-esc="chain.active ? 'Deactivate' : 'Activate'"/>
-                                    <button class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.deleteApprovalChain(chain.id)" title="Delete Chain"><i class="fa fa-trash-o"/></button>
-                                </div>
-                            </div>
-
-                            <!-- Real Step Expansion Panel (Figma Alignment) -->
-                            <div t-if="state.expandedChainIds.includes(chain.id)" class="cleon-wf-steps-expanded" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #E5E7EB;">
-                                <div style="font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 12px;">Approval Levels</div>
-                                <div t-if="!chain.steps.length" class="text-muted small">No steps configured for this approval chain.</div>
-                                <div t-else="" class="d-flex flex-column gap-2">
-                                    <div t-foreach="chain.steps" t-as="step" t-key="step.id" class="d-flex align-items-center p-3 rounded" style="background: #FFFFFF; border: 1px solid #E5E7EB;">
-                                        <span class="cleon-priority-badge me-3" t-esc="step_index + 1"/>
-                                        <div class="flex-grow-1">
-                                            <strong style="font-size: 14px; color: #111827;" t-esc="step.name"/>
-                                            <div style="font-size: 12px; color: #6B7280; margin-top: 2px;">
-                                                Approver: <span t-esc="step.approverTypeLabel"/>
-                                                <t t-if="step.slaTimeoutHours &gt; 0">
-                                                    • SLA: <t t-esc="step.slaTimeoutHours"/>h
-                                                </t>
-                                            </div>
-                                        </div>
-                                        <span class="badge bg-light text-dark border">Required approval</span>
-                                    </div>
-                                </div>
-                            </div>
+                    <div t-if="state.loading" class="text-center p-5 text-muted" role="status">Loading approval workflows…</div>
+                    <div t-elif="state.loadError" class="alert alert-danger" role="alert">
+                        Approval data could not be loaded. <button class="btn btn-link" t-on-click="loadData">Try again</button>
+                    </div>
+                    <div t-elif="!filteredChains.length" class="text-center p-5 text-muted">
+                        <i class="fa fa-sitemap fa-2x mb-3"/>
+                        <h4 t-esc="state.approvalChains.length ? 'No matching workflows' : 'No approval workflows yet'"/>
+                        <p t-esc="state.approvalChains.length ? 'Try another search or status filter.' : 'Create a workflow to define its approval levels.'"/>
+                    </div>
+                    <t t-else="">
+                        <div class="table-responsive cleon-wf-table-wrap">
+                            <table class="table cleon-wf-table cleon-wf-routes">
+                                <thead><tr><th>Workflow name</th><th>Code</th><th>Workflow type</th><th>Levels</th><th>Approvers</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+                                <tbody>
+                                    <t t-foreach="visibleChains" t-as="chain" t-key="chain.id">
+                                        <tr>
+                                            <td><button class="cleon-wf-name" t-on-click="() => this.viewApprovalChain(chain.id)" t-esc="chain.name"/></td>
+                                            <td><code class="cleon-code" t-esc="chain.code"/></td>
+                                            <td t-esc="chain.module"/>
+                                            <td><button class="cleon-wf-levels" t-att-aria-expanded="state.expandedChainIds.includes(chain.id) ? 'true' : 'false'" t-att-aria-label="'Show approval levels for ' + chain.name" t-on-click="() => this.toggleExpandChain(chain.id)"><t t-esc="chain.levels"/> <i t-att-class="'fa ms-1 ' + (state.expandedChainIds.includes(chain.id) ? 'fa-angle-up' : 'fa-angle-down')"/></button></td>
+                                            <td><span class="cleon-wf-approvers" t-att-title="chain.approvers" t-esc="chain.approvers || 'Not configured'"/></td>
+                                            <td><span t-att-class="'cleon-cfg-badge ' + (chain.active ? 'active' : 'inactive')" t-esc="chain.lifecycleState.charAt(0).toUpperCase() + chain.lifecycleState.slice(1)"/></td>
+                                            <td class="text-end">
+                                                <Dropdown togglerClass="'btn btn-light border cleon-wf-menu-button'" title="'Actions for ' + chain.name">
+                                                    <t t-set-slot="toggler"><i class="fa fa-ellipsis-v"/><span class="visually-hidden">Workflow actions</span></t>
+                                                    <DropdownItem onSelected="() => this.viewApprovalChain(chain.id)">View details</DropdownItem>
+                                                    <DropdownItem onSelected="() => this.editApprovalChain(chain.id)">Edit workflow</DropdownItem>
+                                                    <DropdownItem onSelected="() => this.duplicateApprovalChain(chain.id)">Duplicate workflow</DropdownItem>
+                                                    <DropdownItem onSelected="() => this.toggleApprovalChain(chain.id)"><t t-esc="chain.active ? 'Deactivate' : 'Activate'"/></DropdownItem>
+                                                    <DropdownItem onSelected="() => this.deleteApprovalChain(chain.id)"><span class="text-danger">Delete workflow</span></DropdownItem>
+                                                </Dropdown>
+                                            </td>
+                                        </tr>
+                                        <tr t-if="state.expandedChainIds.includes(chain.id)" class="cleon-wf-detail-row">
+                                            <td colspan="7">
+                                                <p t-if="chain.description" t-esc="chain.description"/>
+                                                <ol class="cleon-wf-level-list">
+                                                    <li t-foreach="chain.steps" t-as="step" t-key="step.id">
+                                                        <span class="cleon-wf-step-number" t-esc="step_index + 1"/>
+                                                        <div class="cleon-wf-step-content">
+                                                            <strong t-esc="step.name"/>
+                                                            <span class="cleon-wf-step-person"><i class="fa fa-user-o" aria-hidden="true"/> <t t-esc="step.approverTypeLabel"/></span>
+                                                            <span class="cleon-wf-step-mode" t-esc="step.completionMode === 'all' ? 'All approvers required' : step.completionMode === 'any' ? 'Any one approver' : 'Single approver'"/>
+                                                        </div>
+                                                    </li>
+                                                </ol>
+                                                <span t-if="!chain.steps.length" class="text-muted">No approval levels configured.</span>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
+                        <div class="cleon-wf-list-footer">
+                            <label class="d-flex align-items-center gap-2">Rows per page
+                                <select class="form-select form-select-sm" aria-label="Workflows per page" t-att-value="state.limit" t-on-change="ev => this.updatePager({offset: 0, limit: Number(ev.target.value)})"><option value="10">10</option><option value="25">25</option><option value="50">50</option></select>
+                            </label>
+                            <Pager offset="chainOffset" limit="state.limit" total="filteredChains.length" onUpdate.bind="updatePager" isEditable="false"/>
+                        </div>
+                    </t>
                 </t>
 
                 <!-- TAB 2: WORKFLOW TYPES -->
@@ -205,5 +222,15 @@
                 </t>
             </div>
         </div>
+    </t>
+    <t t-name="cleon_approval.WorkflowFormDialog">
+        <Dialog size="props.size" title="props.title" withBodyPadding="false" modalRef="modalRef" contentClass="'cleon-workflow-dialog'">
+            <div class="cleon-workflow-intro"><span class="cleon-workflow-emblem"><i class="fa fa-sitemap" aria-hidden="true"/></span><div><strong>Approval workflow</strong><p t-esc="props.mode === 'readonly' ? 'Review the route, approvers and decision rules.' : 'Define who reviews requests and how each approval progresses.'"/></div><span class="cleon-workflow-mode" t-esc="props.mode === 'readonly' ? 'Read only' : 'Configuration'"/></div>
+            <View t-props="viewProps"/>
+            <t t-set-slot="footer">
+                <button t-if="props.preventEdit and props.preventCreate" class="btn btn-primary" t-on-click="() => props.close()">Close</button>
+                <button t-else="" class="btn btn-primary o-default-button" t-on-click="() => props.close()">Done</button>
+            </t>
+        </Dialog>
     </t>
 </templates>

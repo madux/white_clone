@@ -111,6 +111,21 @@ class TestApprovalEngine(TransactionCase):
             ],
         })
 
+    def test_duplicate_workflow_preserves_levels_without_activating(self):
+        duplicate = self.env["cleon.approval.chain"].browse(self.chain.action_duplicate_workflow())
+        self.assertFalse(duplicate.active)
+        self.assertFalse(duplicate.is_default)
+        self.assertFalse(duplicate.code)
+        self.assertEqual(duplicate.workflow_type_id, self.chain.workflow_type_id)
+        self.assertEqual(len(duplicate.step_ids), len(self.chain.step_ids))
+        self.assertFalse(duplicate.step_ids & self.chain.step_ids)
+        for original, copied in zip(self.chain.step_ids, duplicate.step_ids):
+            self.assertEqual(copied.chain_id, duplicate)
+            for field in ("sequence", "name", "completion_mode", "approver_type",
+                          "approver_group_id", "specific_user_id", "approver_user_ids",
+                          "sla_timeout_hours", "sla_action"):
+                self.assertEqual(copied[field], original[field])
+
     def test_01_chain_configuration_and_uniqueness(self):
         """Test active default approval chain uniqueness constraint."""
         with self.assertRaises(ValidationError):
