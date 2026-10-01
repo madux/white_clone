@@ -19,6 +19,30 @@ class CleonAiGateway(models.AbstractModel):
     _logger = logging.getLogger(__name__)
 
     @api.model
+    def _check_ai_access(self):
+        """The core gateway is internal-only; portals need an explicit governed adapter."""
+        if not self.env.su and not self.env.user.has_group("base.group_user"):
+            raise AccessError(_("AI assistance is available only to internal users."))
+
+    @api.model
+    def _dispatch_provider_text(self, prompt, screen_context=None):
+        """Stable override point for external adapters. Never executes business actions."""
+        self._check_ai_access()
+        if not isinstance(prompt, str) or not prompt.strip() or len(prompt) > 64000:
+            raise ValidationError(_("Provide a non-empty prompt of at most 64,000 characters."))
+        state = self._provider_state()
+        if not state["configured"] or not state["live_calls_enabled"]:
+            raise ValidationError(_("No live AI provider is enabled."))
+        provider = state["provider"]
+        if provider == "gemini":
+            return self._call_gemini(prompt, screen_context)
+        if provider == "ollama":
+            return self._call_ollama(prompt, screen_context)
+        if provider in ("openai", "local"):
+            return self._call_openai_compatible(prompt, screen_context, provider=provider)
+        raise ValidationError(_("No adapter is available for the selected AI provider."))
+
+    @api.model
     def _provider_state(self):
         """Return provider configuration state from system parameters."""
         params = self.env["ir.config_parameter"].sudo()
@@ -72,8 +96,8 @@ class CleonAiGateway(models.AbstractModel):
                 detail = json.loads(error.read().decode("utf-8")).get("error", {}).get("message", "")
             except (ValueError, AttributeError):
                 detail = ""
-            self._logger.warning("Gemini request rejected with HTTP %s: %s", error.code, detail)
-            suffix = (": " + detail[:240]) if detail else ""
+            self._logger.warning("Gemini request rejected with HTTP %s: %s", error.code, "response withheld")
+            suffix = (": " + "Provider response withheld for privacy.") if detail else ""
             raise ValidationError(_("Gemini rejected the request (HTTP %(code)s)%(suffix)s") % {
                 "code": error.code, "suffix": suffix,
             })
@@ -128,8 +152,8 @@ class CleonAiGateway(models.AbstractModel):
                 detail = json.loads(error.read().decode("utf-8")).get("error", {}).get("message", "")
             except (ValueError, AttributeError):
                 detail = ""
-            self._logger.warning("%s request rejected with HTTP %s: %s", provider, error.code, detail)
-            suffix = (": " + detail[:240]) if detail else ""
+            self._logger.warning("%s request rejected with HTTP %s: %s", provider, error.code, "response withheld")
+            suffix = (": " + "Provider response withheld for privacy.") if detail else ""
             raise ValidationError(_("%(provider)s rejected the request (HTTP %(code)s)%(suffix)s") % {
                 "provider": provider.title(), "code": error.code, "suffix": suffix,
             })
@@ -192,8 +216,8 @@ class CleonAiGateway(models.AbstractModel):
                 detail = json.loads(error.read().decode("utf-8")).get("error", {}).get("message", "")
             except (ValueError, AttributeError):
                 detail = ""
-            self._logger.warning("Gemini transcription rejected with HTTP %s: %s", error.code, detail)
-            suffix = (": " + detail[:240]) if detail else ""
+            self._logger.warning("Gemini transcription rejected with HTTP %s: %s", error.code, "response withheld")
+            suffix = (": " + "Provider response withheld for privacy.") if detail else ""
             raise ValidationError(_("Gemini rejected the audio transcription (HTTP %(code)s)%(suffix)s") % {
                 "code": error.code, "suffix": suffix,
             })
@@ -242,8 +266,8 @@ class CleonAiGateway(models.AbstractModel):
                 detail = json.loads(error.read().decode("utf-8")).get("error", {}).get("message", "")
             except (ValueError, AttributeError):
                 detail = ""
-            self._logger.warning("%s transcription rejected with HTTP %s: %s", provider, error.code, detail)
-            suffix = (": " + detail[:240]) if detail else ""
+            self._logger.warning("%s transcription rejected with HTTP %s: %s", provider, error.code, "response withheld")
+            suffix = (": " + "Provider response withheld for privacy.") if detail else ""
             raise ValidationError(_("%(provider)s rejected the audio transcription (HTTP %(code)s)%(suffix)s") % {
                 "provider": provider.title(), "code": error.code, "suffix": suffix,
             })
@@ -257,6 +281,7 @@ class CleonAiGateway(models.AbstractModel):
     @api.model
     def transcribe_audio(self, audio_data, mimetype="audio/webm"):
         """Validate and transiently dispatch a short voice recording."""
+        self._check_ai_access()
         provider = self._provider_state()
         if not provider["configured"] or not provider["live_calls_enabled"]:
             raise ValidationError(_("No live AI provider is enabled for voice transcription."))
@@ -266,7 +291,7 @@ class CleonAiGateway(models.AbstractModel):
             raise ValidationError(_("This browser's audio format is not supported."))
         try:
             audio_bytes = base64.b64decode(audio_data or "", validate=True)
-        except (ValueError, binascii.Error):
+        except (TypeError, ValueError, binascii.Error):
             raise ValidationError(_("The voice recording is not valid audio data."))
         if not audio_bytes:
             raise ValidationError(_("No speech was recorded."))
@@ -288,17 +313,7 @@ class CleonAiGateway(models.AbstractModel):
         This deliberately does not create a chat interaction: callers must
         record only the user-facing interaction they actually perform.
         """
-        provider = self._provider_state()
-        if not provider["configured"] or not provider["live_calls_enabled"]:
-            raise ValidationError(_("No live AI provider is enabled."))
-        name = provider["provider"]
-        if name == "gemini":
-            return self._call_gemini(prompt)
-        if name == "ollama":
-            return self._call_ollama(prompt)
-        if name in ("openai", "local"):
-            return self._call_openai_compatible(prompt, provider=name)
-        raise ValidationError(_("No adapter is available for the selected AI provider."))
+        return self._dispatch_provider_text(prompt)
 
     @api.model
     def _get_screen_ai_context(self, screen, screen_context):
@@ -320,6 +335,7 @@ class CleonAiGateway(models.AbstractModel):
 
         Enforces platform invariant: no explicit active screen -> no business tools.
         """
+        self._check_ai_access()
         context = screen_context or {}
         if not (context.get("screen") or "").strip():
             return []
@@ -328,6 +344,7 @@ class CleonAiGateway(models.AbstractModel):
     @api.model
     def get_assistant_state(self, screen_context=None):
         """Return a server-authorized assistant state for the currently visible screen."""
+        self._check_ai_access()
         context = screen_context or {}
         screen = (context.get("screen") or "").strip()
 
@@ -355,6 +372,7 @@ class CleonAiGateway(models.AbstractModel):
     @api.model
     def ask_assistant(self, question, screen_context=None):
         """Permission-aware Q&A entry point. Checks provider state and live call boundaries."""
+        self._check_ai_access()
         question = (question or "").strip()
         if not question:
             return {
@@ -378,18 +396,7 @@ class CleonAiGateway(models.AbstractModel):
             return self._record_interaction(question, result, screen_context)
 
         try:
-            if provider.get("provider") == "gemini":
-                result = {"answered": True, "message": self._call_gemini(question, screen_context), "provider": provider}
-            elif provider.get("provider") == "ollama":
-                result = {"answered": True, "message": self._call_ollama(question, screen_context), "provider": provider}
-            elif provider.get("provider") in ("openai", "local"):
-                result = {"answered": True, "message": self._call_openai_compatible(question, screen_context, provider=provider["provider"]), "provider": provider}
-            else:
-                result = {
-                    "answered": False,
-                    "message": _("The selected provider is configured, but no adapter is available for it."),
-                    "provider": provider,
-                }
+            result = {"answered": True, "message": self._dispatch_provider_text(question, screen_context), "provider": provider}
         except ValidationError as error:
             result = {"answered": False, "message": error.args[0], "provider": provider}
         return self._record_interaction(question, result, screen_context)
@@ -411,6 +418,7 @@ class CleonAiGateway(models.AbstractModel):
 
     @api.model
     def record_interaction_feedback(self, interaction_id, helpful):
+        self._check_ai_access()
         try:
             interaction_id = int(interaction_id)
         except (TypeError, ValueError):
@@ -432,6 +440,7 @@ class CleonAiGateway(models.AbstractModel):
         balances) must never rely on a client-supplied parameter and require an explicit
         server-bound human confirmation workflow.
         """
+        self._check_ai_access()
         params = params or {}
         context = screen_context or {}
         catalog = {t["name"]: t for t in self.get_tool_catalog(screen_context=context)}

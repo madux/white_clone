@@ -107,7 +107,7 @@ class CleonApprovalEscalationRule(models.Model):
     chain_id = fields.Many2one("cleon.approval.chain", required=True, ondelete="cascade", check_company=True, string="Approval Route")
     step_id = fields.Many2one("cleon.approval.step", required=True, ondelete="cascade", string="From Level")
     response_value = fields.Integer(default=24, required=True)
-    response_unit = fields.Selection([("minutes", "Minutes"), ("hours", "Hours"), ("days", "Days"), ("working_days", "Working Days")], default="hours", required=True)
+    response_unit = fields.Selection([("minutes", "Minutes"), ("hours", "Hours"), ("days", "Days")], default="hours", required=True)
     escalation_action = fields.Selection([
         ("next", "Escalate to Next Level"), ("role", "Escalate to Specific Role"),
         ("employee", "Escalate to Specific Employee"), ("notify", "Notify Only"),
@@ -134,7 +134,9 @@ class CleonApprovalEscalationRule(models.Model):
 
     def timeout_hours(self):
         self.ensure_one()
-        factors = {"minutes": 1 / 60, "hours": 1, "days": 24, "working_days": 24}
+        if self.response_unit == "working_days":
+            raise ValidationError(_("Working-day escalation is not supported. Configure minutes, hours or calendar days instead."))
+        factors = {"minutes": 1 / 60, "hours": 1, "days": 24}
         return self.response_value * factors[self.response_unit]
 
 

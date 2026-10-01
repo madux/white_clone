@@ -108,3 +108,24 @@ class TestCleonAiArchitecture(TransactionCase):
         finally:
             for key, value in previous.items():
                 params.set_param(key, value or "")
+
+    def test_11_public_gateway_access_denied(self):
+        public = self.env.ref("base.public_user")
+        with self.assertRaises(AccessError):
+            self.gateway.with_user(public).complete_text("Hello")
+        with self.assertRaises(AccessError):
+            self.gateway.with_user(public).transcribe_audio("abc")
+
+    def test_12_local_and_ollama_dispatch_without_network(self):
+        params = self.env["ir.config_parameter"].sudo()
+        params.set_param("cleon_ai.live_calls_enabled", "True")
+        for provider, method in [("local", "_call_openai_compatible"), ("ollama", "_call_ollama")]:
+            params.set_param("cleon_ai.provider", provider)
+            with patch.object(type(self.gateway), method, return_value="Local answer") as adapter:
+                self.assertEqual(self.gateway.complete_text("Hello"), "Local answer")
+                adapter.assert_called_once()
+
+    def test_13_prompt_size_and_type_validation(self):
+        for prompt in [None, 12, "", "x" * 64001]:
+            with self.assertRaises(ValidationError):
+                self.gateway.complete_text(prompt)

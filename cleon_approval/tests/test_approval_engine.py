@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from odoo import fields
 from odoo.exceptions import AccessError, UserError, ValidationError
@@ -547,3 +548,65 @@ class TestApprovalEngine(TransactionCase):
         self.assertEqual(first_step.state, "pending")
         self.assertTrue(first_step.escalated_once)
         self.assertEqual(first_step.resolved_user_ids, original_approvers)
+
+    def test_24_client_cannot_request_automated_decision(self):
+        instance = self.env["cleon.approval.instance"].action_start(
+            self.env["res.partner"].create({"name": "Automation boundary"}))
+        with self.assertRaises(AccessError):
+            instance.with_user(self.emp_user).action_decide("approve", automated=True)
+        with self.assertRaises(AccessError):
+            instance.step_ids[0].with_user(self.emp_user).action_activate()
+        self.assertEqual(instance.state, "pending")
+
+    def test_25_disabled_escalation_has_no_deadline(self):
+        self.wft.escalation_enabled = False
+        instance = self.env["cleon.approval.instance"].action_start(
+            self.env["res.partner"].create({"name": "No escalation"}))
+        self.assertFalse(instance.step_ids.filtered(lambda step: step.state == "pending").deadline)
+
+    def test_26_final_escalation_does_not_reject(self):
+        instance = self.env["cleon.approval.instance"].action_start(
+            self.env["res.partner"].create({"name": "Final escalation"}))
+        instance.step_ids.filtered(lambda step: step.state == "waiting").sudo().write({"state": "skipped"})
+        step = instance.step_ids.filtered(lambda step: step.state == "pending")
+        step.sudo().write({"deadline": fields.Datetime.now() - timedelta(hours=1), "sla_action": "escalate_next"})
+        self.env["cleon.approval.instance"]._cron_process_approval_escalations()
+        self.assertEqual(instance.state, "pending")
+        self.assertEqual(step.state, "pending")
+        self.assertTrue(step.escalated_once)
+
+    def test_27_missing_condition_does_not_match_zero_or_inequality(self):
+        rule = self.env["cleon.approval.rule"].create({
+            "name": "Condition validation", "company_id": self.company.id,
+            "workflow_type_id": self.wft.id, "chain_id": self.chain.id,
+            "condition_ids": [(0, 0, {"field_name": "duration", "operator": "eq", "value": "0"})],
+        })
+        condition = rule.condition_ids
+        self.assertTrue(condition._matches({"duration": 0}))
+        self.assertFalse(condition._matches({}))
+        condition.operator = "ne"
+        self.assertFalse(condition._matches({}))
+
+    def test_28_overlapping_delegations_rejected(self):
+        values = {"company_id": self.company.id, "user_id": self.manager_user.id,
+                  "delegate_user_id": self.emp_user.id, "date_from": fields.Date.today(),
+                  "date_to": fields.Date.today() + timedelta(days=2)}
+        self.env["cleon.approval.delegation"].create(values)
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.env["cleon.approval.delegation"].create(values)
+
+    def test_29_explicit_fallback_bypasses_configured_default(self):
+        self.wft.default_chain_id = self.chain
+        target = self.env["res.partner"].create({"name": "Explicit fallback"})
+        with patch.object(type(target), "_approval_resolve_chain", return_value="fallback", create=True):
+            instance = self.env["cleon.approval.instance"].action_start(target)
+        self.assertFalse(instance.source_chain_id)
+        self.assertEqual(len(instance.step_ids), 1)
+
+    def test_30_default_route_rejects_wrong_company(self):
+        other = self.env["res.company"].create({"name": "Other route company"})
+        self.chain.company_id = other
+        self.wft.default_chain_id = self.chain
+        with self.assertRaises(ValidationError):
+            self.env["cleon.approval.instance"].action_start(
+                self.env["res.partner"].create({"name": "Wrong company route"}))

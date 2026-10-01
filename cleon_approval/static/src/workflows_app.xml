@@ -210,7 +210,7 @@
                 </t>
 
                 <t t-if="state.activeTab === 'delegations'">
-                    <div class="cleon-wf-head"><div><h2>Approval Delegation</h2><p>Temporarily route an approver's assigned decisions to a delegate for a defined date range.</p></div><button class="cleon-btn pink" t-on-click="() => this.addDelegation()"><i class="fa fa-plus"/> Add Delegation</button></div>
+                    <div class="cleon-wf-head"><div><h2>Approval Delegation</h2><p>Apply a delegate when new requests resolve their approvers during the selected dates. Existing pending requests are unchanged.</p></div><button class="cleon-btn pink" t-on-click="() => this.addDelegation()"><i class="fa fa-plus"/> Add Delegation</button></div>
                     <div t-if="!state.delegations.length" class="text-center p-5 text-muted"><i class="fa fa-user-plus fa-3x mb-3"/><h4>No Delegations Configured</h4></div>
                     <div t-else="" class="table-responsive"><table class="table cleon-wf-table"><thead><tr><th>APPROVER</th><th>DELEGATE</th><th>FROM</th><th>TO</th><th>REASON</th><th>STATUS</th><th>ACTIONS</th></tr></thead><tbody><tr t-foreach="state.delegations" t-as="item" t-key="item.id"><td t-esc="item.approver"/><td t-esc="item.delegate"/><td t-esc="item.dateFrom"/><td t-esc="item.dateTo"/><td t-esc="item.reason"/><td><span t-att-class="'cleon-cfg-badge ' + (item.active ? 'active' : 'inactive')" t-esc="item.active ? 'Active' : 'Inactive'"/></td><td><button class="btn btn-link btn-sm text-secondary" t-on-click="() => this.editDelegation(item.id)"><i class="fa fa-pencil"/></button></td></tr></tbody></table></div>
                 </t>

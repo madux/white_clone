@@ -10,7 +10,6 @@
         "base",
         "mail",
         "hr",
-        "hr_administration",
     ],
     "data": [
         "security/approval_security.xml",

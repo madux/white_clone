@@ -166,7 +166,7 @@ class CleonApprovalInstance(models.Model):
             matching_rule = self.env["cleon.approval.rule"].matching_rule(wft, res_record)
             target_chain = matching_rule.chain_id if matching_rule else False
 
-        chain = target_chain or wft.default_chain_id
+        chain = False if skip_default_chain else (target_chain or wft.default_chain_id)
         if chain and not chain.active:
             raise UserError(_("Configuration Integrity Error: Default Approval Route '%s' is inactive.") % chain.name)
         if not chain and not skip_default_chain:
@@ -187,6 +187,10 @@ class CleonApprovalInstance(models.Model):
 
         # 2. Advanced default or target-specific chain configured -> use chain
         if chain:
+            if chain.company_id != company or chain.workflow_type_id != wft:
+                raise ValidationError(_("The selected approval route must belong to the request's company and workflow type."))
+            if chain.on_approval != "next" or chain.on_rejection != "stop":
+                raise ValidationError(_("This route uses unsupported decision behavior. Configure next-level approval and stop-on-rejection."))
             if not chain.step_ids:
                 raise ValidationError(_("Approval chain '%s' has no configured steps.") % chain.name)
 
@@ -343,6 +347,11 @@ class CleonApprovalInstance(models.Model):
         if not filtered_users:
             raise UserError(_("Submission blocked: No active approver user found in company '%s' for employee '%s'.") % (company.name, employee.sudo().name))
 
+        filtered_users = self.env["cleon.approval.delegation"].apply_to_users(
+            filtered_users, company, excluded_user=emp_user,
+        )
+        if not filtered_users:
+            raise UserError(_("No eligible approver remains after applying delegation."))
         resolved_users = filtered_users
 
         existing = self.sudo().search([("open_key", "=", open_key_str)], limit=1)
@@ -453,6 +462,8 @@ class CleonApprovalInstance(models.Model):
 
         # 3. Authorization check - strictly enforced for all human users (no system admin bypass)
         if not automated:
+            if not self.env.user.active or self.sudo().company_id not in self.env.user.company_ids:
+                raise AccessError(_("You no longer have access to this approval's company."))
             if self.env.user not in current_step.resolved_user_ids:
                 raise AccessError(_("You are not authorized to decide on approval step '%s'.") % current_step.name)
             submitting_user = self.sudo().employee_id.sudo().user_id
@@ -598,7 +609,7 @@ class CleonApprovalInstance(models.Model):
               AND s.deadline IS NOT NULL
               AND s.deadline <= (NOW() AT TIME ZONE 'UTC')
               AND i.state = 'pending'
-            FOR UPDATE OF s SKIP LOCKED
+            FOR UPDATE OF i SKIP LOCKED
         """)
         step_ids = [r[0] for r in self.env.cr.fetchall()]
         if not step_ids:
@@ -610,6 +621,7 @@ class CleonApprovalInstance(models.Model):
             instance = step.instance_id
             try:
                 with self.env.cr.savepoint():
+                    original_users = step.resolved_user_ids
                     if step.sla_action == "auto_approve":
                         instance.sudo().action_decide("approve", comment=_("Auto-approved by SLA escalation runner."), automated=True)
                     elif step.sla_action == "auto_reject":
@@ -621,7 +633,7 @@ class CleonApprovalInstance(models.Model):
                             step.sudo().write({"state": "escalated"})
                             step._close_activity()
                             next_step = next_steps[0]
-                            next_step.action_activate()
+                            next_step.sudo().action_activate()
                             instance.sudo().write({"current_step_sequence": next_step.sequence})
                         else:
                             step.sudo().write({"escalated_once": True, "deadline": False})
@@ -644,11 +656,26 @@ class CleonApprovalInstance(models.Model):
                             "resolved_user_ids": [(6, 0, users.ids)], "escalated_once": True,
                             "sla_timeout_hours": 0, "deadline": False,
                         })
-                        step.action_activate()
+                        step.sudo().action_activate()
                         instance.message_post(body=_("Approval level '%s' was escalated to: %s") % (step.name, ", ".join(users.mapped("name"))))
                     elif step.sla_action == "notify_only":
                         step.sudo().write({"escalated_once": True, "deadline": False})
                         instance.message_post(body=_("Approval SLA reminder: level '%s' is still awaiting action; ownership is unchanged.") % step.name)
+                    scope = step.escalation_rule_id.notify_scope or "all"
+                    recipients = self.env["res.users"]
+                    if scope in ("original", "all"):
+                        recipients |= original_users
+                    if scope in ("requester", "all"):
+                        recipients |= instance.employee_id.sudo().user_id
+                    if scope in ("target", "all"):
+                        recipients |= instance.step_ids.filtered(lambda item: item.state == "pending").resolved_user_ids
+                    partners = recipients.filtered(lambda user: user.active and instance.company_id in user.company_ids).partner_id
+                    if partners:
+                        instance.sudo().message_notify(
+                            partner_ids=partners.ids,
+                            subject=_("Approval deadline reached"),
+                            body=_("The response deadline for approval level '%s' was reached. Review the workflow for its current status.") % step.name,
+                        )
             except (AccessError, UserError, ValidationError) as exc:
                 _logger.warning("SLA cron escalation for step %s (instance %s) blocked by business policy: %s", step.id, instance.id, exc)
             except Exception as exc:
@@ -724,6 +751,8 @@ class CleonApprovalInstanceStep(models.Model):
 
     def action_activate(self):
         self.ensure_one()
+        if not self.env.su:
+            raise AccessError(_("Approval levels can only be activated by the approval engine."))
         now = fields.Datetime.now()
         timeout_h = self.sla_timeout_hours
         deadline = now + timedelta(hours=timeout_h) if (timeout_h and timeout_h > 0) else False
