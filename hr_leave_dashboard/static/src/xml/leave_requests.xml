@@ -1,61 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="hr_leave_dashboard.LeaveRequestsPage">
-        <div class="leaveapp">
+        <div t-att-class="props.embedded ? 'leaveapp o_leave_requests_embedded' : 'leaveapp'">
 
             <!-- Shared Module Sidebar -->
-            <CalendarSidebar activeMenu="'requests'"/>
+            <CalendarSidebar t-if="!props.embedded" activeMenu="'requests'"/>
 
             <!-- ════════════════════════════════════════════════════
                  MAIN CONTENT AREA (Screen 9 — FR-073 to FR-113)
                  ════════════════════════════════════════════════════ -->
             <div class="o_leave_dashboard">
-
-                <!-- FR-073 and FR-074: Header -->
-                <div class="cleon-dash-header">
-                    <div class="cleon-dash-header-left">
-                        <button type="button" class="cleon-header-plain-btn" t-on-click="toggleLeaveSidebar" title="Toggle Leave navigation">
-                            <i class="fa fa-columns"/>
-                        </button>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="cleon-page-title-icon">
-                                <i class="fa fa-file-text-o"/>
-                            </div>
-                            <div>
-                                <h4 class="cleon-dash-title">Leave Requests</h4>
-                                <span class="cleon-dash-subtitle">Review, approve, or reject employee leave requests</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="cleon-dash-header-right">
-                        <!-- Create Leave Request Button -->
-                        <button type="button" class="btn btn-primary cleon-btn-create-req" t-on-click="openCreateModal">
-                            <i class="fa fa-plus me-1"/> Create Leave Request
-                        </button>
-
-                        <button type="button" class="cleon-header-plain-btn" title="Take a Tour">
-                            <i class="fa fa-paper-plane-o"/>
-                        </button>
-                        <button type="button" class="cleon-header-plain-btn" t-on-click="openSetupExperience" title="Help / Guide">
-                            <i class="fa fa-question-circle-o"/>
-                        </button>
-                        <button type="button" class="cleon-header-plain-btn" t-on-click="openSetupExperience" title="Setup Wizard">
-                            <i class="fa fa-magic"/>
-                        </button>
-
-                        <!-- View Switcher -->
-                        <div class="cleon-view-toggle">
-                            <button t-att-class="state.viewMode === 'admin' ? 'cleon-view-option active' : 'cleon-view-option'"
-                                    t-on-click="() => this.setViewMode('admin')">
-                                <i class="fa fa-circle-o"/> Admin View
-                            </button>
-                            <button t-att-class="state.viewMode === 'employee' ? 'cleon-view-option active' : 'cleon-view-option'"
-                                    t-on-click="() => this.setViewMode('employee')">
-                                <i class="fa fa-user-o"/> Employee View
-                            </button>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- STATUS SUMMARY CARDS (FR-075 to FR-077) -->
                 <div class="leave-request-summary">
@@ -85,6 +39,18 @@
                             t-on-click="() => this.selectStatus('rejected')">
                         <strong><t t-esc="state.counts.rejected"/></strong>
                         <span>Rejected</span>
+                    </button>
+                    <button type="button"
+                            t-att-class="state.status === 'changes_requested' ? 'request-summary-card active' : 'request-summary-card'"
+                            t-on-click="() => this.selectStatus('changes_requested')">
+                        <strong><t t-esc="state.counts.changes_requested || 0"/></strong>
+                        <span>Changes Requested</span>
+                    </button>
+                    <button type="button"
+                            t-att-class="state.status === 'cancelled' ? 'request-summary-card active' : 'request-summary-card'"
+                            t-on-click="() => this.selectStatus('cancelled')">
+                        <strong><t t-esc="state.counts.cancelled || 0"/></strong>
+                        <span>Cancelled</span>
                     </button>
                 </div>
 
@@ -116,9 +82,22 @@
                         </t>
                     </select>
 
-                    <button type="button" class="request-export-btn" t-on-click="exportRequests">
+                    <button t-if="state.canExport" type="button" class="request-export-btn" t-on-click="exportRequests">
                         <i class="fa fa-download me-1"/> Export
                     </button>
+                    <button type="button" class="request-export-btn" t-on-click="toggleFilters">
+                        <i class="fa fa-filter me-1"/> Filters
+                    </button>
+                </div>
+
+                <div t-if="state.showFilters" class="leave-request-advanced-filters">
+                    <label>Request ID<input type="text" t-att-value="state.requestId" t-on-input="(ev) => this.onAdvancedFilterInput(ev, 'requestId')" placeholder="LR-..."/></label>
+                    <label>Approver<input type="text" t-att-value="state.approver" t-on-input="(ev) => this.onAdvancedFilterInput(ev, 'approver')" placeholder="Approver name"/></label>
+                    <label>Reason<input type="text" t-att-value="state.reason" t-on-input="(ev) => this.onAdvancedFilterInput(ev, 'reason')" placeholder="Reason contains"/></label>
+                    <label>Added Type<select t-att-value="state.addedType" t-on-change="(ev) => this.onAdvancedFilterChange(ev, 'addedType')"><option value="">All (With/Without Handover)</option><option value="with_handover">With Handover</option><option value="without_handover">Without Handover</option></select></label>
+                    <label>From<input type="date" t-att-value="state.dateFrom" t-on-change="(ev) => this.onAdvancedFilterChange(ev, 'dateFrom')"/></label>
+                    <label>To<input type="date" t-att-value="state.dateTo" t-on-change="(ev) => this.onAdvancedFilterChange(ev, 'dateTo')"/></label>
+                    <button type="button" class="request-clear-filters" t-on-click="clearAdvancedFilters">Clear filters</button>
                 </div>
 
                 <!-- FLOATING BULK ACTIONS BAR (FR-097 to FR-100) -->
@@ -148,8 +127,10 @@
                                                t-att-checked="this.allVisibleSelected"
                                                t-on-change="toggleSelectAll"/>
                                     </th>
+                                    <th>REQUEST ID</th>
                                     <th>EMPLOYEE</th>
                                     <th>LEAVE TYPE</th>
+                                    <th>BALANCE</th>
                                     <th>DATES</th>
                                     <th>DURATION</th>
                                     <th>STATUS</th>
@@ -161,14 +142,14 @@
                             <tbody>
                                 <t t-if="state.loading">
                                     <tr>
-                                        <td colspan="9" class="text-center py-4 text-muted">
+                                        <td colspan="11" class="text-center py-4 text-muted">
                                             <i class="fa fa-spinner fa-spin me-2"/> Loading leave requests...
                                         </td>
                                     </tr>
                                 </t>
                                 <t t-elif="!state.rows.length">
                                     <tr>
-                                        <td colspan="9" class="dashboard-empty">
+                                        <td colspan="11" class="dashboard-empty">
                                             No leave requests found matching your filter criteria.
                                         </td>
                                     </tr>
@@ -180,11 +161,16 @@
                                                    t-att-checked="state.selectedIds.includes(req.id)"
                                                    t-on-change="() => this.toggleRow(req.id)"/>
                                         </td>
+                                        <td><strong class="request-reference"><t t-esc="req.request_ref"/></strong></td>
                                         <td>
                                             <div class="employee-cell">
                                                 <div>
                                                     <strong class="employee-name"><t t-esc="req.employee.name"/></strong>
-                                                    <small class="employee-dept"><t t-esc="req.employee.department"/></small>
+                                                    <small class="employee-dept">
+                                                        <t t-if="req.employee.employee_number">Staff No: <t t-esc="req.employee.employee_number"/></t>
+                                                        <t t-if="req.employee.identification_id"> · ID: <t t-esc="req.employee.identification_id"/></t>
+                                                        · <t t-esc="req.employee.department"/>
+                                                    </small>
                                                 </div>
                                                 <t t-if="req.admin_created">
                                                     <span class="admin-created-badge" title="Created by administrator">Admin</span>
@@ -197,6 +183,7 @@
                                                 <t t-esc="req.leave_type.name"/>
                                             </span>
                                         </td>
+                                        <td><strong><t t-esc="req.balance"/></strong> days</td>
                                         <td>
                                             <span class="request-date">
                                                 <i class="fa fa-calendar-o me-1"/>
@@ -245,6 +232,7 @@
                         <div class="page-size-control">
                             Show
                             <select t-on-change="changePageSize">
+                                <option value="5" t-att-selected="state.pageSize === 5">5</option>
                                 <option value="10" t-att-selected="state.pageSize === 10">10</option>
                                 <option value="25" t-att-selected="state.pageSize === 25">25</option>
                                 <option value="50" t-att-selected="state.pageSize === 50">50</option>
@@ -297,7 +285,9 @@
                     <span class="text-muted">Specify the reason for rejection</span>
                 </div>
                 <div class="py-3">
-                    <label class="form-label font-weight-bold">Rejection Reason *</label>
+                    <label class="form-label font-weight-bold">Rejection Category *</label>
+                    <select class="form-select mb-3" t-model="state.rejectCategory"><option value="">Select a reason...</option><option value="coverage">Insufficient Team Coverage</option><option value="balance">Insufficient Leave Balance</option><option value="policy">Policy Requirement Not Met</option><option value="dates">Dates Not Approved</option><option value="documentation">Documentation Incomplete</option><option value="other">Other</option></select>
+                    <label class="form-label font-weight-bold">Comments *</label>
                     <textarea class="form-control" rows="3"
                               placeholder="Provide a clear reason for rejecting this leave request..."
                               t-model="state.rejectReason"/>

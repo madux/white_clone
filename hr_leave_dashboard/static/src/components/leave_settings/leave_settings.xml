@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.LeaveSettingsPage" owl="1">
+    <div t-att-class="'leaveapp o_ls_page ' + (props.embedded ? 'o_leave_config_embedded' : '')">
+      <CalendarSidebar t-if="!props.embedded" activeMenu="'configuration'" mode="'admin'"/>
+      <main class="o_ls_main">
+        <header class="o_ls_header">
+          <div>
+            <h1>General Settings</h1>
+            <p>Configure company-wide Leave Management preferences</p>
+          </div>
+          <button class="o_ls_icon_button" title="Settings guide" t-on-click="openTour"><i class="fa fa-question-circle-o"/></button>
+        </header>
+
+        <div t-if="state.loading" class="o_ls_loading"><i class="fa fa-spinner fa-spin"/><span>Loading settings…</span></div>
+        <t t-elif="state.data">
+          <section class="o_ls_intro">
+            <span><i class="fa fa-cog"/></span>
+            <div><h2>Leave Management Settings</h2><p>These preferences apply to <strong t-esc="state.data.company.name"/>. Leave-category rules remain attached to each Leave Type.</p></div>
+          </section>
+          <nav class="o_ls_settings_tabs" aria-label="Leave Management settings">
+            <button t-foreach="[['general','General Settings'],['rules','Rules &amp; Permissions'],['calendar','Calendar &amp; Visibility'],['notifications','Notifications &amp; Alerts'],['lifecycle','Return, Extension &amp; Handover'],['integrations','Integrations &amp; AI'],['leave_types','Leave Types']]" t-as="tab" t-key="tab[0]" t-att-class="state.activeTab === tab[0] ? 'active' : ''" t-on-click="() => this.setTab(tab[0])" t-esc="tab[1]"/>
+          </nav>
+
+          <section t-if="state.activeTab === 'general'" class="o_ls_card">
+            <header><i class="fa fa-calendar-o"/><div><h2>Company Defaults &amp; Working Days</h2><p>The organisation baseline beneath Leave Policy overrides.</p></div></header>
+            <div class="o_ls_card_body">
+              <div class="o_ls_grid two">
+                <label class="o_ls_field"><span>Company Country / Region</span><select t-model="state.form.country_id"><option value="">Select country</option><option t-foreach="state.data.countries" t-as="country" t-key="country.id" t-att-value="country.id" t-esc="country.name"/></select><small>Used as the regional context on leave calendars; it does not create holidays automatically.</small></label>
+                <label class="o_ls_field"><span>Default Working Schedule</span><select t-model="state.form.resource_calendar_id"><option t-foreach="state.data.calendars" t-as="calendar" t-key="calendar.id" t-att-value="calendar.id"><t t-esc="calendar.name"/> · <t t-esc="calendar.hours_per_week"/> hrs/week</option></select><small>Leave days are calculated from this company schedule unless an employee has a specific schedule.</small></label>
+              </div>
+              <div class="o_ls_schedule" t-if="selectedCalendar">
+                <div><span class="o_ls_country_code" t-esc="selectedCountry?.code || '—'"/><div><strong t-esc="selectedCalendar.name"/><small><t t-esc="selectedCalendar.hours_per_week"/> scheduled hours per week · <t t-esc="selectedCalendar.timezone"/></small></div></div>
+                <button class="o_ls_link_button" t-on-click="openWorkingSchedule">Edit schedule &amp; time zone <i class="fa fa-external-link"/></button>
+                <div class="o_ls_day_list"><span t-foreach="selectedCalendar.working_days" t-as="day" t-key="day" t-esc="day"/><em t-if="!selectedCalendar.working_days.length">No working days configured</em></div>
+              </div>
+              <div class="o_ls_holiday_head"><div><strong>Upcoming public holidays</strong><small>Global or schedule-specific closures already configured in Odoo</small></div><button t-on-click="openPublicHolidays"><i class="fa fa-calendar-plus-o"/> Manage Holidays</button></div>
+              <div class="o_ls_holidays" t-if="state.data.holidays.length"><span t-foreach="state.data.holidays" t-as="holiday" t-key="holiday.id"><b t-esc="holiday.date"/><t t-esc="holiday.name"/></span></div>
+              <div class="o_ls_empty_inline" t-else=""><i class="fa fa-info-circle"/> No upcoming public holidays are configured for this schedule.</div>
+            </div>
+          </section>
+
+          <section t-if="state.activeTab === 'rules'" class="o_ls_card">
+            <header><i class="fa fa-sliders"/><div><h2>Defaults for New Leave Types</h2><p>Starting values for leave types created after these settings are saved.</p></div><button class="o_ls_link_button" t-on-click="openLeaveTypes">Manage existing Leave Types <i class="fa fa-arrow-right"/></button></header>
+            <div class="o_ls_notice"><i class="fa fa-info-circle"/><span>Changing these defaults does not rewrite existing policies. Edit an existing policy from Leave Types when its rules need to change.</span></div>
+            <div class="o_ls_card_body o_ls_grid three">
+              <label class="o_ls_field"><span>Approval Workflow</span><select t-model="state.form.default_approval_workflow"><option value="none">No Approval Required</option><option value="single">Single Approver</option><option value="multi">Multi-level Approval</option></select></label>
+              <label class="o_ls_field"><span>Supporting Documents</span><select t-model="state.form.default_supporting_document_policy"><option value="never">Never Required</option><option value="conditional">Conditional (&gt;3 days)</option><option value="always">Always Required</option></select></label>
+              <label class="o_ls_field"><span>Minimum Notice (days)</span><input type="number" min="0" t-model.number="state.form.default_minimum_notice_days"/></label>
+              <label class="o_ls_field"><span>Maximum Balance Cap</span><input type="number" min="0" step="0.5" t-model.number="state.form.default_max_balance_cap"/><small>0 means there is no maximum cap.</small></label>
+              <label class="o_ls_field"><span>Team Overlap Limit (%)</span><input type="number" min="0" max="100" step="1" t-model.number="state.form.default_team_overlap_percent"/><small>0 means overlap checking is disabled.</small></label>
+              <div class="o_ls_checks">
+                <label><input type="checkbox" t-model="state.form.default_allow_half_day"/><span>Allow half-day requests</span></label>
+                <label><input type="checkbox" t-model="state.form.default_allow_carryover"/><span>Allow balance carry-over</span></label>
+                <label><input type="checkbox" t-model="state.form.default_allow_negative_balance"/><span>Allow negative balances</span></label>
+                <label><input type="checkbox" t-model="state.form.default_block_overlap_threshold"/><span>Block above overlap limit</span></label>
+              </div>
+            </div>
+          </section>
+
+          <section t-if="state.activeTab === 'notifications'" class="o_ls_card">
+            <header><i class="fa fa-bell-o"/><div><h2>Request Update Notifications</h2><p>Choose how this module records and addresses approval, rejection and cancellation updates.</p></div></header>
+            <div class="o_ls_toggle_rows">
+              <button t-att-class="'o_ls_toggle_row ' + (state.form.notify_in_app ? 'on' : '')" t-on-click="() => toggle('notify_in_app')"><div><strong>Post updates in Odoo</strong><small>Keep a message on the leave request for traceability and in-app activity.</small></div><span class="o_ls_switch"><i/></span></button>
+              <button t-att-class="'o_ls_toggle_row ' + (state.form.notify_email ? 'on' : '')" t-on-click="() => toggle('notify_email')"><div><strong>Address updates to the employee</strong><small>Add the employee as a recipient of approval, rejection and cancellation messages.</small></div><span class="o_ls_switch"><i/></span></button>
+            </div>
+          </section>
+
+          <section t-if="state.activeTab === 'notifications'" class="o_ls_card">
+            <header><i class="fa fa-exclamation-triangle"/><div><h2>Bradford Factor Bands</h2><p>Organisation-wide absence-risk thresholds from Part 9, Section 10.1b. These settings drive the Absence Risk report and remain advisory.</p></div></header>
+            <div class="o_ls_card_body">
+              <div class="o_ls_checks o_ls_bradford_enable">
+                <label><input type="checkbox" t-model="state.form.bradford_enabled"/><span>Enable Bradford Factor scoring</span></label>
+              </div>
+              <div class="o_ls_grid three" t-att-class="state.form.bradford_enabled ? 'o_ls_grid three' : 'o_ls_grid three o_ls_disabled_fields'">
+                <label class="o_ls_field"><span>Rolling window (weeks)</span><input type="number" min="1" t-model.number="state.form.bradford_window_weeks" t-att-disabled="!state.form.bradford_enabled"/><small>Approved qualifying absences inside this rolling period are counted.</small></label>
+                <label class="o_ls_field"><span>Minimum spell (days)</span><input type="number" min="1" t-model.number="state.form.bradford_min_spell_days" t-att-disabled="!state.form.bradford_enabled"/><small>Shorter absence spells are excluded from the calculation.</small></label>
+                <div class="o_ls_notice o_ls_notice_inline"><i class="fa fa-info-circle"/><span>Formula: S² × D. Scores inform review only and never approve, reject, or discipline automatically.</span></div>
+                <label class="o_ls_field"><span>Caution starts</span><input type="number" min="1" t-model.number="state.form.bradford_caution" t-att-disabled="!state.form.bradford_enabled"/></label>
+                <label class="o_ls_field"><span>Concern starts</span><input type="number" min="1" t-model.number="state.form.bradford_concern" t-att-disabled="!state.form.bradford_enabled"/></label>
+                <label class="o_ls_field"><span>Serious starts</span><input type="number" min="1" t-model.number="state.form.bradford_serious" t-att-disabled="!state.form.bradford_enabled"/></label>
+                <label class="o_ls_field"><span>Critical starts</span><input type="number" min="1" t-model.number="state.form.bradford_critical" t-att-disabled="!state.form.bradford_enabled"/></label>
+              </div>
+            </div>
+          </section>
+
+          <section t-if="state.activeTab === 'rules'" class="o_ls_card">
+            <header><i class="fa fa-shield"/><div><h2>Access &amp; Responsibilities</h2><p>Real Odoo security groups currently governing Leave Management.</p></div><button class="o_ls_link_button" t-on-click="openAccessRights">Manage users <i class="fa fa-external-link"/></button></header>
+            <div class="o_ls_roles"><button t-foreach="state.data.roles" t-as="role" t-key="role.xmlid" class="o_ls_role_row" t-on-click="() => this.openAccessRole(role)"><span class="o_ls_role_dot"/><div><strong t-esc="role.name"/><small t-esc="role.description"/></div><b><t t-esc="role.users"/> users <i class="fa fa-external-link"/></b></button></div>
+          </section>
+
+          <section t-if="state.activeTab === 'general'" class="o_ls_card"><header><i class="fa fa-balance-scale"/><div><h2>Organisation Defaults</h2><p>Leave Policies inherit these values until an explicit policy override is enabled.</p></div></header><div class="o_ls_card_body o_ls_grid three"><label class="o_ls_field"><span>Leave Year / Cycle</span><select t-model="state.form.year_basis"><option value="calendar">Calendar Year</option><option value="financial">Financial Year</option><option value="anniversary">Employee Anniversary</option></select></label><label class="o_ls_field"><span>Default Unit</span><select t-model="state.form.default_unit"><option value="days">Days</option><option value="hours">Hours</option></select></label><label class="o_ls_field"><span>Balance Enforcement</span><select t-model="state.form.default_balance_enforcement"><option value="strict">Strict</option><option value="negative">Allow Negative Balance</option></select></label></div></section>
+
+          <section t-if="state.activeTab === 'calendar'" class="o_ls_card"><header><i class="fa fa-calendar"/><div><h2>Calendar &amp; Visibility</h2><p>These settings are applied by the Leave Calendar.</p></div></header><div class="o_ls_card_body o_ls_grid two"><label class="o_ls_field"><span>Privacy Level</span><select t-model="state.form.calendar_privacy"><option value="full">Full — show employee and leave type</option><option value="limited">Limited — hide leave type and details</option><option value="anonymous">Anonymous — hide employee and leave details</option></select></label><label class="o_ls_field"><span>Default Calendar View / Scope</span><select t-model="state.form.default_calendar_view"><option value="month">Month</option><option value="week">Week</option><option value="team">Team</option><option value="organisation">Organisation</option></select></label><label class="o_ls_field"><span>Future Visibility (months)</span><input type="number" min="0" t-model.number="state.form.calendar_future_months"/><small>The calendar will not load dates beyond this organisation window.</small></label><div class="o_ls_checks"><label><input type="checkbox" t-model="state.form.show_rejected"/> Keep rejected leave visible</label><label><input type="checkbox" t-model="state.form.show_cancelled"/> Keep cancelled leave visible</label></div></div></section>
+
+          <section t-if="state.activeTab === 'notifications'" class="o_ls_card"><header><i class="fa fa-clock-o"/><div><h2>Return &amp; Due Notifications</h2><p>Return reminders are configured independently from leave-ending notices.</p></div></header><div class="o_ls_card_body o_ls_grid three"><label class="o_ls_field"><span>Leave ending soon (days)</span><input type="number" min="0" t-model.number="state.form.ending_soon_days"/></label><label class="o_ls_field"><span>Overdue reminder after (days)</span><input type="number" min="0" t-model.number="state.form.overdue_reminder_days"/></label><div class="o_ls_checks"><label><input type="checkbox" t-model="state.form.notify_manager_ending"/> Notify manager</label><label><input type="checkbox" t-model="state.form.return_reminder"/> Send return reminder</label><label><input type="checkbox" t-model="state.form.require_return_confirmation"/> Require return confirmation</label></div></div></section>
+
+          <section t-if="state.activeTab === 'lifecycle'" class="o_ls_card"><header><i class="fa fa-refresh"/><div><h2>Return, Extension &amp; Handover Rules</h2><p>Defaults for employee state before, during and after leave.</p></div></header><div class="o_ls_card_body o_ls_grid two"><label class="o_ls_field"><span>Employee Access During Leave</span><select t-model="state.form.employee_access_during_leave"><option value="normal">Normal Access</option><option value="limited">Limited Access</option><option value="self_service">Leave Self-Service Only</option><option value="custom">Custom</option></select></label><label class="o_ls_field"><span>Return Handling</span><select t-model="state.form.return_handling"><option value="attendance">Attendance Clock-In</option><option value="employee">Employee Confirmation</option><option value="manager">Manager Confirmation</option><option value="hr">HR Recorded</option><option value="hybrid">Hybrid</option></select></label><label class="o_ls_field"><span>Return overdue grace (days)</span><input type="number" min="0" t-model.number="state.form.return_grace_days"/></label><label class="o_ls_field"><span>Maximum extension (days)</span><input type="number" min="0" t-model.number="state.form.max_extension_days"/></label><div class="o_ls_checks"><label><input type="checkbox" t-model="state.form.extensions_allowed"/> Allow leave extensions by default</label></div></div></section>
+
+          <section t-if="state.activeTab === 'integrations'" class="o_ls_card"><header><i class="fa fa-plug"/><div><h2>Integrations</h2><p>Explicit connection toggles; disabled integrations degrade to the manual workflow.</p></div></header><div class="o_ls_toggle_rows"><button t-foreach="[['clock_integration','CleonTime / Attendance'],['payroll_integration','Payroll'],['directory_integration','Employee Directory Sync'],['calendar_integration','Outlook / Google Calendar'],['ai_enabled','CleonAI / AI Services']]" t-as="setting" t-key="setting[0]" t-att-class="'o_ls_toggle_row ' + (state.form[setting[0]] ? 'on' : '')" t-on-click="() => this.toggle(setting[0])"><div><strong t-esc="setting[1]"/><small t-esc="state.form[setting[0]] ? 'Enabled / Connected' : (setting[0] === 'ai_enabled' ? 'Disabled / AI capabilities unavailable' : 'Disabled / Manual fallback')"/></div><span class="o_ls_switch"><i/></span></button></div></section>
+
+          <!-- LM-046 AI Capabilities Configuration & Governance (Figure 31) -->
+          <section t-if="state.activeTab === 'integrations'" class="o_ls_card">
+            <header>
+              <i class="fa fa-sliders"/>
+              <div>
+                <h2>AI Capabilities Governance</h2>
+                <p>Configure and independently enable or disable the 8 AI advisory capabilities. The CleonAI connection itself is controlled from Integrations.</p>
+              </div>
+            </header>
+
+            <div class="o_ls_toggle_rows">
+              <button t-foreach="[
+                ['ai_assistant_enabled', 'AI Leave Assistant', 'Interactive chat assistant panel for employee leave guidance.'],
+                ['ai_nl_request_enabled', 'Natural Language Leave Request', 'Free-text leave request submission and field suggestion.'],
+                ['ai_date_recommendations_enabled', 'Smart Leave Date Recommendations', 'Candidate date suggestions based on holidays and availability.'],
+                ['ai_conflict_coverage_enabled', 'AI Conflict &amp; Coverage Detection', 'Team overlap and staffing risk warnings at submission and review.'],
+                ['ai_approval_support_enabled', 'AI Approval Decision Support', 'Advisory insight panel and recommendation factors for approvers.'],
+                ['ai_anomaly_detection_enabled', 'Fraud &amp; Anomaly Detection', 'Pattern analysis and HR anomaly alerts; stops new alert generation when off.'],
+                ['ai_calendar_summary_enabled', 'AI Calendar &amp; Availability Summary', 'One-click period and availability summaries on Leave Calendar.'],
+                ['ai_executive_brief_enabled', 'Executive Workforce Brief', 'High-level analytics, KPI aggregation, and workforce brief reports.']
+              ]" t-as="cap" t-key="cap[0]" t-att-class="'o_ls_toggle_row ' + (state.form[cap[0]] ? 'on' : '')" t-att-disabled="!state.form.ai_enabled" t-on-click="() => this.toggle(cap[0])">
+                <div>
+                  <strong t-esc="cap[1]"/>
+                  <small t-esc="cap[2]"/>
+                </div>
+                <span class="o_ls_switch"><i/></span>
+              </button>
+            </div>
+
+            <!-- Related Settings Links (Figure 31) & Data Privacy Retention -->
+            <div class="o_ls_card_body border-top">
+              <h3 class="fs-6 fw-bold mb-3"><i class="fa fa-link me-1 text-primary"/> Related Governance &amp; Data Settings</h3>
+              <div class="o_ls_grid two">
+                <div class="o_ls_field">
+                  <span>AI Conversation Retention Period</span>
+                  <div class="d-flex align-items-center gap-2">
+                    <input type="number" min="1" max="730" t-model.number="state.form.ai_conversation_retention_days" style="max-width: 120px;"/>
+                    <small>Days (conversations purged automatically after retention period)</small>
+                  </div>
+                </div>
+                <div class="d-flex flex-column gap-2 justify-content-center">
+                  <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" t-on-click="() => this.setTab('rules')">
+                      <i class="fa fa-users me-1"/> Roles &amp; Permissions
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" t-on-click="() => this.setTab('notifications')">
+                      <i class="fa fa-bell me-1"/> Notifications
+                    </button>
+                  </div>
+                  <small class="text-muted">Configure access to AI Insights and Executive Briefs or delivery channels.</small>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Leave Types sub-tab — embedded within General Settings -->
+          <t t-if="state.activeTab === 'leave_types'">
+            <LeaveTypesPage embedded="true"/>
+          </t>
+
+          <footer t-if="state.activeTab !== 'leave_types'" class="o_ls_footer">
+            <button class="o_ls_reset" t-on-click="resetDefaults" t-att-disabled="state.saving"><i class="fa fa-undo"/> Reset policy defaults</button>
+            <div><button t-if="dirty" class="o_ls_discard" t-on-click="discard" t-att-disabled="state.saving">Discard</button><button class="o_ls_save" t-on-click="save" t-att-disabled="!dirty || state.saving"><i t-att-class="state.saving ? 'fa fa-spinner fa-spin' : 'fa fa-save'"/> Save Changes</button></div>
+          </footer>
+        </t>
+      </main>
+    </div>
+  </t>
+</templates>

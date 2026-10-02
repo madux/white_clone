@@ -5,6 +5,17 @@ from datetime import datetime, time, timedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
 
+
+class HrLeaveAllocationGroup(models.Model):
+    _name = "hr.leave.allocation.group"
+    _description = "Reusable Leave Allocation Audience"
+    _order = "name, id"
+
+    name = fields.Char(required=True)
+    company_id = fields.Many2one("res.company", required=True, default=lambda self: self.env.company, index=True)
+    employee_ids = fields.Many2many("hr.employee", string="Employees")
+    active = fields.Boolean(default=True)
+
 class HrLeaveBalanceTransaction(models.Model):
     _name = "hr.leave.balance.transaction"
     _description = "Immutable Leave Balance Transaction"
@@ -47,18 +58,27 @@ class HrLeaveBalanceTransaction(models.Model):
 
     @api.model
     def _check_balance_admin(self):
-        if not (self.env.user.has_group("base.group_system") or
-                self.env.user.has_group("hr_holidays.group_hr_holidays_manager")):
-            raise AccessError(_("Only a Time Off Administrator can manage leave balances."))
+        if not self.env.user.has_group(
+            "hr_leave_dashboard.group_leave_permission_operations"
+        ):
+            raise AccessError(_("You do not have permission to manage leave balances."))
 
     @api.model
     def _employee_code(self, employee):
-        return employee.employee_number or "EMP-%03d" % employee.id
+        return employee.employee_number or ""
+
+    @api.model
+    def _employee_identification(self, employee):
+        if not self.env.user.has_group("hr.group_hr_user"):
+            return ""
+        return employee.sudo().identification_id or ""
 
     @api.model
     def _balance_maps(self, employee_ids=None, leave_type_ids=None):
         company_ids = self.env.companies.ids
-        alloc_domain = [("state", "=", "validate"), ("employee_id.company_id", "in", company_ids)]
+        today = fields.Date.context_today(self)
+        alloc_domain = [("state", "=", "validate"), ("employee_id.company_id", "in", company_ids),
+                        ("date_from", "<=", today), "|", ("date_to", "=", False), ("date_to", ">=", today)]
         leave_domain = [("employee_id.company_id", "in", company_ids), ("is_cancelled", "=", False)]
         if employee_ids:
             alloc_domain.append(("employee_id", "in", employee_ids))
@@ -73,28 +93,51 @@ class HrLeaveBalanceTransaction(models.Model):
         last_updated = {}
         expiring = defaultdict(float)
         expiry_date = {}
-        today = fields.Date.context_today(self)
         deadline = today + timedelta(days=30)
 
-        allocations = self.env["hr.leave.allocation"].search(alloc_domain)
-        for allocation in allocations:
-            key = (allocation.employee_id.id, allocation.holiday_status_id.id)
-            allocated[key] += allocation.number_of_days
-            changed = allocation.write_date or allocation.create_date
+        allocation_rows = self.env["hr.leave.allocation"].read_group(
+            alloc_domain,
+            ["number_of_days:sum", "write_date:max"],
+            ["employee_id", "holiday_status_id"],
+            lazy=False,
+        )
+        for row in allocation_rows:
+            if not row.get("employee_id") or not row.get("holiday_status_id"):
+                continue
+            key = (row["employee_id"][0], row["holiday_status_id"][0])
+            allocated[key] = row.get("number_of_days", 0.0)
+            changed = fields.Datetime.to_datetime(row.get("write_date"))
             if changed and (not last_updated.get(key) or changed > last_updated[key]):
                 last_updated[key] = changed
-            if allocation.date_to and today <= allocation.date_to <= deadline:
-                expiring[key] += allocation.number_of_days
-                expiry_date[key] = min(expiry_date.get(key, allocation.date_to), allocation.date_to)
 
-        leaves = self.env["hr.leave"].search(leave_domain + [("state", "in", ("confirm", "validate1", "validate"))])
-        for leave in leaves:
-            key = (leave.employee_id.id, leave.holiday_status_id.id)
-            if leave.state == "validate":
-                used[key] += leave.number_of_days
+        expiring_rows = self.env["hr.leave.allocation"].read_group(
+            alloc_domain + [("date_to", ">=", today), ("date_to", "<=", deadline)],
+            ["number_of_days:sum", "date_to:min"],
+            ["employee_id", "holiday_status_id"],
+            lazy=False,
+        )
+        for row in expiring_rows:
+            if not row.get("employee_id") or not row.get("holiday_status_id"):
+                continue
+            key = (row["employee_id"][0], row["holiday_status_id"][0])
+            expiring[key] = row.get("number_of_days", 0.0)
+            expiry_date[key] = fields.Date.to_date(row.get("date_to"))
+
+        leave_rows = self.env["hr.leave"].read_group(
+            leave_domain + [("state", "in", ("confirm", "validate1", "validate"))],
+            ["number_of_days:sum", "write_date:max"],
+            ["employee_id", "holiday_status_id", "state"],
+            lazy=False,
+        )
+        for row in leave_rows:
+            if not row.get("employee_id") or not row.get("holiday_status_id"):
+                continue
+            key = (row["employee_id"][0], row["holiday_status_id"][0])
+            if row.get("state") == "validate":
+                used[key] += row.get("number_of_days", 0.0)
             else:
-                pending[key] += leave.number_of_days
-            changed = leave.write_date or leave.create_date
+                pending[key] += row.get("number_of_days", 0.0)
+            changed = fields.Datetime.to_datetime(row.get("write_date"))
             if changed and (not last_updated.get(key) or changed > last_updated[key]):
                 last_updated[key] = changed
 
@@ -104,8 +147,13 @@ class HrLeaveBalanceTransaction(models.Model):
             expiring[key] = min(expiring[key], max(allocated[key] - used[key], 0.0))
 
         carried = defaultdict(float)
+        carry_domain = [("company_id", "in", company_ids), ("transaction_type", "=", "carry_forward")]
+        if employee_ids:
+            carry_domain.append(("employee_id", "in", employee_ids))
+        if leave_type_ids:
+            carry_domain.append(("leave_type_id", "in", leave_type_ids))
         carry_rows = self.read_group(
-            [("company_id", "in", company_ids), ("transaction_type", "=", "carry_forward")],
+            carry_domain,
             ["delta:sum"], ["employee_id", "leave_type_id"], lazy=False,
         )
         for row in carry_rows:
@@ -114,25 +162,67 @@ class HrLeaveBalanceTransaction(models.Model):
         return allocated, used, pending, carried, expiring, expiry_date, last_updated
 
     @api.model
+    def _balance_components(self, employee_ids=None, leave_type_ids=None, exclude_leave_id=None):
+        """Canonical balance resolver used by UI, policy checks and ledger writes.
+
+        Validated carry-forward allocations are part of total entitlement.  The
+        ledger's carry-forward component is exposed separately for explanation,
+        then removed from ``opening_entitlement`` to avoid counting it twice.
+        """
+        allocated, used, pending, carried, expiring, expiry_date, updated = self._balance_maps(
+            employee_ids, leave_type_ids,
+        )
+        if exclude_leave_id:
+            leave = self.env["hr.leave"].browse(int(exclude_leave_id)).exists()
+            if leave and not leave.is_cancelled:
+                key = (leave.employee_id.id, leave.holiday_status_id.id)
+                if leave.state == "validate":
+                    used[key] = max(used[key] - leave.number_of_days, 0.0)
+                elif leave.state in ("confirm", "validate1"):
+                    pending[key] = max(pending[key] - leave.number_of_days, 0.0)
+        keys = set(allocated) | set(used) | set(pending) | set(carried)
+        result = {}
+        for key in keys:
+            total_entitlement = round(allocated[key], 2)
+            carry_forward = round(carried[key], 2)
+            opening_entitlement = round(max(total_entitlement - carry_forward, 0.0), 2)
+            used_days = round(used[key], 2)
+            pending_days = round(pending[key], 2)
+            result[key] = {
+                "opening_entitlement": opening_entitlement,
+                "carried_forward": carry_forward,
+                "total_entitlement": total_entitlement,
+                "used": used_days,
+                "pending": pending_days,
+                "available": round(opening_entitlement + carry_forward - used_days - pending_days, 2),
+                "expiring": round(expiring[key], 2),
+                "expiry_date": expiry_date.get(key),
+                "last_updated": updated.get(key),
+            }
+        return result
+
+    @api.model
     def _kpi_snapshot(self, as_of_date, employee_ids, leave_type_ids):
         """Reconstruct the measurable KPI values at the end of a prior month."""
         cutoff = fields.Datetime.to_string(datetime.combine(as_of_date, time.max))
         company_ids = self.env.companies.ids
-        allocations = self.env["hr.leave.allocation"].search([
+        allocation_rows = self.env["hr.leave.allocation"].read_group([
             ("state", "=", "validate"), ("employee_id.company_id", "in", company_ids),
             ("employee_id", "in", employee_ids), ("holiday_status_id", "in", leave_type_ids),
             ("create_date", "<=", cutoff),
-        ])
-        leaves = self.env["hr.leave"].search([
+        ], ["number_of_days:sum"], ["employee_id"], lazy=False)
+        leave_rows = self.env["hr.leave"].read_group([
             ("employee_id.company_id", "in", company_ids), ("is_cancelled", "=", False),
             ("employee_id", "in", employee_ids), ("holiday_status_id", "in", leave_type_ids),
             ("state", "=", "validate"), ("create_date", "<=", cutoff),
-        ])
+        ], ["number_of_days:sum"], ["employee_id"], lazy=False)
         per_employee = defaultdict(lambda: [0.0, 0.0])
-        for allocation in allocations:
-            per_employee[allocation.employee_id.id][0] += allocation.number_of_days
-        for leave in leaves:
-            per_employee[leave.employee_id.id][1] += leave.number_of_days
+        for row in allocation_rows:
+            if row.get("employee_id"):
+                per_employee[row["employee_id"][0]][0] = row.get("number_of_days", 0.0)
+        for row in leave_rows:
+            if row.get("employee_id"):
+                per_employee[row["employee_id"][0]][1] = row.get("number_of_days", 0.0)
         allocated = sum(value[0] for value in per_employee.values())
         used = sum(value[1] for value in per_employee.values())
         return {
@@ -158,7 +248,7 @@ class HrLeaveBalanceTransaction(models.Model):
         return round(((current - previous) / previous) * 100, 1)
 
     @api.model
-    def get_balance_page_data(self, filters=None, sort=None):
+    def get_balance_page_data(self, filters=None, sort=None, pagination=None, group_by="employee"):
         self._check_balance_admin()
         filters = filters or {}
         employees = self.env["hr.employee"].search([
@@ -167,26 +257,34 @@ class HrLeaveBalanceTransaction(models.Model):
         leave_types = self.env["hr.leave.type"].with_context(active_test=False).search([
             ("company_id", "in", [False] + self.env.companies.ids),
         ], order="sequence, name")
-        allocated, used, pending, carried, expiring, expiry_dates, updated = self._balance_maps(
-            employees.ids, leave_types.ids,
-        )
+        components = self._balance_components(employees.ids, leave_types.ids)
         employee_map = {e.id: e for e in employees}
         type_map = {t.id: t for t in leave_types}
+        today = fields.Date.context_today(self)
+        assignment_map = {(a.employee_id.id, a.leave_type_id.id): a for a in self.env["hr.leave.policy.assignment"].sudo().search([
+            ("employee_id", "in", employees.ids), ("leave_type_id", "in", leave_types.ids),
+            ("superseded", "=", False), ("date_from", "<=", today),
+            "|", ("date_to", "=", False), ("date_to", ">=", today),
+        ])}
         rows = []
-        for employee_id, type_id in sorted(set(allocated) | set(used) | set(pending)):
+        for employee_id, type_id in sorted(components):
             employee = employee_map.get(employee_id)
             leave_type = type_map.get(type_id)
             if not employee or not leave_type:
                 continue
-            total_allocated = round(allocated[(employee_id, type_id)], 2)
-            total_used = round(used[(employee_id, type_id)], 2)
-            total_pending = round(pending[(employee_id, type_id)], 2)
-            remaining = round(total_allocated - total_used, 2)
+            balance = components[(employee_id, type_id)]
+            assignment = assignment_map.get((employee_id, type_id))
+            total_allocated = balance["total_entitlement"]
+            total_used = balance["used"]
+            total_pending = balance["pending"]
+            remaining = balance["available"]
             health_ratio = remaining / total_allocated if total_allocated else 0
             rows.append({
                 "key": "%s-%s" % (employee_id, type_id),
                 "employee_id": employee_id, "employee_name": employee.name,
                 "employee_code": self._employee_code(employee),
+                "employee_number": employee.employee_number or "",
+                "identification_id": self._employee_identification(employee),
                 "avatar_url": "/web/image/hr.employee/%s/image_128" % employee_id,
                 "department_id": employee.department_id.id or False,
                 "department": employee.department_id.name or _("No Department"),
@@ -195,24 +293,31 @@ class HrLeaveBalanceTransaction(models.Model):
                 "location_id": employee.work_location_id.id if employee.work_location_id else False,
                 "location": employee.work_location_id.name if employee.work_location_id else "",
                 "leave_type_id": type_id, "leave_type": leave_type.name,
+                "policy_id": assignment.policy_id.id if assignment else False,
+                "policy": assignment.policy_id.name if assignment else _("Legacy / Unattributed"),
                 "color_hex": leave_type.cleon_color_hex or "#64748B",
                 "allocated": total_allocated, "used": total_used, "pending": total_pending,
-                "remaining": remaining, "projected": round(remaining - total_pending, 2),
-                "carried_forward": round(carried[(employee_id, type_id)], 2),
-                "expiring_days": round(expiring[(employee_id, type_id)], 2),
-                "expiry_date": fields.Date.to_string(expiry_dates.get((employee_id, type_id))) if expiry_dates.get((employee_id, type_id)) else "",
-                "expiry_countdown": (expiry_dates[(employee_id, type_id)] - fields.Date.context_today(self)).days if expiry_dates.get((employee_id, type_id)) else False,
-                "last_updated": fields.Date.to_string(updated[(employee_id, type_id)].date()) if updated.get((employee_id, type_id)) else "",
+                "remaining": remaining, "available": remaining,
+                "opening_entitlement": balance["opening_entitlement"],
+                "projected": remaining,
+                "carried_forward": balance["carried_forward"],
+                "expiring_days": balance["expiring"],
+                "expiry_date": fields.Date.to_string(balance["expiry_date"]) if balance["expiry_date"] else "",
+                "expiry_countdown": (balance["expiry_date"] - fields.Date.context_today(self)).days if balance["expiry_date"] else False,
+                "last_updated": fields.Date.to_string(balance["last_updated"].date()) if balance["last_updated"] else "",
                 "health": "green" if health_ratio >= .5 else ("amber" if health_ratio >= .25 else "red"),
             })
 
         search = (filters.get("search") or "").strip().lower()
+        employee_search = (filters.get("employee_search") or "").strip().lower()
         department_ids = {int(x) for x in filters.get("department_ids", [])}
         location_ids = {int(x) for x in filters.get("location_ids", [])}
         type_ids = {int(x) for x in filters.get("leave_type_ids", [])}
         policy_ids = {int(x) for x in filters.get("policy_ids", [])}
         if search:
-            rows = [r for r in rows if search in r["employee_name"].lower() or search in r["employee_code"].lower()]
+            rows = [r for r in rows if search in r["employee_name"].lower() or search in r["employee_code"].lower() or search in (r.get("identification_id") or "").lower()]
+        if employee_search:
+            rows = [r for r in rows if employee_search in r["employee_name"].lower() or employee_search in r["employee_code"].lower() or employee_search in (r.get("identification_id") or "").lower()]
         if department_ids:
             rows = [r for r in rows if r["department_id"] in department_ids]
         if location_ids:
@@ -220,14 +325,21 @@ class HrLeaveBalanceTransaction(models.Model):
         if type_ids:
             rows = [r for r in rows if r["leave_type_id"] in type_ids]
         if policy_ids:
-            rows = [r for r in rows if r["leave_type_id"] in policy_ids]
+            rows = [r for r in rows if r["policy_id"] in policy_ids]
+        quick_type_id = filters.get("quick_leave_type_id")
+        if quick_type_id:
+            rows = [r for r in rows if r["leave_type_id"] == int(quick_type_id)]
         if filters.get("expiring_only"):
             rows = [r for r in rows if r["expiring_days"] > 0]
 
         sort = sort or {"field": "employee_name", "direction": "asc"}
         allowed_sort = {"employee_name", "department", "used", "remaining", "last_updated"}
         sort_field = sort.get("field") if sort.get("field") in allowed_sort else "employee_name"
-        rows.sort(key=lambda r: (r.get(sort_field) is None, r.get(sort_field) or ""), reverse=sort.get("direction") == "desc")
+        if sort_field in ("used", "remaining"):
+            sort_key = lambda row: float(row.get(sort_field) or 0.0)
+        else:
+            sort_key = lambda row: (row.get(sort_field) or "").lower()
+        rows.sort(key=sort_key, reverse=sort.get("direction") == "desc")
         unique_employees = {r["employee_id"] for r in rows}
         kpis = {
             "total_employees": len(unique_employees),
@@ -247,60 +359,393 @@ class HrLeaveBalanceTransaction(models.Model):
             "remaining_trend_pct": self._pct_change(kpis["remaining"], previous["remaining"]),
             "negative_employees_trend": kpis["negative_employees"] - previous["negative_employees"],
         })
+        group_by = group_by if group_by in ("employee", "leave_type", "none") else "employee"
+        groups = self._group_balance_rows(rows, group_by, sort) if group_by != "none" else []
+        pagination = pagination or {}
+        page_size = int(pagination.get("page_size", 10) or 0)
+        page_size = 0 if page_size == 0 else min(max(page_size, 10), 100)
+        page = max(int(pagination.get("page", 1) or 1), 1)
+        source = groups if group_by != "none" else rows
+        total_items = len(source)
+        total_pages = max((total_items + page_size - 1) // page_size, 1) if page_size else 1
+        page = min(page, total_pages)
+        if page_size:
+            page_source = source[(page - 1) * page_size:page * page_size]
+        else:
+            page_source = source
+        page_groups = page_source if group_by != "none" else []
         return {
-            "rows": rows, "kpis": kpis,
+            # Group children already live inside ``groups``; avoid serialising
+            # the same rows twice in grouped mode.
+            "rows": page_source if group_by == "none" else [],
+            "groups": page_groups, "kpis": kpis,
+            "pagination": {
+                "page": page, "page_size": page_size or total_items or 10,
+                "total_items": total_items, "total_pages": total_pages,
+                "item_label": _("groups") if group_by != "none" else _("records"),
+            },
             "departments": [{"id": d.id, "name": d.name} for d in employees.mapped("department_id").sorted("name")],
             "locations": [{"id": l.id, "name": l.name} for l in employees.mapped("work_location_id").sorted("name")],
             "grades": [{"id": g.id, "name": g.name} for g in employees.mapped("grade_id").sorted("name")],
             "leave_types": [{"id": t.id, "name": t.name, "color_hex": t.cleon_color_hex or "#64748B"} for t in leave_types],
+            "policies": [{"id": p.id, "name": p.name} for p in self.env["hr.leave.policy"].sudo().search([
+                ("company_id", "in", self.env.companies.ids), ("state", "=", "active"),
+            ], order="name")],
         }
 
     @api.model
-    def _current_balance(self, employee_id, leave_type_id):
-        allocated, used, _pending, _carried, _expiring, _dates, _updated = self._balance_maps([employee_id], [leave_type_id])
-        return round(allocated[(employee_id, leave_type_id)] - used[(employee_id, leave_type_id)], 2)
+    def _group_balance_rows(self, rows, group_by, sort):
+        groups = []
+        group_map = {}
+        for row in rows:
+            if group_by == "employee":
+                key = "emp_%s" % row["employee_id"]
+                meta = {
+                    "type": "employee", "id": row["employee_id"],
+                    "name": row["employee_name"], "code": row["employee_code"],
+                    "employee_number": row.get("employee_number") or "",
+                    "identification_id": row.get("identification_id") or "",
+                    "avatar_url": row["avatar_url"], "department": row["department"],
+                }
+            else:
+                key = "lt_%s" % row["leave_type_id"]
+                meta = {
+                    "type": "leave_type", "id": row["leave_type_id"],
+                    "name": row["leave_type"], "color_hex": row["color_hex"],
+                }
+            if key not in group_map:
+                group = {
+                    "key": key, "meta": meta, "rows": [],
+                    "totals": {
+                        "allocated": 0.0, "used": 0.0, "pending": 0.0,
+                        "remaining": 0.0, "carried_forward": 0.0,
+                        "expiry_countdown": False, "last_updated": "",
+                    },
+                }
+                group_map[key] = group
+                groups.append(group)
+            group = group_map[key]
+            group["rows"].append(row)
+            for field_name in ("allocated", "used", "pending", "remaining", "carried_forward"):
+                group["totals"][field_name] = round(
+                    group["totals"][field_name] + float(row.get(field_name) or 0.0), 2,
+                )
+            countdown = row.get("expiry_countdown")
+            current = group["totals"]["expiry_countdown"]
+            if countdown is not False and (current is False or countdown < current):
+                group["totals"]["expiry_countdown"] = countdown
+            if row.get("last_updated", "") > group["totals"]["last_updated"]:
+                group["totals"]["last_updated"] = row["last_updated"]
+        for group in groups:
+            allocated_days = group["totals"]["allocated"]
+            ratio = group["totals"]["remaining"] / allocated_days if allocated_days else 0
+            group["health"] = "green" if ratio >= .5 else ("amber" if ratio >= .25 else "red")
+        sort_field = (sort or {}).get("field", "employee_name")
+        reverse = (sort or {}).get("direction") == "desc"
+        if sort_field in ("used", "remaining"):
+            groups.sort(
+                key=lambda group: group["totals"].get(sort_field) or 0,
+                reverse=reverse,
+            )
+        elif sort_field == "last_updated":
+            groups.sort(
+                key=lambda group: group["totals"].get("last_updated") or "",
+                reverse=reverse,
+            )
+        elif group_by == "employee" and sort_field == "department":
+            groups.sort(key=lambda group: group["meta"]["department"].lower(), reverse=reverse)
+        else:
+            groups.sort(key=lambda group: group["meta"]["name"].lower(), reverse=reverse)
+        return groups
 
     @api.model
-    def apply_leave_allocation(self, employee_ids, leave_type_id, amount, reason, effective_date, notes=""):
+    def get_balance_employee_options(self):
+        """Load allocation candidates on demand instead of with every balance page."""
+        return self.get_balance_allocation_options()["employees"]
+
+    @api.model
+    def get_balance_allocation_options(self):
+        """Return real employees, dimensions and Leave Type defaults for allocation."""
         self._check_balance_admin()
-        employee_ids = [int(x) for x in employee_ids]
-        amount = float(amount)
+        employees = self.env["hr.employee"].search([
+            ("company_id", "in", self.env.companies.ids), ("active", "=", True),
+        ], order="name, id")
+        policy_lines = self.env["hr.leave.policy.line"].sudo().search([
+            ("company_id", "in", self.env.companies.ids), ("active", "=", True),
+            ("policy_id.state", "=", "active"), ("policy_id.active", "=", True),
+            ("leave_type_id.active", "=", True),
+        ])
+        leave_types = policy_lines.leave_type_id.sorted(lambda item: (item.sequence, item.name))
+        employee_rows = [{
+            "employee_id": employee.id,
+            "employee_name": employee.name,
+            "employee_code": self._employee_code(employee),
+            "employee_number": employee.employee_number or "",
+            "identification_id": self._employee_identification(employee),
+            "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id,
+            "department_id": employee.department_id.id or False,
+            "department": employee.department_id.name or _("No Department"),
+            "grade_id": employee.grade_id.id if employee.grade_id else False,
+            "grade": employee.grade_id.name if employee.grade_id else "",
+            "unit_id": employee.unit_id.id if employee.unit_id else False,
+            "unit": employee.unit_id.name if employee.unit_id else "",
+            "job_id": employee.job_id.id if employee.job_id else False,
+            "job": employee.job_id.name if employee.job_id else "",
+            "location_id": employee.work_location_id.id if employee.work_location_id else False,
+            "location": employee.work_location_id.name if employee.work_location_id else "",
+            "employment_type_id": employee.employee_type_id.id if employee.employee_type_id else False,
+            "employment_type": employee.employee_type_id.name if employee.employee_type_id else "",
+            "custom_group_ids": self.env["hr.leave.allocation.group"].search([("employee_ids", "in", employee.id)]).ids,
+        } for employee in employees]
+        dimensions = (
+            ("departments", "department_id"), ("units", "unit_id"),
+            ("grades", "grade_id"), ("jobs", "job_id"),
+            ("locations", "work_location_id"),
+            ("employment_types", "employee_type_id"),
+        )
+        return {
+            "employees": employee_rows,
+            "leave_types": [{
+                "id": leave_type.id,
+                "name": leave_type.name,
+                "color_hex": leave_type.cleon_color_hex or "#64748B",
+                "default_amount": round((policy_lines.filtered(lambda line: line.leave_type_id == leave_type)[:1].accrual_amount), 2),
+                "unit": policy_lines.filtered(lambda line: line.leave_type_id == leave_type)[:1].unit,
+                "unlimited": bool(leave_type.unlimited_entitlement),
+            } for leave_type in leave_types],
+            "scopes": {
+                key: [{"id": record.id, "name": record.name} for record in employees.mapped(field_name).sorted("name")]
+                for key, field_name in dimensions
+            } | {"custom_groups": [{"id": group.id, "name": group.name} for group in self.env["hr.leave.allocation.group"].search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")]},
+        }
+
+    @api.model
+    def preview_leave_allocation(self, employee_ids, leave_type_ids, effective_date):
+        """Build employee-specific defaults and expose eligibility before writing."""
+        self._check_balance_admin()
+        employee_ids = list(dict.fromkeys(int(value) for value in (employee_ids or [])))
+        leave_type_ids = list(dict.fromkeys(int(value) for value in (leave_type_ids or [])))
+        try:
+            effective = fields.Date.to_date(effective_date)
+        except (TypeError, ValueError):
+            effective = False
+        if not employee_ids or not leave_type_ids or not effective:
+            raise ValidationError(_("Employees, Leave Types and an effective date are required."))
+        employees = self.env["hr.employee"].browse(employee_ids).exists().filtered(
+            lambda employee: employee.company_id in self.env.companies
+        )
+        leave_types = self.env["hr.leave.type"].browse(leave_type_ids).exists().filtered(
+            lambda leave_type: not leave_type.company_id or leave_type.company_id in self.env.companies
+        )
+        if len(employees) != len(employee_ids) or len(leave_types) != len(leave_type_ids):
+            raise ValidationError(_("The allocation contains an inaccessible employee or Leave Type."))
+        eligibility = {
+            leave_type.id: set(
+                leave_type.with_company(leave_type.company_id or self.env.company)
+                ._get_eligible_employees().ids
+            )
+            for leave_type in leave_types
+        }
+        rows = []
+        incompatible = []
+        for employee in employees.sorted("name"):
+            cells = []
+            for leave_type in leave_types:
+                eligible = employee.id in eligibility[leave_type.id]
+                line = leave_type._active_policy_line(employee, effective)
+                amount = round(line.accrual_amount if line else 0.0, 2)
+                cells.append({
+                    "leave_type_id": leave_type.id,
+                    "amount": amount,
+                    "eligible": eligible,
+                    "message": "" if eligible else _("Not eligible under this Leave Type's current policy."),
+                })
+                if not eligible:
+                    incompatible.append({
+                        "employee_id": employee.id,
+                        "employee_name": employee.name,
+                        "leave_type_id": leave_type.id,
+                        "leave_type_name": leave_type.name,
+                    })
+            rows.append({
+                "employee_id": employee.id,
+                "employee_name": employee.name,
+                "employee_number": employee.employee_number or "",
+                "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id,
+                "cells": cells,
+            })
+        return {"rows": rows, "incompatible": incompatible}
+
+    @api.model
+    def _current_balance(self, employee_id, leave_type_id):
+        components = self._balance_components([employee_id], [leave_type_id])
+        return components.get((employee_id, leave_type_id), {}).get("available", 0.0)
+
+    @api.model
+    def apply_leave_allocation(
+        self, employee_ids, leave_type_id, amount, reason, effective_date,
+        notes="", expiry_date=False,
+    ):
+        lines = [{
+            "employee_id": employee_id,
+            "leave_type_id": leave_type_id,
+            "amount": amount,
+        } for employee_id in employee_ids]
+        result = self.apply_leave_allocation_matrix(
+            lines, reason, effective_date, notes, expiry_date,
+        )
+        return {"count": result["employee_count"]}
+
+    @api.model
+    def apply_leave_allocation_matrix(
+        self, lines, reason, effective_date, notes="", expiry_date=False, status="active",
+    ):
+        """Validate and atomically expand a preview matrix into Odoo allocations."""
+        self._check_balance_admin()
+        lines = lines or []
         reason = (reason or "").strip()
-        if not employee_ids or amount <= 0 or not reason:
-            raise ValidationError(_("Employees, a positive allocation amount, and a reason are required."))
-        leave_type = self.env["hr.leave.type"].browse(int(leave_type_id)).exists()
-        employees = self.env["hr.employee"].browse(employee_ids).exists().filtered(lambda e: e.company_id in self.env.companies)
-        if not leave_type or len(employees) != len(set(employee_ids)):
-            raise ValidationError(_("Invalid employee or leave type selection."))
-        eligible = leave_type._get_eligible_employees()
-        ineligible = employees - eligible
-        if ineligible:
-            raise ValidationError(_("These employees are not eligible for %s: %s") % (leave_type.name, ", ".join(ineligible.mapped("name"))))
-        expiry = fields.Date.end_of(fields.Date.from_string(effective_date), "year")
-        for employee in employees:
-            allocation = self.env["hr.leave.allocation"].create({
+        try:
+            effective = fields.Date.to_date(effective_date)
+        except (TypeError, ValueError):
+            effective = False
+        try:
+            expiry = fields.Date.to_date(expiry_date) if expiry_date else False
+        except (TypeError, ValueError):
+            expiry = False
+        if status not in ("active", "inactive"):
+            raise ValidationError(_("Allocation status must be Active or Inactive."))
+        if not lines or not reason or not effective:
+            raise ValidationError(_("Allocation lines, an effective date and a reason are required."))
+        if expiry_date and not expiry:
+            raise ValidationError(_("Select a valid expiry date or leave it blank."))
+        if expiry and expiry < effective:
+            raise ValidationError(_("The expiry date cannot be earlier than the effective date."))
+        normalised = []
+        seen_pairs = set()
+        for line in lines:
+            try:
+                employee_id = int(line.get("employee_id"))
+                leave_type_id = int(line.get("leave_type_id"))
+                amount = round(float(line.get("amount")), 2)
+            except (AttributeError, TypeError, ValueError):
+                raise ValidationError(_("Every allocation row must contain a valid employee, Leave Type and amount."))
+            pair = (employee_id, leave_type_id)
+            if pair in seen_pairs:
+                raise ValidationError(_("The allocation preview contains a duplicate employee/Leave Type row."))
+            if amount <= 0:
+                raise ValidationError(_("Allocation amounts must be greater than zero."))
+            seen_pairs.add(pair)
+            normalised.append((employee_id, leave_type_id, amount))
+        employee_ids = list(dict.fromkeys(row[0] for row in normalised))
+        leave_type_ids = list(dict.fromkeys(row[1] for row in normalised))
+        employees = self.env["hr.employee"].browse(employee_ids).exists().filtered(
+            lambda employee: employee.company_id in self.env.companies
+        )
+        leave_types = self.env["hr.leave.type"].browse(leave_type_ids).exists().filtered(
+            lambda leave_type: not leave_type.company_id or leave_type.company_id in self.env.companies
+        )
+        if len(employees) != len(employee_ids) or len(leave_types) != len(leave_type_ids):
+            raise ValidationError(_("The allocation contains an inaccessible employee or Leave Type."))
+        if len(normalised) != len(employees) * len(leave_types):
+            raise ValidationError(_(
+                "The allocation matrix must contain one row for every selected employee and Leave Type combination."
+            ))
+        employee_map = {employee.id: employee for employee in employees}
+        leave_type_map = {leave_type.id: leave_type for leave_type in leave_types}
+        eligibility = {
+            leave_type.id: set(
+                leave_type.with_company(leave_type.company_id or self.env.company)
+                ._get_eligible_employees().ids
+            )
+            for leave_type in leave_types
+        }
+        incompatible = [
+            "%s — %s" % (employee_map[employee_id].name, leave_type_map[leave_type_id].name)
+            for employee_id, leave_type_id, _amount in normalised
+            if employee_id not in eligibility[leave_type_id]
+        ]
+        if incompatible:
+            raise ValidationError(_(
+                "Allocation blocked because these employee/Leave Type combinations are not eligible: %s"
+            ) % "; ".join(incompatible))
+        total_days = 0.0
+        for employee_id, leave_type_id, amount in normalised:
+            employee = employee_map[employee_id]
+            leave_type = leave_type_map[leave_type_id]
+            allocation = self.env["hr.leave.allocation"].with_context(
+                tracking_disable=True, mail_create_nosubscribe=True, mail_notify_force_send=False,
+            ).create({
                 "private_name": reason, "holiday_type": "employee",
                 "employee_id": employee.id, "holiday_status_id": leave_type.id,
-                "number_of_days": amount, "date_from": effective_date, "date_to": expiry,
+                "number_of_days": amount, "date_from": effective, "date_to": expiry,
                 "notes": notes or reason,
             })
-            if allocation.state != "validate":
+            if status == "active" and allocation.state != "validate":
                 allocation.action_validate()
+            elif status == "inactive" and allocation.state == "validate":
+                # No separate inactive state exists on core allocations. Keep
+                # the record pending so it remains visible but contributes no
+                # usable entitlement until explicitly activated.
+                allocation.sudo().write({"state": "confirm"})
             balance = self._current_balance(employee.id, leave_type.id)
             self._record_transaction({
                 "employee_id": employee.id, "leave_type_id": leave_type.id,
-                "transaction_type": "allocation", "effective_date": effective_date,
-                "delta": amount, "balance_after": balance, "allocation_id": allocation.id,
+                "transaction_type": "allocation", "effective_date": effective,
+                "delta": amount if status == "active" else 0.0, "balance_after": balance, "allocation_id": allocation.id,
                 "reason": reason, "expiry_date": expiry,
             })
             self.env["hr.leave.audit.log"].sudo().create({
                 "action": "balance_allocation", "actor_id": self.env.user.id,
-                "actor_label": self.env.user.name, "actor_role": "Time Off Administrator",
+                "actor_label": self.env.user.name, "actor_role": _("Leave Balance Operator"),
                 "employee_id": employee.id, "leave_type_id": leave_type.id,
                 "duration": amount,
-                "note": _("Allocated %(days).2f days. Reason: %(reason)s", days=amount, reason=reason),
+                "note": _("%(status)s allocation of %(days).2f days. Reason: %(reason)s", status=status.title(), days=amount, reason=reason),
             })
-        return {"count": len(employees)}
+            total_days += amount
+        return {
+            "employee_count": len(employees),
+            "leave_type_count": len(leave_types),
+            "allocation_count": len(normalised),
+            "total_days": round(total_days, 2),
+        }
+
+    @api.model
+    def run_accrual_manually(self, process_date=None):
+        self._check_balance_admin()
+        process_date = fields.Date.to_date(process_date) if process_date else fields.Date.context_today(self)
+        count = self.env["hr.leave.type"]._cron_process_policy_accruals(process_date)
+        self.env["hr.leave.audit.log"].sudo().create({
+            "action": "accrual_processed", "module_area": "accrual", "entity_type": "balance",
+            "actor_id": self.env.user.id, "actor_label": self.env.user.name,
+            "note": _("Manual accrual run for %s completed; %d new accrual(s).") % (process_date, count),
+        })
+        return {"count": count, "process_date": fields.Date.to_string(process_date)}
+
+    @api.model
+    def get_negative_balances(self):
+        self._check_balance_admin()
+        data = self.get_balance_page_data(filters={}, group_by="none", pagination={"page": 1, "page_size": 0})
+        return [row for row in data["rows"] if row["available"] < 0]
+
+    @api.model
+    def recalculate_balances(self):
+        self._check_balance_admin()
+        data = self.get_balance_page_data(filters={}, group_by="none", pagination={"page": 1, "page_size": 0})
+        changed = 0
+        for row in data["rows"]:
+            latest = self.search([("employee_id", "=", row["employee_id"]), ("leave_type_id", "=", row["leave_type_id"])], limit=1)
+            before = latest.balance_after if latest else 0.0
+            after = row["available"]
+            if abs(before - after) > .005:
+                changed += 1
+                self._record_transaction({"employee_id": row["employee_id"], "leave_type_id": row["leave_type_id"],
+                    "transaction_type": "adjustment", "effective_date": fields.Date.context_today(self),
+                    "delta": 0.0, "balance_after": after, "reason": _("Balance recalculation checkpoint; prior stored value %.2f.") % before})
+                self.env["hr.leave.audit.log"].sudo().create({"action": "balance_adjustment",
+                    "actor_id": self.env.user.id, "actor_label": self.env.user.name,
+                    "employee_id": row["employee_id"], "leave_type_id": row["leave_type_id"],
+                    "note": _("Recalculated balance from %.2f to %.2f from source transactions.") % (before, after)})
+        return {"checked": len(data["rows"]), "changed": changed}
 
     @api.model
     def apply_balance_adjustments(self, employee_id, adjustments, reason):
@@ -380,7 +825,7 @@ class HrLeaveBalanceTransaction(models.Model):
     @api.model
     def get_balance_details(self, employee_id, leave_type_id):
         self._check_balance_admin()
-        page = self.get_balance_page_data()
+        page = self.get_balance_page_data(pagination={"page_size": 0}, group_by="none")
         row = next((r for r in page["rows"] if r["employee_id"] == int(employee_id) and r["leave_type_id"] == int(leave_type_id)), None)
         if not row:
             raise ValidationError(_("Balance record not found."))
@@ -392,7 +837,7 @@ class HrLeaveBalanceTransaction(models.Model):
             ("employee_id", "=", int(employee_id)), ("leave_type_id", "=", int(leave_type_id)),
         ], limit=100)
         row.update({
-            "assigned_policy": row["leave_type"],
+            "assigned_policy": row["policy"],
             "accrual_plan": allocations.filtered("accrual_plan_id")[:1].accrual_plan_id.name or _("Manual Allocation"),
             "last_accrual_date": fields.Date.to_string(allocations.filtered("lastcall")[:1].lastcall) if allocations.filtered("lastcall") else "",
             "next_accrual_date": fields.Date.to_string(allocations.filtered("nextcall")[:1].nextcall) if allocations.filtered("nextcall") else "",
@@ -431,9 +876,16 @@ class HrLeaveBalanceTransaction(models.Model):
                 "approved_on": fields.Date.to_string(leave.write_date.date()) if status == "approved" and leave.write_date else "",
             })
         return {
-            "employee": {"id": employee.id, "name": employee.name, "code": self._employee_code(employee),
-                         "department": employee.department_id.name or _("No Department"),
-                         "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id},
+            "employee": {
+                "id": employee.id,
+                "name": employee.name,
+                "code": self._employee_code(employee),
+                "employee_code": self._employee_code(employee),
+                "employee_number": employee.employee_number or "",
+                "identification_id": self._employee_identification(employee),
+                "department": employee.department_id.name or _("No Department"),
+                "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id,
+            },
             "requests": requests,
             "summary": {
                 "approved": len([r for r in requests if r["status"] == "approved"]),
@@ -495,7 +947,7 @@ class HrLeaveBalanceTransaction(models.Model):
         """Process carry-forward for all employees with a remaining balance.
 
         For each (employee, leave_type) pair where the leave type allows carry
-        forward (``allow_carryforward`` = True on hr.leave.type) and the
+        forward (``allow_carryover`` = True on hr.leave.type) and the
         remaining balance > 0, create a new validated allocation dated from
         today to end of current year representing the carried-over balance.
         Returns the count of employees processed.
@@ -507,7 +959,7 @@ class HrLeaveBalanceTransaction(models.Model):
         # Leave types that allow carry-forward
         carry_types = self.env["hr.leave.type"].search([
             ("active", "=", True),
-            ("allow_carryforward", "=", True),
+            ("allow_carryover", "=", True),
             ("company_id", "in", self.env.companies.ids),
         ])
         if not carry_types:
@@ -528,20 +980,30 @@ class HrLeaveBalanceTransaction(models.Model):
             for lt in carry_types:
                 key = (emp.id, lt.id)
                 remaining = allocated.get(key, 0.0) - used.get(key, 0.0)
-                cap = getattr(lt, "carryforward_cap", 0.0) or 0.0
+                cap = lt.max_carryover_days or 0.0
                 carry_amount = min(remaining, cap) if cap else remaining
                 if carry_amount <= 0:
                     continue
-                self.env["hr.leave.allocation"].create({
+                allocation = self.env["hr.leave.allocation"].create({
                     "private_name": _("Carry-forward %s") % today.year,
                     "holiday_type": "employee",
                     "employee_id": emp.id,
                     "holiday_status_id": lt.id,
                     "number_of_days": round(carry_amount, 2),
                     "date_from": today,
-                    "date_to": year_end,
+                    "date_to": (
+                        today + timedelta(days=90)
+                        if lt.carryover_expiry_rule == "three_months"
+                        else today + timedelta(days=180)
+                        if lt.carryover_expiry_rule == "six_months"
+                        else fields.Date.end_of(today + timedelta(days=366), "year")
+                        if lt.carryover_expiry_rule == "end_next_year"
+                        else False
+                    ),
                     "notes": _("Automatic carry-forward processed on %s") % fields.Date.to_string(today),
                 })
+                if allocation.state != "validate":
+                    allocation.action_validate()
                 affected.add(emp.id)
                 self.env["hr.leave.audit.log"].sudo().create({
                     "action": "policy_change",

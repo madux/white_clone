@@ -1,0 +1,64 @@
+/*
+ * Shared layout contract for CleonHR workspaces.
+ *
+ * Standalone pages reserve one standard navigation width. Reusable page
+ * components remove that reservation themselves when embedded in another
+ * workspace, so host applications do not need component-specific fixes.
+ */
+:root {
+    --cleon-workspace-sidebar-width: 230px;
+    --cleon-workspace-sidebar-collapsed-width: 68px;
+}
+
+.leavesidebar {
+    width: var(--cleon-workspace-sidebar-width);
+}
+
+.o_leave_unified_main,
+.o_leave_configuration_main,
+.o_leave_get_started_page,
+.o_ls_page:not(.o_leave_config_embedded) > .o_ls_main,
+.leaveapp:not(.o_leave_requests_embedded):not(.o_leave_admin_embedded):not(.o_leave_config_embedded) > .o_leave_dashboard,
+.leaveapp:not(.leaveapp-embedded) > .o_timeoff_calendar,
+.o_ed_page:not(.o_ed_embedded) > .o_ed_main,
+.o_mlr_page:not(.o_mlr_embedded) > main {
+    margin-left: var(--cleon-workspace-sidebar-width) !important;
+}
+
+.o_leave_sidebar_collapsed .o_leave_unified_main,
+.o_leave_sidebar_collapsed .o_leave_configuration_main,
+.o_leave_sidebar_collapsed .o_leave_get_started_page,
+.o_leave_sidebar_collapsed .o_ls_page:not(.o_leave_config_embedded) > .o_ls_main,
+.o_leave_sidebar_collapsed .leaveapp:not(.o_leave_requests_embedded):not(.o_leave_admin_embedded):not(.o_leave_config_embedded) > .o_leave_dashboard,
+.o_leave_sidebar_collapsed .leaveapp:not(.leaveapp-embedded) > .o_timeoff_calendar,
+.o_leave_sidebar_collapsed .o_ed_page:not(.o_ed_embedded) > .o_ed_main,
+.o_leave_sidebar_collapsed .o_mlr_page:not(.o_mlr_embedded) > main {
+    margin-left: var(--cleon-workspace-sidebar-collapsed-width) !important;
+}
+
+.o_mlr_page.o_mlr_embedded,
+.o_ed_page.o_ed_embedded {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+    background: transparent;
+}
+
+.o_mlr_page.o_mlr_embedded > main,
+.o_ed_page.o_ed_embedded > .o_ed_main {
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+    margin-left: 0 !important;
+    padding: 0;
+}
+
+/* Other existing reusable Leave components follow the same embed contract. */
+.o_leave_requests_embedded > .o_leave_dashboard,
+.o_leave_admin_embedded > .o_leave_dashboard,
+.leaveapp-embedded > .o_timeoff_calendar,
+.o_leave_config_embedded > .o_leave_dashboard,
+.o_leave_config_embedded > .o_ls_main {
+    margin-left: 0 !important;
+}

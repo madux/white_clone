@@ -40,3 +40,5 @@ htmlcov/
 hr_expense_management/APP_CONTRACT.md
 hr_expense_management/FINAL_REVIEW.md
 hr_expense_management/PROGRESS.md
+
+*.sql

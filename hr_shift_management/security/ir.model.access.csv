@@ -1,0 +1,25 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cleon_shift_user,cleon.hr.shift user,model_cleon_hr_shift,hr_time_management.group_time_management_user,1,0,0,0
+access_cleon_shift_line_manager,cleon.hr.shift line manager,model_cleon_hr_shift,hr_time_management.group_time_management_line_manager,1,0,0,0
+access_cleon_shift_hr_manager,cleon.hr.shift hr manager,model_cleon_hr_shift,hr_time_management.group_time_management_hr_manager,1,1,1,1
+access_cleon_shift_hr_admin,cleon.hr.shift hr admin,model_cleon_hr_shift,hr_time_management.group_time_management_hr_admin,1,1,1,1
+access_shift_assignment_user,shift assignment user,model_cleon_hr_shift_assignment,hr_time_management.group_time_management_user,1,0,0,0
+access_shift_assignment_line_manager,shift assignment line manager,model_cleon_hr_shift_assignment,hr_time_management.group_time_management_line_manager,1,1,1,0
+access_shift_assignment_hr_manager,shift assignment hr manager,model_cleon_hr_shift_assignment,hr_time_management.group_time_management_hr_manager,1,1,1,1
+access_shift_assignment_hr_admin,shift assignment hr admin,model_cleon_hr_shift_assignment,hr_time_management.group_time_management_hr_admin,1,1,1,1
+access_cleon_shift_system,cleon.hr.shift system administrator,model_cleon_hr_shift,base.group_system,1,1,1,1
+access_shift_assignment_system,shift assignment system administrator,model_cleon_hr_shift_assignment,base.group_system,1,1,1,1
+access_cleon_shift_internal,cleon.hr.shift internal employee,model_cleon_hr_shift,base.group_user,1,0,0,0
+access_shift_assignment_internal,shift assignment internal employee,model_cleon_hr_shift_assignment,base.group_user,1,0,0,0
+access_shift_swap_user,shift swap user,model_cleon_shift_swap_request,hr_time_management.group_time_management_user,1,1,1,0
+access_shift_swap_line_manager,shift swap line manager,model_cleon_shift_swap_request,hr_time_management.group_time_management_line_manager,1,1,1,0
+access_shift_swap_hr_manager,shift swap hr manager,model_cleon_shift_swap_request,hr_time_management.group_time_management_hr_manager,1,1,1,0
+access_shift_swap_hr_admin,shift swap hr admin,model_cleon_shift_swap_request,hr_time_management.group_time_management_hr_admin,1,1,1,1
+access_shift_swap_system,shift swap system,model_cleon_shift_swap_request,base.group_system,1,1,1,1
+access_shift_swap_internal,shift swap internal employee,model_cleon_shift_swap_request,base.group_user,1,1,1,0
+access_shift_segment_user,shift segment user,model_cleon_hr_shift_segment,hr_time_management.group_time_management_user,1,0,0,0
+access_shift_segment_line_manager,shift segment line manager,model_cleon_hr_shift_segment,hr_time_management.group_time_management_line_manager,1,0,0,0
+access_shift_segment_hr_manager,shift segment hr manager,model_cleon_hr_shift_segment,hr_time_management.group_time_management_hr_manager,1,1,1,1
+access_shift_segment_hr_admin,shift segment hr admin,model_cleon_hr_shift_segment,hr_time_management.group_time_management_hr_admin,1,1,1,1
+access_shift_segment_system,shift segment system,model_cleon_hr_shift_segment,base.group_system,1,1,1,1
+access_shift_segment_internal,shift segment internal employee,model_cleon_hr_shift_segment,base.group_user,1,0,0,0

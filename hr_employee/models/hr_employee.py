@@ -16,29 +16,22 @@ class HrEmployee(models.Model):
 
     @api.constrains('employee_number')
     def _check_duplicate_employee_number(self):
-        employee = self.env['hr.employee'].sudo()
-        if self.employee_number not in ["", False]:
-            duplicate_employee = employee.search([('employee_number', '=', self.employee_number)], limit=2)
-            if len([r for r in duplicate_employee]) > 1:
-                raise ValidationError("Employee with same staff ID already existing")
+        for record in self.filtered('employee_number'):
+            duplicate_count = self.sudo().search_count([
+                ('id', '!=', record.id),
+                ('employee_number', '=', record.employee_number),
+            ], limit=1)
+            if duplicate_count:
+                raise ValidationError(_(
+                    "Staff Number %(number)s is already assigned to another employee.",
+                    number=record.employee_number,
+                ))
 
     employee_number = fields.Char(
-        string="Staff Number", 
-        )
-    current_time = fields.Char(default=datetime.now().strftime("%I:%M %p").lstrip("0"))
-    employee_status = fields.Selection(
-            selection=[
-                ('Definite Suspension', 'Definite Suspension'),
-                ('Resigned', 'Sent home For Day'),
-                ('Indefinite Suspension', 'Indefinite Suspension'),
-                ('Employeed', 'Currently Employeed'),
-                ('Disqualified', 'Disqualified'),
-                ('Terminated', 'Terminated'),
-            ],
-            string='Employee status',
-            default='Employeed',
-            tracking=True,
-        )
+        string="Staff Number",
+        copy=False,
+        index=True,
+    )
 
     @api.model
     def get_employee_profile_dashboard(self):
@@ -120,6 +113,7 @@ class HrEmployee(models.Model):
                 'number_open_announcement': len(employee.announcement_ids.ids),
                 'birthday_count': employee.birthday_count,
                 'hr_warning_ids': employee.hr_warning_ids,
+
             })
             # employee.action_open_emp_leave()
             # employee.action_open_emp_document()
@@ -132,6 +126,7 @@ class HrEmployee(models.Model):
     middle_name = fields.Char(string="Middle name", copy=False)
     branch_id = fields.Many2one('multi.branch', string='Branch')
     grade_id = fields.Many2one('hr.grade', string='Grade')
+    unit_id = fields.Many2one('hr.unit', string='Unit', index=True)
     employee_type_id = fields.Many2one('hr.core_employment_type', string='Employment type')
     
     last_name = fields.Char("Surname", required=True, copy=False)
@@ -158,7 +153,6 @@ class HrEmployee(models.Model):
     mother_phone = fields.Char(string="Mother's Phone")
     manager = fields.Boolean(string="Is a Manager")
 
-    employee_number = fields.Char(string="Staff Number")
     awardee_id = fields.Many2one('hr.employee', string="Awardee")
     awardee_job_id = fields.Char(related="awardee_id.job_id.name")
 
@@ -305,7 +299,7 @@ class HrEmployee(models.Model):
                 (False, 'list'),
                 (False, 'form')
             ],
-            'domain': [('id', 'in', self.birthday_celebrant_ids.ids)],
+            'domain': [('id', 'in', birthday_celebrant_ids.ids)],
             'target': 'current',
         }
 

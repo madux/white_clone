@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cleon_time_sheet_user,weekly timesheet user,model_cleon_time_sheet,hr_time_management.group_time_management_user,1,1,1,0
+access_cleon_time_sheet_line_manager,weekly timesheet line manager,model_cleon_time_sheet,hr_time_management.group_time_management_line_manager,1,1,1,0
+access_cleon_time_sheet_hr_manager,weekly timesheet hr manager,model_cleon_time_sheet,hr_time_management.group_time_management_hr_manager,1,1,1,0
+access_cleon_time_sheet_hr_admin,weekly timesheet hr admin,model_cleon_time_sheet,hr_time_management.group_time_management_hr_admin,1,1,1,1
+access_cleon_time_sheet_system,weekly timesheet system,model_cleon_time_sheet,base.group_system,1,1,1,1
+access_cleon_time_sheet_line_user,timesheet entry user,model_cleon_time_sheet_line,hr_time_management.group_time_management_user,1,1,1,1
+access_cleon_time_sheet_line_line_manager,timesheet entry line manager,model_cleon_time_sheet_line,hr_time_management.group_time_management_line_manager,1,1,1,1
+access_cleon_time_sheet_line_hr_manager,timesheet entry hr manager,model_cleon_time_sheet_line,hr_time_management.group_time_management_hr_manager,1,1,1,0
+access_cleon_time_sheet_line_hr_admin,timesheet entry hr admin,model_cleon_time_sheet_line,hr_time_management.group_time_management_hr_admin,1,1,1,1
+access_cleon_time_sheet_line_system,timesheet entry system,model_cleon_time_sheet_line,base.group_system,1,1,1,1
+access_cleon_time_sheet_internal,weekly timesheet internal employee,model_cleon_time_sheet,base.group_user,1,1,1,0
+access_cleon_time_sheet_line_internal,timesheet entry internal employee,model_cleon_time_sheet_line,base.group_user,1,1,1,1

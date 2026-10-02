@@ -10,6 +10,7 @@ import { LeaveTypeFormModal } from "./leave_type_form_modal";
 export class LeaveTypesPage extends Component {
     static template = "hr_leave_dashboard.LeaveTypesPage";
     static components = { CalendarSidebar, LeaveTypeDetailDrawer, LeaveTypeFormModal };
+    static props = { embedded: { type: Boolean, optional: true }, "*": true };
 
     setup() {
         this.orm = useService("orm");
@@ -18,7 +19,9 @@ export class LeaveTypesPage extends Component {
 
         this.state = useState({
             loading: true,
-            viewMode: "admin", // "admin" | "employee"
+            // This page is configuration-only.  The fixed value preserves
+            // existing template branches without exposing a role switch.
+            viewMode: "admin",
             leaveTypes: [],
 
             departments: [],
@@ -44,6 +47,9 @@ export class LeaveTypesPage extends Component {
             editingLeaveType: null,
 
             exportDropdownOpen: false,
+            canExport: false,
+            importDropdownOpen: false,
+            loadError: "",
             draggedLeaveTypeId: null,
 
             helpModalOpen: false,
@@ -52,7 +58,11 @@ export class LeaveTypesPage extends Component {
             tourStep: 1,
         });
 
-        onWillStart(() => this.loadData());
+        onWillStart(async () => {
+            const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
+            this.state.canExport = Boolean(access.can_export);
+            await this.loadData();
+        });
     }
 
     async safeSearchRead(model, domain = [], fields = ["id", "name"]) {
@@ -66,6 +76,7 @@ export class LeaveTypesPage extends Component {
 
     async loadData() {
         this.state.loading = true;
+        this.state.loadError = "";
         try {
             const typesData = await this.orm.call("hr.leave.type", "get_leave_types_list_data", []);
             this.state.leaveTypes = typesData || [];
@@ -78,6 +89,7 @@ export class LeaveTypesPage extends Component {
             this.state.locations = await this.safeSearchRead("hr.work.location");
         } catch (err) {
             console.error("Failed to load leave types data", err);
+            this.state.loadError = err.message || "Leave types could not be loaded.";
             this.notification.add("Failed to load leave types configuration.", { type: "danger" });
         } finally {
             this.state.loading = false;
@@ -86,11 +98,6 @@ export class LeaveTypesPage extends Component {
 
     get filteredLeaveTypes() {
         let list = this.state.leaveTypes;
-
-        // In Employee View mode, only show active and employee-visible leave types
-        if (this.state.viewMode === "employee") {
-            list = list.filter(lt => lt.active && lt.visible_to_employees);
-        }
 
         const term = (this.state.searchTerm || "").trim().toLowerCase();
         if (term) {
@@ -168,11 +175,6 @@ export class LeaveTypesPage extends Component {
         }
     }
 
-    toggleViewMode() {
-        this.state.viewMode = this.state.viewMode === "admin" ? "employee" : "admin";
-        this.state.currentPage = 1;
-    }
-
     startTour() {
         this.state.tourActive = true;
         this.state.tourStep = 1;
@@ -215,8 +217,8 @@ export class LeaveTypesPage extends Component {
     // FR-195: Drag and Drop Sequence Reordering on Master Array
 
     onRowDragStart(ev, leaveTypeItem) {
-        if (this.hasActiveFilters || this.state.viewMode === "employee") {
-            this.notification.add("Reordering sequence is disabled while filters or Employee View are active.", { type: "warning" });
+        if (this.hasActiveFilters) {
+            this.notification.add("Reordering sequence is disabled while filters are active.", { type: "warning" });
             ev.preventDefault();
             return;
         }
@@ -231,7 +233,7 @@ export class LeaveTypesPage extends Component {
 
     async onRowDrop(ev, targetLeaveTypeItem) {
         ev.preventDefault();
-        if (this.hasActiveFilters || this.state.viewMode === "employee") return;
+        if (this.hasActiveFilters) return;
 
         const srcId = this.state.draggedLeaveTypeId;
         const targetId = targetLeaveTypeItem.id;
@@ -362,6 +364,21 @@ export class LeaveTypesPage extends Component {
         this.state.exportDropdownOpen = !this.state.exportDropdownOpen;
     }
 
+    toggleImportDropdown() {
+        this.state.importDropdownOpen = !this.state.importDropdownOpen;
+    }
+
+    async importStarterPack(pack) {
+        this.state.importDropdownOpen = false;
+        try {
+            const result = await this.orm.call("hr.leave.type", "import_leave_type_pack", [pack]);
+            this.notification.add(result.message, { type: "success" });
+            await this.loadData();
+        } catch (error) {
+            this.notification.add(error.message || "The starter pack could not be imported.", { type: "danger" });
+        }
+    }
+
     exportLeaveTypes(format) {
         this.state.exportDropdownOpen = false;
         const data = this.filteredLeaveTypes;
@@ -374,13 +391,10 @@ export class LeaveTypesPage extends Component {
         const locMap = Object.fromEntries(this.state.locations.map(l => [l.id, l.name]));
 
         let csvContent = "\uFEFF"; // UTF-8 BOM for Excel compatibility
-        csvContent += "Leave Type,Code,Category,Color,Entitlement,Unlimited,Gender,Eligibility Scope,Selected Departments,Selected Locations,Min Service (m),Accrual Method,Tenure Scaling,Carryover,Encashment,Max Cap,Approval Workflow,Doc Policy,Notice Days,Half Day,Max Consecutive,Negative Balance,Team Overlap %,Block Overlap,Active,Visible\n";
+        csvContent += "Leave Type,Code,Category,Color,Assigned Employees,Total Days Allocated,Active,Visible\n";
 
         for (const item of data) {
-            const deptsText = (item.department_ids || []).map(id => deptMap[id] || id).join("; ");
-            const locsText = (item.location_ids || []).map(id => locMap[id] || id).join("; ");
-
-            csvContent += `"${item.name}","${item.code}","${item.category}","${item.color_hex}","${item.max_entitlement}","${item.unlimited_entitlement ? "Yes" : "No"}","${item.applicable_gender}","${item.eligibility_scope}","${deptsText}","${locsText}",${item.minimum_service_months},"${item.accrual_method}","${item.tenure_based_accrual ? "Yes" : "No"}","${item.allow_carryover ? "Yes" : "No"}","${item.allow_encashment ? "Yes" : "No"}",${item.max_balance_cap},"${item.approval_workflow}","${item.supporting_document_policy}",${item.minimum_notice_days},"${item.allow_half_day ? "Yes" : "No"}",${item.max_consecutive_days},"${item.allow_negative_balance ? "Yes" : "No"}",${item.team_overlap_percent},"${item.block_overlap_threshold ? "Yes" : "No"}","${item.active ? "Active" : "Inactive"}","${item.visible_to_employees ? "Yes" : "No"}"\n`;
+            csvContent += `"${item.name}","${item.code}","${item.category}","${item.color_hex}",${item.assigned_count || 0},${item.total_days_allocated || 0},"${item.active ? "Active" : "Inactive"}","${item.visible_to_employees ? "Yes" : "No"}"\n`;
         }
 
         const ext = format === "excel" ? "csv" : "csv";
@@ -388,11 +402,11 @@ export class LeaveTypesPage extends Component {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `leave_types_full_policy_config.${ext}`);
+        link.setAttribute("download", `leave_types.${ext}`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        this.notification.add(`Full leave types policy configuration exported (${format === 'excel' ? 'Excel-CSV' : 'CSV'}).`, { type: "success" });
+        this.notification.add(`Leave types exported (${format === 'excel' ? 'Excel-CSV' : 'CSV'}).`, { type: "success" });
     }
 }
 

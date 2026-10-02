@@ -46,7 +46,6 @@ class HrWarningPolicy(models.Model):
             ('financial', 'Financial'),
         ],
         string='Category',
-        tracking=True,
     )
     severity_level = fields.Selection(
         selection=[
@@ -57,5 +56,4 @@ class HrWarningPolicy(models.Model):
         ],
         string='Severity level',
         default='',
-        tracking=True,
     )

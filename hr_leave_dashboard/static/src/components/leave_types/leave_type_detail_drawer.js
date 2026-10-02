@@ -22,6 +22,8 @@ export class LeaveTypeDetailDrawer extends Component {
             loadingLogs: false,
             leaveTypeEmployees: [],
             loadingEmployees: false,
+            policies: [],
+            loadingPolicies: false,
         });
 
         onWillStart(() => {
@@ -29,6 +31,8 @@ export class LeaveTypeDetailDrawer extends Component {
                 this.loadActivityLogs();
             } else if (this.state.activeTab === "employees") {
                 this.loadEmployeesData();
+            } else if (this.state.activeTab === "policies") {
+                this.loadPoliciesData();
             }
         });
     }
@@ -39,6 +43,21 @@ export class LeaveTypeDetailDrawer extends Component {
             await this.loadActivityLogs();
         } else if (tab === "employees" && this.state.leaveTypeEmployees.length === 0) {
             await this.loadEmployeesData();
+        } else if (tab === "policies" && this.state.policies.length === 0) {
+            await this.loadPoliciesData();
+        }
+    }
+
+    async loadPoliciesData() {
+        this.state.loadingPolicies = true;
+        try {
+            const policies = await this.orm.call("hr.leave.type", "get_leave_type_policies_data", [this.props.leaveType.id]);
+            this.state.policies = policies || [];
+        } catch (err) {
+            console.error("Failed to load governing policies data", err);
+            this.state.policies = [];
+        } finally {
+            this.state.loadingPolicies = false;
         }
     }
 

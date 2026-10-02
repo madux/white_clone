@@ -1196,3 +1196,6 @@ profile-body {
 
 /* ─── Divider ───────────────────────────────────────────────────── */
 .profile-section-gap { height: 4px; }
+.legacy-static-clock {
+    display: none;
+}

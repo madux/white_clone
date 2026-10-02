@@ -138,7 +138,9 @@
               parent="menu_hr_preonboarding_root" action="action_hr_preonboarding_incomplete" sequence="20"/>
     
     <record id="hr_preonboarding.menu_hr_preonboarding_all" model="ir.ui.menu">
-        <field name="icon_class">fa fa-user</field>
+        <field name="icon_class">fa fa-user-circle-o</field>
+        <field name="icon_color">#A855F7</field>
         <field name="category_name">CleonHR-HR Worklife cycle</field>
+        <field name="sequence">35</field>
     </record>
 </odoo>

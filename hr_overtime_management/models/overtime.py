@@ -1,0 +1,474 @@
+from datetime import date, datetime, time, timedelta
+import logging
+
+import pytz
+
+from odoo import api, fields, models, _
+from odoo.exceptions import AccessError, ValidationError
+
+
+_logger = logging.getLogger(__name__)
+
+
+class CleonOvertimeRequest(models.Model):
+    _name = "cleon.overtime.request"
+    _description = "CleonHR Overtime Request"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _order = "date desc, id desc"
+
+    name = fields.Char(default=lambda self: _("New"), readonly=True, copy=False)
+    employee_id = fields.Many2one("hr.employee", required=True, index=True, tracking=True)
+    company_id = fields.Many2one(related="employee_id.company_id", store=True, index=True)
+    date = fields.Date(required=True, index=True, tracking=True)
+    start_time = fields.Datetime(tracking=True)
+    end_time = fields.Datetime(tracking=True)
+    regular_hours = fields.Float(readonly=True)
+    overtime_hours = fields.Float(required=True, tracking=True)
+    category = fields.Selection([
+        ("daily", "Daily Overtime"), ("weekly", "Weekly Overtime"),
+        ("weekend", "Weekend Overtime"), ("holiday", "Holiday Overtime"),
+        ("special", "Special Assignment"), ("on_call", "On-call Work"),
+    ], required=True, default="daily", index=True, tracking=True)
+    source = fields.Selection([
+        ("attendance", "Auto Attendance"), ("employee", "Employee Request"),
+        ("manager", "Manager Entry"),
+    ], required=True, default="employee", index=True)
+    state = fields.Selection([
+        ("auto", "Auto-calculated"), ("submitted", "Pending Approval"),
+        ("approved", "Approved"), ("rejected", "Rejected"),
+        ("withdrawn", "Withdrawn"),
+    ], required=True, default="submitted", index=True, tracking=True)
+    justification = fields.Text()
+    attachment = fields.Binary(attachment=True)
+    attachment_name = fields.Char()
+    multiplier = fields.Float(default=1.5, readonly=True)
+    estimated_cost = fields.Monetary(compute="_compute_estimated_cost", store=True)
+    currency_id = fields.Many2one(related="company_id.currency_id", store=True)
+    approver_id = fields.Many2one("res.users", readonly=True)
+    decision_at = fields.Datetime(readonly=True)
+    manager_comment = fields.Text(readonly=True)
+    payroll_state = fields.Selection([
+        ("not_ready", "Not Ready"),
+        ("ready", "Ready for Payroll"),
+        ("transferred", "Transferred to Payroll"),
+    ], default="not_ready", required=True, readonly=True, index=True)
+
+    _sql_constraints = [
+        ("positive_hours", "check(overtime_hours > 0 AND overtime_hours <= 24)", "Overtime must be greater than zero and no more than 24 hours."),
+    ]
+
+    def _approval_fallback_config(self):
+        self.ensure_one()
+        c_id = self._approval_company().id
+        policy = self.env["cleon.time.policy"].sudo().search([("company_id", "=", c_id)], limit=1)
+        require_approval = policy.overtime_require_approval if policy else True
+        fallback_type = policy.overtime_fallback_approver if policy else "manager"
+
+        fallback_users = self.env["res.users"]
+        employee = self._approval_employee()
+        if fallback_type in ("direct_manager", "manager"):
+            parent_user = employee.sudo().parent_id.sudo().user_id
+            if parent_user and parent_user.active:
+                fallback_users = parent_user
+        elif fallback_type in ("department_head", "dept"):
+            dept_user = employee.sudo().department_id.sudo().manager_id.sudo().user_id
+            if dept_user and dept_user.active:
+                fallback_users = dept_user
+
+        if not fallback_users:
+            group = self.env.ref("hr_time_management.group_time_management_hr_manager", raise_if_not_found=False)
+            if group:
+                fallback_users = group.users.filtered(lambda u: u.active and c_id in u.sudo().company_ids.ids)
+
+        return {
+            "require_approval": require_approval,
+            "fallback_users": fallback_users,
+        }
+
+    @api.depends("overtime_hours", "multiplier", "employee_id")
+    def _compute_estimated_cost(self):
+        for request in self:
+            hourly_cost = getattr(request.employee_id, "hourly_cost", 0.0) or 0.0
+            request.estimated_cost = request.overtime_hours * request.multiplier * hourly_cost
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for values in vals_list:
+            if not values.get("name") or values["name"] == _("New"):
+                values["name"] = "OT/%s" % fields.Datetime.now().strftime("%Y%m%d%H%M%S%f")
+        return super().create(vals_list)
+
+    def _audit(self, action, details, source="web"):
+        for request in self:
+            self.env["cleon.time.audit.log"].sudo().create({
+                "employee_id": request.employee_id.id, "action": action,
+                "module_area": "overtime", "entity_type": "overtime_request",
+                "entity_name": request.name, "entity_id": request.id,
+                "details": details, "status": "success", "source": source,
+                "company_id": request.company_id.id,
+            })
+
+    @api.model
+    def _manager_allowed(self):
+        Policy = self.env["cleon.time.policy"]
+        role = Policy._tm_role()
+        return role in ("line_manager", "hr_manager", "hr_admin", "system_admin")
+
+    SERVER_CONTROLLED_FIELDS = {
+        "category", "multiplier", "source", "attendance_id",
+        "regular_hours", "overtime_hours", "approver_id", "decision_at", "manager_comment", "payroll_state"
+    }
+
+    @api.model
+    def _sudo_create_service(self, vals_list):
+        """Private server helper executing authoritative backend creation via sudo()."""
+        return super(CleonOvertimeRequest, self.sudo()).create(vals_list)
+
+    def _sudo_write_service(self, vals):
+        """Private server helper executing authoritative backend write via sudo()."""
+        return super(CleonOvertimeRequest, self.sudo()).write(vals)
+
+    def _sudo_unlink_service(self):
+        """Private server helper executing authoritative backend unlink via sudo()."""
+        return super(CleonOvertimeRequest, self.sudo()).unlink()
+
+    @api.model
+    def _derive_overtime_category_and_multiplier(self, employee, target_date, is_weekly=False):
+        category, multiplier, enabled = self.env["cleon.time.engine"]._overtime_terms(
+            employee, target_date, weekly=is_weekly
+        )
+        if not enabled:
+            raise ValidationError(_("Overtime is disabled for this day type by Time Rules."))
+        return category, multiplier
+
+    @api.model
+    def _sync_attendance_overtime(self):
+        """Attendance integration supplies the optional capture source."""
+        return None
+
+    def _approval_workflow_code(self):
+        return "time_overtime"
+
+    def _approval_employee(self):
+        self.ensure_one()
+        return self.employee_id
+
+    def _approval_company(self):
+        self.ensure_one()
+        return self.company_id or self.employee_id.company_id or self.env.company
+
+    def _approval_period(self):
+        self.ensure_one()
+        return self.date, self.date
+
+    def _approval_validate_decision(self, decision, automated=False, comment=False):
+        self.ensure_one()
+        c_id = self._approval_company()
+        self.env["cleon.time.period.lock"].check_period_lock(c_id, self.date, _("Overtime Request Decision"), override_reason=comment, allow_override=not automated)
+        if decision == "reject" and not (comment or "").strip():
+            raise ValidationError(_("A manager comment is required when rejecting overtime."))
+        return True
+
+    def _approval_finalize_approve(self):
+        policy = self.env["cleon.time.policy"].sudo().get_runtime_policy()
+        notify = policy.get("overtime_notify_employee", True)
+        for req in self:
+            user = self.env.user
+            req._sudo_write_service({
+                "state": "approved",
+                "payroll_state": "ready",
+                "approver_id": user.id,
+                "decision_at": fields.Datetime.now(),
+            })
+            req._audit("approved", _("Overtime request approved."))
+            if notify and req.employee_id.sudo().user_id:
+                req.message_post(
+                    body=_("Your overtime request for %s (%.2f hrs) has been approved.") % (req.date, req.overtime_hours),
+                    partner_ids=req.employee_id.sudo().user_id.partner_id.ids,
+                )
+
+    def _approval_finalize_reject(self, comment):
+        policy = self.env["cleon.time.policy"].sudo().get_cleon_policy()
+        notify = policy.get("overtime_notify_employee", True)
+        for req in self:
+            user = self.env.user
+            req._sudo_write_service({
+                "state": "rejected",
+                "payroll_state": "not_ready",
+                "approver_id": user.id,
+                "decision_at": fields.Datetime.now(),
+                "manager_comment": comment,
+            })
+            req._audit("rejected", comment or _("Overtime request rejected."))
+            if notify and req.employee_id.sudo().user_id:
+                req.message_post(
+                    body=_("Your overtime request for %s has been rejected. Reason: %s") % (req.date, comment or _("No comment provided.")),
+                    partner_ids=req.employee_id.sudo().user_id.partner_id.ids,
+                )
+
+    @api.model
+    def submit_manual_request(self, values):
+        employee = self.env.user.employee_id
+        if not employee:
+            raise ValidationError(_("Your user is not linked to an employee record."))
+        policy = self.env["cleon.time.policy"].sudo().search([("company_id", "=", employee.company_id.id)], limit=1)
+        if not policy or not policy.enable_overtime:
+            raise ValidationError(_("Overtime is disabled for your company under current policy."))
+        if policy.overtime_request_mode == "automatic":
+            raise ValidationError(_("Manual overtime requests are disabled by company policy."))
+
+        target_date = fields.Date.to_date(values.get("date"))
+        if not target_date:
+            raise ValidationError(_("Select an overtime date."))
+        today = fields.Date.context_today(self)
+        if target_date > today or target_date < today - timedelta(days=14):
+            raise ValidationError(_("Overtime requests must be for one of the past 14 days."))
+        justification = (values.get("justification") or "").strip()
+        if len(justification) < 30 or len(justification) > 500:
+            raise ValidationError(_("Justification must contain between 30 and 500 characters."))
+        start_val = values.get("start_time")
+        if isinstance(start_val, str):
+            start_val = start_val.replace("T", " ").strip()
+            if len(start_val) == 16:
+                start_val += ":00"
+        start = fields.Datetime.to_datetime(start_val)
+
+        end_val = values.get("end_time")
+        if isinstance(end_val, str):
+            end_val = end_val.replace("T", " ").strip()
+            if len(end_val) == 16:
+                end_val += ":00"
+        end = fields.Datetime.to_datetime(end_val)
+        if not start or not end or end <= start:
+            raise ValidationError(_("End time must be after start time."))
+        hours = (end - start).total_seconds() / 3600
+
+        duplicate = self.search_count([
+            ("employee_id", "=", employee.id), ("date", "=", target_date),
+            ("start_time", "<", end), ("end_time", ">", start),
+            ("state", "not in", ("rejected", "withdrawn")),
+        ])
+        if duplicate:
+            raise ValidationError(_("An overtime request already covers this date and time period."))
+
+        # Server-derive category and multiplier
+        category, multiplier = self._derive_overtime_category_and_multiplier(employee, target_date)
+
+        request = self._sudo_create_service([{
+            "employee_id": employee.id, "date": target_date, "start_time": start, "end_time": end,
+            "overtime_hours": hours, "category": category, "source": "employee",
+            "state": "submitted", "justification": justification, "multiplier": multiplier,
+        }])
+        request._audit("submitted", _("Manual overtime request submitted."))
+
+        # Business Rule Auto-Approve check (Overtime Max Auto-Approve Hours)
+        if policy and policy.overtime_auto_approve_max_hours and hours <= policy.overtime_auto_approve_max_hours:
+            reason_msg = _("Auto-approved by policy business rule: overtime hours %.2f <= max %.2f.") % (hours, policy.overtime_auto_approve_max_hours)
+            self.env["cleon.approval.instance"].action_start(request, decision_source="business_rule", auto_approve_reason=reason_msg)
+            return {"id": request.id, "name": request.name}
+
+        instance = self.env["cleon.approval.instance"].action_start(request)
+        return {"id": request.id, "name": request.name}
+
+    def action_withdraw(self):
+        """Allow an employee to withdraw their pending or auto-calculated overtime request."""
+        for request in self:
+            if not self.env.su and request.employee_id.user_id != self.env.user:
+                raise AccessError(_("You can only withdraw your own overtime request."))
+            if request.state not in ("submitted", "auto"):
+                raise ValidationError(_("Only pending or auto-calculated overtime requests can be withdrawn."))
+            self.env["cleon.time.period.lock"].check_period_lock(request.company_id.id, request.date, _("Overtime Withdrawal"))
+            self.env["cleon.approval.instance"].action_cancel_for_target(request, reason=_("Withdrawn by employee."))
+            request._sudo_write_service({"state": "withdrawn"})
+            request._audit("withdrawn", _("Overtime request withdrawn by employee."))
+        return True
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._check_workflow_protection(vals, is_create=True)
+            if vals.get("date"):
+                emp = self.env["hr.employee"].browse(vals.get("employee_id")).exists()
+                c_id = vals.get("company_id") or (emp.company_id.id if emp else self.env.company.id)
+                self.env["cleon.time.period.lock"].check_period_lock(c_id, vals["date"], _("Overtime Request"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        self._check_workflow_protection(vals, is_create=False)
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for req in self:
+                c_id = req.company_id.id
+                target_date = vals.get("date") or req.date
+                if target_date:
+                    self.env["cleon.time.period.lock"].check_period_lock(c_id, target_date, _("Overtime Request"), vals.get("manager_comment"))
+        return super().write(vals)
+
+    def unlink(self):
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for req in self:
+                if req.date:
+                    self.env["cleon.time.period.lock"].check_period_lock(req.company_id.id, req.date, _("Overtime Request"))
+        return super().unlink()
+
+    def _check_workflow_protection(self, vals, is_create=False):
+        if self.env.su or self.env.user.has_group("base.group_system"):
+            return
+        if is_create:
+            supplied_server_fields = self.SERVER_CONTROLLED_FIELDS.intersection(vals.keys())
+            if supplied_server_fields:
+                raise AccessError(_("Server-controlled overtime fields (%s) cannot be supplied directly. Use submit_manual_request().") % ", ".join(supplied_server_fields))
+            if "state" in vals and vals.get("state") != "draft":
+                raise AccessError(_("Direct creation of non-draft overtime requests is prohibited. Use submit_manual_request()."))
+        else:
+            if "state" in vals:
+                raise AccessError(_("Direct overtime state mutation is prohibited. Use approval/action methods instead."))
+            if self.SERVER_CONTROLLED_FIELDS.intersection(vals.keys()):
+                raise AccessError(_("Direct mutation of decision or server-controlled fields is prohibited."))
+
+    def action_decide(self, decision, comment=False):
+        for request in self:
+            instance = self.env["cleon.approval.instance"].sudo().search([
+                ("res_model", "=", request._name),
+                ("res_id", "=", request.id),
+                ("state", "=", "pending"),
+            ], limit=1)
+            if instance:
+                instance.with_user(self.env.user).action_decide(decision, comment=comment)
+            else:
+                Policy = self.env["cleon.time.policy"]
+                if not Policy._tm_can_approve(request, self.env.user):
+                    raise AccessError(_("You are not authorized to review this overtime request (self-approval is not permitted for Line Managers)."))
+                if request.state not in ("auto", "submitted"):
+                    raise ValidationError(_("Only pending or auto-calculated overtime can be reviewed."))
+                request._approval_validate_decision(decision, comment=comment)
+                if decision == "approve":
+                    request._approval_finalize_approve()
+                elif decision == "reject":
+                    request._approval_finalize_reject(comment)
+        return True
+
+    def _notify_employee_decision(self, decision, comment=False):
+        """Notify through Odoo mail without assuming an external mail gateway."""
+        for request in self:
+            partner = request.employee_id.user_id.partner_id
+            if not partner:
+                continue
+            outcome = _("approved") if decision == "approve" else _("rejected")
+            body = _("Your overtime request %(reference)s for %(hours)s hour(s) was %(outcome)s.") % {
+                "reference": request.name,
+                "hours": round(request.overtime_hours, 2),
+                "outcome": outcome,
+            }
+            if comment:
+                body += "<br/>" + _("Manager comment: %s") % comment
+            request.message_post(body=body, partner_ids=partner.ids, subtype_xmlid="mail.mt_note")
+
+    def get_payroll_ready_values(self):
+        """Stable handoff contract for a future CleonHR payroll connector."""
+        self.ensure_one()
+        if self.state != "approved" or self.payroll_state not in ("ready", "transferred"):
+            raise ValidationError(_("Only approved overtime is eligible for payroll transfer."))
+        return {
+            "reference": self.name,
+            "employee_id": self.employee_id.id,
+            "company_id": self.company_id.id,
+            "date": fields.Date.to_string(self.date),
+            "hours": self.overtime_hours,
+            "category": self.category,
+            "multiplier": self.multiplier,
+            "estimated_cost": self.estimated_cost,
+            "currency_id": self.currency_id.id,
+        }
+
+    def mark_payroll_transferred(self):
+        if not self._manager_allowed():
+            raise AccessError(_("Only a Time Management manager can confirm payroll transfer."))
+        for request in self:
+            request.get_payroll_ready_values()
+            self.env["cleon.time.period.lock"].check_period_lock(request.company_id.id, request.date, _("Overtime Payroll Transfer"))
+            request.sudo().write({"payroll_state": "transferred"})
+            request._audit("modified", _("Approved overtime marked as transferred to payroll."), "system")
+        return True
+
+    @api.model
+    def manager_decide(self, request_id, decision, comment=False):
+        self.browse(int(request_id)).exists().action_decide(decision, comment)
+        return True
+
+    @api.model
+    def get_my_overtime(self):
+        employee = self.env.user.employee_id
+        if not employee:
+            return {"rows": [], "kpis": {"total": 0, "approved": 0, "pending": 0}}
+        requests = self.search([("employee_id", "=", employee.id)])
+        today = fields.Date.context_today(self)
+        month_start = today.replace(day=1)
+        month = requests.filtered(lambda request: request.date and request.date >= month_start)
+        rows = [{
+            "id": request.id, "name": request.name,
+            "date": fields.Date.to_string(request.date),
+            "start_time": fields.Datetime.to_string(request.start_time) if request.start_time else False,
+            "end_time": fields.Datetime.to_string(request.end_time) if request.end_time else False,
+            "hours": round(request.overtime_hours, 2), "category": request.category,
+            "state": request.state, "reason": request.justification or "",
+            "cost": round(request.estimated_cost, 2),
+            "approver": request.approver_id.name or "",
+            "decision_at": fields.Datetime.to_string(request.decision_at) if request.decision_at else False,
+            "manager_comment": request.manager_comment or "",
+            "payroll_state": request.payroll_state,
+        } for request in requests]
+        return {"rows": rows, "kpis": {
+            "total": round(sum(month.mapped("overtime_hours")), 2),
+            "approved": round(sum(month.filtered(lambda request: request.state == "approved").mapped("overtime_hours")), 2),
+            "pending": len(month.filtered(lambda request: request.state in ("auto", "submitted"))),
+        }}
+
+    @api.model
+    def withdraw_request(self, request_id):
+        request = self.browse(int(request_id)).exists()
+        return request.action_withdraw()
+
+    @api.model
+    def get_overtime_data(self, page="dashboard", state="all", search=""):
+        if not self._manager_allowed():
+            raise AccessError(_("Only a Time Management manager can view team overtime."))
+        self._sync_attendance_overtime()
+        Policy = self.env["cleon.time.policy"]
+        allowed_emp_ids = Policy._tm_scope_employee_ids()
+        today = fields.Date.context_today(self)
+        month_start = today.replace(day=1)
+        domain = [("company_id", "=", self.env.company.id), ("employee_id", "in", allowed_emp_ids)]
+        if state and state != "all":
+            domain.append(("state", "=", state))
+        if search:
+            domain += ["|", ("employee_id.name", "ilike", search), ("justification", "ilike", search)]
+        requests = self.search(domain)
+        month = requests.filtered(lambda row: row.date and row.date >= month_start)
+        approved = month.filtered(lambda row: row.state == "approved")
+        pending = month.filtered(lambda row: row.state in ("auto", "submitted"))
+        employees = month.mapped("employee_id")
+        rows = [{
+            "id": row.id, "name": row.name, "employee": row.employee_id.sudo().name,
+            "employee_code": row.employee_id.sudo().employee_number or "",
+            "department": row.employee_id.sudo().department_id.name or _("Unassigned"),
+            "date": fields.Date.to_string(row.date), "regular_hours": round(row.regular_hours, 2),
+            "hours": round(row.overtime_hours, 2), "category": row.category,
+            "source": row.source, "state": row.state, "reason": row.justification or "",
+            "multiplier": row.multiplier, "cost": round(row.estimated_cost, 2),
+            "payroll_state": row.payroll_state,
+            "approver": row.approver_id.name or "", "decision_at": fields.Datetime.to_string(row.decision_at) if row.decision_at else False,
+        } for row in requests.sorted(lambda row: (row.date, row.id), reverse=True)]
+        daily = sum(month.filtered(lambda row: row.category == "daily").mapped("overtime_hours"))
+        weekend = sum(month.filtered(lambda row: row.category == "weekend").mapped("overtime_hours"))
+        holiday = sum(month.filtered(lambda row: row.category == "holiday").mapped("overtime_hours"))
+        return {
+            "rows": rows,
+            "kpis": {
+                "total": round(sum(month.mapped("overtime_hours")), 2),
+                "daily": round(daily, 2), "weekend": round(weekend, 2), "holiday": round(holiday, 2),
+                "pending": len(pending), "employees": len(employees),
+                "cost": round(sum(approved.mapped("estimated_cost")), 2),
+                "approved": round(sum(approved.mapped("overtime_hours")), 2),
+                "average": round(sum(month.mapped("overtime_hours")) / len(employees), 2) if employees else 0,
+            },
+        }

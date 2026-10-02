@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="wft_leave_request" model="cleon.approval.workflow.type">
+            <field name="code">leave_request</field>
+            <field name="name">Leave Request</field>
+            <field name="model_id" ref="hr_holidays.model_hr_leave"/>
+            <field name="event_trigger">leave_request</field>
+            <field name="approval_requirement">yes</field>
+        </record>
+        <record id="wft_leave_extension" model="cleon.approval.workflow.type"><field name="code">leave_extension</field><field name="name">Leave Extension</field><field name="model_id" ref="hr_holidays.model_hr_leave"/><field name="event_trigger">leave_extension</field><field name="default_behavior">linked</field></record>
+        <record id="wft_leave_cancellation" model="cleon.approval.workflow.type"><field name="code">leave_cancellation</field><field name="name">Leave Cancellation</field><field name="model_id" ref="hr_holidays.model_hr_leave"/><field name="event_trigger">leave_cancellation</field><field name="approval_requirement">conditional</field><field name="default_behavior">linked</field></record>
+        <record id="wft_early_return" model="cleon.approval.workflow.type"><field name="code">early_return</field><field name="name">Early Return</field><field name="model_id" ref="hr_holidays.model_hr_leave"/><field name="event_trigger">early_return</field><field name="default_behavior">exception</field></record>
+        <record id="wft_normal_return" model="cleon.approval.workflow.type"><field name="code">normal_return</field><field name="name">Normal Return</field><field name="model_id" ref="hr_holidays.model_hr_leave"/><field name="event_trigger">normal_return</field><field name="approval_requirement">no</field><field name="default_behavior">automatic</field></record>
+        <record id="wft_late_return" model="cleon.approval.workflow.type"><field name="code">late_return</field><field name="name">Late / Unconfirmed Return</field><field name="model_id" ref="hr_holidays.model_hr_leave"/><field name="event_trigger">late_return</field><field name="default_behavior">exception</field></record>
+        <record id="wft_balance_amendment" model="cleon.approval.workflow.type"><field name="code">balance_amendment</field><field name="name">Leave Balance Amendment</field><field name="model_id" ref="hr_holidays.model_hr_leave"/><field name="event_trigger">balance_amendment</field><field name="default_behavior">exception</field></record>
+        <record id="wft_negative_balance" model="cleon.approval.workflow.type"><field name="code">negative_balance</field><field name="name">Negative Balance Exception</field><field name="model_id" ref="hr_holidays.model_hr_leave"/><field name="event_trigger">negative_balance</field><field name="approval_requirement">conditional</field><field name="default_behavior">exception</field></record>
+        <record id="wft_blackout_exception" model="cleon.approval.workflow.type"><field name="code">blackout_exception</field><field name="name">Blackout Period Exception</field><field name="model_id" ref="hr_holidays.model_hr_leave"/><field name="event_trigger">blackout_exception</field><field name="approval_requirement">conditional</field><field name="default_behavior">exception</field></record>
+        <record id="wft_coverage_exception" model="cleon.approval.workflow.type"><field name="code">coverage_exception</field><field name="name">Coverage / Handover Exception</field><field name="model_id" ref="hr_holidays.model_hr_leave"/><field name="event_trigger">coverage_exception</field><field name="approval_requirement">conditional</field><field name="default_behavior">exception</field></record>
+        <record id="wft_handover_requirement" model="cleon.approval.workflow.type"><field name="code">handover_requirement</field><field name="name">Handover Requirement</field><field name="model_id" ref="hr_holidays.model_hr_leave"/><field name="event_trigger">handover_requirement</field><field name="approval_requirement">conditional</field><field name="default_behavior">linked</field></record>
+        <record id="wft_approval_override" model="cleon.approval.workflow.type"><field name="code">approval_override</field><field name="name">Approval Override</field><field name="model_id" ref="hr_holidays.model_hr_leave"/><field name="event_trigger">approval_override</field><field name="default_behavior">override</field></record>
+    </data>
+</odoo>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.CalendarDayPanel" owl="1">
+    <div class="o_cdp_overlay" t-on-click.self="props.close">
+      <section class="o_cdp_modal" role="dialog" aria-modal="true">
+        <header>
+          <div><h3>Day Roster</h3><p t-esc="periodLabel"/></div>
+          <button type="button" aria-label="Close" t-on-click="props.close">&#215;</button>
+        </header>
+        <div class="o_cdp_body">
+          <section class="o_cdp_roster">
+            <div t-if="props.holidays.length" class="o_cdp_holiday" t-foreach="props.holidays" t-as="holiday" t-key="holiday.id"><i class="fa fa-star"/><div><b t-esc="holiday.name"/><small>Public holiday</small></div></div>
+            <h4>Employees out of office <span t-esc="props.leaves.length"/></h4>
+            <div t-if="!props.leaves.length" class="o_cdp_empty"><i class="fa fa-users"/><b>Everyone is available</b><span>No leave is scheduled for this date.</span></div>
+            <div t-if="props.leaves.length" class="o_cdp_status_groups">
+              <button type="button" t-foreach="rosterGroups" t-as="group" t-key="group.status" t-att-class="state.activeRosterStatus === group.status ? 'active' : ''" t-on-click="() => state.activeRosterStatus = group.status"><t t-esc="group.label"/> <span t-esc="group.leaves.length"/></button>
+            </div>
+            <article t-foreach="activeRosterLeaves" t-as="leave" t-key="leave.id" t-att-class="leave.can_open_detail ? 'is-openable' : 'is-private'" t-on-click="() => this.openRosterDetail(leave)">
+              <span class="o_cdp_dot" t-att-style="'background:' + leave.color_hex"/><div><b t-esc="leave.employee_name"/><small><t t-esc="leave.department_name"/> · <t t-esc="leave.job_title || 'Employee'"/></small></div><div class="o_cdp_leave"><b t-esc="leave.leave_type_name"/><small t-esc="leave.status_label || leave.status"/></div><i t-if="leave.can_open_detail" class="fa fa-chevron-right"/>
+            </article>
+            <footer t-if="props.canRequest or (props.canBook and props.isOrganisation)"><button type="button" class="primary" t-on-click="requestLeave"><i class="fa fa-plus"/> Book Time Off</button></footer>
+          </section>
+        </div>
+      </section>
+    </div>
+  </t>
+</templates>

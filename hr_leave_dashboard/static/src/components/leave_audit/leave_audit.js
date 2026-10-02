@@ -15,11 +15,16 @@ export class LeaveAuditPage extends Component {
             loading: true, rows: [], total: 0, summary: {}, actions: [], departments: [], roles: [],
             page: 1, perPage: 10, sort: { field: "occurred_at", direction: "desc" }, expandedId: null,
             filtersOpen: false, columnsOpen: false, live: true, initialLoaded: false,
+            canExport: false,
             filters: { search: "", action: "", module_area: "", entity_type: "", event_status: "", source: "", date_from: "", date_to: "", department_id: "", actor_role: "" },
             columns: { timestamp: true, action: true, module: true, entity: true, actor: true, employee: true, department: true, diff: true, ip: true, device: true, source: true, status: true },
         });
         for (const name of ["sortBy", "toggleExpanded", "goToPage", "toggleColumn"]) this[name] = this[name].bind(this);
-        onWillStart(() => this.refresh());
+        onWillStart(async () => {
+            const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
+            this.state.canExport = Boolean(access.can_export);
+            await this.refresh();
+        });
         this.timer = setInterval(() => { if (this.state.live && !document.hidden) this.refresh(true); }, 15000);
         onWillUnmount(() => clearInterval(this.timer));
     }
@@ -37,6 +42,9 @@ export class LeaveAuditPage extends Component {
             this.state.rows = result.rows || []; this.state.total = result.total || 0; this.state.summary = result.summary || {}; this.state.actions = result.actions || []; this.state.departments = result.departments || []; this.state.roles = result.roles || [];
             if (silent && this.state.initialLoaded && result.rows?.[0]?.id && result.rows[0].id !== previousFirstId) this.notification.add("New leave audit entries received.", { type: "info" });
             this.state.initialLoaded = true;
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", {
+                detail: { screen: "leave.audit", title: "Leave Audit Log" },
+            }));
         } catch (error) { if (!silent) this.notification.add(error.message || "Unable to load the audit log.", { type: "danger" }); }
         finally { this.state.loading = false; }
     }
@@ -53,7 +61,6 @@ export class LeaveAuditPage extends Component {
     openTour() { this.notification.add("Use filters, sortable columns, and expandable rows to investigate leave activity.", { title: "Audit Log Tour", type: "info" }); }
     openHelp() { this.notification.add("Audit entries are immutable and scoped to the active company.", { title: "Audit Log Guide", type: "info" }); }
     openSetup() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_admin_dashboard", { additionalContext: { open_setup_wizard: true } }); }
-    openEmployeeView() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_employee_dashboard"); }
     actionClass(action) { if (["submitted", "admin_create"].includes(action)) return "created"; if (["edit", "comment"].includes(action)) return "modified"; if (["approve", "first_approval", "final_approval"].includes(action)) return "approved"; if (["reject", "cancelled", "failed"].includes(action)) return "rejected"; if (["balance_allocation", "balance_adjustment"].includes(action)) return "allocated"; if (action === "policy_change") return "policy"; return "calendar"; }
     formatTimestamp(value) { if (!value) return { date: "—", time: "" }; const date = new Date(value.replace(" ", "T") + "Z"); return { date: date.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" }), time: date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" }) }; }
     diffEntries(values) { return Object.entries(values || {}).map(([key, value]) => ({ key, value: typeof value === "object" ? JSON.stringify(value) : String(value ?? "") })); }

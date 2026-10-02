@@ -13,6 +13,7 @@
 
                     <!-- SIDEBAR -->
                     <aside class="hd-sidebar">
+
                         <div class="hd-sb-brand">
                             <div class="hd-sb-mark">
                                 <i class="fa fa-user"/>
@@ -335,12 +336,9 @@
         </field>
     </record>
 
-     
-    
-
     <menuitem
         id="menu_hr_insurance_hmo"
-        name="HMO"
+        name="Health Insurance"
         action="action_dashboard_server"
         sequence="2"
         />
@@ -349,21 +347,9 @@
         id="hr_insurance.menu_hmo_market_place"
         parent="menu_hr_insurance_hmo"
         name="HMO Market Place"
-        action="hr_insurance.action_dashboard_server"
-        sequence="41"
-        />
-
-    <menuitem
-        id="menu_health_insurance"
-        parent="menu_hr_insurance_hmo"
-        name="Health Insurance"
-        action="hr_insurance.action_dashboard_server"
+        action="hr_insurance.action_hmo_marketplace"
         sequence="40"
         />
-    <record id="hr_insurance.menu_health_insurance" model="ir.ui.menu">
-        <field name="icon_class">fa fa-health</field>
-        <field name="category_name">CleonHR-HR Admin</field>
-    </record>
     <menuitem
         id="menu_hmo_configuration"
         parent="menu_hr_insurance_hmo"

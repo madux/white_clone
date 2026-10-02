@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_time_policy_user,time policy user,model_cleon_time_policy,hr_time_management.group_time_management_user,1,0,0,0
+access_time_policy_line_manager,time policy line manager,model_cleon_time_policy,hr_time_management.group_time_management_line_manager,1,0,0,0
+access_time_policy_hr_manager,time policy hr manager,model_cleon_time_policy,hr_time_management.group_time_management_hr_manager,1,0,0,0
+access_time_policy_hr_admin,time policy hr admin,model_cleon_time_policy,hr_time_management.group_time_management_hr_admin,1,1,1,1
+access_time_audit_line_manager,time audit line manager,model_cleon_time_audit_log,hr_time_management.group_time_management_line_manager,0,0,0,0
+access_time_audit_hr_manager,time audit hr manager,model_cleon_time_audit_log,hr_time_management.group_time_management_hr_manager,1,0,0,0
+access_time_audit_hr_admin,time audit hr admin,model_cleon_time_audit_log,hr_time_management.group_time_management_hr_admin,1,0,0,0
+access_time_policy_system,time policy system administrator,model_cleon_time_policy,base.group_system,1,1,1,1
+access_time_audit_system,time audit system administrator,model_cleon_time_audit_log,base.group_system,1,0,0,0
+access_time_policy_internal,time policy internal employee,model_cleon_time_policy,base.group_user,1,0,0,0
+access_period_lock_user,period lock user,model_cleon_time_period_lock,hr_time_management.group_time_management_user,1,0,0,0
+access_period_lock_line_manager,period lock line manager,model_cleon_time_period_lock,hr_time_management.group_time_management_line_manager,1,0,0,0
+access_period_lock_hr_manager,period lock hr manager,model_cleon_time_period_lock,hr_time_management.group_time_management_hr_manager,1,0,0,0
+access_period_lock_hr_admin,period lock hr admin,model_cleon_time_period_lock,hr_time_management.group_time_management_hr_admin,1,1,1,1
+access_period_lock_system,period lock system,model_cleon_time_period_lock,base.group_system,1,1,1,1
+access_period_lock_internal,period lock internal,model_cleon_time_period_lock,base.group_user,1,0,0,0

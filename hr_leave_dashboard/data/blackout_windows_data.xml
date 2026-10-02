@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="blackout_year_end_closing" model="hr.leave.blackout.period">
+            <field name="name">Year End Closing</field><field name="date_from">2026-12-20</field><field name="date_to">2027-01-05</field>
+            <field name="applies_to">all</field><field name="reason">Year end financial closing</field><field name="state">active</field><field name="exception_mode">hard_block</field><field name="company_id" ref="base.main_company"/>
+        </record>
+        <record id="blackout_q1_payroll_processing" model="hr.leave.blackout.period">
+            <field name="name">Q1 Payroll Processing</field><field name="date_from">2026-03-25</field><field name="date_to">2026-03-31</field>
+            <field name="applies_to">all</field><field name="reason">Quarterly payroll run</field><field name="state">active</field><field name="exception_mode">hard_block</field><field name="company_id" ref="base.main_company"/>
+        </record>
+        <record id="blackout_system_maintenance" model="hr.leave.blackout.period">
+            <field name="name">System Maintenance</field><field name="date_from">2026-07-10</field><field name="date_to">2026-07-12</field>
+            <field name="applies_to">all</field><field name="reason">System upgrade &amp; maintenance</field><field name="state">scheduled</field><field name="exception_mode">hard_block</field><field name="company_id" ref="base.main_company"/>
+        </record>
+        <record id="blackout_audit_period" model="hr.leave.blackout.period">
+            <field name="name">Audit Period</field><field name="date_from">2026-05-01</field><field name="date_to">2026-05-15</field>
+            <field name="applies_to">all</field><field name="reason">Internal audit period</field><field name="state">active</field><field name="exception_mode">hard_block</field><field name="company_id" ref="base.main_company"/>
+        </record>
+    </data>
+</odoo>

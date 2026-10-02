@@ -1,0 +1,1198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.LeavePoliciesPage" owl="1">
+    <section class="o_lp_page" t-on-click="closeTransientMenus">
+      <!-- Top Toolbar -->
+      <header class="o_lp_toolbar">
+        <div>
+          <h3>Leave Policies</h3>
+          <p>Create and manage policies that define leave types, entitlement, eligibility, and rules.</p>
+        </div>
+        <button class="o_lp_primary" t-on-click="openChooser">
+          <i class="fa fa-plus me-1"/> Add Leave Policy
+        </button>
+      </header>
+
+      <!-- Filters & List Status Tabs -->
+      <div class="o_lp_filters">
+        <label class="o_lp_search_box">
+          <i class="fa fa-search"/>
+          <input t-model="state.search" t-on-input="() => this.goToPage(1)" placeholder="Search policies, codes, or leave types…"/>
+        </label>
+        <div class="o_lp_filters_right">
+          <!-- Status filter chips (only on Current Policies) -->
+          <div t-if="state.listState === 'current'" class="o_lp_status_chips">
+            <span class="o_lp_filter_label">Status:</span>
+            <button type="button"
+                    t-att-class="'o_lp_chip ' + (state.statusFilter === 'all' ? 'active' : '')"
+                    t-on-click="() => this.setStatusFilter('all')">
+              All
+            </button>
+            <button type="button"
+                    t-att-class="'o_lp_chip ' + (state.statusFilter === 'active' ? 'active' : '')"
+                    t-on-click="() => this.setStatusFilter('active')">
+              Active
+            </button>
+            <button type="button"
+                    t-att-class="'o_lp_chip ' + (state.statusFilter === 'draft' ? 'active' : '')"
+                    t-on-click="() => this.setStatusFilter('draft')">
+              Draft
+            </button>
+            <button type="button"
+                    t-att-class="'o_lp_chip ' + (state.statusFilter === 'inactive' ? 'active' : '')"
+                    t-on-click="() => this.setStatusFilter('inactive')">
+              Inactive
+            </button>
+          </div>
+          <div class="o_lp_segment">
+            <button t-att-class="state.listState === 'current' ? 'active' : ''" t-on-click="() => this.setListState('current')">
+              Current Policies
+            </button>
+            <button t-att-class="state.listState === 'archived' ? 'active' : ''" t-on-click="() => this.setListState('archived')">
+              Archived Policies
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading / Empty State -->
+      <div t-if="state.loading" class="o_lp_empty">
+        <i class="fa fa-spinner fa-spin"/> Loading policies…
+      </div>
+      <div t-elif="!visibleRows.length" class="o_lp_empty">
+        <i class="fa fa-file-text-o"/>
+        <h4>No policies found</h4>
+        <p>Create the first policy or change the current search query.</p>
+      </div>
+
+      <!-- Policy Table -->
+      <div t-else="" class="o_lp_table_wrap" t-att-style="'min-height:' + listMinHeight + 'px'">
+        <table class="o_lp_table">
+          <thead>
+            <tr>
+              <th>Policy Name</th>
+              <th>Code</th>
+              <th>Leave Type</th>
+              <th>Category</th>
+              <th>Assigned Leave Type(s)</th>
+              <th>Compensation</th>
+              <th>Unit</th>
+              <th>Default Entitlement</th>
+              <th>Applicability</th>
+              <th>Status</th>
+              <th>Assigned To</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr t-foreach="pagedRows" t-as="row" t-key="row.id">
+              <td>
+                <button type="button" class="o_lp_policy_name" t-on-click="() => this.view(row)" t-esc="row.name"/>
+              </td>
+              <td><span class="o_lp_policy_code" t-esc="row.code"/></td>
+              <td t-esc="row.policy_type_label || 'Paid Leave'"/>
+              <td>
+                <span class="o_lp_category" t-att-style="'--tag:' + (row.color || '#E91E78')" t-esc="row.category"/>
+              </td>
+              <td>
+                <div class="o_lp_type_chips">
+                  <span class="o_lp_type_tag" t-foreach="row.leave_types" t-as="ltype" t-key="ltype.id" t-esc="ltype.name"/>
+                </div>
+              </td>
+              <td>
+                <span t-att-class="'o_lp_comp_badge ' + (row.leave_types.length === 1 ? row.leave_types[0].compensation : 'mixed')"
+                      t-esc="row.leave_types.length === 1 ? (row.leave_types[0].compensation === 'paid' ? 'Paid' : 'Unpaid') : 'Mixed'"/>
+              </td>
+              <td t-esc="row.default_unit || 'Days'"/>
+              <td>
+                <strong t-if="row.default_entitlement !== false">
+                  <t t-esc="row.default_entitlement"/> <t t-esc="row.default_unit || 'days'"/>
+                </strong>
+                <span t-else="" class="text-muted">Per leave type</span>
+              </td>
+              <td>
+                <span class="o_lp_applicability" t-esc="row.applicability"/>
+              </td>
+              <td>
+                <span t-att-class="'o_lp_status ' + this.displayStatus(row)" t-esc="this.displayStatus(row)"/>
+              </td>
+              <td class="o_lp_assignee_cell">
+                <button type="button" class="o_lp_assigned_stack" t-att-title="'View ' + row.employee_count + ' assigned employees'" t-att-aria-expanded="state.assigneePopoverId === row.id" t-on-click.stop="() => this.toggleAssignees(row)">
+                  <img t-foreach="row.assigned_employees || []" t-as="employee" t-key="employee.id" t-att-src="employee.avatar_url" t-att-alt="employee.name" t-att-title="employee.name"/>
+                  <span t-if="row.employee_count &gt; 4" class="o_lp_assigned_more">+<t t-esc="row.employee_count - 4"/></span>
+                  <span t-if="!row.employee_count" class="text-muted">0 assigned</span>
+                </button>
+                <div t-if="state.assigneePopoverId === row.id" class="o_lp_assignee_popover" t-on-click.stop="() => {}">
+                  <div class="o_lp_assignee_popover_title"><b>Assigned employees</b><span><t t-esc="row.employee_count"/> total</span></div>
+                  <input type="search" t-model="state.assigneeSearch" placeholder="Search assignees…" aria-label="Search assigned employees"/>
+                  <div class="o_lp_assignee_popover_list">
+                    <p t-if="state.assigneeLoading" class="text-muted">Loading…</p>
+                    <div t-foreach="visibleAssignees" t-as="employee" t-key="employee.id" class="o_lp_assignee_person">
+                      <img t-att-src="employee.avatar_url" alt=""/>
+                      <span><b t-esc="employee.name"/><small><t t-esc="employee.code"/><t t-if="employee.department"> · <t t-esc="employee.department"/></t></small></span>
+                    </div>
+                    <p t-if="!state.assigneeLoading and !visibleAssignees.length" class="text-muted">No assigned employees match.</p>
+                  </div>
+                </div>
+              </td>
+              <td class="o_lp_actions">
+                <button type="button" class="o_lp_menu_btn" t-on-click.stop="() => state.menuId = state.menuId === row.id ? false : row.id" title="Actions">
+                  <i class="fa fa-ellipsis-v"/>
+                </button>
+                <div t-if="state.menuId === row.id" class="o_lp_menu" t-on-click.stop="() => {}">
+                  <button t-on-click="() => this.view(row)"><i class="fa fa-eye"/> View Details</button>
+                  <button t-if="row.active" t-on-click="() => this.edit(row)"><i class="fa fa-pencil"/> Edit Policy</button>
+                  <button t-on-click="() => this.duplicate(row)"><i class="fa fa-copy"/> Duplicate Policy</button>
+                  <button t-if="row.active and row.state === 'active'" t-on-click="() => this.openAssign(row)"><i class="fa fa-user-plus"/> Assign Policy</button>
+                  <t t-if="row.active">
+                    <button t-if="row.state !== 'active'" t-on-click="() => this.activatePolicy(row)">
+                      <i class="fa fa-toggle-on"/> Activate
+                    </button>
+                    <button t-if="row.state === 'active'" t-on-click="() => this.changeStatus(row, 'inactive')">
+                      <i class="fa fa-toggle-off"/> Deactivate
+                    </button>
+                    <button class="danger" t-on-click="() => this.archive(row)">
+                      <i class="fa fa-archive"/> Archive Policy
+                    </button>
+                  </t>
+                  <t t-else="">
+                    <button class="o_lp_restore_btn" t-on-click="() => this.restore(row)">
+                      <i class="fa fa-undo"/> Restore Policy
+                    </button>
+                  </t>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ListPager t-if="!state.loading and visibleRows.length" total="visibleRows.length" page="currentPage" pageSize="state.pageSize" label="'policies'" onPageChange.bind="goToPage" onPageSizeChange.bind="changePageSize"/>
+
+      <!-- ═══════════════════════════════════════════════════════
+           POLICY CREATION & EDIT DRAWER / WIZARD
+           ═══════════════════════════════════════════════════════ -->
+      <SettingsPanel t-if="state.wizard" close="() => this.closeWizard()" wide="true">
+          <!-- One policy form with progressively disclosed advanced settings. -->
+          <t t-set-slot="header">
+            <div>
+              <div class="o_lp_title_wrap">
+                <h3><t t-esc="state.form.id ? 'Edit' : 'Add'"/> Leave Policy</h3>
+              </div>
+              <p class="o_lp_subtitle">
+                Organisation defaults are prefilled. Open Advanced Settings only when this policy needs more precise overrides.
+              </p>
+            </div>
+            <div class="o_lp_header_actions">
+              <button type="button"
+                      t-att-class="'o_lp_adv_disclosure ' + (state.form.advancedOpen ? 'expanded ' : '') + (hasAdvancedOverrides ? 'configured' : '')"
+                      t-on-click="toggleAdvanced"
+                      t-att-title="state.form.advancedOpen ? 'Collapse Advanced Settings' : (hasAdvancedOverrides ? 'Advanced rules are configured; expand to review or edit them' : 'Expand Advanced Settings')">
+                <span class="o_lp_adv_icon">
+                  <i class="fa fa-sliders"/>
+                </span>
+                <span class="o_lp_adv_text">Advanced Settings</span>
+                <span class="o_lp_adv_chevron">
+                  <i t-att-class="state.form.advancedOpen ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
+                </span>
+              </button>
+              <button class="o_lp_close_btn" t-on-click="closeWizard" title="Close" aria-label="Close">×</button>
+            </div>
+          </t>
+
+          <!-- Step Progress Navigation Bar -->
+          <nav class="o_lp_steps">
+            <button t-foreach="steps" t-as="label" t-key="label_index"
+                    t-att-class="'o_lp_step_btn ' + (state.step === label_index + 1 ? 'active' : (state.step > label_index + 1 ? 'done' : ''))"
+                    t-on-click="() => this.goStep(label_index + 1)">
+              <span class="o_lp_step_num">
+                <i t-if="state.step > label_index + 1" class="fa fa-check"/>
+                <t t-else="" t-esc="label_index + 1"/>
+              </span>
+              <span class="o_lp_step_label" t-esc="label"/>
+            </button>
+          </nav>
+
+          <!-- Form Body -->
+          <div t-att-class="'o_lp_form ' + (!state.form.advancedOpen ? 'o_lp_simple_form' : '')">
+
+            <!-- ══════════════════════════════════════════════════
+                 SIMPLE MODE: STEP 1 — POLICY SETUP
+                 ══════════════════════════════════════════════════ -->
+            <t t-if="!state.form.advancedOpen and state.step === 1">
+              <!-- A. Basic Information -->
+              <section class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-info-circle text-primary"/>
+                  <h4>A. Basic Information</h4>
+                </div>
+                <div class="o_lp_grid">
+                  <label>
+                    <span>Policy Name *</span>
+                    <input type="text" t-model="state.form.name" placeholder="e.g. Annual Leave Policy, Nigeria Staff Policy"/>
+                  </label>
+
+                  <!-- Leave Type(s) Multi-Select Picker -->
+                  <div class="o_lp_field_group">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                      <span class="o_lp_label">Leave Type(s) *</span>
+                    </div>
+
+                    <TagsPicker options="state.options.leave_types || []" selected="selectedTypeOptions" toggle.bind="toggleType" create.bind="createType" placeholder="'Select or create leave types…'"/>
+                  </div>
+
+                  <!-- Assign To -->
+                  <div class="full o_lp_field_group">
+                    <span class="o_lp_label">Assign To</span>
+                    <div class="o_lp_pill_group mb-2">
+                      <button type="button"
+                              t-att-class="'o_lp_pill_btn ' + (state.form.apply_to === 'all' ? 'active' : '')"
+                              t-on-click="() => state.form.apply_to = 'all'">
+                        <i class="fa fa-globe me-1"/> All Employees
+                      </button>
+                      <button type="button"
+                              t-att-class="'o_lp_pill_btn ' + (state.form.apply_to === 'selected' ? 'active' : '')"
+                              t-on-click="() => state.form.apply_to = 'selected'">
+                        <i class="fa fa-users me-1"/> Selected Employees
+                      </button>
+                    </div>
+
+                    <div t-if="state.form.apply_to === 'selected'" class="o_lp_selected_pickers">
+                      <t t-call="hr_leave_dashboard.PolicyEligibility"/>
+                    </div>
+                  </div>
+
+                  <!-- Policy Description -->
+                  <label class="full">
+                    <span>Policy Description (Optional)</span>
+                    <textarea rows="2" t-model="state.form.description" placeholder="Provide details about the purpose or scope of this leave policy…"/>
+                  </label>
+                </div>
+              </section>
+
+              <!-- B. Accrual Configuration -->
+              <section class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-calculator text-primary"/>
+                  <h4>B. Accrual Configuration</h4>
+                </div>
+
+                <t t-if="hasAdvancedOverrides">
+                  <!-- Advanced Configuration Summary Card (No silent no-ops!) -->
+                  <div class="o_lp_adv_summary_box">
+                    <div class="o_lp_adv_summary_banner">
+                      <i class="fa fa-info-circle text-primary me-2"/>
+                      <span>This policy contains granular per-leave-type rules. Common settings are summarized below.</span>
+                    </div>
+
+                    <div class="o_lp_grid o_lp_readonly_grid">
+                      <label><span>Compensation</span><input type="text" t-att-value="summaryCompensation" readonly="readonly"/></label>
+                      <label><span>Unit</span><input type="text" t-att-value="summaryUnit" readonly="readonly"/></label>
+                      <label><span>Schedule of Accrual / Period</span><input type="text" t-att-value="summaryAccrualPeriod" readonly="readonly"/></label>
+                      <label><span>Accrual Basis / Start Date</span><input type="text" t-att-value="summaryAccrualBasis" readonly="readonly"/></label>
+                      <label>
+                        <span>Accrual Amount / Entitlement</span>
+                        <div class="input-group">
+                          <input type="text" class="form-control" t-att-value="summaryAccrualAmount" readonly="readonly"/>
+                          <span t-if="summaryAccrualSuffix" class="input-group-text" t-esc="summaryAccrualSuffix"/>
+                        </div>
+                      </label>
+                      <label>
+                        <span>Waiting Period</span>
+                        <div class="input-group">
+                          <input type="text" class="form-control" t-att-value="summaryWaitingPeriod" readonly="readonly"/>
+                          <span t-if="summaryWaitingPeriod !== 'Varies by Leave Type'" class="input-group-text">days after joined date</span>
+                        </div>
+                      </label>
+                      <label><span>Minimum Notice</span><input type="text" t-att-value="summaryNoticeDays" readonly="readonly"/></label>
+                      <label><span>Supporting Documents</span><input type="text" t-att-value="summaryDocPolicy" readonly="readonly"/></label>
+                    </div>
+
+                    <!-- Per-type Breakdown Table -->
+                    <div class="o_lp_adv_lines_preview mt-3">
+                      <table class="table table-sm table-bordered mb-2">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Leave Type</th>
+                            <th>Entitlement</th>
+                            <th>Unit</th>
+                            <th>Notice</th>
+                            <th>Documents</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr t-foreach="state.form.lines" t-as="l" t-key="l_index">
+                            <td><strong><t t-esc="getLeaveTypeName(l.leave_type_id) || l.new_leave_type_name || 'Unspecified'"/></strong></td>
+                            <td><t t-esc="l.accrual_amount"/> / <t t-esc="l.accrual_period"/></td>
+                            <td><t t-esc="l.unit"/></td>
+                            <td><t t-esc="l.minimum_notice_days ? (l.minimum_notice_days + ' days') : 'None'"/></td>
+                            <td><t t-esc="l.document_policy === 'required' ? 'Required' : (l.document_policy === 'optional' ? 'Optional' : 'Not Required')"/></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="o_lp_adv_summary_actions mt-3">
+                      <button type="button" class="btn btn-sm btn-primary" t-on-click="() => this.openAdvancedFromSummary(2)">
+                        <i class="fa fa-sliders me-1"/> Edit in Advanced Settings
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary ms-2" t-on-click="applyCommonValuesToAllTypes">
+                        <i class="fa fa-refresh me-1"/> Apply Common Values to All Types
+                      </button>
+                    </div>
+                  </div>
+                </t>
+
+                <t t-else="">
+                  <div class="o_lp_grid">
+                    <!-- Compensation Segmented Pill Control (Jibble-Style) -->
+                    <div>
+                      <span class="o_lp_label">Compensation *</span>
+                      <div class="o_lp_pill_group">
+                        <button type="button"
+                                t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.compensation === 'paid' ? 'active' : '')"
+                                t-on-click="() => state.form.simple_accrual.compensation = 'paid'">
+                          <i class="fa fa-check me-1" t-if="state.form.simple_accrual.compensation === 'paid'"/> Paid
+                        </button>
+                        <button type="button"
+                                t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.compensation === 'unpaid' ? 'active' : '')"
+                                t-on-click="() => state.form.simple_accrual.compensation = 'unpaid'">
+                          <i class="fa fa-check me-1" t-if="state.form.simple_accrual.compensation === 'unpaid'"/> Unpaid
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Unit Segmented Pill Control -->
+                    <div>
+                      <span class="o_lp_label">Unit *</span>
+                      <div class="o_lp_pill_group">
+                        <button type="button"
+                                t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.unit === 'days' ? 'active' : '')"
+                                t-on-click="() => state.form.simple_accrual.unit = 'days'">
+                          Days
+                        </button>
+                        <button type="button"
+                                t-att-class="'o_lp_pill_btn ' + (state.form.simple_accrual.unit === 'hours' ? 'active' : '')"
+                                t-on-click="() => state.form.simple_accrual.unit = 'hours'">
+                          Hours
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Accrual Period -->
+                    <label>
+                      <span>Schedule of Accrual / Period *</span>
+                      <select t-model="state.form.simple_accrual.accrual_period">
+                        <option value="annually">Annually</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="none">Fixed / No Accrual Cycle</option>
+                      </select>
+                    </label>
+
+                    <!-- Accrual Basis / Start Date -->
+                    <label>
+                      <span>Accrual Basis / Start Date *</span>
+                      <select t-model="state.form.simple_accrual.accrual_basis">
+                        <option value="join_date">Joined Date</option>
+                        <option value="calendar">Calendar Year (1st Jan)</option>
+                        <option value="anniversary">Anniversary</option>
+                      </select>
+                    </label>
+
+                    <!-- Accrual Amount / Entitled (NO conflicting duplicate Entitlement per year field) -->
+                    <label>
+                      <span>Accrual Amount / Entitlement *</span>
+                      <div class="input-group">
+                        <input type="number" min="0" step="0.5" t-model.number="state.form.simple_accrual.accrual_amount" class="form-control"/>
+                        <span class="input-group-text">
+                          <t t-esc="state.form.simple_accrual.unit"/>
+                          <t t-if="state.form.simple_accrual.accrual_period === 'annually'"> / year</t>
+                          <t t-elif="state.form.simple_accrual.accrual_period === 'monthly'"> / month</t>
+                        </span>
+                      </div>
+                    </label>
+
+                    <!-- Waiting Period -->
+                    <label>
+                      <span>Waiting Period (Optional)</span>
+                      <div class="input-group">
+                        <input type="number" min="0" t-model.number="state.form.simple_accrual.waiting_period_days" class="form-control"/>
+                        <span class="input-group-text">days after joined date</span>
+                      </div>
+                    </label>
+                  </div>
+                </t>
+              </section>
+
+              <!-- C. Leave Calculation -->
+              <section t-if="!hasAdvancedOverrides" class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-calendar-check-o text-primary"/>
+                  <h4>C. Leave Calculation</h4>
+                </div>
+                <t t-call="hr_leave_dashboard.PolicyCalculationChecks"><t t-set="calculation" t-value="state.form.simple_accrual"/></t>
+              </section>
+            </t>
+
+            <!-- ══════════════════════════════════════════════════
+                 SIMPLE MODE: STEP 2 — CARRY FORWARD & APPROVAL
+                 ══════════════════════════════════════════════════ -->
+            <t t-if="!state.form.advancedOpen and state.step === 2">
+              <!-- 1. Carry Forward -->
+              <section class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-share-square-o text-primary"/>
+                  <h4>1. Carry Forward</h4>
+                </div>
+                <label class="o_lp_switch mb-3">
+                  <input type="checkbox" t-model="state.form.carry.enabled"/>
+                  <span><strong>Allow unused leave balance to be carried forward</strong></span>
+                </label>
+
+                <div t-if="state.form.carry.enabled" class="o_lp_sub_fields">
+                  <div class="o_lp_grid">
+                    <label>
+                      <span>Maximum Carry Forward</span>
+                      <div class="input-group">
+                        <input type="number" min="0" step="0.5" t-model.number="state.form.carry.maximum" class="form-control"/>
+                        <span class="input-group-text"><t t-esc="state.form.simple_accrual.unit"/></span>
+                      </div>
+                    </label>
+
+                    <label>
+                      <span>Carry Forward Expiry</span>
+                      <select t-model="state.form.carry.expiry_type">
+                        <option value="never">Never (Balance persists)</option>
+                        <option value="period">After a period</option>
+                      </select>
+                    </label>
+
+                    <label t-if="state.form.carry.expiry_type === 'period'">
+                      <span>Expire After</span>
+                      <div class="input-group">
+                        <input type="number" min="1" t-model.number="state.form.carry.expiry_value" class="form-control"/>
+                        <select class="form-select" t-model="state.form.carry.expiry_unit">
+                          <option value="months">Months</option>
+                          <option value="days">Days</option>
+                        </select>
+                      </div>
+                    </label>
+
+                    <!-- Balance Usage Priority is a visibly separate control, not nested under expiry -->
+                    <div class="full mt-2">
+                      <span class="o_lp_label">Balance Usage Priority *</span>
+                      <small class="text-muted d-block mb-2">When an employee requests leave, specify which balance should be deducted first:</small>
+                      <div class="o_lp_radio_stack">
+                        <label class="o_lp_radio_card">
+                          <input type="radio" value="current" t-model="state.form.carry.priority"/>
+                          <div>
+                            <strong>Use current leave balance first</strong>
+                            <small class="text-muted d-block">Fresh cycle accrual is consumed before drawing from carried-forward balance.</small>
+                          </div>
+                        </label>
+                        <label class="o_lp_radio_card">
+                          <input type="radio" value="carried" t-model="state.form.carry.priority"/>
+                          <div>
+                            <strong>Use carried-forward balance first</strong>
+                            <small class="text-muted d-block">Carried balance is consumed first before it expires, preserving new entitlement.</small>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 2. Approval Settings -->
+              <section class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-check-square-o text-primary"/>
+                  <h4>2. Approval Settings</h4>
+                </div>
+                <label class="o_lp_switch mb-3">
+                  <input type="checkbox" t-model="state.form.approval.required"/>
+                  <span><strong>Approval Required</strong></span>
+                </label>
+
+                <div t-if="state.form.approval.required" class="o_lp_sub_fields">
+                  <div class="o_lp_grid">
+                    <label class="full">
+                      <span>Approval Workflow</span>
+                      <select t-model.number="state.form.approval.workflow_type_id">
+                        <option value="">— No specific workflow —</option>
+                        <option t-foreach="state.options.approval_workflow_types || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                      </select>
+                      <small class="text-muted mt-1">Optional. Leave this blank to use the default Leave Request workflow. Routes and SLA escalations are managed in Approval Settings.</small>
+                    </label>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 3. Additional Rules -->
+              <section class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-sliders text-primary"/>
+                  <h4>3. Additional Rules (Optional)</h4>
+                </div>
+                <div class="o_lp_checkbox_grid">
+                  <label class="o_lp_check_card">
+                    <input type="checkbox" t-model="state.form.rules.multiple"/>
+                    <div>
+                      <strong>Allow multiple future leave requests</strong>
+                      <small class="text-muted d-block">Employees can submit multiple requests ahead of time.</small>
+                    </div>
+                  </label>
+                  <label class="o_lp_check_card">
+                    <input type="checkbox" t-model="state.form.rules.withdrawal"/>
+                    <div>
+                      <strong>Allow withdrawal of pending requests</strong>
+                      <small class="text-muted d-block">Employees can cancel or withdraw unapproved requests directly.</small>
+                    </div>
+                  </label>
+                  <label class="o_lp_check_card">
+                    <input type="checkbox" t-model="state.form.rules.before_accrual"/>
+                    <div>
+                      <strong>Allow requests before accrual</strong>
+                      <small class="text-muted d-block">Permits requesting days scheduled to accrue later in the cycle.</small>
+                    </div>
+                  </label>
+                  <label class="o_lp_check_card">
+                    <input type="checkbox" t-model="state.form.rules.half_day"/>
+                    <div>
+                      <strong>Allow half-day leave</strong>
+                      <small class="text-muted d-block">Employees can take morning or afternoon half-day increments.</small>
+                    </div>
+                  </label>
+                </div>
+              </section>
+
+              <!-- 4. AI & Automation -->
+              <section class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-magic text-primary"/>
+                  <h4>4. AI &amp; Automation</h4>
+                </div>
+                <label class="o_lp_switch">
+                  <input type="checkbox" t-model="state.form.ai_enabled"/>
+                  <span>Allow advisory AI capabilities (conflict alerts, insights) for this policy</span>
+                </label>
+                <p class="hint mt-1 mb-0">Company-wide governance parameters serve as the upper limit.</p>
+              </section>
+            </t>
+
+            <!-- ══════════════════════════════════════════════════
+                 ADVANCED MODE: STEPS 1 to 4
+                 ══════════════════════════════════════════════════ -->
+            <t t-if="state.form.advancedOpen and state.step === 1">
+              <!-- Advanced Step 1: Basic Info & Eligibility -->
+              <section class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-info-circle text-primary"/>
+                  <h4>Basic Information</h4>
+                </div>
+                <div class="o_lp_grid">
+                  <label>
+                    <span>Policy Name *</span>
+                    <input type="text" t-model="state.form.name" placeholder="Policy Name"/>
+                  </label>
+                  <label>
+                    <span>Policy Code (Optional)</span>
+                    <input type="text" t-model="state.form.code" placeholder="Auto-generated if blank"/>
+                  </label>
+                  <label>
+                    <span>Broad Leave Type</span>
+                    <select t-model="state.form.policy_type">
+                      <option value="paid">Paid Leave</option>
+                      <option value="sick">Sick Leave</option>
+                      <option value="family">Family Leave</option>
+                      <option value="compassionate">Compassionate Leave</option>
+                      <option value="career">Career Development</option>
+                      <option value="unpaid">Unpaid Leave</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Category Tag</span>
+                    <input type="text" t-model="state.form.category" placeholder="e.g. Vacation, Health, Maternity"/>
+                  </label>
+                  <label>
+                    <span>Badge Colour</span>
+                    <input type="color" t-model="state.form.color"/>
+                  </label>
+                  <label class="full">
+                    <span>Description</span>
+                    <textarea rows="2" t-model="state.form.description"/>
+                  </label>
+                </div>
+              </section>
+
+              <section class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-users text-primary"/>
+                  <h4>Eligibility &amp; Conditions</h4>
+                </div>
+                <div class="o_lp_radio_stack mb-3">
+                  <label><input type="radio" value="all" t-model="state.form.apply_to"/> All Employees</label>
+                  <label><input type="radio" value="selected" t-model="state.form.apply_to"/> Select Employees</label>
+                  <label><input type="radio" value="conditions" t-model="state.form.apply_to"/> Add Conditions (Department, Tenure, Grade, Role)</label>
+                </div>
+                <label class="d-block mb-3">
+                  <span class="d-block mb-1">Eligible gender</span>
+                  <select class="form-select" t-model="state.form.applicable_gender">
+                    <option value="all">All genders</option>
+                    <option value="female">Female employees</option>
+                    <option value="male">Male employees</option>
+                  </select>
+                </label>
+                <t t-call="hr_leave_dashboard.PolicyEligibility"/>
+              </section>
+            </t>
+
+            <!-- Advanced Step 2: Leave Types & Accrual (Multi-line) -->
+            <t t-if="state.form.advancedOpen and state.step === 2">
+              <section class="o_lp_card">
+                <div class="o_lp_card_title d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="fa fa-list text-primary"/>
+                    <h4>Leave Types &amp; Accrual</h4>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-primary" t-on-click="addLine">
+                    <i class="fa fa-plus me-1"/> Add Another Leave Type
+                  </button>
+                </div>
+                <t t-call="hr_leave_dashboard.PolicyLines"/>
+              </section>
+            </t>
+
+            <!-- Advanced Step 3: Rules & Restrictions -->
+            <t t-if="state.form.advancedOpen and state.step === 3">
+              <section class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-shield text-primary"/>
+                  <h4>Rules &amp; Restrictions</h4>
+                </div>
+                <div class="o_lp_line" t-foreach="state.form.lines" t-as="line" t-key="line_index">
+                  <h5 t-esc="line.leave_type || line.new_leave_type_name || ('Leave Type ' + (line_index + 1))"/>
+                  <div class="o_lp_grid">
+                    <label>
+                      <span>Minimum Notice (days)</span>
+                      <input type="number" min="0" t-model.number="line.minimum_notice_days"/>
+                    </label>
+                    <label>
+                      <span>Minimum Duration</span>
+                      <input type="number" min="0" step="0.5" t-model.number="line.minimum_duration"/>
+                    </label>
+                    <label>
+                      <span>Maximum Duration</span>
+                      <input type="number" min="0" step="0.5" t-model.number="line.maximum_duration"/>
+                    </label>
+                    <label>
+                      <span>Supporting Documents</span>
+                      <select t-model="line.document_policy">
+                        <option value="not_required">Not Required</option>
+                        <option value="optional">Optional</option>
+                        <option value="required">Required</option>
+                      </select>
+                    </label>
+                    <label t-if="line.document_policy === 'required'">
+                      <span>Required After (days)</span>
+                      <input type="number" min="0" t-model.number="line.document_required_after_days"/>
+                    </label>
+                    <label t-if="line.document_policy !== 'not_required'" class="full">
+                      <span>Accepted MIME Types</span>
+                      <input type="text" t-model="line.accepted_document_types" placeholder="application/pdf,image/jpeg,image/png"/>
+                    </label>
+                    <div class="full o_lp_checkbox_grid mt-2">
+                      <label><input type="checkbox" t-model="line.allow_half_day"/> Allow half-day leave</label>
+                      <label><input type="checkbox" t-model="line.allow_backdated"/> Allow backdated requests</label>
+                      <label><input type="checkbox" t-model="line.allow_overlap"/> Allow overlapping requests</label>
+                      <label><input type="checkbox" t-model="line.allow_negative_balance"/> Allow negative balance</label>
+                    </div>
+                    <div class="full mt-2">
+                      <strong>Blackout Periods</strong>
+                      <p class="hint mb-2">Select existing company blackout windows for this leave type:</p>
+                      <div class="o_lp_blackout_list">
+                        <label t-foreach="state.options.blackout_periods || []" t-as="period" t-key="period.id">
+                          <input type="checkbox" t-att-checked="line.blackout_period_ids.includes(period.id)" t-on-change="() => this.toggleBlackout(line, period.id)"/>
+                          <span t-esc="period.name"/>
+                        </label>
+                        <span t-if="!(state.options.blackout_periods || []).length" class="text-muted small">No blackout periods defined.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </t>
+
+            <!-- Advanced Step 4: Carry Forward & Approval -->
+            <t t-if="state.form.advancedOpen and state.step === 4">
+              <section class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-share-square-o text-primary"/>
+                  <h4>Carry Forward &amp; Approval</h4>
+                </div>
+                <label class="o_lp_switch mb-3">
+                  <input type="checkbox" t-model="state.form.carry.enabled"/>
+                  <span>Allow unused leave balance to be carried forward</span>
+                </label>
+                <div t-if="state.form.carry.enabled" class="o_lp_grid mb-3">
+                  <label>
+                    <span>Maximum Carry Forward</span>
+                    <input type="number" min="0" t-model.number="state.form.carry.maximum"/>
+                  </label>
+                  <label>
+                    <span>Expiry Value</span>
+                    <input type="number" min="0" t-model.number="state.form.carry.expiry_value"/>
+                  </label>
+                  <label>
+                    <span>Expiry Unit</span>
+                    <select t-model="state.form.carry.expiry_unit">
+                      <option value="days">Days</option>
+                      <option value="months">Months</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Balance Usage Priority</span>
+                    <select t-model="state.form.carry.priority">
+                      <option value="current">Current balance first</option>
+                      <option value="carried">Carried-forward first</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label class="o_lp_switch mb-3">
+                  <input type="checkbox" t-model="state.form.approval.required"/>
+                  <span>Approval Required</span>
+                </label>
+                <div t-if="state.form.approval.required" class="o_lp_grid mb-3">
+                  <label class="full">
+                    <span>Approval Workflow</span>
+                    <select t-model.number="state.form.approval.workflow_type_id">
+                      <option value="">— No specific workflow —</option>
+                      <option t-foreach="state.options.approval_workflow_types || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                    </select>
+                    <small class="text-muted mt-1">Optional. Leave this blank to use the default Leave Request workflow.</small>
+                  </label>
+                </div>
+
+                <label class="o_lp_switch mb-2">
+                  <input type="checkbox" t-model="state.form.ai_enabled"/>
+                  <span>Enable Advisory AI Capabilities</span>
+                </label>
+              </section>
+            </t>
+
+            <!-- ══════════════════════════════════════════════════
+                 REVIEW & SAVE (Simple Step 3 or Advanced Step 5)
+                 ══════════════════════════════════════════════════ -->
+            <t t-if="isReview">
+              <section class="o_lp_card">
+                <div class="o_lp_card_title">
+                  <i class="fa fa-check-circle text-success"/>
+                  <h4>Review Policy Summary</h4>
+                </div>
+                <div class="o_lp_summary_grid">
+                  <!-- Basic Information Card -->
+                  <div class="o_lp_summary_card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <b class="text-uppercase small text-muted">Basic Information</b>
+                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.editFromReview('basic')">Edit</button>
+                    </div>
+                    <div class="o_lp_review_row"><span>Policy Name:</span> <strong><t t-esc="state.form.name"/></strong></div>
+                    <div class="o_lp_review_row">
+                      <span>Leave Type(s):</span>
+                      <span>
+                        <t t-if="state.form.mode !== 'advanced'">
+                          <span class="badge bg-light text-dark border me-1" t-foreach="state.form.simple_leave_type_ids" t-as="tid" t-key="tid" t-esc="getLeaveTypeName(tid)"/>
+                          <span class="badge bg-light text-primary border me-1" t-foreach="state.form.custom_type_names" t-as="cn" t-key="cn" t-esc="cn"/>
+                        </t>
+                        <t t-else="">
+                          <span class="badge bg-light text-dark border me-1" t-foreach="state.form.lines" t-as="ln" t-key="ln_index" t-esc="ln.leave_type || ln.new_leave_type_name || getLeaveTypeName(ln.leave_type_id) || 'Type ' + (ln_index + 1)"/>
+                          <span class="badge bg-info-subtle text-info border ms-1"><i class="fa fa-sliders me-1"/>Advanced Overrides</span>
+                        </t>
+                      </span>
+                    </div>
+                    <div class="o_lp_review_row"><span>Assign To:</span> <strong t-esc="state.form.apply_to === 'all' ? 'All Employees' : state.form.apply_to === 'selected' ? state.form.selected.employee_ids.length + ' selected employee(s)' : 'Conditions'"/></div>
+                    <div class="o_lp_review_row" t-if="state.form.description"><span>Description:</span> <span class="text-muted" t-esc="state.form.description"/></div>
+                  </div>
+
+                  <!-- Accrual Configuration Card -->
+                  <div class="o_lp_summary_card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <b class="text-uppercase small text-muted">Accrual Configuration</b>
+                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.editFromReview('accrual')">Edit</button>
+                    </div>
+                    <t t-if="state.form.mode !== 'advanced'">
+                      <div class="o_lp_review_row"><span>Compensation:</span> <strong class="text-capitalize" t-esc="state.form.simple_accrual.compensation"/></div>
+                      <div class="o_lp_review_row"><span>Unit:</span> <strong class="text-capitalize" t-esc="state.form.simple_accrual.unit"/></div>
+                      <div class="o_lp_review_row"><span>Schedule:</span> <strong class="text-capitalize" t-esc="state.form.simple_accrual.accrual_period"/></div>
+                      <div class="o_lp_review_row"><span>Accrual Amount:</span> <strong><t t-esc="state.form.simple_accrual.accrual_amount"/> <t t-esc="state.form.simple_accrual.unit"/></strong></div>
+                      <div class="o_lp_review_row"><span>Holidays &amp; Non-Working:</span> <span><t t-if="state.form.simple_accrual.exclude_public_holidays">Excluded</t><t t-else="">Included</t></span></div>
+                    </t>
+                    <t t-else="">
+                      <div t-foreach="state.form.lines" t-as="ln" t-key="ln_index" class="mb-1 pb-1 border-bottom">
+                        <strong><t t-esc="ln.leave_type || ln.new_leave_type_name || getLeaveTypeName(ln.leave_type_id) || 'Type'"/>:</strong>
+                        <t t-esc="ln.accrual_amount"/> <t t-esc="ln.unit"/> / <t t-esc="ln.accrual_period"/> (<t t-esc="ln.compensation"/>)
+                      </div>
+                    </t>
+                  </div>
+
+                  <!-- Carry Forward & Approval Card -->
+                  <div class="o_lp_summary_card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <b class="text-uppercase small text-muted">Carry Forward &amp; Approval</b>
+                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.editFromReview('carry')">Edit</button>
+                    </div>
+                    <div class="o_lp_review_row"><span>Carry Forward:</span> <strong t-esc="state.form.carry.enabled ? ('Yes (Max ' + state.form.carry.maximum + ')') : 'No'"/></div>
+                    <div class="o_lp_review_row" t-if="state.form.carry.enabled">
+                      <span>Priority:</span>
+                      <strong t-esc="state.form.carry.priority === 'current' ? 'Current balance first' : 'Carried forward first'"/>
+                    </div>
+                    <div class="o_lp_review_row"><span>Approval:</span> <strong t-esc="state.form.approval.required ? 'Required' : 'Not Required'"/></div>
+                    <div class="o_lp_review_row"><span>AI Insights:</span> <strong t-esc="state.form.ai_enabled ? 'Enabled' : 'Disabled'"/></div>
+                  </div>
+
+                  <!-- Rules & Overrides (Advanced) Card -->
+                  <div t-if="state.form.mode === 'advanced'" class="o_lp_summary_card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <b class="text-uppercase small text-muted">Rules &amp; Overrides (Advanced)</b>
+                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.editFromReview('rules')">Edit</button>
+                    </div>
+                    <div t-foreach="state.form.lines" t-as="ln" t-key="ln_index" class="mb-2 pb-1 border-bottom small">
+                      <strong><t t-esc="ln.leave_type || ln.new_leave_type_name || getLeaveTypeName(ln.leave_type_id) || 'Type'"/>:</strong>
+                      <div>Notice: <t t-esc="ln.minimum_notice_days || 0"/> day(s) | Doc: <span class="text-capitalize" t-esc="(ln.document_policy || 'not_required').replace('_', ' ')"/></div>
+                      <div>Negative Bal: <t t-esc="ln.allow_negative_balance ? 'Allowed' : 'Disallowed'"/> | Half-day: <t t-esc="ln.allow_half_day ? 'Yes' : 'No'"/></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Assignment Conflict Prompt & Resolution (Section 8.3 & Flowchart 1) -->
+                <div t-if="state.conflicts.length" class="o_lp_conflict_box mt-3">
+                  <div class="o_lp_conflict_header">
+                    <i class="fa fa-exclamation-triangle text-warning fa-lg me-2"/>
+                    <div>
+                      <strong class="text-danger">Policy Assignment Conflict Detected</strong>
+                      <p class="mb-0 small">
+                        <t t-esc="state.conflicts.length"/> selected employee(s) are already assigned to another active policy governing this Leave Type.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="table-responsive my-2">
+                    <table class="table table-sm table-bordered o_lp_conflict_table">
+                      <thead>
+                        <tr>
+                          <th>Employee</th>
+                          <th>Leave Type</th>
+                          <th>Existing Active Policy</th>
+                          <th>Effective From</th>
+                          <th>Current Entitlement</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr t-foreach="state.conflicts" t-as="cf" t-key="cf.id">
+                          <td><b t-esc="cf.employee"/></td>
+                          <td t-esc="cf.leave_type"/>
+                          <td><span class="badge bg-warning text-dark" t-esc="cf.existing_policy"/></td>
+                          <td t-esc="cf.effective_date"/>
+                          <td t-esc="cf.entitlement"/>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div class="o_lp_conflict_resolution">
+                    <span class="o_lp_label d-block mb-1">Select Conflict Resolution Action:</span>
+                    <div class="o_lp_radio_stack">
+                      <label class="o_lp_radio_card">
+                        <input type="radio" value="keep" t-model="state.form.conflict_resolution"/>
+                        <div>
+                          <strong>Keep Existing Assignment, Remove Conflicting Employees</strong>
+                          <small class="text-muted d-block">The new policy applies only to eligible non-conflicting employees.</small>
+                        </div>
+                      </label>
+                      <label class="o_lp_radio_card">
+                        <input type="radio" value="replace" t-model="state.form.conflict_resolution"/>
+                        <div>
+                          <strong>Replace Existing Policy Assignment</strong>
+                          <small class="text-muted d-block">Ends the old assignment per effective date and applies this new policy.</small>
+                        </div>
+                      </label>
+                      <label class="o_lp_radio_card">
+                        <input type="radio" value="review" t-model="state.form.conflict_resolution"/>
+                        <div>
+                          <strong>Review Conflicts</strong>
+                          <small class="text-muted d-block">Pause and inspect before deciding — no changes will be saved.</small>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </t>
+          </div>
+
+          <!-- Drawer Footer Actions -->
+          <t t-set-slot="footer">
+            <button type="button" class="btn btn-outline-secondary" t-on-click="closeWizard">Cancel</button>
+            <button t-if="state.step > 1" type="button" class="btn btn-outline-secondary" t-on-click="back">
+              <i class="fa fa-arrow-left me-1"/> Back
+            </button>
+            <button t-if="!isReview" t-att-disabled="!!validateStep()" type="button" class="btn btn-primary o_lp_primary" t-on-click="next">
+              Next: <t t-esc="steps[state.step]"/> <i class="fa fa-arrow-right ms-1"/>
+            </button>
+            <t t-else="">
+              <button type="button" class="btn btn-outline-primary" t-att-disabled="state.saving" t-on-click="() => this.save(true)">
+                <i class="fa fa-file-text-o me-1"/> Save Draft
+              </button>
+              <button type="button" class="btn btn-primary o_lp_primary" t-att-disabled="state.saving" t-on-click="() => this.save(false)">
+                <i t-if="state.saving" class="fa fa-spinner fa-spin me-1"/>
+                <i t-else="" class="fa fa-check me-1"/> Save &amp; Activate Policy
+              </button>
+            </t>
+          </t>
+      </SettingsPanel>
+
+      <!-- View Details Drawer -->
+      <SettingsPanel t-if="state.detail" close="() => state.detail=false" wide="false">
+          <t t-set-slot="header">
+            <div>
+              <h3 t-esc="state.detail.name"/>
+              <p class="o_lp_subtitle"><t t-esc="state.detail.code"/> · <span class="badge bg-success" t-esc="state.detail.state"/></p>
+            </div>
+            <button class="o_lp_close_btn" t-on-click="() => state.detail=false">×</button>
+          </t>
+          <div class="o_lp_form o_lp_details">
+            <div class="o_lp_detail_actions"><button class="btn btn-primary o_lp_primary" t-on-click="() => this.edit(state.detail)"><i class="fa fa-pencil me-1"/> Edit Policy</button><button class="btn btn-outline-secondary" t-on-click="() => this.duplicate(state.detail)"><i class="fa fa-copy me-1"/> Duplicate</button><button t-if="state.detail.active and state.detail.state === 'active'" class="btn btn-outline-warning" t-on-click="changeDetailStatus"><i class="fa fa-toggle-off me-1"/> Deactivate</button><button t-if="state.detail.active and state.detail.state !== 'active'" class="btn btn-outline-success" t-on-click="changeDetailStatus"><i class="fa fa-toggle-on me-1"/> Activate</button></div>
+            <div class="o_lp_detail_metrics"><div><small>Leave Type</small><strong t-esc="state.detail.policy_type_label || 'Paid Leave'"/></div><div><small>Category</small><strong t-esc="state.detail.category"/></div><div><small>Applicability</small><strong t-esc="state.detail.applicability"/></div><div><small>Status</small><strong class="text-capitalize" t-esc="state.detail.state"/></div></div>
+            <section class="o_lp_card"><h4><i class="fa fa-info-circle me-1"/> Policy Overview</h4><dl class="o_lp_detail_list"><dt>Policy Code</dt><dd t-esc="state.detail.code"/><dt>Description</dt><dd t-esc="state.detail.description || 'No description provided.'"/></dl></section>
+            <section class="o_lp_card"><h4><i class="fa fa-calendar-check-o me-1"/> Leave Types &amp; Entitlement</h4><div t-foreach="state.detail.lines" t-as="line" t-key="line.id" class="o_lp_detail_line"><div><b t-esc="line.leave_type"/><span class="badge bg-light text-dark ms-2 text-capitalize" t-esc="line.compensation"/></div><div class="o_lp_detail_line_meta"><span><b t-esc="line.accrual_amount"/> <t t-esc="line.unit"/> / <t t-esc="line.accrual_period"/></span><span t-if="line.entitlement_type === 'accrued'">Based on <t t-esc="line.accrual_basis"/></span><span t-if="line.waiting_period_days">Waiting period: <t t-esc="line.waiting_period_days"/> days</span></div></div></section>
+            <section class="o_lp_card"><h4><i class="fa fa-users me-1"/> Eligibility &amp; Applicability</h4><p t-esc="state.detail.applicability"/><div class="o_lp_detail_flags"><span t-if="state.detail.apply_to === 'conditions'">Dynamic conditions: <b class="text-capitalize" t-esc="state.detail.condition_match"/></span><span t-if="state.detail.minimum_tenure_months">Minimum tenure: <b t-esc="state.detail.minimum_tenure_months"/> months</span><span t-if="state.detail.employee_count">Assigned employees: <b t-esc="state.detail.employee_count"/></span></div></section>
+            <section class="o_lp_card"><h4><i class="fa fa-sliders me-1"/> Rules &amp; Restrictions</h4><div t-foreach="state.detail.lines" t-as="line" t-key="'rules-' + line.id" class="o_lp_rule_block"><b t-esc="line.leave_type"/><div class="o_lp_detail_flags"><span>Public holidays: <b t-esc="line.exclude_public_holidays ? 'Excluded' : 'Included'"/></span><span>Non-working days: <b t-esc="line.exclude_non_working_days ? 'Excluded' : 'Included'"/></span><span>Half-day: <b t-esc="line.allow_half_day ? 'Allowed' : 'Not allowed'"/></span><span>Backdated: <b t-esc="line.allow_backdated ? 'Allowed' : 'Not allowed'"/></span><span>Overlap: <b t-esc="line.allow_overlap ? 'Allowed' : 'Not allowed'"/></span><span t-if="line.minimum_notice_days">Notice: <b t-esc="line.minimum_notice_days"/> days</span><span t-if="line.minimum_duration">Minimum duration: <b t-esc="line.minimum_duration"/> days</span><span t-if="line.maximum_duration">Maximum duration: <b t-esc="line.maximum_duration"/> days</span><span>Documents: <b class="text-capitalize" t-esc="line.document_policy.replace('_', ' ')"/></span></div></div></section>
+            <section class="o_lp_card"><h4><i class="fa fa-exchange me-1"/> Carry Forward &amp; Approval</h4><div class="o_lp_detail_flags"><span>Carry forward: <b t-esc="state.detail.carry.enabled ? 'Enabled' : 'Disabled'"/></span><span t-if="state.detail.carry.enabled">Maximum: <b t-esc="state.detail.carry.maximum"/> days</span><span t-if="state.detail.carry.enabled">Priority: <b t-esc="state.detail.carry.priority === 'current' ? 'Current balance first' : 'Carried-forward first'"/></span><span>Approval: <b t-esc="state.detail.approval.required ? 'Required' : 'Not required'"/></span><span t-if="state.detail.approval.required">Workflow: <b t-esc="state.detail.approval.workflow"/></span></div></section>
+          </div>
+          <t t-set-slot="footer">
+            <span class="o_lp_detail_footer_hint" t-if="state.detail.state === 'draft'">Draft policies become active when you click Activate.</span><button class="btn btn-outline-secondary" t-on-click="() => state.detail=false">Close</button>
+          </t>
+      </SettingsPanel>
+
+      <!-- Assign Policy Drawer -->
+      <SettingsPanel t-if="state.assign" close="() => state.assign=false" wide="false">
+          <t t-set-slot="header">
+            <div>
+              <h3>Assign Policy</h3>
+              <p class="o_lp_subtitle" t-esc="state.assign.name"/>
+            </div>
+            <button class="o_lp_close_btn" t-on-click="() => state.assign=false">×</button>
+          </t>
+          <div class="o_lp_form">
+            <label class="mb-3 d-block">
+              <span class="o_lp_label">Effective Date</span>
+              <input type="date" class="form-control form-control-sm" t-model="state.assignDate" t-on-change="loadAssignCandidates"/>
+            </label>
+            <label class="mb-3 d-block">
+              <span class="o_lp_label">Conflict Resolution Action</span>
+              <select class="form-select form-select-sm" t-model="state.assignResolution">
+                <option value="review">Review Conflicts (Make no change)</option>
+                <option value="keep">Keep Existing Assignments (Skip conflicting employees)</option>
+                <option value="replace">Replace Existing Assignments (From effective date)</option>
+              </select>
+            </label>
+            <span class="o_lp_label d-block mb-2">Select Employees</span>
+            <p t-if="state.assignLoading" class="text-muted">Loading eligible employees…</p>
+            <EmployeeSelectList t-else="" employees="state.assignCandidates" selectedIds="state.assignEmployeeIds" onToggle.bind="toggleAssignEmployee" onSelectMany.bind="selectAssignEmployees" emptyMessage="'All eligible employees are already assigned, or none match this policy.'"/>
+          </div>
+          <t t-set-slot="footer">
+            <button class="btn btn-outline-secondary" t-on-click="() => state.assign=false">Cancel</button>
+            <button class="btn btn-primary o_lp_primary" t-att-disabled="state.assignLoading || !state.assignEmployeeIds.length" t-on-click="assignPolicy">Assign Policy</button>
+          </t>
+      </SettingsPanel>
+
+      <!-- Activate Policy Conflict Drawer -->
+      <SettingsPanel t-if="state.activateConflict" close="() => this.cancelActivateConflict()" wide="false">
+          <t t-set-slot="header">
+            <div>
+              <h3>Activate Policy</h3>
+              <p class="o_lp_subtitle" t-esc="state.activateConflict.row.name"/>
+            </div>
+            <button class="o_lp_close_btn" t-on-click="() => this.cancelActivateConflict()">×</button>
+          </t>
+          <div class="o_lp_form">
+            <div class="alert alert-warning mb-3">
+              <strong class="d-block mb-1"><i class="fa fa-exclamation-triangle me-1"/> Policy Assignment Conflict Detected</strong>
+              <span>
+                <t t-esc="state.activateConflict.conflicts.length"/> employee(s) are already assigned to another active policy governing this leave type. Choose how to resolve this conflict:
+              </span>
+            </div>
+            <div class="table-responsive mb-3" style="max-height: 220px; overflow-y: auto;">
+              <table class="table table-sm table-bordered o_lp_conflict_table mb-0">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Leave Type</th>
+                    <th>Existing Policy</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr t-foreach="state.activateConflict.conflicts" t-as="citem" t-key="citem_index">
+                    <td t-esc="citem.employee"/>
+                    <td t-esc="citem.leave_type"/>
+                    <td><span class="badge bg-secondary" t-esc="citem.existing_policy"/></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <label class="mb-3 d-block">
+              <span class="o_lp_label">Conflict Resolution Action</span>
+              <select class="form-select form-select-sm" t-model="state.activateConflict.resolution">
+                <option value="">Choose an action...</option>
+                <option value="keep">Keep Existing Assignments (Skip conflicting employees)</option>
+                <option value="replace">Replace Existing Assignments (Governs from today)</option>
+              </select>
+            </label>
+          </div>
+          <t t-set-slot="footer">
+            <button class="btn btn-outline-secondary" t-on-click="() => this.cancelActivateConflict()">Cancel</button>
+            <button class="btn btn-primary o_lp_primary" t-att-disabled="!state.activateConflict.resolution" t-on-click="() => this.confirmActivateConflict()">
+              <i class="fa fa-check me-1"/> Confirm &amp; Activate
+            </button>
+          </t>
+      </SettingsPanel>
+    </section>
+  </t>
+
+  <!-- Subtemplate: PolicyEmployeeAudience — groups only filter the employee dropdown -->
+  <t t-name="hr_leave_dashboard.PolicyEmployeeAudience">
+    <div class="o_lp_eligibility o_lp_audience">
+      <div class="o_lp_audience_head">
+        <span class="o_lp_label mb-0"><i class="fa fa-filter me-1"/> Filter employees by</span>
+        <button t-if="audienceFilterCount" type="button" class="btn btn-link btn-sm p-0" t-on-click="clearAudienceFilters">Clear filters</button>
+      </div>
+      <div class="o_lp_multi_grid">
+        <div class="o_lp_multi_box" t-foreach="audienceGroups" t-as="group" t-key="group[0]">
+          <div class="o_lp_multi_head"><b t-esc="group[1]"/></div>
+          <TagsPicker options="state.options[group[2]] || []" selected="audienceFilterOptions(group[0], group[2])" toggle="(id) => this.toggleAudienceFilter(group[0], id)" placeholder="'Any'"/>
+        </div>
+      </div>
+
+      <div class="o_lp_multi_box o_lp_audience_employees">
+        <div class="o_lp_audience_head">
+          <b>Employees <span class="o_lp_audience_count" t-esc="'(' + state.form.selected.employee_ids.length + ' selected)'"/></b>
+          <div class="d-flex gap-3">
+            <button type="button" class="btn btn-link btn-sm p-0" t-att-disabled="!unselectedFilteredEmployees.length" t-on-click="addFilteredEmployees">
+              <i class="fa fa-plus-circle me-1"/>Add all <t t-esc="unselectedFilteredEmployees.length"/> <t t-esc="audienceFilterCount ? 'matching' : ''"/>
+            </button>
+            <button t-if="state.form.selected.employee_ids.length" type="button" class="btn btn-link btn-sm p-0 text-danger" t-on-click="clearSelectedEmployees">Clear selection</button>
+          </div>
+        </div>
+        <TagsPicker options="filteredAudienceEmployees" selected="selectedOptions('employee_ids', 'employees')" toggle="(id) => this.toggleSelected('employee_ids', id)" placeholder="audienceFilterCount ? 'Search ' + filteredAudienceEmployees.length + ' matching employees…' : 'Search employees…'" employee="true"/>
+      </div>
+    </div>
+  </t>
+
+  <!-- Subtemplate: PolicyEligibility -->
+  <t t-name="hr_leave_dashboard.PolicyEligibility">
+    <t t-if="state.form.apply_to === 'selected'" t-call="hr_leave_dashboard.PolicyEmployeeAudience"/>
+    <div t-elif="state.form.apply_to === 'conditions'" class="o_lp_eligibility">
+      <div t-if="state.form.advancedOpen and state.form.apply_to === 'conditions'" class="d-flex gap-3 mb-3">
+        <label class="flex-fill">
+          <span class="o_lp_label">Condition Match</span>
+          <select class="form-select form-select-sm" t-model="state.form.condition_match">
+            <option value="all">Match ALL selected conditions (AND)</option>
+            <option value="any">Match ANY selected condition (OR)</option>
+          </select>
+        </label>
+        <label class="flex-fill">
+          <span class="o_lp_label">Minimum Tenure (months)</span>
+          <input type="number" min="0" class="form-control form-control-sm" t-model.number="state.form.minimum_tenure_months"/>
+        </label>
+      </div>
+
+      <div class="o_lp_multi_grid">
+        <div class="o_lp_multi_box" t-foreach="[['department_ids','Departments','departments'],['unit_ids','Units','units'],['grade_ids','Grades','grades'],['location_ids','Locations','locations'],['employee_type_ids','Employment Types','employee_types'],['job_ids','Job Roles','jobs'],['employee_ids','Specific Employees','employees']]" t-as="group" t-key="group[0]">
+          <div class="o_lp_multi_head"><b t-esc="group[1]"/></div>
+          <TagsPicker options="state.options[group[2]] || []" selected="selectedOptions(group[0], group[2])" toggle="(id) => this.toggleSelected(group[0], id)" placeholder="'Select…'" employee="group[0] === 'employee_ids'"/>
+        </div>
+      </div>
+    </div>
+  </t>
+
+  <!-- Subtemplate: PolicyLines (for Advanced Multi-line Setup) -->
+  <t t-name="hr_leave_dashboard.PolicyLines">
+    <div class="o_lp_lines_container">
+      <div class="o_lp_line_card mb-3" t-foreach="state.form.lines" t-as="line" t-key="line_index">
+        <div class="o_lp_line_card_head">
+          <span><strong>Leave Type #<t t-esc="line_index + 1"/></strong>: <t t-esc="line.leave_type || line.new_leave_type_name || 'Unassigned'"/></span>
+          <button t-if="state.form.lines.length > 1" type="button" class="btn btn-sm btn-link text-danger p-0" t-on-click="() => this.removeLine(line_index)">
+            <i class="fa fa-trash"/> Remove
+          </button>
+        </div>
+        <div class="o_lp_grid">
+          <label>
+            <span>Existing Leave Type</span>
+            <select t-model.number="line.leave_type_id">
+              <option value="">Or enter custom type below</option>
+              <option t-foreach="state.options.leave_types || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+            </select>
+          </label>
+          <label>
+            <span>+ Custom Leave Type Name</span>
+            <input type="text" t-model="line.new_leave_type_name" placeholder="Custom type name" t-att-disabled="line.leave_type_id"/>
+          </label>
+          <label>
+            <span>Compensation</span>
+            <select t-model="line.compensation">
+              <option value="paid">Paid</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="partially_paid">Partially Paid</option>
+            </select>
+          </label>
+          <label>
+            <span>Unit</span>
+            <select t-model="line.unit">
+              <option value="days">Days</option>
+              <option value="hours">Hours</option>
+            </select>
+          </label>
+          <label>
+            <span>Entitlement Type</span>
+            <select t-model="line.entitlement_type">
+              <option value="fixed">Fixed</option>
+              <option value="accrued">Accrued</option>
+            </select>
+          </label>
+          <label>
+            <span>Accrual Period</span>
+            <select t-model="line.accrual_period">
+              <option value="annually">Annually</option>
+              <option value="monthly">Monthly</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </label>
+          <label>
+            <span>Accrual Basis / Start Date</span>
+            <select t-model="line.accrual_basis">
+              <option value="join_date">Joined Date</option>
+              <option value="calendar">Calendar Year</option>
+              <option value="anniversary">Anniversary</option>
+            </select>
+          </label>
+          <label>
+            <span>Accrual Amount</span>
+            <input type="number" min="0" step="0.5" t-model.number="line.accrual_amount"/>
+          </label>
+          <label>
+            <span>Waiting Period (days)</span>
+            <input type="number" min="0" t-model.number="line.waiting_period_days"/>
+          </label>
+          <div class="full"><t t-call="hr_leave_dashboard.PolicyCalculationChecks"><t t-set="calculation" t-value="line"/></t></div>
+        </div>
+      </div>
+    </div>
+  </t>
+  <t t-name="hr_leave_dashboard.PolicyCalculationChecks">
+    <div class="o_lp_calculation_checks">
+      <label><input type="checkbox" t-model="calculation.exclude_public_holidays"/><span>Exclude public holidays</span></label>
+      <label><input type="checkbox" t-model="calculation.exclude_non_working_days"/><span>Exclude non-working days</span></label>
+    </div>
+  </t>
+</templates>

@@ -4,7 +4,7 @@
         id="hr_recruitment_base"
         name="Recruitment"
         sequence="1" 
-    /> 
+    />
     <menuitem
         id="hr_recruitment_custom_menu"
         name="Recruitment"
@@ -13,10 +13,11 @@
         parent="hr_recruitment_base"
     />
     <record id="hr_cleon_recruitment.hr_recruitment_custom_menu" model="ir.ui.menu">
-        <field name="icon_class">fa fa-users</field>
+        <field name="icon_class">fa fa-user-plus</field>
+        <field name="icon_color">#3B82F6</field>
         <field name="category_name">CleonHR-Recruitment</field>
+        <field name="sequence">140</field>
     </record>
-    
 
     <menuitem
         id="hr_job_dashboard_menu"

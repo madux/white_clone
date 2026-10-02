@@ -1,0 +1,77 @@
+/** @odoo-module **/
+
+import { Component, onWillStart, useState } from "@odoo/owl";
+import { registry } from "@web/core/registry";
+import { useService } from "@web/core/utils/hooks";
+import { standardActionServiceProps } from "@web/webclient/actions/action_service";
+import { CalendarSidebar } from "../calendar_sidebar";
+import { LeavePoliciesPage } from "../leave_policies/leave_policies";
+import { LeaveBalancesPage } from "../leave_balances/leave_balances";
+import { LeaveSettingsPage } from "../leave_settings/leave_settings";
+import { OfficialHolidaysPage, BlackoutWindowsPage } from "../configuration_resources/configuration_resources";
+import { WorkflowsApp } from "@cleon_approval/workflows_app";
+
+export class LeaveConfiguration extends Component {
+    static template = "hr_leave_dashboard.LeaveConfiguration";
+    static components = {
+        CalendarSidebar,
+        LeavePoliciesPage,
+        LeaveBalancesPage,
+        LeaveSettingsPage,
+        OfficialHolidaysPage,
+        BlackoutWindowsPage,
+        WorkflowsApp,
+    };
+    static props = { ...standardActionServiceProps };
+
+    setup() {
+        this.orm = useService("orm");
+        this.state = useState({ loading: true, access: {}, activeTab: null });
+        onWillStart(async () => {
+            this.state.access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
+            const requested = this.props.action?.context?.configuration_tab;
+            const permitted = this.availableTabs.map((tab) => tab.key);
+            this.state.activeTab = permitted.includes(requested) ? requested : permitted[0] || null;
+            this.state.loading = false;
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", {
+                detail: { screen: "leave.configuration", title: "Leave Configuration" },
+            }));
+        });
+    }
+
+    get availableTabs() {
+        const tabs = [];
+        if (this.state.access.can_configure) {
+            tabs.push({ key: "policies", label: "Leave Policies", icon: "fa-file-text-o" });
+            tabs.push({ key: "holidays", label: "Official Holidays", icon: "fa-calendar" });
+            tabs.push({ key: "blackouts", label: "Blackout Windows", icon: "fa-ban" });
+            tabs.push({ key: "approvals", label: "Approval Settings", icon: "fa-shield" });
+        }
+        if (this.state.access.can_operate) {
+            tabs.push({ key: "balances", label: "Leave Balances", icon: "fa-balance-scale" });
+        }
+        if (this.state.access.can_configure) {
+            tabs.push({ key: "general", label: "General Settings", icon: "fa-sliders" });
+        }
+        return tabs;
+    }
+
+    setTab(tab) {
+        if (this.availableTabs.some((item) => item.key === tab)) {
+            this.state.activeTab = tab;
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", {
+                detail: { screen: "leave.configuration", title: "Leave Configuration", tab },
+            }));
+        }
+    }
+
+    openLeaveTypes() {
+        this.setTab("general");
+    }
+
+    toggleSidebar() {
+        window.dispatchEvent(new CustomEvent("cleonhr:toggle-leave-sidebar"));
+    }
+}
+
+registry.category("actions").add("hr_leave_dashboard.LeaveConfiguration", LeaveConfiguration);

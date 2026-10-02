@@ -7,39 +7,6 @@
   --os-text-muted: #8896aa;
   --os-font: 'DM Sans', sans-serif;
 }
-.list-group-item-action {
-    background-color: #fad4e6 !important;
-}
-i.text-primary {
-    color: #f12c7a !important; /* pink-500 */
-}
-.o_switch_view.o_kanban {
-    color: #f887b4 !important;
-}
-
-.o_switch_view.o_kanban.active i.oi-view-kanban {
-    color: #f12c7a !important;
-}
-
-i.oi.oi-view-kanban {
-    color: #f12c7a !important;
-}
-
-.text-truncate {
-    font-family: sans-serif !important;
-}
-
-.o_switch_view.o_list {
-    color: #f12c7a !important;
-}
-
-.o_switch_view.o_list.active i.oi-view-kanban {
-    color: #f199bc !important;
-}
-
-i.oi.oi-view-list {
-    color: #f12c7a !important;
-}
 
 .staff_directory_layout {
     min-height: 100vh;
@@ -265,6 +232,17 @@ i.oi.oi-view-list {
     background: none;
     color: #ffffff;
     flex-shrink: 0;
+}
+
+/* Employee Core's dynamic entries reuse the compact psb icon wrapper.
+   Keep those icons readable on the pink navigation background; the muted
+   colour belongs only to the collapsed launcher overview item. */
+.organi_o_cc_nav_item .psb-nav-icon,
+.organi_o_cc_nav_item .psb-nav-icon i,
+.organi_o_cc_nav_item > i,
+.organi_o_cc_nav_item .fa {
+    color: #ffffff !important;
+    opacity: 1 !important;
 }
 
 .organi_o_cc_nav_item {

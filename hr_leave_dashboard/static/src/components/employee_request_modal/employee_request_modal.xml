@@ -1,10 +1,143 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<templates xml:space="preserve"><t t-name="hr_leave_dashboard.EmployeeRequestModal" owl="1"><div class="o_er_overlay"><section class="o_er_modal" role="dialog" aria-modal="true"><header><div><h3>Request Leave</h3><p>Submit a new leave request for approval</p></div><button t-on-click="props.close">×</button></header><div class="o_er_body">
-<div t-if="state.loading" class="o_er_loading"><i class="fa fa-spinner fa-spin"/> Loading leave policies...</div><t t-else="">
-<section class="o_er_balances"><h4>Your Leave Balance</h4><div><span t-foreach="state.balances.slice(0,4)" t-as="item" t-key="item.id"><b t-esc="item.name"/><strong t-esc="item.unlimited ? 'Unlimited' : ((item.allocated-item.used)+' / '+item.allocated+' days')"/></span></div></section>
-<h4>Basic Information</h4><label>Leave Type <em>*</em><select t-model="state.form.leave_type_id" t-on-change="preview"><option value="">Select leave type...</option><option t-foreach="state.types" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/></select></label><div class="o_er_dates"><label>Start Date <em>*</em><input type="date" t-model="state.form.date_from" t-on-change="onStartChange"/></label><label>End Date <em>*</em><input type="date" t-model="state.form.date_to" t-att-min="state.form.date_from" t-on-change="preview"/></label></div>
-<div class="o_er_half"><label><input type="checkbox" t-model="state.form.half_day" t-on-change="preview" t-att-disabled="selectedType and !selectedType.allow_half_day"/> Half-Day Leave</label><div t-if="state.form.half_day"><label><input type="radio" value="am" t-model="state.form.period" t-on-change="preview"/> Morning</label><label><input type="radio" value="pm" t-model="state.form.period" t-on-change="preview"/> Afternoon</label></div></div>
-<div t-if="state.preview" class="o_er_preview"><div><span>Duration</span><b><t t-esc="state.preview.duration"/> working day(s)</b></div><div><span>Current Balance</span><b t-esc="state.preview.unlimited ? 'Unlimited' : state.preview.current_balance+' days'"/></div><div><span>After Request</span><b t-esc="state.preview.unlimited ? 'Unlimited' : state.preview.projected_balance+' days'"/></div><p t-if="state.preview.holiday_count"><i class="fa fa-calendar"/> <t t-esc="state.preview.holiday_count"/> public holiday(s) excluded from duration.</p></div>
-<div t-if="state.preview and state.preview.team_overlap and state.preview.team_overlap.exceeded" class="o_er_notice warning"><i class="fa fa-users"/> Team availability: <t t-esc="state.preview.team_overlap.percentage"/>% of the department would be on leave.</div><div class="o_er_notice warning" t-foreach="state.preview ? state.preview.warnings : []" t-as="warning" t-key="warning" t-esc="warning"/><div class="o_er_notice error" t-foreach="state.preview ? state.preview.errors : []" t-as="error" t-key="error" t-esc="error"/><div t-if="state.error" class="o_er_notice error" t-esc="state.error"/>
-<h4>Details</h4><label>Reason <em>*</em><textarea t-model="state.form.reason" placeholder="Please provide a reason for your leave request"/></label><label t-att-class="state.preview and state.preview.document_required ? 'required':''">Attachment <t t-if="state.preview and state.preview.document_required"><em>* Required by policy</em></t><input type="file" accept=".pdf,.jpg,.jpeg,.png" t-on-change="onFileChange"/><small>PDF, JPG or PNG · maximum 10 MB</small><b t-if="state.form.attachment" t-esc="state.form.attachment.name"/></label><label>Emergency Contact (Optional)<input t-model="state.form.emergency_contact" placeholder="Phone number or email"/></label>
-</t></div><footer><button t-on-click="props.close">Cancel</button><button class="primary" t-on-click="submit" t-att-disabled="!canSubmit"><i t-if="state.submitting" class="fa fa-spinner fa-spin"/> Submit Request</button></footer></section></div></t></templates>
+<templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.EmployeeRequestModal" owl="1">
+    <div class="o_er_overlay">
+      <section class="o_er_modal" role="dialog" aria-modal="true">
+        <header>
+          <div><h3>New Leave Application</h3><p>Complete and review your request before submission</p></div>
+          <button t-on-click="closeModal">×</button>
+        </header>
+        <nav t-if="state.step &lt; 4" class="o_er_steps">
+          <span t-att-class="state.step === 1 ? 'active' : state.step &gt; 1 ? 'done' : ''"><b>1</b> Leave Details</span><i/>
+          <span t-att-class="state.step === 2 ? 'active' : state.step &gt; 2 ? 'done' : ''"><b>2</b> Handover &amp; Documents</span><i/>
+          <span t-att-class="state.step === 3 ? 'active' : ''"><b>3</b> Review &amp; Submit</span>
+        </nav>
+        <div class="o_er_body">
+          <div t-if="state.loading" class="o_er_loading"><i class="fa fa-spinner fa-spin"/> Loading leave policies...</div>
+          <t t-elif="state.step === 1">
+            <div t-if="state.nlEnabled" class="o_er_entry_tabs" role="tablist">
+              <button type="button" t-att-class="state.entryMode === 'form' ? 'active' : ''" t-on-click="() => this.setEntryMode('form')"><i class="fa fa-pencil"/> Form</button>
+              <button type="button" t-att-class="state.entryMode === 'ai' ? 'active' : ''" t-on-click="() => this.setEntryMode('ai')"><i class="fa fa-magic"/> AI Assisted <small>NEW</small></button>
+            </div>
+            <div t-if="state.nlEnabled and state.entryMode === 'ai' and !state.showNlSummary" class="o_er_ai_section">
+              <div class="o_er_ai_header">
+                <div>
+                  <i class="fa fa-magic text-purple me-1"/> <strong>Describe your leave</strong>
+                  <span class="text-muted small ms-2">Tell CleonAI what you need and it will fill the form</span>
+                </div>
+              </div>
+              <div class="o_er_ai_modes"><button type="button" t-att-class="state.listening || state.voiceProcessing ? '' : 'active'" t-on-click="stopVoice"><i class="fa fa-keyboard-o"/> Type</button><button type="button" t-att-class="state.listening || state.voiceProcessing ? 'active recording' : ''" t-att-disabled="!state.voiceSupported || state.voiceProcessing" t-on-click="toggleVoice"><i t-att-class="state.voiceProcessing ? 'fa fa-spinner fa-spin' : state.listening ? 'fa fa-stop-circle' : 'fa fa-microphone'"/> <t t-esc="state.voiceProcessing ? 'Transcribing…' : state.listening ? 'Stop recording' : 'Voice'"/></button></div>
+              <div t-if="state.listening || state.voiceProcessing" class="o_er_voice_status"><i t-att-class="state.voiceProcessing ? 'fa fa-spinner fa-spin' : 'fa fa-circle'"/> <t t-esc="state.voiceProcessing ? 'CleonAI is transcribing your recording…' : 'Recording — speak naturally, then press Stop'"/></div>
+              <div class="o_er_ai_input_row">
+                <textarea t-model="state.nlText" rows="3" maxlength="500" placeholder="e.g. I need three days off next month for my wedding" class="o_er_ai_textarea"/>
+                <button type="button" class="o_er_ai_gen_btn" t-on-click="parseNlRequest" t-att-disabled="!state.nlText.trim() || state.nlLoading || state.listening || state.voiceProcessing">
+                  <i t-att-class="state.nlLoading ? 'fa fa-spinner fa-spin' : 'fa fa-magic'"/> Generate Request
+                </button>
+              </div>
+              <small class="o_er_ai_hint"><i class="fa fa-info-circle"/> AI will suggest details and balances; review everything before submitting.</small>
+              <div t-if="state.nlError" class="o_er_ai_clarify">
+                <i class="fa fa-question-circle text-warning me-1"/> <t t-esc="state.nlError"/>
+              </div>
+            </div>
+
+            <section t-if="state.entryMode === 'ai' and state.showNlSummary and !state.aiDetailsAccepted" class="o_er_ai_confirm">
+              <div class="o_er_ai_confirm_title"><i class="fa fa-check-circle"/> Here's what I understood <small>Please review and confirm these details.</small></div>
+              <div class="o_er_ai_confirm_grid"><div><h5>AI Suggested Details</h5><p><span>Leave Type</span><b t-esc="selectedType?.name || 'Choose leave type'"/></p><p><span>Start Date</span><b t-esc="state.form.date_from || 'Not detected'"/></p><p><span>End Date</span><b t-esc="state.form.date_to || 'Not detected'"/></p><p><span>Duration</span><b t-esc="state.preview ? state.preview.duration + ' days' : '—'"/></p><p><span>Reason</span><b t-esc="state.form.reason || 'Not detected'"/></p></div><div><h5>Your Leave Balances</h5><p t-foreach="state.balances.slice(0,4)" t-as="item" t-key="item.id"><span t-esc="item.name"/><b t-esc="item.unlimited ? 'Unlimited' : item.available + ' days'"/></p></div></div>
+              <div class="o_er_notice warning" t-foreach="state.preview ? state.preview.warnings : []" t-as="warning" t-key="warning" t-esc="warning"/>
+              <div class="o_er_notice error" t-foreach="state.preview ? state.preview.errors : []" t-as="error" t-key="error" t-esc="error"/>
+              <div class="o_er_ai_confirm_notice"><i class="fa fa-info-circle"/> Review the suggested leave type and available balance before continuing.</div>
+              <footer class="o_er_ai_confirm_actions"><button type="button" t-on-click="clearNl">Start Over</button><button type="button" class="primary" t-on-click="useAiDetails" t-att-disabled="!detailsValid">Use These Details <i class="fa fa-arrow-right"/></button></footer>
+            </section>
+            <t t-if="state.entryMode === 'form'">
+            <section class="o_er_balances"><h4>Your Leave Balance</h4><div><span t-foreach="state.balances.slice(0,4)" t-as="item" t-key="item.id"><b t-esc="item.name"/><strong t-esc="item.unlimited ? 'Unlimited' : item.available + ' remaining'"/></span></div></section>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h4 class="mb-0">Leave Details</h4>
+              <button t-if="state.dateRecEnabled" type="button" class="o_er_date_rec_btn" t-on-click="openDateRecModal">
+                <i class="fa fa-calendar-check-o me-1"/> Suggest Best Dates
+              </button>
+            </div>
+            <label>Leave Type <em>*</em> <span t-if="state.aiAssistedFields.includes('leave_type_id')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><select t-model.number="state.form.leave_type_id" t-on-change="onTypeChange"><option value="">Select leave type...</option><option t-foreach="state.types" t-as="item" t-key="item.id" t-att-value="item.id"><t t-esc="item.name"/> — <t t-esc="item.unlimited ? 'Unlimited' : item.available + ' days available'"/></option></select></label>
+            <div class="o_er_dates"><label>Start Date <em>*</em> <span t-if="state.aiAssistedFields.includes('date_from')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><input type="date" t-model="state.form.date_from" t-att-min="today" t-on-change="onStartChange"/></label><label>End Date <em>*</em> <span t-if="state.aiAssistedFields.includes('date_to')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><input type="date" t-model="state.form.date_to" t-att-min="state.form.date_from || today" t-on-change="preview"/></label></div>
+            <div class="o_er_half"><label><input type="checkbox" t-model="state.form.half_day" t-on-change="preview" t-att-disabled="selectedType and !selectedType.allow_half_day"/> Half-Day Leave</label><div t-if="state.form.half_day"><label><input type="radio" value="am" t-model="state.form.period" t-on-change="preview"/> Morning</label><label><input type="radio" value="pm" t-model="state.form.period" t-on-change="preview"/> Afternoon</label></div></div>
+            <div t-if="state.preview" class="o_er_preview"><div><span>Duration</span><b><t t-esc="state.preview.duration"/> working day(s)</b></div><div><span>Current Balance</span><b t-esc="state.preview.unlimited ? 'Unlimited' : state.preview.current_balance + ' days'"/></div><div><span>After Request</span><b t-esc="state.preview.unlimited ? 'Unlimited' : state.preview.projected_balance + ' days'"/></div><p t-if="state.preview.holiday_count"><i class="fa fa-calendar"/> <t t-esc="state.preview.holiday_count"/> public holiday(s) excluded.</p></div>
+            <div t-if="state.preview and state.preview.team_overlap and state.preview.team_overlap.exceeded" class="o_er_notice warning"><i class="fa fa-users"/> Team availability: <t t-esc="state.preview.team_overlap.percentage"/>% of the department would be on leave.</div>
+            <div class="o_er_notice warning" t-foreach="state.preview ? state.preview.warnings : []" t-as="warning" t-key="warning" t-esc="warning"/>
+            <div class="o_er_notice error" t-foreach="state.preview ? state.preview.errors : []" t-as="error" t-key="error" t-esc="error"/>
+            <label t-if="state.preview?.blackout_exception_available" class="o_er_toggle"><span><b>Request Blackout Exception</b><small>This request will follow the window's authorised HR/Executive approval route and is never auto-approved.</small></span><input type="checkbox" t-model="state.form.blackout_exception_requested"/></label>
+            <div t-if="state.error" class="o_er_notice error" t-esc="state.error"/>
+            <label>Reason <em>*</em> <span t-if="state.aiAssistedFields.includes('reason')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><textarea maxlength="500" t-model="state.form.reason" placeholder="Please provide a reason for your leave request"/><small><t t-esc="state.form.reason.length"/> / 500</small></label>
+            </t>
+          </t>
+          <t t-elif="state.step === 2">
+            <h4>Handover &amp; Backup Coverage</h4>
+            <label class="o_er_toggle"><span><b>Would you like to hand over?</b><small>Assign colleagues who can cover your responsibilities.</small></span><input type="checkbox" t-model="state.form.handover_enabled"/></label>
+            <t t-if="state.form.handover_enabled">
+              <label>Backup Colleagues <em>*</em></label>
+              <div class="o_er_backup_chips"><button t-foreach="state.backupColleagues" t-as="person" t-key="person.id" t-att-class="state.form.backup_colleague_ids.includes(person.id) ? 'selected' : ''" t-on-click="()=>toggleBackup(person.id)"><i t-att-class="state.form.backup_colleague_ids.includes(person.id) ? 'fa fa-check-circle' : 'fa fa-circle-o'"/><span><b t-esc="person.name"/><small t-esc="person.department"/></span></button></div>
+              <label>Emergency Phone / Reachout Information<input maxlength="150" t-model="state.form.emergency_contact" placeholder="Phone number, email, or preferred contact method"/></label>
+              <label>Handover Notes<textarea maxlength="500" t-model="state.form.handover_notes" placeholder="Describe responsibilities, deadlines, and anything your backups should know."/><small><t t-esc="state.form.handover_notes.length"/> / 500</small></label>
+            </t>
+            <h4>Supporting Document</h4>
+            <div t-if="state.preview?.document_required" class="o_er_notice warning"><i class="fa fa-paperclip"/> Supporting documentation is required by this policy before submission.</div>
+            <label>Upload Document <t t-if="state.preview?.document_required"><em>*</em></t><input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" t-on-change="onFileChange"/><small>PDF, DOC, DOCX, JPG or PNG · maximum 10 MB</small></label>
+            <div t-if="state.form.attachment" class="o_er_file"><i class="fa fa-file-text-o"/><b t-esc="state.form.attachment.name"/><button t-on-click="removeFile">Remove</button></div>
+            <div t-if="state.error" class="o_er_notice error" t-esc="state.error"/>
+          </t>
+          <t t-elif="state.step === 3">
+            <h4>Review Leave Request</h4>
+            <div class="o_er_review">
+              <p><span>Leave Type</span><b t-esc="selectedType?.name"/></p><p><span>Dates</span><b><t t-esc="state.form.date_from"/> – <t t-esc="state.form.date_to"/></b></p>
+              <p><span>Duration</span><b><t t-esc="state.preview?.duration"/> working day(s)</b></p><p><span>Day Portion</span><b t-esc="state.form.half_day ? (state.form.period === 'am' ? 'Morning half day' : 'Afternoon half day') : 'Full day'"/></p>
+              <p><span>Reason</span><b t-esc="state.form.reason"/></p><p><span>Handover To</span><b t-esc="selectedBackups.map(item => item.name).join(', ') || 'No handover'"/></p>
+              <p t-if="state.form.emergency_contact"><span>Reachout</span><b t-esc="state.form.emergency_contact"/></p><p t-if="state.form.handover_notes"><span>Handover Notes</span><b t-esc="state.form.handover_notes"/></p>
+              <p><span>Supporting Document</span><b t-esc="state.form.attachment?.name || 'None'"/></p>
+              <p>
+                <span>Submission Channel</span>
+                <b>
+                  <t t-if="state.form.submission_channel === 'ai_assisted'">
+                    <span class="o_er_ai_badge"><i class="fa fa-magic"/> AI Assisted</span>
+                  </t>
+                  <t t-else="">Manual Form</t>
+                </b>
+              </p>
+            </div>
+            <div t-if="state.entryMode === 'ai'" class="o_er_ai_review_attachment">
+              <h4>Attachment <small t-if="!state.preview?.document_required">(Optional)</small></h4>
+              <div t-if="state.preview?.document_required" class="o_er_notice warning"><i class="fa fa-paperclip"/> Supporting documentation is required by this policy before submission.</div>
+              <label class="o_er_upload_button"><i class="fa fa-upload"/> Upload File <t t-if="state.preview?.document_required"><em>*</em></t><input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" t-on-change="onFileChange"/></label>
+              <small>PDF, DOC, DOCX, JPG or PNG · maximum 10 MB</small>
+              <div t-if="state.form.attachment" class="o_er_file"><i class="fa fa-file-text-o"/><b t-esc="state.form.attachment.name"/><button t-on-click="removeFile">Remove</button></div>
+              <div t-if="state.error" class="o_er_notice error" t-esc="state.error"/>
+            </div>
+            <div t-if="canSubmit" class="o_er_notice success"><i class="fa fa-check-circle"/> Policy validation passed. All mandatory requirements have been satisfied.</div>
+          </t>
+          <t t-else="">
+            <section class="o_er_success">
+              <div class="o_er_success_icon"><i class="fa fa-check"/></div>
+              <h3>Leave request submitted!</h3>
+              <p>Your request has been submitted for approval.</p>
+              <div class="o_er_success_details">
+                <p><span>Request ID</span><b t-esc="state.submittedResult?.reference || '—'"/></p>
+                <p><span>Leave Type</span><b t-esc="selectedType?.name || '—'"/></p>
+                <p><span>Dates</span><b><t t-esc="state.form.date_from"/> – <t t-esc="state.form.date_to"/></b></p>
+                <p><span>Duration</span><b><t t-esc="state.preview?.duration || 0"/> days</b></p>
+                <p><span>Status</span><b class="o_er_pending">Pending Approval</b></p>
+              </div>
+              <small>You will be notified once there is an update.</small>
+              <div class="o_er_success_actions"><button type="button" t-on-click="viewMyRequests">View My Requests</button><button type="button" class="primary" t-on-click="closeSuccess">Close</button></div>
+            </section>
+          </t>
+        </div>
+        <footer t-if="state.step &lt; 4"><button t-if="state.step === 1" t-on-click="closeModal">Cancel</button><button t-else="" t-on-click="back"><i class="fa fa-arrow-left"/> Back</button><button t-if="state.step &lt; 3 and (state.step !== 1 or state.entryMode === 'form')" class="primary" t-on-click="next" t-att-disabled="state.step === 1 ? !detailsValid : !handoverValid">Continue <i class="fa fa-arrow-right"/></button><span t-elif="state.step === 1"/><button t-else="" class="primary" t-on-click="submit" t-att-disabled="!canSubmit"><i t-if="state.submitting" class="fa fa-spinner fa-spin"/> Submit Request (<t t-esc="state.preview?.duration || 0"/> Days)</button></footer>
+      </section>
+
+      <SmartDateRecommendationsModal
+        t-if="state.showDateRecModal"
+        close="() => this.closeDateRecModal()"
+        onSelect="(item) => this.onSelectRecommendedDate(item)"
+        initialTypeId="state.form.leave_type_id"
+        types="state.types"
+      />
+    </div>
+  </t>
+</templates>
