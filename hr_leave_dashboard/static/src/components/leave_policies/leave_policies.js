@@ -9,6 +9,18 @@ import { newLine, newForm, hasAdvancedOverrides } from "./leave_policy_state";
 
 export { newLine, newForm, hasAdvancedOverrides };
 
+// [form.selected key, label, options source, employee attribute] for the
+// organisational groups used as audience filters and as Conditions.
+export const AUDIENCE_GROUPS = [
+    ["department_ids", "Departments", "departments", "department_id"],
+    ["unit_ids", "Units", "units", "unit_id"],
+    ["grade_ids", "Grades", "grades", "grade_id"],
+    ["location_ids", "Locations", "locations", "location_id"],
+    ["employee_type_ids", "Employment Types", "employee_types", "employee_type_id"],
+    ["job_ids", "Job Roles", "jobs", "job_id"],
+];
+const emptyAudienceFilters = () => Object.fromEntries(AUDIENCE_GROUPS.map(([key]) => [key, []]));
+
 export class LeavePoliciesPage extends Component {
     static components = { SettingsPanel, TagsPicker, ListPager, EmployeeSelectList };
     static template = "hr_leave_dashboard.LeavePoliciesPage";
@@ -45,7 +57,9 @@ export class LeavePoliciesPage extends Component {
             assignResolution: "review",
             activateConflict: null,
             typeDropdownOpen: false,
+            audienceFilters: emptyAudienceFilters(),
         });
+        this.audienceGroups = AUDIENCE_GROUPS;
         onWillStart(() => this.load());
     }
 
@@ -146,6 +160,7 @@ export class LeavePoliciesPage extends Component {
     // Every policy starts in the normal form using organisation defaults.
     openChooser() {
         this.state.form = newForm("simple", this.state.options.policy_defaults || {});
+        this.state.audienceFilters = emptyAudienceFilters();
         this.state.conflicts = [];
         this.state.step = 1;
         this.state.wizard = true;
@@ -490,6 +505,64 @@ export class LeavePoliciesPage extends Component {
         }
     }
 
+    // ---------------------------------------------------------------
+    // "Selected Employees" audience: groups filter the employee picker,
+    // only the chosen employees are saved.
+    // ---------------------------------------------------------------
+
+    get audienceFilterCount() {
+        return AUDIENCE_GROUPS.reduce((count, [key]) => count + this.state.audienceFilters[key].length, 0);
+    }
+
+    get filteredAudienceEmployees() {
+        const filters = this.state.audienceFilters;
+        return (this.state.options.employees || []).filter(employee =>
+            AUDIENCE_GROUPS.every(([key, , , attr]) => !filters[key].length || filters[key].includes(employee[attr]))
+        );
+    }
+
+    get unselectedFilteredEmployees() {
+        const selected = this.state.form.selected.employee_ids;
+        return this.filteredAudienceEmployees.filter(employee => !selected.includes(employee.id));
+    }
+
+    audienceFilterOptions(key, source) {
+        return (this.state.options[source] || []).filter(item => this.state.audienceFilters[key].includes(item.id));
+    }
+
+    toggleAudienceFilter(key, id) {
+        const values = this.state.audienceFilters[key];
+        const index = values.indexOf(Number(id));
+        index >= 0 ? values.splice(index, 1) : values.push(Number(id));
+    }
+
+    clearAudienceFilters() {
+        this.state.audienceFilters = emptyAudienceFilters();
+    }
+
+    addFilteredEmployees() {
+        this.state.form.selected.employee_ids.push(...this.unselectedFilteredEmployees.map(employee => employee.id));
+        this.state.form.apply_to = "selected";
+    }
+
+    clearSelectedEmployees() {
+        this.state.form.selected.employee_ids = [];
+    }
+
+    /** Policies saved before employee-only selection may hold group criteria; resolve them to employees. */
+    expandLegacyGroupSelection() {
+        const selected = this.state.form.selected;
+        const groups = AUDIENCE_GROUPS.filter(([key]) => (selected[key] || []).length);
+        if (!groups.length) return;
+        const ids = new Set(selected.employee_ids);
+        for (const employee of this.state.options.employees || []) {
+            if (groups.some(([key, , , attr]) => selected[key].includes(employee[attr]))) ids.add(employee.id);
+        }
+        selected.employee_ids = [...ids];
+        for (const [key] of groups) selected[key] = [];
+        this.notification.add(`Group selections were converted to ${ids.size} selected employee(s). Review before saving.`, { type: "info" });
+    }
+
     isSelected(group, id) {
         return this.state.form.selected[group].includes(Number(id));
     }
@@ -581,6 +654,10 @@ export class LeavePoliciesPage extends Component {
         this.state.saving = true;
         try {
             const payload = JSON.parse(JSON.stringify(this.state.form));
+            if (payload.apply_to === "selected") {
+                // Groups left over from a Conditions draft must not widen an explicit employee list.
+                for (const [key] of AUDIENCE_GROUPS) payload.selected[key] = [];
+            }
             // Fixed entitlement has no accrual schedule; the stored period is
             // only used when entitlement_type is accrued.
             for (const line of payload.lines) {
@@ -632,6 +709,8 @@ export class LeavePoliciesPage extends Component {
             lines: detail.lines.length ? detail.lines.map(line => ({ ...newLine("", "", this.state.options.policy_defaults || {}), ...line })) : [newLine("", "", this.state.options.policy_defaults || {})],
         };
         this.syncFromLines();
+        this.state.audienceFilters = emptyAudienceFilters();
+        if (this.state.form.apply_to === "selected") this.expandLegacyGroupSelection();
         this.state.form.carry.expiry_type = detail.carry.expiry_value ? "period" : "never";
         this.state.conflicts = [];
         this.state.step = 1;

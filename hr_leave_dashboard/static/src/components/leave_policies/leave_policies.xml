@@ -252,7 +252,7 @@
                       <button type="button"
                               t-att-class="'o_lp_pill_btn ' + (state.form.apply_to === 'selected' ? 'active' : '')"
                               t-on-click="() => state.form.apply_to = 'selected'">
-                        <i class="fa fa-users me-1"/> Selected Employees / Groups
+                        <i class="fa fa-users me-1"/> Selected Employees
                       </button>
                     </div>
 
@@ -632,7 +632,7 @@
                 </div>
                 <div class="o_lp_radio_stack mb-3">
                   <label><input type="radio" value="all" t-model="state.form.apply_to"/> All Employees</label>
-                  <label><input type="radio" value="selected" t-model="state.form.apply_to"/> Select Employees / Groups</label>
+                  <label><input type="radio" value="selected" t-model="state.form.apply_to"/> Select Employees</label>
                   <label><input type="radio" value="conditions" t-model="state.form.apply_to"/> Add Conditions (Department, Tenure, Grade, Role)</label>
                 </div>
                 <label class="d-block mb-3">
@@ -811,7 +811,7 @@
                         </t>
                       </span>
                     </div>
-                    <div class="o_lp_review_row"><span>Assign To:</span> <strong t-esc="state.form.apply_to === 'all' ? 'All Employees' : 'Selected Employees / Groups'"/></div>
+                    <div class="o_lp_review_row"><span>Assign To:</span> <strong t-esc="state.form.apply_to === 'all' ? 'All Employees' : state.form.apply_to === 'selected' ? state.form.selected.employee_ids.length + ' selected employee(s)' : 'Conditions'"/></div>
                     <div class="o_lp_review_row" t-if="state.form.description"><span>Description:</span> <span class="text-muted" t-esc="state.form.description"/></div>
                   </div>
 
@@ -1060,9 +1060,39 @@
     </section>
   </t>
 
+  <!-- Subtemplate: PolicyEmployeeAudience — groups only filter the employee dropdown -->
+  <t t-name="hr_leave_dashboard.PolicyEmployeeAudience">
+    <div class="o_lp_eligibility o_lp_audience">
+      <div class="o_lp_audience_head">
+        <span class="o_lp_label mb-0"><i class="fa fa-filter me-1"/> Filter employees by</span>
+        <button t-if="audienceFilterCount" type="button" class="btn btn-link btn-sm p-0" t-on-click="clearAudienceFilters">Clear filters</button>
+      </div>
+      <div class="o_lp_multi_grid">
+        <div class="o_lp_multi_box" t-foreach="audienceGroups" t-as="group" t-key="group[0]">
+          <div class="o_lp_multi_head"><b t-esc="group[1]"/></div>
+          <TagsPicker options="state.options[group[2]] || []" selected="audienceFilterOptions(group[0], group[2])" toggle="(id) => this.toggleAudienceFilter(group[0], id)" placeholder="'Any'"/>
+        </div>
+      </div>
+
+      <div class="o_lp_multi_box o_lp_audience_employees">
+        <div class="o_lp_audience_head">
+          <b>Employees <span class="o_lp_audience_count" t-esc="'(' + state.form.selected.employee_ids.length + ' selected)'"/></b>
+          <div class="d-flex gap-3">
+            <button type="button" class="btn btn-link btn-sm p-0" t-att-disabled="!unselectedFilteredEmployees.length" t-on-click="addFilteredEmployees">
+              <i class="fa fa-plus-circle me-1"/>Add all <t t-esc="unselectedFilteredEmployees.length"/> <t t-esc="audienceFilterCount ? 'matching' : ''"/>
+            </button>
+            <button t-if="state.form.selected.employee_ids.length" type="button" class="btn btn-link btn-sm p-0 text-danger" t-on-click="clearSelectedEmployees">Clear selection</button>
+          </div>
+        </div>
+        <TagsPicker options="filteredAudienceEmployees" selected="selectedOptions('employee_ids', 'employees')" toggle="(id) => this.toggleSelected('employee_ids', id)" placeholder="audienceFilterCount ? 'Search ' + filteredAudienceEmployees.length + ' matching employees…' : 'Search employees…'" employee="true"/>
+      </div>
+    </div>
+  </t>
+
   <!-- Subtemplate: PolicyEligibility -->
   <t t-name="hr_leave_dashboard.PolicyEligibility">
-    <div t-if="state.form.apply_to !== 'all'" class="o_lp_eligibility">
+    <t t-if="state.form.apply_to === 'selected'" t-call="hr_leave_dashboard.PolicyEmployeeAudience"/>
+    <div t-elif="state.form.apply_to === 'conditions'" class="o_lp_eligibility">
       <div t-if="state.form.advancedOpen and state.form.apply_to === 'conditions'" class="d-flex gap-3 mb-3">
         <label class="flex-fill">
           <span class="o_lp_label">Condition Match</span>

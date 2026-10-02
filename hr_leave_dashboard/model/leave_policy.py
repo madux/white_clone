@@ -36,7 +36,7 @@ class HrLeavePolicy(models.Model):
     ], default="draft", required=True, index=True)
     active = fields.Boolean(default=True)
 
-    apply_to = fields.Selection([("all", "All Employees"), ("selected", "Selected Employees / Groups"), ("conditions", "Conditions")], default="all", required=True)
+    apply_to = fields.Selection([("all", "All Employees"), ("selected", "Selected Employees"), ("conditions", "Conditions")], default="all", required=True)
     employee_ids = fields.Many2many("hr.employee", "hr_leave_policy_employee_rel", "policy_id", "employee_id")
     department_ids = fields.Many2many("hr.department", "hr_leave_policy_department_rel", "policy_id", "department_id")
     unit_ids = fields.Many2many("hr.unit", "hr_leave_policy_unit_rel", "policy_id", "unit_id")
@@ -343,6 +343,15 @@ class HrLeavePolicy(models.Model):
         company = self.env.company
         def rows(records):
             return [{"id": item.id, "name": item.name} for item in records]
+        def employee_rows(records):
+            # Organisational attributes let the "Selected Employees" picker filter client-side.
+            return [{
+                "id": item.id, "name": item.name, "department": item.department_id.name or "",
+                "job": item.job_id.name or "", "department_id": item.department_id.id,
+                "unit_id": item.unit_id.id, "grade_id": item.grade_id.id,
+                "location_id": item.work_location_id.id, "employee_type_id": item.employee_type_id.id,
+                "job_id": item.job_id.id,
+            } for item in records]
         baseline_codes = ("VACATION", "MEDICAL", "MATERNITY", "PATERNITY", "COMPASS", "STUDY", "UNPAIDNEW")
         baseline_types = self.sudo().with_context(active_test=False).search([
             ("company_id", "=", company.id), ("code", "in", baseline_codes),
@@ -364,7 +373,7 @@ class HrLeavePolicy(models.Model):
                 "block_overlap_threshold": company.leave_default_block_overlap_threshold,
             },
             "leave_types": [{"id": item.id, "name": item.name, "classification": item.policy_classification, "color": item.cleon_color_hex or "#3B82F6"} for item in selectable_types.sorted("name")],
-            "employees": rows(employees), "departments": rows(employees.mapped("department_id").sorted("name")),
+            "employees": employee_rows(employees), "departments": rows(employees.mapped("department_id").sorted("name")),
             "units": rows(employees.mapped("unit_id").sorted("name")), "grades": rows(employees.mapped("grade_id").sorted("name")),
             "locations": rows(employees.mapped("work_location_id").sorted("name")), "employee_types": rows(employees.mapped("employee_type_id").sorted("name")),
             "jobs": rows(employees.mapped("job_id").sorted("name")),
@@ -529,11 +538,14 @@ class HrLeavePolicy(models.Model):
         if vals["apply_to"] == "all":
             for key in ("employee_ids", "department_ids", "unit_ids", "grade_ids", "location_ids", "employee_type_ids", "job_ids"):
                 vals[key] = [(6, 0, [])]
-        elif vals["apply_to"] == "selected" and not any(selected.get(key) for key in (
-            "employee_ids", "department_ids", "unit_ids", "grade_ids", "location_ids", "employee_type_ids", "job_ids",
-        )):
-            # The form's documented blank-audience behavior is All Employees.
-            vals["apply_to"] = "all"
+        elif vals["apply_to"] == "selected":
+            # Selected audiences are an explicit employee list; organisational
+            # groups only filter the picker and are reserved for Conditions.
+            for key in ("department_ids", "unit_ids", "grade_ids", "location_ids", "employee_type_ids", "job_ids"):
+                vals[key] = [(6, 0, [])]
+            if not selected.get("employee_ids"):
+                # The form's documented blank-audience behavior is All Employees.
+                vals["apply_to"] = "all"
         before = policy._row() if policy else {}
         previous_leave_types = policy.line_ids.leave_type_id if policy else self.env["hr.leave.type"]
         if policy:

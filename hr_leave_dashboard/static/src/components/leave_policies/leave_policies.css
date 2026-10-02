@@ -1157,3 +1157,11 @@
 .o_lp_drawer .o_lp_simple_form .o_lp_field_group { margin-bottom: 0; }
 .o_lp_drawer .o_lp_simple_form textarea { min-height: 44px; height: 44px; resize: vertical; }
 .o_lp_drawer .o_lp_simple_form .o_lp_pill_btn { padding-top: 6px; padding-bottom: 6px; }
+
+/* Selected Employees audience: groups filter the employee picker */
+.o_lp_audience_head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.o_lp_audience_head .btn-link { font-size: 12px; color: #d8156a; text-decoration: none; }
+.o_lp_audience_head .btn-link:disabled { color: #94a3b8; }
+.o_lp_audience .o_lp_audience_employees { margin-top: 14px; padding-top: 12px; border-top: 1px dashed #dce2ec !important; }
+.o_lp_audience_count { color: #64748b; font-weight: 500; }
+.o_lp_audience .o_lp_audience_employees .o_settings_tags_field { max-height: 180px; overflow-y: auto; }
