@@ -44,6 +44,15 @@ export function canManageOrgDocuments(user?: User | null): boolean {
   );
 }
 
+/** Create organizational policy folders (matches create-policy-folder API gates). */
+export function canCreateOrgPolicy(user?: User | null): boolean {
+  if (!user) return false;
+  if (user.is_document_admin === true || user.is_document_manager === true) {
+    return true;
+  }
+  return canCreateOrgFolder(user) && canManageOrgDocuments(user);
+}
+
 export function canManageOrgDocumentAccess(user?: User | null): boolean {
   if (!user) return false;
   return (

@@ -66,7 +66,7 @@ export default function NewMenu({
           </Button>
         }
       />
-      <DropdownMenuContent align="start" className="min-w-56">
+      <DropdownMenuContent align="end" className="min-w-56">
         {grouped.length
           ? grouped.map((group) => (
               <DropdownMenuGroup key={group.label}>

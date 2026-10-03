@@ -8,34 +8,54 @@ export const ORGANIZATIONAL_SCOPE_RANK: Record<string, number> = {
   location: 1,
   individual: 2,
   private: 3,
+  company_owned: 3,
   admin_only: 4,
 };
 
-export type OrgVisibilityMode = "public" | "restricted" | "private" | "admin_only";
+export type OrgVisibilityMode =
+  | "public"
+  | "restricted"
+  | "private"
+  | "company_owned"
+  | "admin_only";
 
 export function allowedVisibilityModes(parentScope?: string): OrgVisibilityMode[] {
   if (!parentScope || parentScope === "all_staff") {
-    return ["public", "restricted", "private"];
+    return ["public", "restricted", "private", "company_owned"];
   }
   if (parentScope === "admin_only") return ["admin_only"];
   if (parentScope === "private") return ["private"];
-  return ["restricted", "private"];
+  if (parentScope === "company_owned") return ["company_owned", "private", "admin_only"];
+  return ["restricted", "private", "company_owned"];
 }
 
 export function allowedAccessScopes(parentScope?: string): string[] {
   if (!parentScope || parentScope === "all_staff") {
-    return ["all_staff", "department", "grade", "individual", "private", "admin_only"];
+    return [
+      "all_staff",
+      "department",
+      "grade",
+      "individual",
+      "private",
+      "company_owned",
+      "admin_only",
+    ];
   }
   if (parentScope === "admin_only") return ["admin_only"];
-  if (parentScope === "private") return ["private", "admin_only"];
+  if (parentScope === "private") return ["private", "company_owned", "admin_only"];
+  if (parentScope === "company_owned") {
+    return ["company_owned", "private", "admin_only"];
+  }
   if (parentScope === "department") {
-    return ["department", "individual", "private", "admin_only"];
+    return ["department", "individual", "private", "company_owned", "admin_only"];
   }
   if (parentScope === "grade") {
-    return ["grade", "individual", "private", "admin_only"];
+    return ["grade", "individual", "private", "company_owned", "admin_only"];
   }
-  if (parentScope === "individual") return ["individual", "private", "admin_only"];
-  return [parentScope, "individual", "private", "admin_only"].filter(
+  if (parentScope === "individual") {
+    return ["individual", "private", "company_owned", "admin_only"];
+  }
+  return [parentScope, "individual", "private", "company_owned", "admin_only"].filter(
     (value, index, list) => list.indexOf(value) === index,
   );
 }

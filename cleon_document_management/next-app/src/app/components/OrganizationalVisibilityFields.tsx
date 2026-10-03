@@ -21,6 +21,7 @@ export function visibilityToAccessScope(
   if (mode === "public") return "all_staff";
   if (mode === "private") return "private";
   if (mode === "admin_only") return "admin_only";
+  if (mode === "company_owned") return "company_owned";
   return restrictedScope;
 }
 
@@ -34,10 +35,28 @@ export function accessScopeToVisibility(accessScope: string): {
   if (accessScope === "admin_only") {
     return { mode: "admin_only", restrictedScope: "department" };
   }
+  if (accessScope === "company_owned") {
+    return { mode: "company_owned", restrictedScope: "department" };
+  }
   if (accessScope === "all_staff") {
     return { mode: "public", restrictedScope: "department" };
   }
   return { mode: "restricted", restrictedScope: accessScope };
+}
+
+export function visibilityFromOrganizationalDefaults(defaults?: {
+  default_org_access_scope?: string;
+  default_org_restricted_scope?: string;
+} | null): { mode: OrgVisibilityMode; restrictedScope: string } {
+  const scope = defaults?.default_org_access_scope || "private";
+  const parsed = accessScopeToVisibility(scope);
+  if (parsed.mode === "restricted" && defaults?.default_org_restricted_scope) {
+    return {
+      mode: "restricted",
+      restrictedScope: defaults.default_org_restricted_scope,
+    };
+  }
+  return parsed;
 }
 
 export function validateOrganizationalVisibility(
@@ -57,6 +76,7 @@ const VISIBILITY_LABELS: Record<OrgVisibilityMode, string> = {
   public: "Public",
   restricted: "Restricted",
   private: "Private",
+  company_owned: "Company owned",
   admin_only: "Admin only",
 };
 

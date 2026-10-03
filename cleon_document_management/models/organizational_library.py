@@ -277,19 +277,53 @@ class DocPolicyEmployeeAssignment(models.Model):
     _description = "Policy assigned to an employee file"
     _order = "id desc"
 
-    policy_id = fields.Many2one("doc.compliance.policy", required=True, ondelete="cascade")
+    policy_id = fields.Many2one("doc.compliance.policy", ondelete="cascade")
+    organizational_policy_id = fields.Many2one(
+        "doc.organizational.policy",
+        string="Organizational policy",
+        ondelete="cascade",
+        index=True,
+    )
     employee_id = fields.Many2one("hr.employee", required=True, ondelete="cascade", index=True)
     document_id = fields.Many2one("doc.document", ondelete="set null")
     requested_signature = fields.Boolean(default=False)
     notified_at = fields.Datetime()
     assigned_by_id = fields.Many2one("res.users", default=lambda self: self.env.user)
 
+    @api.constrains("policy_id", "organizational_policy_id")
+    def _check_policy_reference(self):
+        for assignment in self:
+            has_compliance = bool(assignment.policy_id)
+            has_org = bool(assignment.organizational_policy_id)
+            if has_compliance == has_org:
+                raise ValidationError(
+                    _("Link exactly one policy (organizational or compliance).")
+                )
+
+    @api.constrains("document_id")
+    def _check_assignable_policy_document(self):
+        for assignment in self:
+            document = assignment.document_id
+            if document and not document._assignable_as_employee_policy():
+                raise ValidationError(
+                    _("Only policy documents can be assigned to an employee.")
+                )
+
     def serialize_for_api(self):
         self.ensure_one()
+        policy_name = ""
+        policy_id = False
+        if self.organizational_policy_id:
+            policy_name = self.organizational_policy_id.name
+            policy_id = self.organizational_policy_id.id
+        elif self.policy_id:
+            policy_name = self.policy_id.name
+            policy_id = self.policy_id.id
         return {
             "id": self.id,
-            "policy_id": self.policy_id.id,
-            "policy_name": self.policy_id.name,
+            "policy_id": policy_id,
+            "policy_name": policy_name,
+            "organizational_policy_id": self.organizational_policy_id.id or False,
             "employee_id": self.employee_id.id,
             "employee_name": self.employee_id.name,
             "document_id": self.document_id.id or False,
@@ -300,8 +334,12 @@ class DocPolicyEmployeeAssignment(models.Model):
     def action_notify(self):
         for assignment in self:
             user = assignment.employee_id.user_id
-            body = _("Policy “%s” was assigned to you.") % assignment.policy_id.name
-            if user and user.partner_id:
+            if assignment.organizational_policy_id:
+                policy_name = assignment.organizational_policy_id.name
+            else:
+                policy_name = assignment.policy_id.name
+            body = _("Policy “%s” was assigned to you.") % policy_name
+            if user and user.partner_id and assignment.policy_id:
                 assignment.policy_id.message_post(
                     body=body,
                     partner_ids=user.partner_id.ids,

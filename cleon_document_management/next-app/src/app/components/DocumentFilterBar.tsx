@@ -146,7 +146,6 @@ export default function DocumentFilterBar({
 
   return (
     <AppToolbar
-      leading={leading}
       search={filters.search}
       onSearchChange={(value) => updateFilter("search", value)}
       searchPlaceholder="Search documents by name, type, department, or keyword..."
@@ -191,7 +190,14 @@ export default function DocumentFilterBar({
           {extras}
         </>
       }
-      actions={actions}
+      actions={
+        actions || leading ? (
+          <>
+            {actions}
+            {leading}
+          </>
+        ) : null
+      }
       footer={
         <>
           {expanded ? (

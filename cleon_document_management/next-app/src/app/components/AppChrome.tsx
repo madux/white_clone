@@ -10,7 +10,8 @@ function isImmersive(pathname: string) {
   return (
     pathname.includes("/pages/document-intelligence/ask") ||
     pathname.includes("/templates-forms/generate") ||
-    pathname.includes("/templates-forms/editor")
+    pathname.includes("/templates-forms/editor") ||
+    pathname.includes("/organization/policy-editor")
   );
 }
 

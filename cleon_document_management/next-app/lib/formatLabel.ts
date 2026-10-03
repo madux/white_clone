@@ -34,6 +34,7 @@ const STATUS_LABELS: Record<string, string> = {
   grade: "Grade",
   individual: "Individual",
   admin_only: "Admin Only",
+  company_owned: "Company owned",
   fast: "Fast",
   balanced: "Balanced",
   conservative: "Conservative",

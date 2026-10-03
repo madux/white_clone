@@ -72,6 +72,9 @@
             '|', '&amp;', ('org_use_folder_access', '=', False),
                 '&amp;', ('org_access_scope', '=', 'grade'),
                 ('org_grade_ids', 'in', [user.employee_id.grade_id.id]),
+            '|', '&amp;', ('org_use_folder_access', '=', False),
+                '&amp;', ('org_access_scope', '=', 'private'),
+                ('create_uid', '=', user.id),
             '&amp;', ('org_use_folder_access', '=', False),
                 '&amp;', ('org_access_scope', '=', 'individual'),
                 ('org_employee_ids.user_id', '=', user.id)

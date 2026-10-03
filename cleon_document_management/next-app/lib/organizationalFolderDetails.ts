@@ -50,5 +50,6 @@ export function directFolderItemCount(
 export function folderKindLabel(kind?: DocFolder["folder_kind"]) {
   if (kind === "project") return "Project";
   if (kind === "vendor") return "Vendor";
+  if (kind === "policy") return "Policy";
   return "Folder";
 }

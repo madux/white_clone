@@ -18,6 +18,7 @@ export default function ManageAccessDocumentModal({
   orgGradeIds,
   orgEmployeeIds,
   onClose,
+  onSaved,
 }: {
   documentId: number;
   documentName: string;
@@ -27,6 +28,7 @@ export default function ManageAccessDocumentModal({
   orgGradeIds: number[];
   orgEmployeeIds: number[];
   onClose: () => void;
+  onSaved?: () => void;
 }) {
   const targets = useComplianceTargets();
   const { showAlert } = useAppDialog();
@@ -62,6 +64,7 @@ export default function ManageAccessDocumentModal({
         org_employee_ids:
           !useFolderAccess && accessScope === "individual" ? scopeIds : [],
       });
+      onSaved?.();
       onClose();
     } catch (error) {
       await showAlert(
@@ -94,7 +97,12 @@ export default function ManageAccessDocumentModal({
         {!useFolderAccess ? (
           <OrganizationalAccessScopeFields
             accessScope={accessScope}
-            onAccessScopeChange={setAccessScope}
+            onAccessScopeChange={(value) => {
+              setAccessScope(value);
+              if (value === "private" || value === "admin_only" || value === "company_owned") {
+                setUseFolderAccess(false);
+              }
+            }}
             scopeIds={scopeIds}
             onScopeIdsChange={setScopeIds}
             scopeSearch={scopeSearch}

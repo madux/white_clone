@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { api } from "../lib/api";
-import { User } from "../lib/types";
+import { DocumentType, User } from "../lib/types";
 
 export const QUERY_KEYS = {
   me: ["user", "me"],
@@ -236,6 +236,15 @@ export function useSettings(enabled = true) {
   });
 }
 
+export function useOrganizationalDefaults(enabled = true) {
+  return useQuery({
+    queryKey: ["organizational-defaults"],
+    queryFn: () => api.getOrganizationalDefaults().then((result) => result.data),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
 export function useSaveSettings() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -288,7 +297,17 @@ export function useCreateDocumentType() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.createDocumentType,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documentTypes }),
+    onSuccess: (result) => {
+      const created = (result as { success?: boolean; data?: DocumentType }).data;
+      if (created?.id) {
+        queryClient.setQueryData<DocumentType[]>(QUERY_KEYS.documentTypes, (current) => {
+          const list = current ?? [];
+          if (list.some((item) => item.id === created.id)) return list;
+          return [...list, created];
+        });
+      }
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documentTypes });
+    },
   });
 }
 
@@ -531,6 +550,7 @@ export function useDeleteFolder() {
     mutationFn: api.deleteFolder,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+      queryClient.invalidateQueries({ queryKey: ["organizational-policies"] });
     },
   });
 }

@@ -10,7 +10,7 @@ import {
 import DocumentVersionsFooter from "./DocumentVersionsFooter";
 import OrganizationalDocumentSummary from "./OrganizationalDocumentSummary";
 import ModalDialog from "./ModalDialog";
-import CompliancePolicyLink from "./CompliancePolicyLink";
+import ComplianceRuleLink from "./ComplianceRuleLink";
 import DocumentShortcutNotice from "./DocumentShortcutNotice";
 
 type DocumentViewerDialogProps = {
@@ -131,7 +131,7 @@ export default function DocumentViewerDialog({
     >
       {linkedPolicyId ? (
         <div className="mb-3 shrink-0">
-          <CompliancePolicyLink
+          <ComplianceRuleLink
             policyId={Number(linkedPolicyId)}
             policyName={linkedPolicyName}
             className="w-full max-w-md"

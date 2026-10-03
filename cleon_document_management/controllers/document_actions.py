@@ -477,10 +477,10 @@ class DocumentActions(http.Controller):
         documents = request.env["doc.document"].with_context(active_test=False).search(
             domain, order="write_date desc"
         )
-        return {
-            "success": True,
-            "data": [
-                document.serialize_for_api(request.env.user)
-                for document in documents
-            ],
-        }
+        data = []
+        user = request.env.user
+        for document in documents:
+            payload = document.serialize_for_api(user)
+            payload["location_label"] = document._lifecycle_location_label()
+            data.append(payload)
+        return {"success": True, "data": data}

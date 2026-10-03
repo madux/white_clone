@@ -23,7 +23,12 @@ function isWorkspaceRoute(pathname: string): boolean {
 }
 
 function isEmployeeRoute(pathname: string): boolean {
-  return pathname === "/pages/employee" || pathname.startsWith("/pages/employee/");
+  return (
+    pathname === "/pages/employee" ||
+    pathname.startsWith("/pages/employee/") ||
+    pathname === "/pages/compliance" ||
+    pathname.startsWith("/pages/compliance/")
+  );
 }
 
 function isOrganizationalRoute(pathname: string): boolean {

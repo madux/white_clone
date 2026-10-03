@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ModalDialog from "./ModalDialog";
 import DepartmentAutocomplete, {
   type DepartmentOption,
@@ -22,6 +22,7 @@ import {
   useDocuments,
   useFolders,
   useComplianceTargets,
+  useOrganizationalDefaults,
   useSettings,
   useWorkspaceActivity,
 } from "../../../hooks/useDocuments";
@@ -38,10 +39,17 @@ import FolderApprovalFields, {
 } from "./FolderApprovalFields";
 import OrganizationalVisibilityFields, {
   validateOrganizationalVisibility,
+  visibilityFromOrganizationalDefaults,
   visibilityToAccessScope,
   type OrgVisibilityMode,
 } from "./OrganizationalVisibilityFields";
-import { canCreateOrgFolder, canUploadOrgDocuments } from "../../../lib/organizationalFilesAccess";
+import {
+  canCreateOrgFolder,
+  canCreateOrgPolicy,
+  canManageOrgDocuments,
+  canManageOrgFolders,
+  canUploadOrgDocuments,
+} from "../../../lib/organizationalFilesAccess";
 import BulkFolderActions from "./BulkFolderActions";
 import FolderPickerDialog from "./FolderPickerDialog";
 import { folderIdsWithDescendants } from "./FolderTreePicker";
@@ -63,6 +71,8 @@ import { formatFieldLabel } from "../../../lib/formatLabel";
 import { folderCardStyle, folderWellStyle } from "../../../lib/folderColor";
 import FolderDescriptionAssist from "./FolderDescriptionAssist";
 import OrgFolderIcon from "./OrgFolderIcon";
+import SectionTabs from "./SectionTabs";
+import OrganizationalPoliciesPanel from "./OrganizationalPoliciesPanel";
 
 type PageKind = "employee" | "organization" | "organizational";
 type ViewMode = "list" | "cards";
@@ -72,7 +82,10 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
   const complianceTargets = useComplianceTargets();
   const currentUser = useCurrentUser();
   const params = useSearchParams();
+  const router = useRouter();
   const isOrganizationPage = kind === "organization";
+  const orgSectionTab =
+    isOrganizationPage && params.get("tab") === "policies" ? "policies" : "folders";
   const workspaceActivity = useWorkspaceActivity(isOrganizationPage);
   const guideTarget = params.get("guide");
   const createQuery = params.get("create");
@@ -194,28 +207,27 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
       {isOrganizationPage ? (
         <LibraryBreadcrumb items={[{ label: "Organizational Files" }]} />
       ) : null}
+      {isOrganizationPage ? (
+        <SectionTabs
+          ariaLabel="Organizational library sections"
+          value={orgSectionTab}
+          onChange={(value) => {
+            const nextParams = new URLSearchParams(params.toString());
+            if (value === "folders") nextParams.delete("tab");
+            else nextParams.set("tab", value);
+            const query = nextParams.toString();
+            router.replace(
+              query ? `/pages/organization?${query}` : "/pages/organization",
+            );
+          }}
+          items={[
+            { id: "folders", label: "Folders" },
+            { id: "policies", label: "Policies" },
+          ]}
+        />
+      ) : null}
       <section className="app-table-well app-page-body">
         <AppToolbar
-          leading={
-            isOrganizationPage && canCreateFolder ? (
-              <OrganizationalNewMenu
-                canUpload={canUploadOrg}
-                canCreateFolder={canCreateFolder}
-                canCreatePolicy={currentUser.data?.is_document_admin === true}
-                onCreateRootFolder={() => setShowCreateFolder(true)}
-              />
-            ) : canCreateFolder ? (
-              <NewMenu
-                items={[
-                  {
-                    label: "Folder",
-                    icon: FolderPlus,
-                    onSelect: () => setShowCreateFolder(true),
-                  },
-                ]}
-              />
-            ) : null
-          }
           search={search}
           onSearchChange={setSearch}
           searchPlaceholder={
@@ -247,12 +259,37 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
             />
           }
           actions={
-            kind === "employee" && currentUser.data?.is_document_admin === true ? (
-              <Button variant="outline" render={<Link href="/pages/compliance" />}>
-                <ShieldCheck data-icon="inline-start" />
-                Compliance
-              </Button>
-            ) : null
+            <>
+              {kind === "employee" && currentUser.data?.is_document_admin === true ? (
+                <Button
+                  variant="outline"
+                  render={<Link href="/pages/employee?tab=compliance" />}
+                >
+                  <ShieldCheck data-icon="inline-start" />
+                  Compliance
+                </Button>
+              ) : null}
+              {isOrganizationPage &&
+              (canCreateFolder || canCreateOrgPolicy(currentUser.data)) ? (
+                <OrganizationalNewMenu
+                  canUpload={canUploadOrg}
+                  canCreateFolder={canCreateFolder}
+                  canCreatePolicy={canCreateOrgPolicy(currentUser.data)}
+                  libraryTab={orgSectionTab}
+                  onCreateRootFolder={() => setShowCreateFolder(true)}
+                />
+              ) : canCreateFolder ? (
+                <NewMenu
+                  items={[
+                    {
+                      label: "Folder",
+                      icon: FolderPlus,
+                      onSelect: () => setShowCreateFolder(true),
+                    },
+                  ]}
+                />
+              ) : null}
+            </>
           }
           footer={
             showFilters && !isEmployeePage ? (
@@ -356,12 +393,22 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
           />
         </div>
 
+        {isOrganizationPage && orgSectionTab === "policies" ? (
+          <OrganizationalPoliciesPanel
+            search={search}
+            canManageFolders={
+              currentUser.data?.is_document_manager === true ||
+              canManageOrgFolders(currentUser.data) ||
+              canManageOrgDocuments(currentUser.data)
+            }
+          />
+        ) : null}
         {(folders.error || documents.error) && (
           <p className="m-4 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
             Unable to load this library.
           </p>
         )}
-        {isLoading ? (
+        {isOrganizationPage && orgSectionTab === "policies" ? null : isLoading ? (
           <div className="flex flex-col gap-2 p-4">
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
@@ -434,6 +481,11 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
                       >
                         <OrgFolderIcon
                           className="h-10 w-10"
+                          folderKind={
+                            kind === "employee"
+                              ? "employee"
+                              : folder.folder_kind
+                          }
                           hasContent={
                             folderDocuments.length > 0 ||
                             (kind === "employee" && employees > 0)
@@ -499,7 +551,8 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
                   <OrganizationalNewMenu
                     canUpload={canUploadOrg}
                     canCreateFolder={canCreateFolder}
-                    canCreatePolicy={currentUser.data?.is_document_admin === true}
+                    canCreatePolicy={canCreateOrgPolicy(currentUser.data)}
+                    libraryTab={orgSectionTab}
                     onCreateRootFolder={() => setShowCreateFolder(true)}
                   />
                 ) : (
@@ -595,6 +648,7 @@ function FolderCreateModal({
   const targets = useComplianceTargets();
   const folders = useFolders();
   const settingsQuery = useSettings();
+  const orgDefaultsQuery = useOrganizationalDefaults(kind === "organizational");
   const [step, setStep] = useState<"configure" | "review">("configure");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -609,7 +663,7 @@ function FolderCreateModal({
   const [scopeIds, setScopeIds] = useState<number[]>([]);
   const [scopeSearch, setScopeSearch] = useState("");
   const [visibilityMode, setVisibilityMode] =
-    useState<OrgVisibilityMode>("public");
+    useState<OrgVisibilityMode>("private");
   const [restrictedScope, setRestrictedScope] = useState("department");
   const [advancedSearch, setAdvancedSearch] = useState("");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(
@@ -642,6 +696,19 @@ function FolderCreateModal({
       setRetention(settings.default_retention_period || "7");
     }
   }, [kind, settingsQuery.data?.settings]);
+
+  useEffect(() => {
+    if (kind !== "organizational") return;
+    const settings = settingsQuery.data?.settings;
+    const orgDefaults = orgDefaultsQuery.data;
+    const source = settings?.default_org_access_scope
+      ? settings
+      : orgDefaults || settings;
+    if (!source) return;
+    const initial = visibilityFromOrganizationalDefaults(source);
+    setVisibilityMode(initial.mode);
+    setRestrictedScope(initial.restrictedScope);
+  }, [kind, settingsQuery.data?.settings, orgDefaultsQuery.data]);
 
   const employeeOptions = useMemo<EmployeeOption[]>(() => {
     return employees.map((employee) => ({
@@ -1026,7 +1093,9 @@ function FolderCreateModal({
                           ? "Public, visible to all staff"
                           : visibilityMode === "private"
                             ? "Private"
-                            : `Restricted (${formatFieldLabel(restrictedScope)})`
+                            : visibilityMode === "company_owned"
+                              ? "Company owned"
+                              : `Restricted (${formatFieldLabel(restrictedScope)})`
                       }
                       description={description}
                       onDescriptionChange={setDescription}
@@ -1070,7 +1139,9 @@ function FolderCreateModal({
                         ? "Public"
                         : visibilityMode === "private"
                           ? "Private"
-                          : `Restricted (${formatFieldLabel(restrictedScope)})`}
+                          : visibilityMode === "company_owned"
+                            ? "Company owned"
+                            : `Restricted (${formatFieldLabel(restrictedScope)})`}
                     </li>
                     <li>
                       <span className="font-semibold">Retention (inherited):</span>{" "}

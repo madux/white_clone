@@ -159,17 +159,17 @@ const organizationalSteps: GuideStep[] = [
     id: "org-policy-folder",
     title: "Create policies in folders",
     description:
-      "From + New in a folder, create a compliance policy (from scratch, import an existing file, or draft with AI). A policy document is added to the folder named after the policy. Template-from-library creation is reserved for a future Templates module.",
+      "From + New in a folder, choose Create policy. Name the policy and select matching library files to move into a dedicated policy folder. Policies appear on the Organizational Files → Policies tab.",
     href: "/pages/organization",
     action: "Open library",
   },
   {
     id: "org-policy-linked",
-    title: "Linked policies",
+    title: "Registered policies",
     description:
-      "Policy-linked files show a Linked to policy badge in the library. Use Filters → Other → Linked to policy / Not linked. Opening the file shows a compliance link that opens the policy in Policies (`/pages/compliance?policy=`).",
-    href: "/pages/organization",
-    action: "Browse library",
+      "Classified policy documents show on the Policies tab and in their policy folder. Compliance rules for monitoring live under Employee Files → Compliance and are separate from organizational policies.",
+    href: "/pages/organization?tab=policies",
+    action: "View policies",
   },
   {
     id: "org-sharing",

@@ -16,7 +16,20 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { formatFieldLabel, formatStatusLabel } from "../../../lib/formatLabel";
-import { policyDocumentFileName } from "../../../lib/policyDocumentName";
+import {
+  buildCreatePolicyPayload,
+  defaultPolicyForm,
+  type PolicyCreateFormState,
+  type PolicyReviewMeta,
+} from "../../../lib/policyCreateForm";
+import {
+  coerceEffectiveDate,
+  coercePolicyAppliesTo,
+  coercePolicyAuditFrequency,
+  coercePolicyEventTrigger,
+  coercePolicySchedule,
+} from "../../../lib/policyFieldCoercion";
+import { proposalToForm, reviewMetaFromProposal } from "../../../lib/policyProposal";
 import { useClientPagination } from "../../../lib/useClientPagination";
 import ListPagination from "./ListPagination";
 import {
@@ -26,7 +39,6 @@ import {
   useDeactivateException,
   useDeleteException,
   useCreatePolicy,
-  useCreateDocument,
   useDeletePolicy,
   useDocumentTypes,
   useEvaluatePolicy,
@@ -36,14 +48,13 @@ import {
   useRejectException,
   usePolicies,
   usePolicyTypes,
-  useDocuments,
 } from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
 import { api } from "../../../lib/api";
 import BulkActionBar from "./BulkActionBar";
-import PolicyActions from "./PolicyActions";
+import ComplianceRuleActions from "./ComplianceRuleActions";
 import ModalDialog from "./ModalDialog";
-import PolicyTypeMultiSelect from "./PolicyTypeMultiSelect";
+import ComplianceDocumentTypeMultiSelect from "./ComplianceDocumentTypeMultiSelect";
 import SortableTable from "./SortableTable";
 import ThemedSelect from "./ThemedSelect";
 import {
@@ -53,13 +64,14 @@ import {
 import ComplianceReportsPanel from "./ComplianceReportsPanel";
 import EmployeeMetricPicker from "./EmployeeMetricPicker";
 import SectionTabs from "./SectionTabs";
+import ComplianceRuleReviewScreen from "./ComplianceRuleReviewScreen";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
 
-type Tab = "policies" | "exceptions" | "history" | "reports";
+type Tab = "rules" | "exceptions" | "history" | "reports";
 const AI_BRIEF_CHIPS = [
   { label: "Who it applies to", text: "Applies to all employees." },
   { label: "What's required", text: "Staff must complete the required documents." },
@@ -77,15 +89,14 @@ const schedules = [
   "custom",
 ];
 
-export default function CompliancePage() {
+export default function CompliancePage({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showConfirm, showAlert } = useAppDialog();
-  const [tab, setTab] = useState<Tab>("policies");
+  const [tab, setTab] = useState<Tab>("rules");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [policyPath, setPolicyPath] = useState<"chooser" | "scratch" | "import" | "ai" | null>(null);
-  const [importDocumentId, setImportDocumentId] = useState("");
+  const [policyPath, setPolicyPath] = useState<"chooser" | "ai" | null>(null);
   const [aiName, setAiName] = useState("");
   const [aiDescription, setAiDescription] = useState("");
   const [aiPolicyTypeId, setAiPolicyTypeId] = useState("");
@@ -93,16 +104,18 @@ export default function CompliancePage() {
   const [aiPending, setAiPending] = useState(false);
   const [reviewPolicyId, setReviewPolicyId] = useState<number | null>(null);
   const [policySubmitError, setPolicySubmitError] = useState("");
+  const [policyReviewMeta, setPolicyReviewMeta] = useState<PolicyReviewMeta | undefined>();
+  const [policyFormInitialStep, setPolicyFormInitialStep] = useState<
+    "configure" | "review"
+  >("configure");
   const [running, setRunning] = useState(false);
   const policies = usePolicies();
   const exceptions = useExceptions();
   const runs = useEvaluationRuns();
   const types = usePolicyTypes();
   const documents = useDocumentTypes();
-  const orgDocuments = useDocuments(undefined, false, policyPath === "import");
   const targets = useComplianceTargets();
   const createPolicy = useCreatePolicy();
-  const createDocument = useCreateDocument();
   const createException = useCreateException();
   const evaluate = useEvaluatePolicy();
   const deletePolicy = useDeletePolicy();
@@ -113,37 +126,7 @@ export default function CompliancePage() {
   const rejectException = useRejectException();
   const deactivateException = useDeactivateException();
   const deleteException = useDeleteException();
-  const [policyForm, setPolicyForm] = useState({
-    name: "",
-    description: "",
-    policy_type_id: "",
-    document_type_ids: [] as number[],
-    applies_to: "all",
-    scope_ids: [] as number[],
-    schedule: "monthly",
-    custom_schedule_days: "30",
-    minimum_documents: "1",
-    grace_period_days: "0",
-    effective_date: new Date().toISOString().slice(0, 10),
-    // Type-specific fields
-    allow_waiver: true,
-    alert_schedule_days: "60,30,15,7,0",
-    escalate_manager_days: 0,
-    escalate_hr_days: 7,
-    auto_request_renewal: true,
-    event_trigger: "onboarding",
-    due_days: 14,
-    reminder_frequency_days: 3,
-    assigned_reviewer_id: "",
-    audit_frequency: "quarterly",
-    sample_pct: 100,
-    assigned_auditor_id: "",
-    policy_category: "",
-    lifecycle_status: "active",
-    active: true,
-    policy_visibility: "employees",
-    policy_audience: "everyone",
-  });
+  const [policyForm, setPolicyForm] = useState(() => defaultPolicyForm(""));
 
   useEffect(() => {
     if (!policyForm.policy_type_id && types.data && types.data.length > 0) {
@@ -167,11 +150,16 @@ export default function CompliancePage() {
 
   useEffect(() => {
     if (searchParams.get("create") === "1") {
-      setTab("policies");
+      setTab("rules");
       const path = searchParams.get("path");
-      if (path === "import" || path === "ai" || path === "scratch") {
-        setPolicyPath(path);
-        setShowForm(path === "scratch");
+      if (path === "ai") {
+        setPolicyPath("ai");
+        setShowForm(false);
+      } else if (path === "wizard" || path === "scratch") {
+        setPolicyPath(null);
+        setPolicyFormInitialStep("configure");
+        setPolicyReviewMeta(undefined);
+        setShowForm(true);
       } else {
         setPolicyPath("chooser");
         setShowForm(false);
@@ -180,10 +168,12 @@ export default function CompliancePage() {
   }, [searchParams]);
 
   useEffect(() => {
-    const policyId = Number(searchParams.get("policy") || 0);
-    if (policyId > 0) {
-      setTab("policies");
-      setReviewPolicyId(policyId);
+    const ruleId = Number(
+      searchParams.get("rule") || searchParams.get("policy") || 0,
+    );
+    if (ruleId > 0) {
+      setTab("rules");
+      setReviewPolicyId(ruleId);
     }
   }, [searchParams]);
 
@@ -210,81 +200,21 @@ export default function CompliancePage() {
         : policyForm.applies_to;
 
     try {
-      const created = await createPolicy.mutateAsync({
-        ...policyForm,
-        policy_type_id: Number(policyForm.policy_type_id),
-        applies_to: effectiveAppliesTo,
-        document_type_ids: policyForm.document_type_ids,
-        employee_ids:
-          effectiveAppliesTo === "employee" ? policyForm.scope_ids : [],
-        department_ids:
-          effectiveAppliesTo === "department" ? policyForm.scope_ids : [],
-        grade_ids: effectiveAppliesTo === "grade" ? policyForm.scope_ids : [],
-        custom_schedule_days: Number(policyForm.custom_schedule_days),
-        minimum_documents: Number(policyForm.minimum_documents),
-        grace_period_days: Number(policyForm.grace_period_days),
-        assigned_reviewer_id: policyForm.assigned_reviewer_id
-          ? Number(policyForm.assigned_reviewer_id)
-          : false,
-        assigned_auditor_id: policyForm.assigned_auditor_id
-          ? Number(policyForm.assigned_auditor_id)
-          : false,
-        escalate_manager_days: 0,
-        lifecycle_status: "active",
-        active: policyForm.active !== false,
-        policy_category: policyForm.policy_category || "",
-        policy_visibility: policyForm.policy_visibility || "employees",
-        policy_audience: policyForm.policy_audience || "everyone",
-        ai_drafted: false,
-      });
-      const folderId = Number(searchParams.get("folder") || 0);
-      const policyId = Number((created as { id?: number })?.id || 0);
-      const typeId =
-        policyForm.document_type_ids[0] || documents.data?.[0]?.id;
-      if (folderId && policyId && typeId) {
-        await createDocument.mutateAsync({
-          name: policyDocumentFileName(policyForm.name),
-          folder_id: folderId,
-          document_type_id: typeId,
-          is_policy: true,
-          linked_policy_id: policyId,
-        });
-      }
+      await createPolicy.mutateAsync(buildCreatePolicyPayload(policyForm));
     } catch (error: any) {
-      setPolicySubmitError(error?.message || "Failed to create policy.");
+      setPolicySubmitError(error?.message || "Failed to create rule.");
       return;
     }
+    await showAlert(
+      "Rule saved as draft. Activate it in Compliance when ready.",
+      { title: "Draft created" },
+    );
     setShowForm(false);
-    setPolicyForm({
-      name: "",
-      description: "",
-      policy_type_id: types.data?.[0]?.id ? String(types.data[0].id) : "",
-      document_type_ids: [],
-      applies_to: "all",
-      scope_ids: [],
-      schedule: "monthly",
-      custom_schedule_days: "30",
-      minimum_documents: "1",
-      grace_period_days: "0",
-      effective_date: new Date().toISOString().slice(0, 10),
-      allow_waiver: true,
-      alert_schedule_days: "60,30,15,7,0",
-      escalate_manager_days: 0,
-      escalate_hr_days: 7,
-      auto_request_renewal: true,
-      event_trigger: "onboarding",
-      due_days: 14,
-      reminder_frequency_days: 3,
-      assigned_reviewer_id: "",
-      audit_frequency: "quarterly",
-      sample_pct: 100,
-      assigned_auditor_id: "",
-      policy_category: "",
-      lifecycle_status: "active",
-      active: true,
-      policy_visibility: "employees",
-      policy_audience: "everyone",
-    });
+    setPolicyReviewMeta(undefined);
+    setPolicyFormInitialStep("configure");
+    setPolicyForm(
+      defaultPolicyForm(types.data?.[0]?.id ? String(types.data[0].id) : ""),
+    );
   };
   const submitException = async (event: FormEvent) => {
     event.preventDefault();
@@ -316,35 +246,41 @@ export default function CompliancePage() {
   const runAiDraft = async () => {
     const title = aiName.trim();
     if (!title) {
-      await showAlert("Enter a policy name.", { title: "Create with AI" });
+      await showAlert("Enter a rule name.", { title: "Create with AI" });
       return;
     }
     setAiPending(true);
     try {
-      const result = await api.draftAiPolicy({
+      const result = await api.proposePolicyFromAi({
         name: title,
         description: aiDescription,
         policy_type_id: aiPolicyTypeId ? Number(aiPolicyTypeId) : undefined,
         document_type_ids: aiDocumentTypeIds,
-        document_type_id: aiDocumentTypeIds[0],
       });
-      if (!result.success) {
-        await showAlert(result.message || "Unable to draft this policy.", {
+      if (!result.success || !result.data) {
+        await showAlert(result.message || "Unable to draft this rule.", {
           title: "Create with AI",
         });
         return;
       }
-      const policyId = Number(result.data?.policy_id || 0);
+      setPolicyForm(
+        proposalToForm(result.data, {
+          ...defaultPolicyForm(
+            types.data?.[0]?.id ? String(types.data[0].id) : "",
+          ),
+          document_type_ids: aiDocumentTypeIds,
+        }),
+      );
+      setPolicyReviewMeta(reviewMetaFromProposal(result.data));
+      setPolicyFormInitialStep("review");
       setAiName("");
       setAiDescription("");
       setAiDocumentTypeIds([]);
       setPolicyPath(null);
-      setSearch("");
-      await policies.refetch();
-      if (policyId) setReviewPolicyId(policyId);
+      setShowForm(true);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to draft this policy.";
+        error instanceof Error ? error.message : "Unable to draft this rule.";
       await showAlert(
         /timeout/i.test(message)
           ? "The AI draft took too long. Try again."
@@ -365,7 +301,11 @@ export default function CompliancePage() {
   };
 
   return (
-    <div className="relative app-page space-y-6">
+    <div
+      className={
+        embedded ? "relative space-y-6" : "relative app-page space-y-6"
+      }
+    >
       <div className="flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-end">
         <div className="flex flex-wrap gap-2">
           <button
@@ -392,13 +332,13 @@ export default function CompliancePage() {
             className="app-btn app-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
-            {tab === "exceptions" ? "New Exception" : "New Policy"}
+            {tab === "exceptions" ? "New Exception" : "New rule"}
           </button>
         </div>
       </div>
       <div className="app-page-metrics">
         <div className="app-page-metric">
-          <span>Active policies</span>
+          <span>Active rules</span>
           <strong>{policies.data?.length ?? 0}</strong>
         </div>
         <div className="app-page-metric">
@@ -408,7 +348,7 @@ export default function CompliancePage() {
           </strong>
         </div>
         <div className="app-page-metric">
-          <span>Policy runs</span>
+          <span>Rule runs</span>
           <strong>{runs.data?.length ?? 0}</strong>
         </div>
       </div>
@@ -416,7 +356,7 @@ export default function CompliancePage() {
         <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
           <SectionTabs
             items={[
-              { id: "policies", label: "Policies" },
+              { id: "rules", label: "Rules" },
               { id: "exceptions", label: "Exceptions" },
               { id: "history", label: "Run History" },
               { id: "reports", label: "Reports" },
@@ -443,7 +383,7 @@ export default function CompliancePage() {
             />
           </InputGroup>
         </div>
-        {tab === "policies" && (
+        {tab === "rules" && (
           <>
             <BulkActionBar
               count={selectedPolicyIds.length}
@@ -474,8 +414,8 @@ export default function CompliancePage() {
                 onClick={async () => {
                   if (
                     !(await showConfirm(
-                      `Delete ${selectedPolicyIds.length} selected polic${selectedPolicyIds.length === 1 ? "y" : "ies"}? This cannot be undone.`,
-                      { title: "Delete policies", confirmLabel: "Delete" },
+                      `Delete ${selectedPolicyIds.length} selected rule${selectedPolicyIds.length === 1 ? "" : "s"}? This cannot be undone.`,
+                      { title: "Delete rules", confirmLabel: "Delete" },
                     ))
                   ) {
                     return;
@@ -660,8 +600,12 @@ export default function CompliancePage() {
             targets={targets.data}
             pending={createPolicy.isPending}
             submitError={policySubmitError}
+            initialStep={policyFormInitialStep}
+            reviewMeta={policyReviewMeta}
             onClose={() => {
               setPolicySubmitError("");
+              setPolicyReviewMeta(undefined);
+              setPolicyFormInitialStep("configure");
               setShowForm(false);
             }}
             onSubmit={submitPolicy}
@@ -669,8 +613,8 @@ export default function CompliancePage() {
         ))}
       {tab !== "exceptions" && policyPath === "chooser" ? (
         <ModalDialog
-          title="New policy"
-          eyebrow="Three ways to start"
+          title="New rule"
+          eyebrow="Choose how to start"
           onClose={() => setPolicyPath(null)}
           size="md"
         >
@@ -679,21 +623,21 @@ export default function CompliancePage() {
               type="button"
               className="rounded-xl border border-slate-200 px-4 py-3 text-left hover:border-brand-pink"
               onClick={() => {
-                setPolicyPath("scratch");
+                setPolicySubmitError("");
+                setPolicyReviewMeta(undefined);
+                setPolicyFormInitialStep("configure");
+                setPolicyForm(
+                  defaultPolicyForm(
+                    types.data?.[0]?.id ? String(types.data[0].id) : "",
+                  ),
+                );
+                setPolicyPath(null);
                 setShowForm(true);
               }}
             >
-              <strong>From scratch</strong>
-              <p className="text-sm text-muted-foreground">Configure a policy yourself.</p>
-            </button>
-            <button
-              type="button"
-              className="rounded-xl border border-slate-200 px-4 py-3 text-left hover:border-brand-pink"
-              onClick={() => setPolicyPath("import")}
-            >
-              <strong>Import existing document</strong>
+              <strong>Rule wizard</strong>
               <p className="text-sm text-muted-foreground">
-                Reuse an organizational file as the policy source.
+                Step through type, scope, documents, and schedule, then review.
               </p>
             </button>
             <button
@@ -703,49 +647,8 @@ export default function CompliancePage() {
             >
               <strong>Create with AI</strong>
               <p className="text-sm text-muted-foreground">
-                Writes a short description and saves a draft.
+                Describe what you need; AI proposes fields for your review.
               </p>
-            </button>
-          </div>
-        </ModalDialog>
-      ) : null}
-      {policyPath === "import" ? (
-        <ModalDialog
-          title="Import existing document"
-          eyebrow="New policy"
-          onClose={() => setPolicyPath("chooser")}
-          size="md"
-        >
-          <ThemedSelect
-            value={importDocumentId}
-            onChange={setImportDocumentId}
-            placeholder="Select a document"
-            options={(orgDocuments.data ?? []).map((item) => ({
-              value: String(item.id),
-              label: item.name,
-            }))}
-          />
-          <div className="mt-5 flex justify-end gap-2">
-            <button type="button" className="secondary-button" onClick={() => setPolicyPath("chooser")}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="primary-button"
-              disabled={!importDocumentId}
-              onClick={() =>
-                void (async () => {
-                  const result = await api.importOrganizationalPolicy(Number(importDocumentId));
-                  if (!result.success) {
-                    await showAlert(result.message || "Unable to import.", { title: "Import policy" });
-                    return;
-                  }
-                  setPolicyPath("scratch");
-                  policies.refetch();
-                })()
-              }
-            >
-              Import
             </button>
           </div>
         </ModalDialog>
@@ -753,7 +656,7 @@ export default function CompliancePage() {
       {policyPath === "ai" ? (
         <ModalDialog
           title="Create with AI"
-          eyebrow="New policy"
+          eyebrow="New rule"
           onClose={() => {
             if (!aiPending) setPolicyPath("chooser");
           }}
@@ -762,7 +665,7 @@ export default function CompliancePage() {
           {aiPending ? (
             <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-brand-pink" />
-              <p className="text-sm font-semibold text-slate-700">Drafting policy…</p>
+              <p className="text-sm font-semibold text-slate-700">Drafting rule…</p>
               <p className="text-xs text-muted-foreground">
                 This can take a little while. Keep this window open.
               </p>
@@ -774,7 +677,7 @@ export default function CompliancePage() {
                 Activate it when it looks right.
               </p>
               <label className="mt-4 block space-y-1 text-sm">
-                <span className="font-semibold">Policy name</span>
+                <span className="font-semibold">Rule name</span>
                 <input
                   className="field"
                   value={aiName}
@@ -805,7 +708,7 @@ export default function CompliancePage() {
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <label className="block space-y-1 text-sm">
-                  <span className="font-semibold">Policy type</span>
+                  <span className="font-semibold">Rule type</span>
                   <ThemedSelect
                     value={aiPolicyTypeId}
                     onChange={setAiPolicyTypeId}
@@ -818,7 +721,7 @@ export default function CompliancePage() {
                 </label>
                 <div className="block space-y-1 text-sm sm:col-span-2">
                   <span className="font-semibold">Required documents</span>
-                  <PolicyTypeMultiSelect
+                  <ComplianceDocumentTypeMultiSelect
                     types={documents.data ?? []}
                     selected={aiDocumentTypeIds}
                     onChange={setAiDocumentTypeIds}
@@ -879,8 +782,8 @@ function PolicyTable({
     <>
     <Table
       headers={[
-        "Policy name",
-        "Policy type",
+        "Rule name",
+        "Rule type",
         "Details",
         "Applies to",
         "Schedule",
@@ -888,7 +791,7 @@ function PolicyTable({
         "Status",
         "Actions",
       ]}
-      empty="No policies found."
+      empty="No rules found."
       selectAllChecked={allSelected}
       onToggleAll={onToggleAll}
       hasSelection
@@ -936,8 +839,8 @@ function PolicyTable({
                 {policyStatusLabel(policy)}
               </span>
             </td>
-            <td className="cell">
-              <PolicyActions
+            <td className="cell table-actions-cell">
+              <ComplianceRuleActions
                 policy={policy}
                 documents={documents}
                 types={types}
@@ -1003,7 +906,9 @@ function ExceptionTable({
             <td className="cell">
               <span className={`status ${item.status === "approved" ? "approved" : item.status === "rejected" || item.status === "expired" ? "danger" : "pending"}`}>{formatStatusLabel(item.status)}</span>
             </td>
-            <td className="cell"><ExceptionActions exception={item} /></td>
+            <td className="cell table-actions-cell">
+              <ExceptionActions exception={item} />
+            </td>
           </tr>
         ))}
       </>
@@ -1039,11 +944,13 @@ function ExceptionActions({ exception }: { exception: any }) {
     )
       await remove.mutateAsync(exception.id);
   };
-  return <div className="flex flex-wrap items-center justify-end gap-1">
+  return (
+    <div className="table-actions-group flex-wrap">
     {exception.status === "draft" && <><button type="button" onClick={() => approve.mutateAsync(exception.id)} disabled={approve.isPending} className="row-action text-emerald-600" title="Approve exception" aria-label="Approve exception"><ShieldCheck /></button><button type="button" onClick={() => reject.mutateAsync(exception.id)} disabled={reject.isPending} className="row-action danger" title="Reject exception" aria-label="Reject exception"><Ban /></button></>}
     <button type="button" onClick={toggle} disabled={deactivate.isPending || reactivate.isPending} className="row-action" title={active ? "Deactivate exception" : "Reactivate exception"} aria-label={active ? "Deactivate exception" : "Reactivate exception"}>{active ? <ToggleLeft /> : <RotateCcw />}</button>
     <button type="button" onClick={deleteException} disabled={remove.isPending} className="row-action danger" title="Delete exception"><Trash2 /></button>
-  </div>;
+  </div>
+  );
 }
 function HistoryTable({
   runs,
@@ -1056,7 +963,7 @@ function HistoryTable({
   return (
     <>
     <Table
-      headers={["Policy", "Run type", "Employees", "Results", "Evaluated at"]}
+      headers={["Rule", "Run type", "Employees", "Results", "Evaluated at"]}
       empty="No run history yet."
     >
       <>
@@ -1149,7 +1056,14 @@ function Table({
               </th>
             ) : null}
             {headers.map((header) => (
-              <th key={header} className="px-5 py-4">
+              <th
+                key={header}
+                className={
+                  header === "Actions"
+                    ? "table-actions-header px-5 py-4"
+                    : "px-5 py-4"
+                }
+              >
                 {header}
               </th>
             ))}
@@ -1503,10 +1417,47 @@ export function PolicyForm({
   submitError,
   onClose,
   onSubmit,
+  onImportComplete,
   organizationalMode,
+  initialStep = "configure",
+  reviewMeta,
+  importDocumentId,
 }: any) {
-  const [step, setStep] = useState<"configure" | "review">("configure");
+  const [step, setStep] = useState<"configure" | "review">(initialStep);
   const [formError, setFormError] = useState("");
+  const [importPending, setImportPending] = useState(false);
+
+  useEffect(() => {
+    setStep(initialStep);
+  }, [initialStep]);
+
+  useEffect(() => {
+    setForm((prev: PolicyCreateFormState) => {
+      const event_trigger = coercePolicyEventTrigger(prev.event_trigger);
+      const audit_frequency = coercePolicyAuditFrequency(prev.audit_frequency);
+      const applies_to = coercePolicyAppliesTo(prev.applies_to);
+      const schedule = coercePolicySchedule(prev.schedule || "manual");
+      const effective_date = coerceEffectiveDate(prev.effective_date);
+      if (
+        event_trigger === prev.event_trigger &&
+        audit_frequency === prev.audit_frequency &&
+        applies_to === prev.applies_to &&
+        schedule === prev.schedule &&
+        effective_date === prev.effective_date
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        event_trigger,
+        audit_frequency,
+        applies_to,
+        schedule,
+        effective_date,
+      };
+    });
+  }, [importDocumentId, initialStep, setForm]);
+
   const scopeOptions =
     form.applies_to === "department"
       ? (targets?.departments ?? [])
@@ -1531,7 +1482,9 @@ export function PolicyForm({
   const submit = (event: FormEvent) => {
     if (!form.policy_type_id) {
       event.preventDefault();
-      setFormError("Please select a policy type.");
+      setFormError(
+        organizationalMode ? "Please select a policy type." : "Please select a rule type.",
+      );
       return;
     }
     if (!form.document_type_ids.length) {
@@ -1560,15 +1513,23 @@ export function PolicyForm({
 
   return (
     <ModalDialog
-      title={step === "configure" ? "Create policy" : "Review policy"}
-      eyebrow={organizationalMode ? "New policy" : "Compliance engine"}
+      title={
+        step === "configure"
+          ? organizationalMode
+            ? "Create policy"
+            : "Rule wizard"
+          : organizationalMode
+            ? "Review policy"
+            : "Review rule"
+      }
+      eyebrow={organizationalMode ? "New policy" : "New rule"}
       onClose={onClose}
       size="xl"
       zIndex={organizationalMode ? 110 : 50}
     >
       {step === "configure" ? (
       <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
-        <Field label="Policy name">
+        <Field label={organizationalMode ? "Policy name" : "Rule name"}>
           <input
             required
             className="field"
@@ -1576,7 +1537,7 @@ export function PolicyForm({
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
         </Field>
-        <Field label="Policy type">
+        <Field label={organizationalMode ? "Policy type" : "Rule type"}>
           <ThemedSelect
             value={form.policy_type_id}
             onChange={(value) => setForm({ ...form, policy_type_id: value })}
@@ -1593,16 +1554,6 @@ export function PolicyForm({
             className="field min-h-[4.5rem]"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-        </Field>
-        <Field label="Status">
-          <ThemedSelect
-            value={form.active === false ? "inactive" : "active"}
-            onChange={(value) => setForm({ ...form, active: value === "active" })}
-            options={[
-              { value: "active", label: "Active" },
-              { value: "inactive", label: "Inactive" },
-            ]}
           />
         </Field>
         <Field label="Applies to">
@@ -1635,7 +1586,7 @@ export function PolicyForm({
 
         <div className="sm:col-span-2">
           <span className="label">Required documents</span>
-          <PolicyTypeMultiSelect
+          <ComplianceDocumentTypeMultiSelect
             types={documents}
             selected={form.document_type_ids}
             onChange={(document_type_ids) =>
@@ -1718,74 +1669,45 @@ export function PolicyForm({
         </div>
       </form>
       ) : (
-        <div>
-          <dl className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="font-semibold text-slate-500">Policy name</dt>
-              <dd className="font-bold text-slate-800">{form.name}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="font-semibold text-slate-500">Policy type</dt>
-              <dd className="text-slate-700">{selectedType?.name || "—"}</dd>
-            </div>
-            {form.description && (
-              <div className="flex justify-between gap-4">
-                <dt className="font-semibold text-slate-500">Description</dt>
-                <dd className="text-right text-slate-700">{form.description}</dd>
-              </div>
-            )}
-            <div className="flex justify-between gap-4">
-              <dt className="font-semibold text-slate-500">Required document types</dt>
-              <dd className="text-right text-slate-700">
-                {selectedDocumentTypes.map((item: any) => item.name).join(", ") || "—"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="font-semibold text-slate-500">Applies to</dt>
-              <dd className="text-right text-slate-700">{scopeLabels.join(", ")}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="font-semibold text-slate-500">Schedule</dt>
-              <dd className="text-slate-700">
-                {formatFieldLabel(form.schedule || "manual")}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="font-semibold text-slate-500">Effective date</dt>
-              <dd className="text-slate-700">{form.effective_date}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="font-semibold text-slate-500">Minimum documents</dt>
-              <dd className="text-slate-700">{form.minimum_documents}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="font-semibold text-slate-500">Grace period</dt>
-              <dd className="text-slate-700">{form.grace_period_days} days</dd>
-            </div>
-          </dl>
-          {submitError && (
-            <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-              {submitError}
-            </p>
-          )}
-          <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
-            <button
-              type="button"
-              onClick={() => setStep("configure")}
-              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500"
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={(event) => submit(event as unknown as FormEvent)}
-              className="app-btn app-btn-primary"
-            >
-              {pending ? "Saving..." : "Confirm"}
-            </button>
-          </div>
-        </div>
+        <ComplianceRuleReviewScreen
+          form={form}
+          typeName={selectedType?.name || ""}
+          typeCode={typeCode}
+          documentTypeNames={selectedDocumentTypes.map((item: any) => item.name)}
+          scopeLabels={scopeLabels}
+          reviewMeta={reviewMeta}
+          submitError={submitError || formError}
+          pending={pending || importPending}
+          entityName={organizationalMode ? "policy" : "rule"}
+          confirmLabel={importDocumentId ? "Confirm import" : "Confirm"}
+          onBack={() => setStep("configure")}
+          onConfirm={() =>
+            void (async () => {
+              if (importDocumentId) {
+                setImportPending(true);
+                try {
+                  const result = await api.confirmPolicyImport(
+                    importDocumentId,
+                    buildCreatePolicyPayload(form),
+                  );
+                  if (!result.success) {
+                    throw new Error(result.message || "Import failed.");
+                  }
+                  onImportComplete?.();
+                  onClose();
+                } catch (error: unknown) {
+                  setFormError(
+                    error instanceof Error ? error.message : "Import failed.",
+                  );
+                } finally {
+                  setImportPending(false);
+                }
+                return;
+              }
+              submit({ preventDefault: () => undefined } as FormEvent);
+            })()
+          }
+        />
       )}
     </ModalDialog>
   );
@@ -1808,8 +1730,8 @@ function ExceptionForm({
     >
       <form onSubmit={onSubmit} className="grid gap-4">
         <EmployeeChecklist employees={employees} form={form} setForm={setForm} />
-        <Field label="Policy">
-          <ThemedSelect value={form.policy_id} onChange={(value) => setForm({ ...form, policy_id: value })} placeholder="Select policy" options={policies.map((item: any) => ({ value: String(item.id), label: item.name }))} />
+        <Field label="Rule">
+          <ThemedSelect value={form.policy_id} onChange={(value) => setForm({ ...form, policy_id: value })} placeholder="Select rule" options={policies.map((item: any) => ({ value: String(item.id), label: item.name }))} />
         </Field>
         <Field label="Reason">
           <textarea

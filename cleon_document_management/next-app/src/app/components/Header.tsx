@@ -252,8 +252,8 @@ export default function Header() {
         .filter((policy) => matches(`${policy.name} ${policy.description}`))
         .map((policy) => ({
           label: policy.name,
-          detail: "Compliance policy",
-          href: "/pages/compliance",
+          detail: "Compliance rule",
+          href: `/pages/employee?tab=compliance&rule=${policy.id}`,
           kind: "Policy",
         })),
       ...(!isDocumentManager

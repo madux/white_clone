@@ -493,7 +493,7 @@ export default function EmployeeProfilePage() {
         showDepartmentFilter={false}
         totalCount={employeeDocuments.length}
         filteredCount={filteredEmployeeDocuments.length}
-        leading={
+        actions={
           <NewMenu
             items={[
               {
@@ -954,10 +954,11 @@ function AssignPolicyDialog({
   return (
     <ModalDialog title="Assign policy" eyebrow="Employee file" onClose={onClose} size="md">
       <p className="text-sm text-muted-foreground">
-        This assigns a reference to the same policy document. The employee is always notified.
+        Assigns the organizational policy document to this employee file. Only active policies
+        with a policy-classified document are listed. The employee is notified.
       </p>
       <label className="mt-4 block space-y-1 text-sm">
-        <span className="font-semibold">Active policy</span>
+        <span className="font-semibold">Active organizational policy</span>
         <AppSelect
           value={policyId}
           onChange={onPolicyIdChange}

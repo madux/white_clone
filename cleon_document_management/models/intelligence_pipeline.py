@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import re
+import warnings
 from io import BytesIO
 
 _logger = logging.getLogger(__name__)
@@ -23,14 +24,26 @@ MAX_VISION_PAGES = 8
 
 
 def _pymupdf():
-    try:
-        import pymupdf
+    """Load PyMuPDF once; suppress noisy SWIG deprecation warnings on Python 3.13+."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            category=DeprecationWarning,
+            message=r".*SwigPy.*",
+        )
+        warnings.filterwarnings(
+            "ignore",
+            category=DeprecationWarning,
+            message=r".*swigvarlink.*",
+        )
+        try:
+            import pymupdf
 
-        return pymupdf
-    except ImportError:
-        import fitz
+            return pymupdf
+        except ImportError:
+            import fitz
 
-        return fitz
+            return fitz
 
 
 def attachment_bytes(attachment):

@@ -9,25 +9,28 @@ export function policyDocumentFileName(policyName: string): string {
 }
 
 /** Documents that can be registered via Import as policy (not already a policy record). */
-export function canImportDocumentAsPolicy(document: Pick<
+type OrgPolicyDocumentFields = Pick<
   DocDocument,
-  "is_policy" | "linked_policy_id"
->): boolean {
-  if (document.linked_policy_id) return false;
+  "is_policy" | "linked_policy_id" | "organizational_policy_id"
+>;
+
+export function canImportDocumentAsPolicy(document: OrgPolicyDocumentFields): boolean {
+  if (document.organizational_policy_id) return false;
   if (document.is_policy) return false;
   return true;
 }
 
-export function importPolicyBlockReason(
-  document: Pick<DocDocument, "is_policy" | "linked_policy_id">,
-): string | null {
-  if (document.linked_policy_id) return "Already linked to a compliance policy";
-  if (document.is_policy) return "Already marked as a policy document";
+export function importPolicyBlockReason(document: OrgPolicyDocumentFields): string | null {
+  if (document.organizational_policy_id) {
+    return "Already registered as an organizational policy";
+  }
+  if (document.is_policy) return "Already marked as an organizational policy document";
   return null;
 }
 
-export function isOrgDocumentLinkedToPolicy(
-  document: Pick<DocDocument, "is_policy" | "linked_policy_id">,
-): boolean {
-  return Boolean(document.linked_policy_id) || Boolean(document.is_policy);
+export function isOrgDocumentLinkedToPolicy(document: OrgPolicyDocumentFields): boolean {
+  return (
+    Boolean(document.organizational_policy_id) ||
+    Boolean(document.is_policy)
+  );
 }

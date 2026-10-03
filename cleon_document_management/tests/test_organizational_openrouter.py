@@ -115,3 +115,63 @@ class TestOrganizationalOpenRouter(TransactionCase):
                     self.env, "Remote Work", "Cover hybrid days"
                 )
         self.assertEqual(text, "Staff must follow the remote work policy.")
+
+    def test_extract_json_object_from_fenced_response(self):
+        raw = '```json\n{"name": "Test", "policy_type_code": "document_requirement"}\n```'
+        payload = helper._extract_json_object(raw)
+        self.assertEqual(payload["name"], "Test")
+
+    def test_parse_json_object_handles_trailing_comma(self):
+        raw = '{"name": "Test", "policy_type_code": "document_requirement",}'
+        payload = helper._parse_json_object(raw)
+        self.assertEqual(payload["name"], "Test")
+
+    def test_parse_json_object_skips_leading_prose(self):
+        raw = (
+            "Here is the JSON you asked for:\n"
+            '{"name": "Imported", "policy_type_code": "document_requirement"}'
+        )
+        payload = helper._parse_json_object(raw)
+        self.assertEqual(payload["name"], "Imported")
+
+    def test_normalize_proposal_maps_document_type_names(self):
+        doc_type = self.env["doc.document.type"].search([], limit=1)
+        policy_type = self.env["doc.compliance.policy.type"].search([], limit=1)
+        proposal = helper._normalize_proposal(
+            self.env,
+            {
+                "name": "Imported",
+                "policy_type_code": policy_type.code,
+                "document_type_names": [doc_type.name],
+                "applies_to": "all",
+            },
+            default_name="Fallback",
+        )
+        self.assertIn(doc_type.id, proposal["document_type_ids"])
+        self.assertEqual(proposal["policy_type_id"], policy_type.id)
+
+    def test_normalize_proposal_coerces_event_trigger_to_enum(self):
+        policy_type = self.env["doc.compliance.policy.type"].search([], limit=1)
+        proposal = helper._normalize_proposal(
+            self.env,
+            {
+                "name": "Imported",
+                "policy_type_code": policy_type.code,
+                "event_trigger": "When a new employee joins the company",
+            },
+            default_name="Imported",
+        )
+        self.assertEqual(proposal["event_trigger"], "onboarding")
+
+    def test_normalize_proposal_rejects_prose_effective_date(self):
+        policy_type = self.env["doc.compliance.policy.type"].search([], limit=1)
+        proposal = helper._normalize_proposal(
+            self.env,
+            {
+                "name": "Imported",
+                "policy_type_code": policy_type.code,
+                "effective_date": "Starts on the first day of employment",
+            },
+            default_name="Imported",
+        )
+        self.assertEqual(proposal["effective_date"], "")

@@ -242,6 +242,12 @@ class HrTemplate(models.Model):
     file_name = fields.Char()
     processing_error = fields.Char()
     active = fields.Boolean(default=True)
+    is_system_internal = fields.Boolean(
+        string="Internal system template",
+        default=False,
+        index=True,
+        help="Hidden from the Templates & Forms library; used for policy scratch sessions.",
+    )
     document_count = fields.Integer(compute="_compute_document_count")
 
     _sql_constraints = [
@@ -355,11 +361,64 @@ class HrTemplate(models.Model):
             self.processing_error = str(error)
         return version
 
+    @api.model
+    def ensure_policy_scratch_template(self):
+        """Published blank template used when starting a policy document from scratch."""
+        company = self.env.company
+        template = self.search(
+            [
+                ("is_system_internal", "=", True),
+                ("kind", "=", "template"),
+                ("company_id", "=", company.id),
+            ],
+            limit=1,
+        )
+        if template and template.current_version_id:
+            return template
+        category = self.env.ref(
+            "cleon_document_management.template_category_legal",
+            raise_if_not_found=False,
+        )
+        if not category:
+            category = self.env["doc.template.category"].search([], limit=1)
+        if not template:
+            template = self.create(
+                {
+                    "name": "Blank policy document",
+                    "kind": "template",
+                    "category_id": category.id,
+                    "description": "Internal editor shell for policy scratch documents.",
+                    "status": "published",
+                    "is_system_internal": True,
+                    "icon": "📄",
+                }
+            )
+        empty_json = json.dumps(
+            {"type": "doc", "content": [{"type": "paragraph"}]}
+        )
+        version = template.current_version_id
+        if not version:
+            version = self.env["doc.template.version"].create(
+                {
+                    "template_id": template.id,
+                    "version_number": 1,
+                    "editor_json": empty_json,
+                    "extracted_text": "",
+                    "merge_field_schema": "[]",
+                    "extraction_status": "ready",
+                    "published": True,
+                }
+            )
+            template.current_version_id = version.id
+        template.write({"status": "published", "active": True})
+        return template
+
     def library_domain(self, kind, params):
         domain = [
             ("company_id", "=", self.env.company.id),
             ("kind", "=", kind),
             ("active", "=", True),
+            ("is_system_internal", "=", False),
         ]
         query = (params.get("q") or "").strip()
         if query:

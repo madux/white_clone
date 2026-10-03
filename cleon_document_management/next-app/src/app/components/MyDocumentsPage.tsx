@@ -536,7 +536,7 @@ export default function MyDocumentsPage({
           showDepartmentFilter={false}
           totalCount={myFiles.length}
           filteredCount={filteredMyFiles.length}
-          leading={
+          actions={
             <NewMenu
               items={[
                 {
@@ -557,7 +557,7 @@ export default function MyDocumentsPage({
           search={search}
           onSearchChange={setSearch}
           searchPlaceholder="Search documents..."
-          leading={
+          actions={
             <NewMenu
               items={[
                 {
@@ -795,6 +795,8 @@ export default function MyDocumentsPage({
       ) : null}
       {showUpload ? (
         <DocumentUploadModal
+          draftKey="my-workspace-upload"
+          zIndex={80}
           title={uploadRequirement ? "Complete outstanding document" : "Upload documents"}
           eyebrow="My Workspace"
           description={

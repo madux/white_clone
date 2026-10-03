@@ -49,6 +49,12 @@ class TemplateDocument(models.Model):
     language = fields.Char(default="en_GB")
     track_changes = fields.Boolean(default=False)
     client_token = fields.Char(index=True)
+    hr_document_id = fields.Many2one(
+        "doc.document",
+        string="Organizational policy file",
+        ondelete="cascade",
+        index=True,
+    )
     revision_count = fields.Integer(default=1)
 
     def unresolved_list(self):
@@ -91,10 +97,75 @@ class TemplateDocument(models.Model):
             "track_changes": self.track_changes,
             "revision_count": self.revision_count,
             "updated_at": fields.Datetime.to_string(self.write_date) or "",
+            "hr_document_id": self.hr_document_id.id or False,
         }
+
+    def user_can_edit_policy_session(self, user=None):
+        self.ensure_one()
+        if not self.hr_document_id:
+            return False
+        user = user or self.env.user
+        hr_doc = self.hr_document_id
+        if hr_doc.folder_id.folder_type != "organizational":
+            return False
+        perm = self.env["doc.organizational.files.permission"]
+        try:
+            perm.require_upload_org(user)
+        except Exception:
+            return False
+        try:
+            hr_doc.check_access_rule("write")
+        except Exception:
+            return False
+        return True
+
+    @api.model
+    def create_blank_for_hr_document(self, hr_document):
+        hr_document.ensure_one()
+        template = self.env["doc.template"].ensure_policy_scratch_template()
+        version = template.current_version_id
+        if not version:
+            raise ValidationError("The blank policy template has no published version.")
+        empty_json = version.editor_json or json.dumps(
+            {"type": "doc", "content": [{"type": "paragraph"}]}
+        )
+        existing = self.search(
+            [("hr_document_id", "=", hr_document.id)], limit=1
+        )
+        if existing:
+            return existing
+        document = self.create(
+            {
+                "name": hr_document.name,
+                "template_id": template.id,
+                "template_version_id": version.id,
+                "document_json": empty_json,
+                "rendered_text": "",
+                "unresolved_fields": "[]",
+                "resolved_values": "{}",
+                "hr_document_id": hr_document.id,
+                "client_token": "policy-scratch-%s" % hr_document.id,
+            }
+        )
+        self.env["doc.template.revision"].create(
+            {
+                "document_id": document.id,
+                "revision_number": 1,
+                "document_json": empty_json,
+                "rendered_text": "",
+            }
+        )
+        hr_document.write(
+            {
+                "policy_editor_document_id": document.id,
+                "editor_source": "policy_scratch",
+            }
+        )
+        return document
 
     def action_autosave(self, document_json, rendered_text, language=None):
         self.ensure_one()
+        before_text = self.rendered_text or ""
         vals = {
             "document_json": document_json or "",
             "rendered_text": rendered_text or "",
@@ -103,6 +174,21 @@ class TemplateDocument(models.Model):
         if language:
             vals["language"] = language
         self.write(vals)
+        after_text = rendered_text or ""
+        if (
+            self.track_changes
+            and before_text != after_text
+            and (before_text.strip() or after_text.strip())
+        ):
+            self.env["doc.template.tracked.change"].create(
+                {
+                    "document_id": self.id,
+                    "change_type": "replace",
+                    "before_text": before_text,
+                    "after_text": after_text,
+                    "applied": False,
+                }
+            )
         self.env["doc.template.revision"].create(
             {
                 "document_id": self.id,

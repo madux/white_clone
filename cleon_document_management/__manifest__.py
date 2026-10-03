@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CLEON DOCUMENT MANAGEMENT",
-    "version": "17.0.1.35.0",
+    "version": "17.0.1.37.0",
     "category": "CleonHR Document Management",
     "sequence": -1,
     "summary": "CLEON DOCUMENT MANAGEMENT",
@@ -21,6 +21,7 @@
         "data/recycle_origin_backfill.xml",
         "data/intelligence_cron.xml",
         "data/template_categories.xml",
+        "data/policy_scratch_template.xml",
         "views/template_views.xml",
         "data/organizational_automation_cron.xml",
     ],

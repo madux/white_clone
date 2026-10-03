@@ -11,9 +11,11 @@ import {
 } from "../../../hooks/useEmployeeFiles";
 import {
   useApprovalInbox,
+  useCurrentUser,
   useDocumentTypes,
   usePendingEmployeeUploads,
 } from "../../../hooks/useDocuments";
+import CompliancePage from "./CompliancePage";
 import SectionTabs from "./SectionTabs";
 import EmployeeFilesGroupExplorer from "./EmployeeFilesGroupExplorer";
 import EmployeeFilesBrowseToolbar from "./EmployeeFilesBrowseToolbar";
@@ -33,13 +35,14 @@ import {
 } from "../../../lib/employeeFilesBrowsePreferences";
 
 type HomeView = "groups" | "employees" | "documents";
-type WorkspaceTab = "browse" | "pending-approvals" | "issues";
+type WorkspaceTab = "browse" | "pending-approvals" | "issues" | "compliance";
 
 const DOCUMENT_PAGE_SIZE = 25;
 
 function workspaceTabFromParam(value: string | null): WorkspaceTab {
   if (value === "issues") return "issues";
   if (value === "pending-approvals" || value === "pending") return "pending-approvals";
+  if (value === "compliance") return "compliance";
   return "browse";
 }
 
@@ -55,7 +58,13 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 export default function EmployeeFilesHome() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const workspaceTab = workspaceTabFromParam(searchParams.get("tab"));
+  const currentUser = useCurrentUser();
+  const canManageCompliance = currentUser.data?.is_document_admin === true;
+  const rawTab = searchParams.get("tab");
+  const workspaceTab =
+    rawTab === "compliance" && !canManageCompliance
+      ? "browse"
+      : workspaceTabFromParam(rawTab);
   const config = useEmployeeFilesConfig();
   const stats = useEmployeeFilesHomeStats();
   const documentTypes = useDocumentTypes();
@@ -185,12 +194,26 @@ export default function EmployeeFilesHome() {
   ]);
 
   const setWorkspaceTab = (tab: WorkspaceTab) => {
+    if (tab === "compliance" && !canManageCompliance) return;
     if (tab === "browse") {
       router.push("/pages/employee");
       return;
     }
-    router.push(`/pages/employee?tab=${tab}`);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    if (tab !== "compliance") {
+      params.delete("rule");
+      params.delete("policy");
+    }
+    const query = params.toString();
+    router.push(query ? `/pages/employee?${query}` : "/pages/employee");
   };
+
+  useEffect(() => {
+    if (rawTab === "compliance" && !canManageCompliance && !currentUser.isPending) {
+      router.replace("/pages/employee");
+    }
+  }, [canManageCompliance, currentUser.isPending, rawTab, router]);
 
   useEffect(() => {
     const value = searchParams.get("view");
@@ -247,8 +270,13 @@ export default function EmployeeFilesHome() {
             label: "Issues",
             count: attention > 0 ? attention : undefined,
           },
+          ...(canManageCompliance
+            ? [{ id: "compliance" as const, label: "Compliance" }]
+            : []),
         ]}
       />
+
+      {workspaceTab === "compliance" ? <CompliancePage embedded /> : null}
 
       {workspaceTab === "issues" ? (
         <EmployeeFilesIssuesPage embedded />

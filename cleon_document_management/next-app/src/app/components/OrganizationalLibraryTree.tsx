@@ -40,6 +40,7 @@ function percentBadge(percent: number | null) {
 function folderKindLabel(kind?: DocFolder["folder_kind"]) {
   if (kind === "project") return "Project";
   if (kind === "vendor") return "Vendor";
+  if (kind === "policy") return "Policy";
   return "Folder";
 }
 
@@ -140,6 +141,7 @@ export default function OrganizationalLibraryTree({
         hasContent: itemCount > 0,
         documents,
       },
+      folderKind: folder.folder_kind,
       name: folder.folder_name,
       description: folder.description || "",
       documentsCount: itemCount,

@@ -189,7 +189,7 @@ export interface DocFolder {
   folder_name: string;
   description: string;
   folder_type: "employee" | "organizational";
-  folder_kind?: "folder" | "project" | "vendor";
+  folder_kind?: "folder" | "project" | "vendor" | "policy";
   collection_code?: string;
   organize_by?: "none" | "department" | "grade" | "location" | "employment_type";
   parent_id?: number | false;
@@ -261,8 +261,12 @@ export interface DocDocument {
   folder_path?: { id: number; name: string }[];
   linked_policy_id?: number | false;
   linked_policy_name?: string;
+  organizational_policy_id?: number | false;
+  organizational_policy_name?: string;
   linked_template_document_id?: number | false;
   linked_template_document_name?: string;
+  policy_editor_document_id?: number | false;
+  editor_source?: "none" | "policy_scratch" | string;
   org_use_folder_access?: boolean;
   org_access_scope?: string;
   org_department_ids?: number[];
@@ -286,6 +290,26 @@ export interface DocDocument {
   current_version_number?: number;
   document_category?: string;
   document_category_label?: string;
+}
+
+export type SuggestedPolicyFile = DocDocument & {
+  match_reason?: "name" | "policy_keyword";
+  folder_path?: string[];
+};
+
+export interface OrganizationalPolicy {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+  lifecycle_status: "draft" | "active" | "archived";
+  policy_visibility: "employees" | "hr_only";
+  effective_date: string | false;
+  folder_id: number;
+  folder_name: string;
+  document_id: number | false;
+  document_name: string;
+  updated_at: string;
 }
 
 export type DocumentRelationType =

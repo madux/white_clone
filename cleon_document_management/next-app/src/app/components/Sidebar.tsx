@@ -8,7 +8,6 @@ import {
   Users,
   Settings,
   Briefcase,
-  Shield,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -26,6 +25,8 @@ export default function Sidebar() {
   const pathname = usePathname();
   const currentUser = useCurrentUser();
   const isDocAdmin = currentUser.data?.is_document_admin === true;
+  const isAppAdmin =
+    isDocAdmin || currentUser.data?.is_admin === true;
   const canEmployeeFiles = canAccessEmployeeFilesAdmin(currentUser.data);
   const canOrgFiles = canAccessOrgLibrary(currentUser.data);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -34,7 +35,12 @@ export default function Sidebar() {
 
   const groups: NavGroup[] = useMemo(() => {
     const showHome = canEmployeeFiles || (!canEmployeeFiles && !canOrgFiles);
-    const primary: NavLink[] = [
+    const myWorkspace: NavLink = {
+      name: "My Workspace",
+      link: "/pages/my-workspace",
+      icon: Briefcase,
+    };
+    const beforeIntelligence: NavLink[] = [
       ...(showHome
         ? [{ name: "Home", link: "/pages/dashboard", icon: LayoutDashboard }]
         : []),
@@ -55,26 +61,15 @@ export default function Sidebar() {
             },
           ]
         : []),
-      ...(isDocAdmin
-        ? [
-            {
-              name: "Policies",
-              link: "/pages/compliance",
-              icon: Shield,
-            },
-          ]
-        : []),
-      {
-        name: "My Workspace",
-        link: "/pages/my-workspace",
-        icon: Briefcase,
-      },
-      {
-        name: "Document Intelligence",
-        link: "/pages/document-intelligence",
-        icon: Brain,
-      },
     ];
+    const documentIntelligence: NavLink = {
+      name: "Document Intelligence",
+      link: "/pages/document-intelligence",
+      icon: Brain,
+    };
+    const primary: NavLink[] = isAppAdmin
+      ? [...beforeIntelligence, myWorkspace, documentIntelligence]
+      : [myWorkspace, ...beforeIntelligence, documentIntelligence];
     const admin: NavLink[] = isDocAdmin
       ? [{ name: "Settings", link: "/pages/settings", icon: Settings }]
       : [];
@@ -82,7 +77,7 @@ export default function Sidebar() {
       { id: "primary", label: "Workspace", links: primary },
       ...(admin.length ? [{ id: "admin", label: "Admin", links: admin }] : []),
     ];
-  }, [canEmployeeFiles, canOrgFiles, isDocAdmin]);
+  }, [canEmployeeFiles, canOrgFiles, isAppAdmin, isDocAdmin]);
 
   const renderLink = (item: NavLink) => {
     const Icon = item.icon;
@@ -92,8 +87,9 @@ export default function Sidebar() {
           routePath.startsWith("/pages/activity")
         : item.name === "My Workspace"
           ? isWorkspacePath(routePath)
-        : item.name === "Policies"
-          ? routePath.startsWith("/pages/compliance")
+        : item.name === "Employee Files"
+          ? routePath.startsWith("/pages/employee") ||
+            routePath.startsWith("/pages/compliance")
           : item.name === "Organizational Files"
             ? routePath.startsWith("/pages/organization") &&
               !routePath.includes("/templates-forms")

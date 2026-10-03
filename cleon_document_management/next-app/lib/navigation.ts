@@ -30,6 +30,7 @@ export function getNavigationLabel(
   if (route.startsWith("/pages/employee/group")) return "Employee group";
   if (route === "/pages/employee") {
     const tab = searchParams?.get("tab");
+    if (tab === "compliance") return "Compliance";
     if (tab === "issues") return "Issues";
     if (tab === "pending-approvals" || tab === "pending") {
       return "Pending approvals";
@@ -38,6 +39,7 @@ export function getNavigationLabel(
   }
   if (route === "/pages/employee/issues") return "Issues";
   if (route.startsWith("/pages/organization/folder")) return "Organizational folder";
+  if (route.startsWith("/pages/organization/policy-editor")) return "Policy editor";
   if (route === "/pages/organization") return "Organizational Files";
   if (route === "/pages/pending-uploads") return "Pending Uploads";
   if (route === "/pages/recycle-bin" || (route === "/pages/my-workspace" && searchParams?.get("tab") === "recycle")) return "Recycle Bin";
@@ -56,7 +58,7 @@ export function getNavigationLabel(
   if (route === "/pages/quick-access") return "Quick Access";
   if (route === "/pages/archived") return "Archived Documents";
   if (route === "/pages/compliance") return "Compliance";
-  if (route.startsWith("/pages/compliance/run")) return "Policy run";
+  if (route.startsWith("/pages/compliance/run")) return "Compliance run";
   if (route === "/pages/settings") return "Settings";
   if (route === "/pages/super-admin") return "Super Admin";
   if (route.startsWith("/pages/document-intelligence/datasets/new")) {

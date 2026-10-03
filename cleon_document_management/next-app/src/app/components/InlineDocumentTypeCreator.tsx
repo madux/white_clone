@@ -1,7 +1,8 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   useCreateDocumentType,
   useCurrentUser,
@@ -24,14 +25,13 @@ export default function InlineDocumentTypeCreator({
   const settings = useSettings(open);
   const [form, setForm] = useState<DocumentTypeFormValues>(emptyDocumentTypeForm());
   const [error, setError] = useState("");
+  const canCreate = user.data?.is_document_manager === true;
 
-  if (user.data?.is_document_manager !== true) return null;
-
-  const close = () => {
+  const close = useCallback(() => {
     setOpen(false);
     setError("");
     setForm(emptyDocumentTypeForm());
-  };
+  }, []);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -72,28 +72,37 @@ export default function InlineDocumentTypeCreator({
     }
   };
 
+  if (!canCreate) return null;
+
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setError("");
+          setForm(emptyDocumentTypeForm());
+          setOpen(true);
+        }}
         className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-brand-pink hover:underline"
       >
         <Plus className="h-3.5 w-3.5" /> New type
       </button>
-      {open ? (
-        <DocumentTypeFormDialog
-          form={form}
-          setForm={setForm}
-          onClose={close}
-          onSubmit={submit}
-          saving={create.isPending}
-          allApprovers={settings.data?.approvers ?? []}
-          error={error}
-          zIndex={70}
-          submitLabel="Add type"
-        />
-      ) : null}
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <DocumentTypeFormDialog
+              form={form}
+              setForm={setForm}
+              onClose={close}
+              onSubmit={submit}
+              saving={create.isPending}
+              allApprovers={settings.data?.approvers ?? []}
+              error={error}
+              zIndex={90}
+              submitLabel="Add type"
+            />,
+            document.body,
+          )
+        : null}
     </>
   );
 }

@@ -83,6 +83,7 @@ export default function OrganizationalAccessScopeFields({
     { value: "grade", label: "Specific grades" },
     { value: "individual", label: "Specific employees" },
     { value: "private", label: "Private" },
+    { value: "company_owned", label: "Company owned" },
     ...(hideAdminOnly ? [] : [{ value: "admin_only", label: "Admin only" }]),
   ].filter((option) => !allowedScopes || allowedScopes.includes(option.value));
 

@@ -65,8 +65,22 @@ class TemplatesFormsController(http.Controller):
         record = request.env["doc.template.document"].browse(int(document_id)).exists()
         if not record:
             raise ValidationError("Document not found.")
+        if record.hr_document_id and record.user_can_edit_policy_session():
+            record.hr_document_id.check_access_rule("read")
+            return record
         record.check_access_rule("read")
         return record
+
+    def _require_document_write(self, document):
+        if document.hr_document_id and document.user_can_edit_policy_session():
+            document.hr_document_id.check_access_rule("write")
+            return
+        document.check_access_rule("write")
+
+    def _require_ai_access(self, document):
+        if document.hr_document_id and document.user_can_edit_policy_session():
+            return
+        self._require_manager()
 
     def _params(self, kwargs):
         sort = kwargs.get("sort") or "name"
@@ -474,11 +488,16 @@ class TemplatesFormsController(http.Controller):
     )
     def autosave(self, document_id, **kwargs):
         document = self._document(document_id)
+        self._require_document_write(document)
+        rendered_text = kwargs.get("rendered_text") or ""
         data = document.action_autosave(
             kwargs.get("document_json") or "",
-            kwargs.get("rendered_text") or "",
+            rendered_text,
             kwargs.get("language"),
         )
+        hr_document = document.hr_document_id
+        if hr_document:
+            hr_document._sync_policy_editor_pdf(rendered_text)
         return {"success": True, "data": data}
 
     @http.route(
@@ -534,6 +553,36 @@ class TemplatesFormsController(http.Controller):
         return {"success": True, "data": comment.to_dict()}
 
     @http.route(
+        "/api/documents/<int:document_id>/tracked-changes",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def tracked_changes(self, document_id, **kwargs):
+        document = self._document(document_id)
+        self._require_document_write(document)
+        Change = request.env["doc.template.tracked.change"]
+        action = kwargs.get("action") or ""
+        change = Change.browse(int(kwargs.get("change_id") or 0)).exists()
+        if not change or change.document_id != document:
+            return {"success": False, "message": "Tracked change not found."}
+        if action == "accept":
+            if change.after_text:
+                document.write({"rendered_text": change.after_text})
+            change.applied = True
+        elif action == "reject":
+            if change.before_text:
+                document.write({"rendered_text": change.before_text})
+            change.applied = True
+        else:
+            return {"success": False, "message": "Unsupported action."}
+        changes = [item.to_dict() for item in Change.search([("document_id", "=", document.id)])]
+        data = document.to_dict()
+        data.update({"tracked_changes": changes})
+        return {"success": True, "data": data}
+
+    @http.route(
         "/api/documents/<int:document_id>/ai-actions",
         type="json",
         auth="user",
@@ -541,9 +590,9 @@ class TemplatesFormsController(http.Controller):
         csrf=False,
     )
     def ai_actions(self, document_id, **kwargs):
-        self._require_manager()
-        self._rate_limit("ai")
         document = self._document(document_id)
+        self._require_ai_access(document)
+        self._rate_limit("ai")
         action = kwargs.get("action") or "rewrite"
         prompt = kwargs.get("prompt") or ""
         selection = kwargs.get("selection") or document.rendered_text or ""
@@ -554,6 +603,8 @@ class TemplatesFormsController(http.Controller):
             before = document.rendered_text or ""
             after = message.proposal or message.response or ""
             document.write({"rendered_text": after})
+            if document.hr_document_id:
+                document.hr_document_id._sync_policy_editor_pdf(after)
             message.applied = True
             request.env["doc.template.tracked.change"].create(
                 {

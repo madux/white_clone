@@ -120,6 +120,26 @@ class DocOrganizationalFilesPermission(models.AbstractModel):
         return self._role_grants(user, "org_document_delete")
 
     @api.model
+    def user_can_manage_org_policy_lifecycle(self, user):
+        """Create, activate, and preview draft organizational policies."""
+        if self.user_is_platform_admin(user) or self.user_has_legacy_manager(user):
+            return True
+        if user.has_group("cleon_document_management.group_document_admin"):
+            return True
+        return self.user_can_manage_org_document(user)
+
+    @api.model
+    def user_can_view_hr_only_org_policy(self, user):
+        """HR-only organizational policies (registry visibility)."""
+        if self.user_is_platform_admin(user) or self.user_has_legacy_manager(user):
+            return True
+        if user.has_group("cleon_document_management.group_document_admin"):
+            return True
+        if user.has_group("cleon_document_management.group_document_manager"):
+            return True
+        return self.user_can_manage_org_document(user)
+
+    @api.model
     def require_org_library(self, user):
         if not self.user_can_access_org_library(user):
             raise AccessError(_("Organizational Files access is required."))

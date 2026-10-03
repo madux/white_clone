@@ -562,6 +562,113 @@ export const api = {
       payload,
     ),
 
+  suggestedPolicyFiles: (payload: {
+    name?: string;
+    folder_id?: number;
+    policy_folder_id?: number;
+    preview_suggestions?: boolean;
+    /** List eligible org library files (not only name-matched suggestions). */
+    browse_library?: boolean;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: { items: import("./types").SuggestedPolicyFile[] };
+    }>("/api/organizational/suggested-policy-files", payload),
+
+  adoptPolicyFiles: (payload: { policy_id: number; document_ids: number[] }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data?: {
+        policy: import("./types").OrganizationalPolicy;
+        documents: import("./types").DocDocument[];
+      };
+    }>("/api/organizational/adopt-policy-files", payload, { timeout: 120000 }),
+
+  createPolicyScratchDraft: (payload: {
+    folder_id: number;
+    name: string;
+    document_type_id: number;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data?: {
+        folder_id: number;
+        hr_document_id: number;
+        editor_document_id: number;
+        document: import("./types").DocDocument;
+      };
+    }>("/api/organizational/create-policy-scratch-draft", payload),
+
+  syncPolicyEditorAttachment: (payload: {
+    hr_document_id: number;
+    rendered_text?: string;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data?: { synced: boolean; document: import("./types").DocDocument };
+    }>(`/api/organizational/policy-editor/${payload.hr_document_id}/sync-attachment`, {
+      rendered_text: payload.rendered_text,
+    }),
+
+  listActiveTemplatesForms: (payload?: { q?: string; kind?: "template" | "form" }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data?: { templates: Array<Record<string, unknown>> };
+    }>("/api/organizational/active-templates-forms", payload ?? {}),
+
+  createPolicyFolder: (payload: {
+    name: string;
+    parent_folder_id?: number;
+    document_ids: number[];
+    category?: string;
+    visibility?: string;
+    effective_date?: string;
+    description?: string;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      code?: string;
+      data?: {
+        folder: import("./types").DocFolder;
+        policy: import("./types").OrganizationalPolicy;
+        document?: import("./types").DocDocument;
+        documents: import("./types").DocDocument[];
+        policy_id?: number;
+      };
+    }>("/api/organizational/create-policy-folder", payload, { timeout: 120000 }),
+
+  listOrganizationalPolicies: (payload?: {
+    search?: string;
+    status?: string;
+    visibility?: string;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: { items: import("./types").OrganizationalPolicy[]; count: number };
+    }>("/api/organizational/policies", payload ?? {}),
+
+  updateOrganizationalPolicy: (payload: {
+    policy_id: number;
+    lifecycle_status?: "draft" | "active" | "archived";
+    name?: string;
+    category?: string;
+    description?: string;
+    policy_visibility?: "employees" | "hr_only";
+    effective_date?: string | false;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data?: { policy: import("./types").OrganizationalPolicy };
+    }>("/api/organizational/policies/update", payload),
+
   generateFromOrganizationalTemplate: (payload: { template_id: number; folder_id: number }) =>
     rpc<{ success: boolean; message?: string; data: import("./types").DocDocument }>(
       "/api/organizational/generate-from-template",
@@ -580,6 +687,41 @@ export const api = {
       document_id: documentId,
     }),
 
+  analyzePolicyDocument: (documentId: number) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: {
+        document_id: number;
+        document_name: string;
+        proposal: import("./policyProposal").PolicyAiProposal;
+      };
+    }>("/api/organizational/analyze-policy-document", {
+      document_id: documentId,
+    }, { timeout: 120000 }),
+
+  confirmPolicyImport: (documentId: number, payload: Record<string, unknown>) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: { policy: import("./types").CompliancePolicy; document: import("./types").DocDocument };
+    }>("/api/organizational/confirm-policy-import", {
+      document_id: documentId,
+      ...payload,
+    }),
+
+  proposePolicyFromAi: (payload: {
+    name: string;
+    description?: string;
+    policy_type_id?: number;
+    document_type_ids?: number[];
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: import("./policyProposal").PolicyAiProposal;
+    }>("/api/compliance/policies/propose-from-ai", payload, { timeout: 120000 }),
+
   draftAiPolicy: (payload: {
     name: string;
     description?: string;
@@ -590,8 +732,20 @@ export const api = {
     rpc<{
       success: boolean;
       message?: string;
-      data: { policy_id: number; name: string; description: string };
+      data: import("./policyProposal").PolicyAiProposal;
     }>("/api/organizational/ai-policy-draft", payload, { timeout: 120000 }),
+
+  linkPolicyDocument: (policyId: number, documentId: number) =>
+    rpc<{ success: boolean; message?: string; data: import("./types").CompliancePolicy }>(
+      "/api/compliance/policies/link-document",
+      { policy_id: policyId, document_id: documentId },
+    ),
+
+  unlinkPolicyDocument: (policyId: number) =>
+    rpc<{ success: boolean; message?: string; data: import("./types").CompliancePolicy }>(
+      "/api/compliance/policies/unlink-document",
+      { policy_id: policyId },
+    ),
 
   organizationalAutomations: (payload: Record<string, unknown>) =>
     rpc<{ success: boolean; message?: string; data: any }>(
@@ -669,9 +823,11 @@ export const api = {
     ),
 
   assignPolicyToEmployee: (payload: {
+    /** Organizational policy registry id (active policies with a policy document). */
     policy_id: number;
     employee_id: number;
     requested_signature?: boolean;
+    organizational_policy_id?: number;
   }) =>
     rpc<{ success: boolean; message?: string }>("/api/organizational/assign-policy-employee", payload),
 
@@ -834,6 +990,15 @@ export const api = {
       "/api/settings",
       {},
     ),
+
+  getOrganizationalDefaults: () =>
+    rpc<{
+      success: boolean;
+      data?: {
+        default_org_access_scope: string;
+        default_org_restricted_scope: string;
+      };
+    }>("/api/organizational/defaults", {}),
 
   saveSettings: (payload: Record<string, any>) =>
     rpc<{ success: boolean; data?: any; message?: string }>(

@@ -31,6 +31,8 @@ export function useTemplateDocument(id: number) {
     queryKey: TEMPLATE_KEYS.document(id),
     queryFn: () => templatesFormsApi.getDocument(id),
     enabled: id > 0,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 }
 

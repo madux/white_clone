@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, FolderInput, Pencil, Share2, Trash2, Users } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "../../../lib/api";
 import type { DocDocument } from "../../../lib/types";
@@ -8,7 +9,6 @@ import { formatDocumentDate } from "../../../lib/formatDocumentDate";
 import DocumentVersionsFooter from "./DocumentVersionsFooter";
 import SectionTabs from "./SectionTabs";
 import SlideOver from "./SlideOver";
-import CompliancePolicyLink from "./CompliancePolicyLink";
 import DocumentShortcutNotice from "./DocumentShortcutNotice";
 import { isOrgDocumentLinkedToPolicy } from "../../../lib/policyDocumentName";
 
@@ -54,6 +54,7 @@ export default function DocumentDetailsPanel({
   onMove,
   onDelete,
   onManageAccess,
+  activityRefreshKey = 0,
 }: {
   documentId: number;
   documentName: string;
@@ -66,6 +67,7 @@ export default function DocumentDetailsPanel({
   onMove?: () => void;
   onDelete: () => void;
   onManageAccess?: () => void;
+  activityRefreshKey?: number;
 }) {
   const [tab, setTab] = useState<"details" | "activity" | "versions">("details");
   const [auditRows, setAuditRows] = useState<any[]>([]);
@@ -81,7 +83,7 @@ export default function DocumentDetailsPanel({
       })
       .then((result) => setAuditRows(result.data?.items ?? []))
       .finally(() => setAuditLoading(false));
-  }, [documentId, organizational, tab]);
+  }, [documentId, organizational, tab, activityRefreshKey]);
 
   const accessUsers: AccessUser[] =
     document?.access_users ??
@@ -136,23 +138,24 @@ export default function DocumentDetailsPanel({
             </dd>
             <dt className="text-slate-500">Doc ID</dt>
             <dd className="font-medium text-slate-900">{documentId}</dd>
-            {organizational && document?.linked_policy_id ? (
+            {organizational && document?.organizational_policy_id ? (
               <>
-                <dt className="text-slate-500">Compliance</dt>
+                <dt className="text-slate-500">Policy</dt>
                 <dd>
-                  <CompliancePolicyLink
-                    policyId={Number(document.linked_policy_id)}
-                    policyName={document.linked_policy_name}
-                  />
+                  <Link
+                    href={`/pages/organization/folder?folder=${document.folder_id}`}
+                    className="font-medium text-brand-pink hover:underline"
+                  >
+                    {document.organizational_policy_name || "Open policy folder"}
+                  </Link>
                 </dd>
               </>
             ) : organizational &&
               document &&
-              isOrgDocumentLinkedToPolicy(document) &&
-              !document.linked_policy_id ? (
+              isOrgDocumentLinkedToPolicy(document) ? (
               <>
-                <dt className="text-slate-500">Compliance</dt>
-                <dd className="text-sm text-slate-600">Policy document (not linked)</dd>
+                <dt className="text-slate-500">Policy</dt>
+                <dd className="text-sm text-slate-600">Organizational policy document</dd>
               </>
             ) : null}
           </dl>

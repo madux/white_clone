@@ -16,6 +16,7 @@ import {
   Unlock,
 } from "lucide-react";
 import type { DocFolder } from "../../../lib/types";
+import ActionMenuCategory from "./ActionMenuCategory";
 import FolderDetailsPanel from "./FolderDetailsPanel";
 import { useRef, useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
@@ -399,9 +400,7 @@ export default function FolderActions({
             style={{ top: menuPosition.top, left: menuPosition.left }}
             className="org-action-sheet fixed z-[100] w-52 rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-xl shadow-slate-200/60"
           >
-            <p className="px-3 pt-1 text-[10px] font-bold uppercase text-slate-400">
-              Information
-            </p>
+            <ActionMenuCategory label="Information" />
             <button
               type="button"
               onClick={() => {
@@ -413,9 +412,7 @@ export default function FolderActions({
               <Info />
               Details
             </button>
-            <p className="px-3 pt-2 text-[10px] font-bold uppercase text-slate-400">
-              Organise
-            </p>
+            <ActionMenuCategory label="Organise" />
             {!modificationsLocked && showOrgManage ? (
               <button type="button" onClick={openEditModal} className="menu-item">
                 <Edit3 />
@@ -484,9 +481,7 @@ export default function FolderActions({
                   </div>
                 </div>
               )}
-            <p className="px-3 pt-2 text-[10px] font-bold uppercase text-slate-400">
-              Access
-            </p>
+            <ActionMenuCategory label="Access" />
             <button
               type="button"
               onClick={() =>
@@ -515,9 +510,7 @@ export default function FolderActions({
                 {folderType === "organizational" ? "Manage access" : "Share folder"}
               </button>
             ) : null}
-            <p className="px-3 pt-2 text-[10px] font-bold uppercase text-slate-400">
-              Lifecycle
-            </p>
+            <ActionMenuCategory label="Lifecycle" />
             {canLockFolder ? (
               <button
                 type="button"
@@ -614,6 +607,8 @@ export default function FolderActions({
                         ? "Public, visible to all staff"
                         : visibilityMode === "private"
                           ? "Private"
+                          : visibilityMode === "company_owned"
+                            ? "Company owned"
                           : visibilityMode === "admin_only"
                             ? "Admin only"
                             : `Restricted (${formatFieldLabel(restrictedScope)})`

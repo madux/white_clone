@@ -261,7 +261,14 @@ def _process_document_upload(
         create_vals["description"] = description
     if employee:
         create_vals["employee_id"] = employee.id
-    return Document.create(create_vals)
+    document = Document.create(create_vals)
+    if folder.folder_type == "organizational":
+        request.env["doc.object.audit"].log(
+            document,
+            "upload",
+            _("Uploaded %s") % document.name,
+        )
+    return document
 
 
 def _expiry_values_for_upload(document_type, expiry_date):
@@ -307,6 +314,12 @@ class DocumentUICreation(http.Controller):
         raw_approvers = params.get_param(
             "cleon_document_management.default_approver_ids", ""
         )
+        config = request.env["doc.employee.files.config"].get_for_company()
+        org_owned_ids = config.org_company_owned_user_ids.ids
+        if not org_owned_ids:
+            org_owned_ids = config.default_company_owned_admin_users(
+                config.company_id
+            ).ids
         return {
             "default_require_upload_approval": params.get_param(
                 "cleon_document_management.default_require_upload_approval", "0"
@@ -325,6 +338,16 @@ class DocumentUICreation(http.Controller):
             "default_approver_ids": [
                 int(value) for value in raw_approvers.split(",") if value.isdigit()
             ],
+            "default_org_access_scope": config.default_org_access_scope or "private",
+            "default_org_restricted_scope": config.default_org_restricted_scope
+            or "department",
+            "org_company_owned_user_ids": org_owned_ids,
+            "org_company_owned_user_ids_saved": bool(
+                config.org_company_owned_user_ids
+            ),
+            "default_company_owned_admin_user_ids": config.default_company_owned_admin_users(
+                config.company_id
+            ).ids,
         }
 
     @staticmethod
@@ -603,6 +626,48 @@ class DocumentUICreation(http.Controller):
             "cleon_document_management.default_approver_ids",
             ",".join(str(value) for value in approver_ids),
         )
+        config = request.env["doc.employee.files.config"].get_for_company()
+        org_scope_values = {}
+        allowed_org_scopes = {
+            "all_staff",
+            "department",
+            "grade",
+            "individual",
+            "private",
+            "company_owned",
+            "admin_only",
+        }
+        if "default_org_access_scope" in kwargs:
+            scope = (kwargs.get("default_org_access_scope") or "private").strip()
+            if scope not in allowed_org_scopes:
+                return {
+                    "success": False,
+                    "message": "Select a valid default organizational visibility.",
+                }
+            org_scope_values["default_org_access_scope"] = scope
+        if "default_org_restricted_scope" in kwargs:
+            restricted = (
+                kwargs.get("default_org_restricted_scope") or "department"
+            ).strip()
+            if restricted not in {"department", "grade", "individual"}:
+                return {
+                    "success": False,
+                    "message": "Select a valid default restricted visibility.",
+                }
+            org_scope_values["default_org_restricted_scope"] = restricted
+        if "org_company_owned_user_ids" in kwargs:
+            raw_ids = kwargs.get("org_company_owned_user_ids") or []
+            user_ids = [
+                int(value)
+                for value in raw_ids
+                if str(value).isdigit() or isinstance(value, int)
+            ]
+            users = request.env["res.users"].browse(user_ids).exists()
+            org_scope_values["org_company_owned_user_ids"] = [
+                fields.Command.set(users.ids)
+            ]
+        if org_scope_values:
+            config.write(org_scope_values)
         return {"success": True, "data": self._settings_values()}
 
     @http.route(
@@ -1749,9 +1814,9 @@ class DocumentUICreation(http.Controller):
             ],
             order="write_date desc",
         )
-        shared = request.env["doc.document"].search(
-            shared_domain, order="write_date desc"
-        )
+        Document = request.env["doc.document"]
+        shared = Document.search(shared_domain, order="write_date desc")
+        shared = shared.filter_for_organizational_access(user)
         combined = own | shared
         outstanding = []
         if employee:

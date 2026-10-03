@@ -24,9 +24,10 @@ import { useDocumentTypes, useUploadDocument } from "../../../hooks/useDocuments
 import { useAppDialog } from "../../../hooks/useAppDialog";
 import { offlineMessage, useOnlineStatus } from "../../../lib/useOnlineStatus";
 import { CLOUD_SOURCE_OPTIONS } from "./CloudSourceLogos";
-import OrganizationalCreatePolicyFlow, {
-  type OrgPolicyCreatePath,
-} from "./OrganizationalCreatePolicyFlow";
+import CreatePolicyFolderDialog from "./CreatePolicyFolderDialog";
+import PolicyFolderDocumentOptions from "./PolicyFolderDocumentOptions";
+
+export type OrgLibraryRootTab = "folders" | "policies";
 
 export default function OrganizationalNewMenu({
   parentFolder,
@@ -36,6 +37,7 @@ export default function OrganizationalNewMenu({
   canCreatePolicy,
   onCreateRootFolder,
   folderDocuments,
+  libraryTab = "folders",
 }: {
   parentFolder?: DocFolder | null;
   folderLocked?: boolean;
@@ -44,6 +46,8 @@ export default function OrganizationalNewMenu({
   canCreatePolicy: boolean;
   onCreateRootFolder?: () => void;
   folderDocuments?: DocDocument[];
+  /** When + New is used on the org library root (no open folder). */
+  libraryTab?: OrgLibraryRootTab;
 }) {
   const types = useDocumentTypes();
   const upload = useUploadDocument();
@@ -54,13 +58,13 @@ export default function OrganizationalNewMenu({
   const [showLink, setShowLink] = useState(false);
   const [showScan, setShowScan] = useState(false);
   const [creatingTemplate, setCreatingTemplate] = useState(false);
-  const [policyCreatePath, setPolicyCreatePath] =
-    useState<OrgPolicyCreatePath | null>(null);
+  const [showCreatePolicy, setShowCreatePolicy] = useState(false);
   const [importProvider, setImportProvider] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const folderId = parentFolder?.id;
   const inFolder = Boolean(folderId);
   const canAddFiles = inFolder && canUpload && !folderLocked;
+  const isPolicyFolder = parentFolder?.folder_kind === "policy";
 
   useEffect(() => {
     const provider = searchParams.get("cloud_oauth");
@@ -104,6 +108,17 @@ export default function OrganizationalNewMenu({
     setCreatingTemplate(false);
   };
 
+  if (isPolicyFolder && parentFolder) {
+    return (
+      <PolicyFolderDocumentOptions
+        folder={parentFolder}
+        canUpload={canUpload}
+        folderLocked={folderLocked}
+        asMenu
+      />
+    );
+  }
+
   const uploadItems: NewMenuItem[] = [];
   if (canAddFiles) {
     uploadItems.push({
@@ -118,14 +133,33 @@ export default function OrganizationalNewMenu({
   }
 
   const createItems: NewMenuItem[] = [];
+  const atLibraryRoot = !inFolder;
+  const onPoliciesTab = atLibraryRoot && libraryTab === "policies";
+
   if (canCreateFolder && !folderLocked) {
-    if (!inFolder && onCreateRootFolder) {
-      createItems.push({
-        label: "Create folder",
-        icon: FolderPlus,
-        onSelect: () => onCreateRootFolder(),
-      });
-    } else if (inFolder) {
+    if (atLibraryRoot) {
+      if (!onPoliciesTab) {
+        if (onCreateRootFolder) {
+          createItems.push({
+            label: "Create folder",
+            icon: FolderPlus,
+            onSelect: () => onCreateRootFolder(),
+          });
+        }
+        createItems.push(
+          {
+            label: "Create project",
+            icon: FolderKanban,
+            onSelect: () => setNamedKind("project"),
+          },
+          {
+            label: "Create vendor",
+            icon: Store,
+            onSelect: () => setNamedKind("vendor"),
+          },
+        );
+      }
+    } else {
       createItems.push(
         {
           label: "Create folder",
@@ -159,31 +193,15 @@ export default function OrganizationalNewMenu({
       onSelect: () => setCreatingTemplate(true),
     });
   }
-  if (canCreatePolicy && !folderLocked && inFolder) {
-    const openPolicyFlow = (path: OrgPolicyCreatePath) => {
-      void (async () => {
-        if (!(await guardOnline())) return;
-        setPolicyCreatePath(path);
-      })();
-    };
+  if (canCreatePolicy && !folderLocked && (inFolder || atLibraryRoot)) {
     createItems.push({
       label: "Create policy",
       icon: ShieldCheck,
-      onSelect: () => undefined,
-      children: [
-        {
-          label: "From scratch",
-          onSelect: () => openPolicyFlow("scratch"),
-        },
-        {
-          label: "Import existing document",
-          onSelect: () => openPolicyFlow("import"),
-        },
-        {
-          label: "Create with AI",
-          onSelect: () => openPolicyFlow("ai"),
-        },
-      ],
+      onSelect: () => {
+        void (async () => {
+          if (await guardOnline()) setShowCreatePolicy(true);
+        })();
+      },
     });
   }
 
@@ -236,6 +254,8 @@ export default function OrganizationalNewMenu({
       <NewMenu groups={groups} />
       {showUpload && folderId ? (
         <DocumentUploadModal
+          draftKey={`org-upload-${folderId}`}
+          zIndex={80}
           title="Upload documents"
           eyebrow="Organizational files"
           documentTypes={types.data ?? []}
@@ -272,12 +292,10 @@ export default function OrganizationalNewMenu({
       {showLink && folderId ? (
         <LinkFileDialog folderId={folderId} onClose={() => setShowLink(false)} />
       ) : null}
-      {policyCreatePath && folderId && parentFolder ? (
-        <OrganizationalCreatePolicyFlow
-          folderId={folderId}
-          path={policyCreatePath}
-          folderDocuments={folderDocuments}
-          onClose={() => setPolicyCreatePath(null)}
+      {showCreatePolicy ? (
+        <CreatePolicyFolderDialog
+          parentFolder={parentFolder ?? null}
+          onClose={() => setShowCreatePolicy(false)}
         />
       ) : null}
       {importProvider && folderId ? (

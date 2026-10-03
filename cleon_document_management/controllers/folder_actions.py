@@ -381,6 +381,8 @@ class DocumentFolderActions(http.Controller):
             "deleted_at": folder.deleted_at,
             "recycle_bin_until": folder.recycle_bin_until,
             "write_date": folder.write_date,
+            "folder_kind": folder.folder_kind or "folder",
+            "location_label": folder._lifecycle_location_label(),
         } for folder in folders]}
 
     @http.route(

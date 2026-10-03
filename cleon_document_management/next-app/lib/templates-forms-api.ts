@@ -127,6 +127,8 @@ export const templatesFormsApi = {
     unwrap<Record<string, unknown>>(`/api/documents/${id}/autosave`, payload),
   comment: (id: number, payload: Record<string, unknown>) =>
     unwrap<Record<string, unknown>>(`/api/documents/${id}/comments`, payload),
+  trackedChange: (id: number, payload: Record<string, unknown>) =>
+    unwrap<Record<string, unknown>>(`/api/documents/${id}/tracked-changes`, payload),
   ai: (id: number, payload: Record<string, unknown>) =>
     unwrap<Record<string, unknown>>(`/api/documents/${id}/ai-actions`, payload),
   exportLibrary: (query: LibraryQuery & { email?: string; format?: string }) =>

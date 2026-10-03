@@ -2,6 +2,11 @@
 
 import { Maximize2, Minimize2, X } from "lucide-react";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import {
+  isTopModalLayer,
+  registerModalLayer,
+  unregisterModalLayer,
+} from "../../../lib/modalLayerStack";
 
 type ModalSize = "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "5xl";
 
@@ -30,11 +35,13 @@ type ModalDialogProps = {
   titleClassName?: string;
   bodyClassName?: string;
   panelClassName?: string;
+  closeDisabled?: boolean;
 };
 
 export default function ModalDialog({
   title,
   eyebrow,
+  description,
   onClose,
   children,
   size = "lg",
@@ -46,14 +53,17 @@ export default function ModalDialog({
   titleClassName = "text-2xl",
   bodyClassName,
   panelClassName = "",
+  closeDisabled = false,
 }: ModalDialogProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const layerIdRef = useRef(-1);
 
   const handleClose = useCallback(() => {
+    if (closeDisabled) return;
     setIsFullscreen(false);
     onClose();
-  }, [onClose]);
+  }, [closeDisabled, onClose]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -81,13 +91,21 @@ export default function ModalDialog({
   }, []);
 
   useEffect(() => {
+    const id = registerModalLayer(handleClose);
+    layerIdRef.current = id;
+    return () => unregisterModalLayer(id);
+  }, [handleClose]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (!isTopModalLayer(layerIdRef.current)) return;
       if (isFullscreen) {
         event.preventDefault();
         setIsFullscreen(false);
         return;
       }
+      event.preventDefault();
       handleClose();
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -105,14 +123,14 @@ export default function ModalDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-dialog-title"
-        className={`flex w-full flex-col overflow-hidden bg-white shadow-2xl transition-all ${
+        className={`flex w-full min-w-0 flex-col overflow-hidden bg-white shadow-2xl transition-all ${
           isFullscreen
             ? "h-screen max-w-none rounded-none p-8"
             : `max-h-[92vh] rounded-3xl p-6 ${SIZE_CLASSES[size]} ${panelClassName}`
         }`}
       >
-        <div className="flex shrink-0 items-start justify-between border-b border-slate-100 pb-4">
-          <div>
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="min-w-0 flex-1">
             {eyebrow && (
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
                 {eyebrow}
@@ -120,10 +138,13 @@ export default function ModalDialog({
             )}
             <h2
               id="modal-dialog-title"
-              className={`mt-1 font-bold text-slate-900 ${titleClassName}`}
+              className={`mt-1 break-words font-bold text-slate-900 ${titleClassName}`}
             >
               {title}
             </h2>
+            {description ? (
+              <p className="mt-1 line-clamp-2 text-sm text-slate-500">{description}</p>
+            ) : null}
           </div>
           <div className="flex items-center gap-2">
             {headerActions}
@@ -142,18 +163,20 @@ export default function ModalDialog({
                 )}
               </button>
             )}
-            <button
-              type="button"
-              onClick={handleClose}
-              className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
-              aria-label="Close dialog"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            {!closeDisabled ? (
+              <button
+                type="button"
+                onClick={handleClose}
+                className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
+                aria-label="Close dialog"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            ) : null}
           </div>
         </div>
         <div
-          className={`min-h-0 flex-1 pt-4 ${bodyClassName || "overflow-y-auto"}`}
+          className={`min-h-0 min-w-0 flex-1 overflow-x-hidden pt-4 ${bodyClassName || "overflow-y-auto"}`}
         >
           {children}
         </div>

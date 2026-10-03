@@ -6,6 +6,7 @@ import {
   CircleHelp,
   FileText,
   FolderCog,
+  Building2,
   History,
   Pencil,
   Plus,
@@ -45,6 +46,7 @@ import DocumentTypeFormDialog, {
 } from "./DocumentTypeForm";
 import RolesPage from "./RolesPage";
 import EmployeeFilesSettingsPanel from "./EmployeeFilesSettingsPanel";
+import OrganizationalFilesSettingsPanel from "./OrganizationalFilesSettingsPanel";
 import {
   ONBOARDING_MODULE_META,
   ONBOARDING_MODULE_ORDER,
@@ -79,6 +81,13 @@ const sections = [
     description: "EMS grouping, upload rules, and error handling.",
     icon: FolderCog,
   },
+  {
+    id: "organizational_files",
+    label: "Organizational files",
+    shortLabel: "Org files",
+    description: "Default folder visibility and company-owned access delegates.",
+    icon: Building2,
+  },
 ] as const;
 
 const fallbackSettings = {
@@ -87,6 +96,10 @@ const fallbackSettings = {
   default_retention_period: "7",
   recycle_bin_retention_days: 30,
   default_approver_ids: [],
+  default_org_access_scope: "private",
+  default_org_restricted_scope: "department",
+  org_company_owned_user_ids: [] as number[],
+  default_company_owned_admin_user_ids: [] as number[],
 };
 
 const rolesSection = {
@@ -181,6 +194,9 @@ export default function SettingsPage() {
     }
     if (requestedSection === "employee_files") {
       setSection("employee_files");
+    }
+    if (requestedSection === "organizational_files") {
+      setSection("organizational_files");
     }
     if (requestedSection === "access") {
       setSection("types");
@@ -316,6 +332,16 @@ export default function SettingsPage() {
               />
             ) : section === "employee_files" ? (
               <EmployeeFilesSettingsPanel />
+            ) : section === "organizational_files" ? (
+              <OrganizationalFilesSettingsPanel
+                values={values}
+                onChange={(patch) => {
+                  setSettings({ ...values, ...patch });
+                  setNotice(null);
+                }}
+                onSave={saveSettings}
+                saving={save.isPending}
+              />
             ) : section === "roles" ? (
               <RolesPage embedded />
             ) : section === "onboarding" ? (

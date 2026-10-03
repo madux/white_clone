@@ -507,6 +507,7 @@ export default function DocumentTypeFormDialog({
             Cancel
           </button>
           <button
+            type="submit"
             disabled={saving}
             className="app-btn app-btn-primary"
           >

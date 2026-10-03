@@ -168,6 +168,7 @@ export default function QuickAccessPage({
                   >
                     <OrgFolderIcon
                       className="h-10 w-10"
+                      folderKind={folder.folder_kind}
                       hasContent={(folder.document_count ?? 0) > 0}
                     />
                     <p className="mt-3 font-bold text-slate-800">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { FileVisualInput } from "../../../lib/fileTypeVisual";
+import type { DocFolder } from "../../../lib/types";
 import { FileTypeIcon } from "./FileTypeIcon";
 import OrgFolderIcon from "./OrgFolderIcon";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -52,6 +53,7 @@ export type LibraryFileRow = {
   isShortcut?: boolean;
   /** Pink folder with in-folder file peeks when the folder has items */
   folderPreview?: { hasContent: boolean; documents?: FileVisualInput[] };
+  folderKind?: DocFolder["folder_kind"];
   /** @deprecated use folderPreview */
   orgFolder?: { hasContent: boolean; documents?: FileVisualInput[] };
 };
@@ -247,6 +249,7 @@ function LibraryNameCell({ row }: { row: LibraryFileRow }) {
       <OrgFolderIcon
         hasContent={folderPreview.hasContent}
         documents={folderPreview.documents}
+        folderKind={row.folderKind}
       />
     ) : row.kind === "folder" ? (
       <OrgFolderIcon
@@ -256,6 +259,7 @@ function LibraryNameCell({ row }: { row: LibraryFileRow }) {
           Number(row.documentsCount) > 0
         }
         documents={(row.folderPreview ?? row.orgFolder)?.documents}
+        folderKind={row.folderKind}
       />
     ) : row.fileMeta ? (
       <FileTypeIcon {...row.fileMeta} />

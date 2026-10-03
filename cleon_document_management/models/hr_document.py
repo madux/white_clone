@@ -141,6 +141,9 @@ class Document(models.Model):
             ("department", "By Department"),
             ("grade", "By Grade Level"),
             ("individual", "Individual Employees"),
+            ("admin_only", "Admin Only"),
+            ("private", "Private (owner and administrators)"),
+            ("company_owned", "Company owned"),
         ],
         string="Document access scope",
     )
@@ -172,6 +175,20 @@ class Document(models.Model):
         string="Linked template",
         ondelete="set null",
         domain="[('folder_id.folder_type', '=', 'organizational')]",
+    )
+    policy_editor_document_id = fields.Many2one(
+        "doc.template.document",
+        string="Policy editor session",
+        ondelete="set null",
+        copy=False,
+    )
+    editor_source = fields.Selection(
+        [
+            ("none", "None"),
+            ("policy_scratch", "Policy scratch"),
+        ],
+        default="none",
+        index=True,
     )
     is_template = fields.Boolean(string="Master template", default=False, index=True)
     is_shortcut = fields.Boolean(string="Shortcut", default=False)
@@ -785,6 +802,11 @@ class Document(models.Model):
             )
         pending.sudo().write({"res_model": self._name, "res_id": self.id})
         self.sudo().write(write_vals)
+        self._log_organizational_audit(
+            "replace",
+            _("Published new file version"),
+            details=change_note or "",
+        )
 
     def _queue_pending_replacement(
         self,
@@ -889,6 +911,11 @@ class Document(models.Model):
         if issue_date:
             write_vals["issue_date"] = issue_date
         self.sudo().write(write_vals)
+        self._log_organizational_audit(
+            "replace",
+            _("Uploaded new file version"),
+            details=change_note or "",
+        )
         return self
 
     @api.model
@@ -995,9 +1022,16 @@ class Document(models.Model):
             if folder and folder.folder_type == "organizational":
                 vals.setdefault("state", "approved")
                 vals.setdefault("approval_state", "not_required")
+            if folder and folder.folder_kind == "policy":
+                self.env["doc.organizational.policy"].apply_folder_document_defaults(
+                    folder, vals
+                )
 
         documents = super().create(vals_list)
+        Policy = self.env["doc.organizational.policy"]
         for document in documents:
+            if document._in_policy_folder():
+                Policy.register_primary_document_if_empty(document.folder_id, document)
             if document.attachment_id:
                 document.sudo().attachment_id.write(
                     {"res_model": self._name, "res_id": document.id}
@@ -1171,6 +1205,154 @@ class Document(models.Model):
             "current_version_number": latest_snapshot + 1,
         }
 
+    def _lifecycle_location_label(self):
+        self.ensure_one()
+        folder = self.recycle_origin_folder_id or self.folder_id
+        if not folder:
+            return _("Unknown location")
+        base = folder._lifecycle_location_label()
+        if folder.id == self.folder_id.id:
+            return f"{base} · {folder.folder_name}"
+        return base
+
+    def _organizational_policy_record(self):
+        self.ensure_one()
+        Policy = self.env["doc.organizational.policy"]
+        by_document = Policy.search([("document_id", "=", self.id)], limit=1)
+        if by_document:
+            return by_document
+        if self._in_policy_folder():
+            return Policy.search([("folder_id", "=", self.folder_id.id)], limit=1)
+        return Policy.browse()
+
+    def _in_policy_folder(self):
+        self.ensure_one()
+        return (self.folder_id.folder_kind or "folder") == "policy"
+
+    @api.model
+    def create_policy_scratch_draft(self, folder, name, document_type_id):
+        folder.ensure_one()
+        if (folder.folder_kind or "folder") != "policy":
+            raise ValidationError("Scratch drafts can only be created in policy folders.")
+        folder.assert_unlocked(for_upload=True)
+        display_name = (name or "").strip()
+        if not display_name:
+            raise ValidationError("Enter a document name.")
+        file_name = display_name
+        if file_name and not file_name.lower().endswith(".pdf"):
+            file_name = "%s.pdf" % file_name
+        placeholder = self.env["ir.attachment"].sudo().create(
+            {
+                "name": file_name,
+                "datas": base64.b64encode(
+                    b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+                    b"2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\n"
+                    b"trailer<</Size 2/Root 1 0 R>>\nstartxref\n0\n%%EOF"
+                ),
+                "mimetype": "application/pdf",
+                "res_model": "doc.document",
+            }
+        )
+        hr_document = self.create(
+            {
+                "name": file_name,
+                "folder_id": folder.id,
+                "document_type_id": int(document_type_id),
+                "is_policy": True,
+                "attachment_id": placeholder.id,
+            }
+        )
+        editor_document = self.env["doc.template.document"].create_blank_for_hr_document(
+            hr_document
+        )
+        return hr_document, editor_document
+
+    def _sync_policy_editor_pdf(self, rendered_text=None):
+        self.ensure_one()
+        if not self.policy_editor_document_id:
+            return False
+        text = rendered_text
+        if text is None:
+            text = self.policy_editor_document_id.rendered_text or ""
+        text = (text or "").strip() or " "
+        from .intelligence_pipeline import _pymupdf
+
+        fitz = _pymupdf()
+        if not fitz:
+            _logger.warning("PyMuPDF unavailable; skipping policy editor PDF sync.")
+            return False
+        pdf = fitz.open()
+        margin = 50
+        line_height = 14
+        font_size = 11
+        page = pdf.new_page()
+        width = page.rect.width - (margin * 2)
+        y = margin
+        for line in text.splitlines() or [text]:
+            if y > page.rect.height - margin:
+                page = pdf.new_page()
+                y = margin
+            page.insert_text(
+                (margin, y),
+                line[:5000],
+                fontsize=font_size,
+                fontname="helv",
+            )
+            y += line_height
+        raw = pdf.tobytes()
+        pdf.close()
+        attachment = self.attachment_id.sudo()
+        if not attachment:
+            attachment = self.env["ir.attachment"].sudo().create(
+                {
+                    "name": self.name,
+                    "mimetype": "application/pdf",
+                    "res_model": self._name,
+                    "res_id": self.id,
+                }
+            )
+            self.sudo().write({"attachment_id": attachment.id})
+        attachment.write(
+            {
+                "datas": base64.b64encode(raw),
+                "mimetype": "application/pdf",
+                "name": self.name if self.name.lower().endswith(".pdf") else "%s.pdf" % self.name,
+            }
+        )
+        self._log_organizational_edit_throttled(_("Edited in policy editor"))
+        return True
+
+    def _assignable_as_employee_policy(self):
+        """Only flagged policy documents in the org library may be assigned to employees."""
+        self.ensure_one()
+        return bool(
+            self.active
+            and self.is_policy
+            and not self.is_shortcut
+            and not self.is_template
+            and self.folder_id.folder_type == "organizational"
+        )
+
+    def _eligible_for_policy_adoption(self, user=None):
+        self.ensure_one()
+        user = user or self.env.user
+        if self.folder_id.folder_type != "organizational":
+            return False
+        if self.is_shortcut or self.is_template:
+            return False
+        if self._in_policy_folder():
+            return False
+        Policy = self.env["doc.organizational.policy"]
+        if Policy.policy_blocks_document_adoption(self):
+            return False
+        # is_policy can remain set on library files after a cancelled or recycled policy;
+        # folder placement and registry checks above are the real guards.
+        return self._organizational_user_can_access(user)
+
+    def filter_for_organizational_access(self, user=None):
+        user = user or self.env.user
+        return self.filtered(lambda document: document._organizational_user_can_access(user))
+
     def _organizational_user_can_access(self, user=None):
         self.ensure_one()
         user = user or self.env.user
@@ -1178,6 +1360,22 @@ class Document(models.Model):
         if folder.folder_type != "organizational":
             return True
         if not folder._user_can_access(user):
+            return False
+        perm = self.env["doc.organizational.files.permission"]
+        if (folder.folder_kind or "folder") == "policy":
+            policy = self.env["doc.organizational.policy"].for_folder(folder)
+            if (
+                policy
+                and policy.lifecycle_status == "draft"
+                and not perm.user_can_manage_org_policy_lifecycle(user)
+            ):
+                return False
+        visibility = self.policy_visibility or "employees"
+        if self._in_policy_folder():
+            policy = self.env["doc.organizational.policy"].for_folder(folder)
+            if policy:
+                visibility = policy.policy_visibility or visibility
+        if visibility == "hr_only" and not perm.user_can_view_hr_only_org_policy(user):
             return False
         if self.org_use_folder_access or not self.org_access_scope:
             return True
@@ -1196,6 +1394,26 @@ class Document(models.Model):
             return employee.grade_id in self.org_grade_ids
         if scope == "individual":
             return employee in self.org_employee_ids
+        if scope == "admin_only":
+            return (
+                user.has_group("cleon_document_management.group_document_admin")
+                or perm.user_is_platform_admin(user)
+                or perm.user_has_legacy_manager(user)
+            )
+        if scope == "private":
+            if user == self.create_uid or user == self.owner_id:
+                return True
+            return (
+                user.has_group("cleon_document_management.group_document_admin")
+                or perm.user_is_platform_admin(user)
+                or perm.user_has_legacy_manager(user)
+            )
+        if scope == "company_owned":
+            config = self.env["doc.employee.files.config"].get_for_company(
+                folder.company_id
+            )
+            uploader = self.create_uid or self.owner_id
+            return config.user_can_access_company_owned(user, uploader)
         return False
 
     @api.model
@@ -1217,7 +1435,10 @@ class Document(models.Model):
         }
         if values["org_use_folder_access"]:
             return values
-        scope = org_access_scope or "all_staff"
+        scope = (org_access_scope or "all_staff").strip()
+        allowed = {key for key, _label in self._fields["org_access_scope"].selection}
+        if scope not in allowed:
+            raise ValidationError(_("Invalid document access scope: %s") % scope)
         values["org_access_scope"] = scope
         Department = self.env["hr.department"]
         Grade = self.env["hr.grade"]
@@ -1241,6 +1462,77 @@ class Document(models.Model):
         if scope == "individual" and not (employee_ids or []):
             raise ValidationError(_("Select at least one employee for document access."))
         return values
+
+    def _is_organizational_library_document(self):
+        self.ensure_one()
+        folder = self.folder_id
+        return bool(folder) and folder.folder_type == "organizational"
+
+    def _log_organizational_audit(self, action, summary, details=""):
+        self.ensure_one()
+        if not self._is_organizational_library_document():
+            return self.env["doc.object.audit"]
+        return self.env["doc.object.audit"].log(self, action, summary, details=details)
+
+    def _organizational_access_summary(self):
+        self.ensure_one()
+        if self.org_use_folder_access or not self.org_access_scope:
+            return _("Inherits folder access")
+        labels = dict(self._fields["org_access_scope"].selection)
+        base = labels.get(self.org_access_scope, self.org_access_scope)
+        if self.org_access_scope == "department" and self.org_department_ids:
+            names = self.org_department_ids.mapped("name")
+            suffix = ", ".join(names[:3])
+            if len(names) > 3:
+                suffix = "%s…" % suffix
+            return _("%s (%s)") % (base, suffix)
+        if self.org_access_scope == "grade" and self.org_grade_ids:
+            names = self.org_grade_ids.mapped("name")
+            suffix = ", ".join(names[:3])
+            if len(names) > 3:
+                suffix = "%s…" % suffix
+            return _("%s (%s)") % (base, suffix)
+        if self.org_access_scope == "individual" and self.org_employee_ids:
+            names = self.org_employee_ids.mapped("name")
+            suffix = ", ".join(names[:3])
+            if len(names) > 3:
+                suffix = "%s…" % suffix
+            return _("%s (%s)") % (base, suffix)
+        return base
+
+    def action_record_organizational_access_audit(self, previous_summary):
+        self.ensure_one()
+        current = self._organizational_access_summary()
+        if current == previous_summary:
+            return
+        self._log_organizational_audit(
+            "access",
+            _("Access updated to %s") % current,
+            details=_("Previously: %s") % previous_summary,
+        )
+
+    def _log_organizational_edit_throttled(self, summary=None):
+        """Avoid flooding activity while the policy editor autosaves."""
+        self.ensure_one()
+        if not self._is_organizational_library_document():
+            return
+        Audit = self.env["doc.object.audit"]
+        recent = Audit.search(
+            [
+                ("res_model", "=", self._name),
+                ("res_id", "=", self.id),
+                ("action", "=", "edit"),
+            ],
+            limit=1,
+            order="occurred_at desc",
+        )
+        now = fields.Datetime.now()
+        if recent.occurred_at and (now - recent.occurred_at).total_seconds() < 600:
+            return
+        self._log_organizational_audit(
+            "edit",
+            summary or _("Edited document content"),
+        )
 
     def _access_preview(self):
         self.ensure_one()
@@ -1285,6 +1577,7 @@ class Document(models.Model):
     def serialize_for_api(self, user=None, **extra):
         self.ensure_one()
         user = user or self.env.user
+        org_policy = self._organizational_policy_record()
         payload = {
             "id": self.id,
             "name": self.name,
@@ -1349,8 +1642,12 @@ class Document(models.Model):
             "org_employee_ids": self.org_employee_ids.ids,
             "linked_policy_id": self.linked_policy_id.id or False,
             "linked_policy_name": self.linked_policy_id.name or "",
+            "organizational_policy_id": org_policy.id or False,
+            "organizational_policy_name": org_policy.name or "",
             "linked_template_document_id": self.linked_template_document_id.id or False,
             "linked_template_document_name": self.linked_template_document_id.name or "",
+            "policy_editor_document_id": self.policy_editor_document_id.id or False,
+            "editor_source": self.editor_source or "none",
         }
         payload.update(self._version_metadata())
         payload.update(self.get_review_context(user))
@@ -1710,7 +2007,8 @@ class Document(models.Model):
                 expression.OR(shared_access),
             ]
         )
-        return self.search(expression.OR([own, shared]))
+        documents = self.search(expression.OR([own, shared]))
+        return documents.filter_for_organizational_access(user)
 
     @api.model
     def _cron_index_ask_library(self):

@@ -45,6 +45,7 @@ class DocumentFolder(models.Model):
             ("folder", "Folder"),
             ("project", "Project"),
             ("vendor", "Vendor"),
+            ("policy", "Policy"),
         ],
         string="Organizational kind",
         default="folder",
@@ -170,6 +171,7 @@ class DocumentFolder(models.Model):
             ("individual", "Individual Employees"),
             ("admin_only", "Admin Only"),
             ("private", "Private (creator and administrators)"),
+            ("company_owned", "Company owned"),
         ],
         string="Access Permission",
         required=True,
@@ -504,6 +506,7 @@ class DocumentFolder(models.Model):
         "location": 1,
         "individual": 2,
         "private": 3,
+        "company_owned": 3,
         "admin_only": 4,
     }
     ORGANIZATIONAL_SCOPE_FIELDS = frozenset(
@@ -550,10 +553,12 @@ class DocumentFolder(models.Model):
         if parent.access_scope == "admin_only":
             return self.access_scope != "admin_only"
         if parent.access_scope == "private":
-            return self.access_scope not in ("private", "admin_only")
+            return self.access_scope not in ("private", "company_owned", "admin_only")
+        if parent.access_scope == "company_owned":
+            return self.access_scope not in ("private", "company_owned", "admin_only")
         if parent.access_scope == "all_staff":
             return False
-        if self.access_scope in ("admin_only", "private"):
+        if self.access_scope in ("admin_only", "private", "company_owned"):
             return False
         parent_employees = parent._get_scope_employees()
         child_employees = self._get_scope_employees()
@@ -701,6 +706,15 @@ class DocumentFolder(models.Model):
             return bool(employee)
         if self.folder_type == "employee":
             return employee in self.employee_ids
+        if (
+            self.folder_type == "organizational"
+            and (self.folder_kind or "folder") == "policy"
+        ):
+            policy = self.env["doc.organizational.policy"].for_folder(self)
+            if policy and policy.lifecycle_status == "draft":
+                perm = self.env["doc.organizational.files.permission"]
+                if not perm.user_can_manage_org_policy_lifecycle(user):
+                    return False
         if self.access_scope == "admin_only":
             perm = self.env["doc.organizational.files.permission"]
             return (
@@ -717,6 +731,11 @@ class DocumentFolder(models.Model):
                 or perm.user_is_platform_admin(user)
                 or perm.user_has_legacy_manager(user)
             )
+        if self.access_scope == "company_owned":
+            config = self.env["doc.employee.files.config"].get_for_company(
+                self.company_id
+            )
+            return config.user_can_access_company_owned(user, self.create_uid)
         if self.access_scope == "all_staff":
             return True
         if not employee:
@@ -794,6 +813,7 @@ class DocumentFolder(models.Model):
             "individual",
             "admin_only",
             "private",
+            "company_owned",
         }:
             scope = "all_staff"
 
@@ -861,7 +881,12 @@ class DocumentFolder(models.Model):
         return records
 
     def _assign_collection_codes(self):
-        prefixes = {"project": "PRJ", "vendor": "VND", "folder": "COL"}
+        prefixes = {
+            "project": "PRJ",
+            "vendor": "VND",
+            "policy": "POL",
+            "folder": "COL",
+        }
         for folder in self:
             if folder.folder_type != "organizational" or folder.collection_code:
                 continue
@@ -879,6 +904,35 @@ class DocumentFolder(models.Model):
             current = current.parent_id
         names.reverse()
         return names
+
+    def _lifecycle_location_label(self):
+        self.ensure_one()
+        if self.folder_type == "employee":
+            library = _("Employee Files")
+        elif self.folder_type == "organizational":
+            library = _("Organizational Files")
+        else:
+            library = _("Documents")
+        kind_labels = {
+            "project": _("Project"),
+            "vendor": _("Vendor"),
+            "policy": _("Policy"),
+            "folder": _("Folder"),
+        }
+        kind_label = kind_labels.get(self.folder_kind or "folder", _("Folder"))
+        segments = [library, kind_label]
+        if self.parent_id:
+            ancestors = []
+            current = self.parent_id
+            seen = set()
+            while current and current.id not in seen:
+                seen.add(current.id)
+                ancestors.append(current.folder_name)
+                current = current.parent_id
+            ancestors.reverse()
+            if ancestors:
+                segments.append(" / ".join(ancestors))
+        return " · ".join(segments)
 
     def _descendant_ids(self):
         self.ensure_one()
@@ -988,6 +1042,7 @@ class DocumentFolder(models.Model):
     def unlink(self):
         if not self._is_document_manager():
             raise AccessError(_("Only document managers can delete folders."))
+        self.env["doc.organizational.policy"].unlink_for_folders(self)
         return super().unlink()
 
     def action_toggle_favorite(self):
@@ -1083,6 +1138,8 @@ class DocumentFolder(models.Model):
             "deleted_by": False,
             "recycle_bin_until": False,
         })
+        self._disambiguate_restored_folder_names()
+        self.env["doc.organizational.policy"].restore_for_recycled_folders(self)
 
     def _rehome_employee_documents_before_recycle(self):
         self.ensure_one()
@@ -1288,6 +1345,40 @@ class DocumentFolder(models.Model):
             "deleted_by": self.env.user.id,
             "recycle_bin_until": now + timedelta(days=retention_days),
         })
+        self.env["doc.organizational.policy"].archive_for_recycled_folders(self)
+
+    def _organizational_sibling_name_taken(self, name, folder):
+        domain = [
+            ("folder_type", "=", folder.folder_type),
+            ("folder_name", "=", name),
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("id", "!=", folder.id),
+        ]
+        if folder.parent_id:
+            domain.append(("parent_id", "=", folder.parent_id.id))
+        else:
+            domain.append(("parent_id", "=", False))
+        return bool(self.search(domain, limit=1))
+
+    def _disambiguate_restored_folder_names(self):
+        Policy = self.env["doc.organizational.policy"]
+        for folder in self:
+            base_name = (folder.folder_name or "").strip()
+            if not base_name or not self._organizational_sibling_name_taken(
+                base_name, folder
+            ):
+                continue
+            suffix = 2
+            while suffix < 1000:
+                candidate = f"{base_name} ({suffix})"
+                if not self._organizational_sibling_name_taken(candidate, folder):
+                    folder.folder_name = candidate
+                    policy = Policy.search([("folder_id", "=", folder.id)], limit=1)
+                    if policy:
+                        policy.name = candidate
+                    break
+                suffix += 1
 
     def action_permanent_delete(self):
         if not self._is_document_manager():
@@ -1309,6 +1400,8 @@ class DocumentFolder(models.Model):
                     )
                 )
         ordered = subtree.sorted(key=lambda folder: folder._folder_tree_depth(), reverse=True)
+        Policy = self.env["doc.organizational.policy"]
+        Policy.unlink_for_folders(ordered)
         for folder in ordered:
             folder.document_ids.sudo().unlink()
             folder.sudo().unlink()
@@ -1323,6 +1416,8 @@ class DocumentFolder(models.Model):
                 _("The pending uploads folder cannot be permanently deleted.")
             )
         ordered = subtree.sorted(key=lambda folder: folder._folder_tree_depth(), reverse=True)
+        Policy = self.env["doc.organizational.policy"]
+        Policy.unlink_for_folders(ordered)
         for folder in ordered:
             linked_documents = folder._get_recycle_linked_documents()
             documents = (linked_documents | folder.document_ids.sudo()).exists()

@@ -25,6 +25,8 @@ type LifecycleRecord = {
   name: string;
   folder_name?: string;
   folder_type?: "employee" | "organizational";
+  folder_kind?: string;
+  location_label?: string;
   document_type?: string;
   employee_name?: string;
   document_count?: number;
@@ -63,7 +65,7 @@ export default function DocumentLifecyclePage({
         })),
         ...(folders.data ?? []),
       ].filter((item: LifecycleRecord) =>
-        `${item.name} ${item.folder_name ?? ""} ${item.document_type ?? "Folder"}`
+        `${item.name} ${item.folder_name ?? ""} ${item.location_label ?? ""} ${item.document_type ?? "Folder"}`
           .toLowerCase()
           .includes(search.toLowerCase()),
       ),
@@ -214,7 +216,7 @@ export default function DocumentLifecyclePage({
                 record.record_type === "folder"
                   ? `${record.folder_type === "employee" ? "Employee" : "Organizational"} folder`
                   : record.document_type || "—",
-              location: record.record_type === "folder" ? "Folder" : record.folder_name,
+              location: record.location_label || record.folder_name || "—",
               modified: formatDocumentDate(
                 recycle ? record.recycle_bin_until : record.write_date,
               ),

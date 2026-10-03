@@ -5,6 +5,7 @@ import {
   Copy,
   Ellipsis,
   FileHeart,
+  FolderInput,
   Info,
   Pin,
   Printer,
@@ -37,14 +38,7 @@ import {
   canManageOrgDocumentAccess,
   canManageOrgDocuments,
 } from "../../../lib/organizationalFilesAccess";
-
-function Category({ label }: { label: string }) {
-  return (
-    <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-      {label}
-    </p>
-  );
-}
+import ActionMenuCategory from "./ActionMenuCategory";
 
 export default function DocumentActions({
   documentId,
@@ -92,6 +86,12 @@ export default function DocumentActions({
       ? canManageOrgDocuments(currentUser.data)
       : canArchiveEmployeeDocuments(currentUser.data) ||
         canDeleteEmployeeDocuments(currentUser.data));
+  const policyRegistryId =
+    document?.organizational_policy_id && Number(document.organizational_policy_id) > 0
+      ? Number(document.organizational_policy_id)
+      : null;
+  const showPolicyEmployeeAssign =
+    organizational && Boolean(policyRegistryId) && document?.is_policy === true;
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
@@ -101,6 +101,7 @@ export default function DocumentActions({
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(documentName);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0);
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignEmployeeIds, setAssignEmployeeIds] = useState<number[]>([]);
   const [automateOpen, setAutomateOpen] = useState(false);
@@ -197,12 +198,12 @@ export default function DocumentActions({
           className="org-action-sheet fixed z-[100] w-56 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-2xl"
           style={{ top: position.top, right: position.right, maxHeight: "70vh" }}
         >
-          <Category label="Information" />
+          <ActionMenuCategory label="Information" />
           <button type="button" onClick={() => { setDetailsOpen(true); setOpen(false); }} className="menu-item">
             <Info />
             Details
           </button>
-          <Category label="Organise" />
+          <ActionMenuCategory label="Organise" />
           <button type="button" onClick={() => run("favorite")} className="menu-item">
             <FileHeart />
             Favorite
@@ -211,6 +212,19 @@ export default function DocumentActions({
             <Pin />
             Pin document
           </button>
+          {organizational && canManage && !folderLocked && onMove && (
+            <button
+              type="button"
+              onClick={() => {
+                onMove();
+                setOpen(false);
+              }}
+              className="menu-item"
+            >
+              <FolderInput />
+              Move to folder
+            </button>
+          )}
           {organizational && canManage && !folderLocked && (
             <>
               <button type="button" onClick={() => { setCopyToOpen(true); setOpen(false); }} className="menu-item">
@@ -235,7 +249,7 @@ export default function DocumentActions({
             </button>
           )}
           {organizational && (
-            <Category label="Access" />
+            <ActionMenuCategory label="Access" />
           )}
           {organizational && canManageAccess && !folderLocked && (
             <button
@@ -250,7 +264,7 @@ export default function DocumentActions({
               Manage access
             </button>
           )}
-          {organizational && canManage && (
+          {organizational && canManage && showPolicyEmployeeAssign && (
             <button
               type="button"
               onClick={() => {
@@ -261,7 +275,21 @@ export default function DocumentActions({
               className="menu-item"
             >
               <Users />
-              Assign
+              Assign to employee
+            </button>
+          )}
+          {organizational && canManage && !showPolicyEmployeeAssign && (
+            <button
+              type="button"
+              onClick={() => {
+                setAssignEmployeeIds([]);
+                setAssignOpen(true);
+                setOpen(false);
+              }}
+              className="menu-item"
+            >
+              <Users />
+              Grant individual access
             </button>
           )}
           {organizational && canManage && (
@@ -284,7 +312,7 @@ export default function DocumentActions({
               Automate
             </button>
           )}
-          <Category label="Lifecycle" />
+          <ActionMenuCategory label="Lifecycle" />
           {canArchive ? (
             <button type="button" onClick={() => run("archive")} className="menu-item">
               <Archive />
@@ -363,6 +391,7 @@ export default function DocumentActions({
               ? () => setManageAccessOpen(true)
               : undefined
           }
+          activityRefreshKey={activityRefreshKey}
         />
       ) : null}
       {manageAccessOpen && organizational && (
@@ -375,12 +404,14 @@ export default function DocumentActions({
           orgGradeIds={orgGradeIds}
           orgEmployeeIds={orgEmployeeIds}
           onClose={() => setManageAccessOpen(false)}
+          onSaved={() => setActivityRefreshKey((key) => key + 1)}
         />
       )}
       {copyToOpen ? (
         <FolderPickerDialog
           title="Copy to folder"
           eyebrow="Copy to"
+          description="Creates a copy in the destination folder. The original file stays where it is."
           folders={folders.data ?? []}
           confirmLabel="Copy"
           pending={action.isPending}
@@ -447,8 +478,14 @@ export default function DocumentActions({
       ) : null}
       {assignOpen ? (
         <ModalDialog
-          title="Assign to employee"
-          description="Grant this employee access to the document without widening folder visibility."
+          title={
+            showPolicyEmployeeAssign ? "Assign policy to employee" : "Grant individual access"
+          }
+          description={
+            showPolicyEmployeeAssign
+              ? "Assign this organizational policy to an employee file. This is separate from sharing the document in Manage access."
+              : "Grant this employee access to the document without widening folder visibility."
+          }
           onClose={() => setAssignOpen(false)}
           size="md"
           zIndex={110}
@@ -466,17 +503,39 @@ export default function DocumentActions({
             <Button
               disabled={!assignEmployeeIds.length}
               onClick={() =>
-                void api
-                  .updateOrganizationalDocumentAccess({
-                    document_id: documentId,
-                    org_use_folder_access: false,
-                    org_access_scope: "individual",
-                    org_employee_ids: assignEmployeeIds,
-                  })
-                  .then(() => setAssignOpen(false))
+                void (async () => {
+                  if (showPolicyEmployeeAssign && policyRegistryId) {
+                    const result = await api.assignPolicyToEmployee({
+                      policy_id: policyRegistryId,
+                      employee_id: assignEmployeeIds[0],
+                    });
+                    if (!result.success) {
+                      await showAlert(result.message || "Unable to assign this policy.", {
+                        title: "Assign policy",
+                      });
+                      return;
+                    }
+                  } else {
+                    const result = await api.updateOrganizationalDocumentAccess({
+                      document_id: documentId,
+                      org_use_folder_access: false,
+                      org_access_scope: "individual",
+                      org_employee_ids: assignEmployeeIds,
+                    });
+                    if (result && (result as { success?: boolean }).success === false) {
+                      await showAlert(
+                        (result as { message?: string }).message ||
+                          "Unable to update document access.",
+                        { title: "Grant access" },
+                      );
+                      return;
+                    }
+                  }
+                  setAssignOpen(false);
+                })()
               }
             >
-              Assign
+              {showPolicyEmployeeAssign ? "Assign policy" : "Grant access"}
             </Button>
           </div>
         </ModalDialog>

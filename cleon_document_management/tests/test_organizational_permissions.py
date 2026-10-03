@@ -488,4 +488,133 @@ class TestOrganizationalPermissions(TransactionCase):
         self.assertEqual(child.access_scope, "admin_only")
         self.assertEqual(grandchild.access_scope, "admin_only")
 
+    def test_private_document_override_denies_other_users(self):
+        folder = self.env["doc.folder"].create(
+            {
+                "folder_name": "Public org folder",
+                "folder_type": "organizational",
+                "access_scope": "all_staff",
+            }
+        )
+        document_type = self.env["doc.document.type"].create(
+            {"name": "Org access type", "category": "other"}
+        )
+        owner = self._document_user(
+            "private_doc_owner",
+            self.env["doc.employee.files.role"].create(
+                {
+                    "name": "Org uploader",
+                    "company_id": self.env.company.id,
+                    "employee_scope": "all",
+                    "org_access_library": True,
+                    "org_upload": True,
+                }
+            ),
+        )
+        other = self._document_user(
+            "private_doc_other",
+            self.env["doc.employee.files.role"].create(
+                {
+                    "name": "Org viewer",
+                    "company_id": self.env.company.id,
+                    "employee_scope": "all",
+                    "org_access_library": True,
+                }
+            ),
+        )
+        document = self.env["doc.document"].with_user(owner).create(
+            {
+                "name": "Secret.pdf",
+                "folder_id": folder.id,
+                "document_type_id": document_type.id,
+                "owner_id": owner.id,
+            }
+        )
+        document.write(
+            {
+                "org_use_folder_access": False,
+                "org_access_scope": "private",
+            }
+        )
+        self.assertTrue(document.with_user(owner)._organizational_user_can_access(owner))
+        self.assertFalse(
+            document.with_user(other)._organizational_user_can_access(other)
+        )
+        visible = document.with_user(other).filter_for_organizational_access(other)
+        self.assertFalse(visible)
+
+    def test_document_access_change_creates_object_audit(self):
+        folder = self.env["doc.folder"].create(
+            {
+                "folder_name": "Audit access folder",
+                "folder_type": "organizational",
+                "access_scope": "all_staff",
+            }
+        )
+        document_type = self.env["doc.document.type"].create(
+            {"name": "Audit access type", "category": "other"}
+        )
+        document = self.env["doc.document"].create(
+            {
+                "name": "Audited.pdf",
+                "folder_id": folder.id,
+                "document_type_id": document_type.id,
+            }
+        )
+        previous = document._organizational_access_summary()
+        document.write(
+            {
+                "org_use_folder_access": False,
+                "org_access_scope": "private",
+            }
+        )
+        document.action_record_organizational_access_audit(previous)
+        audit = self.env["doc.object.audit"].search(
+            [
+                ("res_model", "=", "doc.document"),
+                ("res_id", "=", document.id),
+                ("action", "=", "access"),
+            ]
+        )
+        self.assertEqual(len(audit), 1)
+        self.assertIn("Private", audit.summary)
+
+    def test_company_owned_folder_delegate_access(self):
+        config = self.env["doc.employee.files.config"].get_for_company()
+        uploader_role = self.env["doc.employee.files.role"].create(
+            {
+                "name": "Company owned uploader",
+                "company_id": self.env.company.id,
+                "employee_scope": "all",
+                "org_access_library": True,
+                "org_create_folder": True,
+            }
+        )
+        viewer_role = self.env["doc.employee.files.role"].create(
+            {
+                "name": "Company owned viewer",
+                "company_id": self.env.company.id,
+                "employee_scope": "all",
+                "org_access_library": True,
+            }
+        )
+        uploader = self._document_user("company_owned_uploader", uploader_role)
+        delegate = self._document_user("company_owned_delegate", viewer_role)
+        outsider = self._document_user("company_owned_outsider", viewer_role)
+        config.write({"org_company_owned_user_ids": [(6, 0, delegate.ids)]})
+        folder = (
+            self.env["doc.folder"]
+            .with_user(uploader)
+            .create(
+                {
+                    "folder_name": "Company owned folder",
+                    "folder_type": "organizational",
+                    "access_scope": "company_owned",
+                }
+            )
+        )
+        self.assertTrue(folder.with_user(uploader)._user_can_access(uploader))
+        self.assertTrue(folder.with_user(delegate)._user_can_access(delegate))
+        self.assertFalse(folder.with_user(outsider)._user_can_access(outsider))
+
 

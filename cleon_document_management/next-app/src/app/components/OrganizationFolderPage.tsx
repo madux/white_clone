@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   useCurrentUser,
   useDocumentTypes,
@@ -23,8 +24,11 @@ import {
 import {
   canAccessOrgArchived,
   canCreateOrgFolder,
+  canCreateOrgPolicy,
+  canManageOrgDocuments,
   canUploadOrgDocuments,
 } from "../../../lib/organizationalFilesAccess";
+import OrganizationalPolicyActions from "./OrganizationalPolicyActions";
 import DocumentActions from "./DocumentActions";
 import BulkDocumentActions from "./BulkDocumentActions";
 import BulkFolderActions from "./BulkFolderActions";
@@ -44,6 +48,7 @@ import DocumentFilterBar, {
 import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
 import LibraryBreadcrumb from "./LibraryBreadcrumb";
 import LibraryFileTable, { type LibraryFileRow } from "./LibraryFileTable";
+import OrgFolderIcon from "./OrgFolderIcon";
 import OrganizationalNewMenu from "./OrganizationalNewMenu";
 import FolderActions from "./FolderActions";
 import StatusPill from "./StatusPill";
@@ -54,6 +59,7 @@ import { isOrgDocumentLinkedToPolicy } from "../../../lib/policyDocumentName";
 function folderKindLabel(kind?: string) {
   if (kind === "project") return "Project";
   if (kind === "vendor") return "Vendor";
+  if (kind === "policy") return "Policy";
   return "Folder";
 }
 
@@ -68,7 +74,20 @@ export default function OrganizationFolderPage() {
   const { showAlert } = useAppDialog();
   const canUpload = canUploadOrgDocuments(currentUser.data);
   const canCreateFolder = canCreateOrgFolder(currentUser.data);
+  const canManagePolicy = canManageOrgDocuments(currentUser.data);
   const canViewArchived = canAccessOrgArchived(currentUser.data);
+  const folder = folders.data?.find((item) => item.id === folderId);
+  const policyRegistry = useQuery({
+    queryKey: ["organizational-policy-by-folder", folderId],
+    enabled: Boolean(folderId) && folder?.folder_kind === "policy",
+    queryFn: async () => {
+      const result = await api.listOrganizationalPolicies({});
+      if (!result.success) {
+        throw new Error(result.message || "Unable to load policy.");
+      }
+      return (result.data?.items ?? []).find((item) => item.folder_id === folderId);
+    },
+  });
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTER_STATE);
   const [librarySortKey, setLibrarySortKey] = useState("name asc");
   const [viewing, setViewing] = useState<any>(null);
@@ -77,7 +96,6 @@ export default function OrganizationFolderPage() {
   const [movingIds, setMovingIds] = useState<number[] | null>(null);
   const [movingFolders, setMovingFolders] = useState(false);
   const [movingFoldersPending, setMovingFoldersPending] = useState(false);
-  const folder = folders.data?.find((item) => item.id === folderId);
   const folderLocked = Boolean(folder?.locked);
   const canUploadHere = canUpload && !folderLocked;
   const visibleDocuments = useMemo(
@@ -143,6 +161,7 @@ export default function OrganizationFolderPage() {
       id: `folder-${item.id}`,
       kind: "folder",
       folderPreview: { hasContent: itemCount > 0, documents: [] },
+      folderKind: item.folder_kind,
       name: item.folder_name,
       subtitle: `${folderKindLabel(item.folder_kind)}${item.collection_code ? ` · ${item.collection_code}` : ""} · ${itemCount} items`,
       href: `/pages/organization/folder?folder=${item.id}`,
@@ -193,15 +212,27 @@ export default function OrganizationFolderPage() {
       document.source_url
         ? `Link · ${document.document_type || "URL"}`
         : document.document_type || document.description || "",
-      document.linked_policy_name
-        ? `Compliance: ${document.linked_policy_name}`
-        : "",
+      document.organizational_policy_name
+        ? `Policy: ${document.organizational_policy_name}`
+        : document.is_policy
+          ? "Policy document"
+          : "",
     ]
       .filter(Boolean)
       .join(" · ") || undefined,
     onOpen: () => {
       if (document.source_url) {
         window.open(document.source_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+      const editorId = Number(document.policy_editor_document_id || 0);
+      if (editorId > 0) {
+        const qs = new URLSearchParams({
+          document: String(editorId),
+          hr_document: String(document.id),
+          folder: String(folderId),
+        });
+        router.push(`/pages/organization/policy-editor?${qs.toString()}`);
         return;
       }
       setViewing(document);
@@ -261,16 +292,44 @@ export default function OrganizationFolderPage() {
 
   return (
     <div className="app-page space-y-6">
-      <LibraryBreadcrumb
-        items={[
-          { label: "Organizational Files", href: "/pages/organization" },
-          {
-            label: folder?.collection_code
-              ? `${folder.folder_name} (${folder.collection_code})`
-              : folder?.folder_name || "Folder",
-          },
-        ]}
-      />
+      <div className="flex min-w-0 items-center gap-3">
+        {folder ? (
+          <OrgFolderIcon
+            className="h-10 w-10 shrink-0"
+            folderKind={folder.folder_kind}
+            hasContent={
+              (documents.data?.length ?? 0) > 0 || visibleChildFolders.length > 0
+            }
+            documents={documents.data ?? []}
+          />
+        ) : null}
+        <LibraryBreadcrumb
+          items={[
+            { label: "Organizational Files", href: "/pages/organization" },
+            {
+              label: folder?.collection_code
+                ? `${folder.folder_name} (${folder.collection_code})`
+                : folder?.folder_name || "Folder",
+            },
+          ]}
+        />
+      </div>
+      {folder?.folder_kind === "policy" &&
+      policyRegistry.data?.lifecycle_status === "draft" &&
+      canManagePolicy ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <p>
+            <strong className="font-semibold text-slate-900">Draft policy.</strong>{" "}
+            Hidden from Shared Documents until you activate it.
+          </p>
+          <OrganizationalPolicyActions
+            policy={policyRegistry.data}
+            canManage={canManagePolicy}
+            minimal
+            onChanged={() => void policyRegistry.refetch()}
+          />
+        </div>
+      ) : null}
       <section className="app-table-well app-page-body">
         <DocumentFilterBar
           filters={filters}
@@ -280,23 +339,23 @@ export default function OrganizationFolderPage() {
           showOrgPolicyFilter
           totalCount={(documents.data?.length ?? 0) + childFolders.length}
           filteredCount={mixedRows.length}
-          leading={
-            <OrganizationalNewMenu
-              parentFolder={folder}
-              folderLocked={folderLocked}
-              canUpload={canUploadHere}
-              canCreateFolder={canCreateFolder && !folderLocked}
-              canCreatePolicy={currentUser.data?.is_document_admin === true}
-              folderDocuments={documents.data ?? []}
-            />
-          }
           extras={null}
           actions={
-            canViewArchived ? (
-              <Button variant="outline" render={<Link href={myWorkspaceHref("archived")} />}>
-                Archived
-              </Button>
-            ) : null
+            <>
+              {canViewArchived ? (
+                <Button variant="outline" render={<Link href={myWorkspaceHref("archived")} />}>
+                  Archived
+                </Button>
+              ) : null}
+              <OrganizationalNewMenu
+                parentFolder={folder}
+                folderLocked={folderLocked}
+                canUpload={canUploadHere}
+                canCreateFolder={canCreateFolder && !folderLocked}
+                canCreatePolicy={canCreateOrgPolicy(currentUser.data)}
+                folderDocuments={documents.data ?? []}
+              />
+            </>
           }
         />
         <div className="space-y-2">
@@ -329,8 +388,14 @@ export default function OrganizationFolderPage() {
           showStatus
           showDescription
           showDocuments
-          emptyTitle="This folder is empty"
-          emptyDescription="Upload a document, add a link, or create a subfolder."
+          emptyTitle={
+            folder?.folder_kind === "policy" ? "No policy documents yet" : "This folder is empty"
+          }
+          emptyDescription={
+            folder?.folder_kind === "policy"
+              ? "Use + New to upload, add from the library, or create a custom policy file."
+              : "Upload a document, add a link, or create a subfolder."
+          }
           emptyAction={
             canUploadHere || canCreateFolder ? (
               <OrganizationalNewMenu
@@ -338,7 +403,7 @@ export default function OrganizationFolderPage() {
                 folderLocked={folderLocked}
                 canUpload={canUploadHere}
                 canCreateFolder={canCreateFolder && !folderLocked}
-                canCreatePolicy={currentUser.data?.is_document_admin === true}
+                canCreatePolicy={canCreateOrgPolicy(currentUser.data)}
                 folderDocuments={documents.data ?? []}
               />
             ) : undefined

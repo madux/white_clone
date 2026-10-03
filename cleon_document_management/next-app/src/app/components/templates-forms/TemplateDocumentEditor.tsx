@@ -4,10 +4,19 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MessageSquare, X } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { useTemplateDocument } from "../../../../hooks/useTemplatesForms";
 import { templatesFormsApi } from "../../../../lib/templates-forms-api";
 import CleonAIPanel from "./CleonAIPanel";
+import EditorCommentsPanel from "./EditorCommentsPanel";
+import EditorTrackedChangesPanel, {
+  type TrackedChangeItem,
+} from "./EditorTrackedChangesPanel";
+import {
+  editorSelectionPreview,
+  resolveTrackedChange,
+  toggleTrackChanges,
+} from "./documentEditorChrome";
 import { readStoredId, rememberEditorDocument } from "./editor-session";
 
 const TiptapEditor = dynamic(() => import("./TiptapEditor"), { ssr: false });
@@ -22,6 +31,7 @@ export default function TemplateDocumentEditor() {
   const [status, setStatus] = useState("All changes saved");
   const [showAi, setShowAi] = useState(true);
   const [showComments, setShowComments] = useState(false);
+  const [showTrackChanges, setShowTrackChanges] = useState(false);
   const [comment, setComment] = useState("");
   const [text, setText] = useState("");
   const editorRef = useRef<any>(null);
@@ -70,7 +80,8 @@ export default function TemplateDocumentEditor() {
 
   async function addComment() {
     if (!comment.trim()) return;
-    await templatesFormsApi.comment(documentId, { body: comment });
+    const selection = editorSelectionPreview(editorRef.current);
+    await templatesFormsApi.comment(documentId, { body: comment, selection });
     setComment("");
     query.refetch();
   }
@@ -102,6 +113,8 @@ export default function TemplateDocumentEditor() {
   }
 
   const comments = data?.comments || [];
+  const trackedChanges = (data?.tracked_changes || []) as TrackedChangeItem[];
+  const trackChangesEnabled = Boolean(data?.track_changes);
   const unresolved = data?.unresolved_fields || [];
 
   return (
@@ -146,6 +159,7 @@ export default function TemplateDocumentEditor() {
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <div className="min-h-0 min-w-0 flex-1">
           <TiptapEditor
+            key={String(documentId)}
             json={data?.document_json || ""}
             text={initialText}
             onChange={handleChange}
@@ -154,6 +168,11 @@ export default function TemplateDocumentEditor() {
             }}
             onComments={() => setShowComments(true)}
             onAi={() => setShowAi(true)}
+            trackChangesEnabled={trackChangesEnabled}
+            onTrackChangesToggle={() =>
+              void toggleTrackChanges(documentId, !trackChangesEnabled, query.refetch)
+            }
+            onOpenTrackChanges={() => setShowTrackChanges(true)}
           />
         </div>
         {showAi && (
@@ -163,25 +182,29 @@ export default function TemplateDocumentEditor() {
             onApply={(value) => editorRef.current?.commands.insertContent(value)}
           />
         )}
-        {showComments && (
-          <div className="w-72 shrink-0 overflow-y-auto border-l bg-white p-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Comments</h2>
-              <button type="button" aria-label="Close comments" onClick={() => setShowComments(false)}>
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            {comments.map((item: any) => (
-              <p key={item.id} className="mt-2 text-xs text-slate-600">
-                {item.author}: {item.body}
-              </p>
-            ))}
-            <input className="field mt-2" value={comment} onChange={(event) => setComment(event.target.value)} aria-label="New comment" />
-            <button type="button" className="mt-2 text-xs font-semibold text-brand-pink" onClick={addComment}>
-              Add comment
-            </button>
-          </div>
-        )}
+        {showTrackChanges ? (
+          <EditorTrackedChangesPanel
+            changes={trackedChanges}
+            trackingEnabled={trackChangesEnabled}
+            onClose={() => setShowTrackChanges(false)}
+            onAccept={(changeId) =>
+              void resolveTrackedChange(documentId, changeId, "accept", query.refetch)
+            }
+            onReject={(changeId) =>
+              void resolveTrackedChange(documentId, changeId, "reject", query.refetch)
+            }
+          />
+        ) : null}
+        {showComments ? (
+          <EditorCommentsPanel
+            comments={comments}
+            comment={comment}
+            selectionPreview={editorSelectionPreview(editorRef.current)}
+            onCommentChange={setComment}
+            onClose={() => setShowComments(false)}
+            onSubmit={() => void addComment()}
+          />
+        ) : null}
       </div>
     </div>
   );

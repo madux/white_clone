@@ -4,6 +4,8 @@ from odoo import _, fields, http
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
 
+from odoo.addons.cleon_document_management.models import organizational_openrouter
+
 from .access import require_document_admin, user_is_document_admin
 
 CANONICAL_POLICY_TYPE_NAMES = {
@@ -56,7 +58,97 @@ class ComplianceController(http.Controller):
             "sample_pct": policy.sample_pct,
             "assigned_auditor_id": policy.assigned_auditor_id.id or False,
             "assigned_auditor": policy.assigned_auditor_id.name or "",
+            "source_document_id": policy.source_document_id.id
+            if policy.source_document_id
+            else False,
+            "source_document_name": policy.source_document_id.name
+            if policy.source_document_id
+            else "",
+            "source_folder_id": policy.source_document_id.folder_id.id
+            if policy.source_document_id and policy.source_document_id.folder_id
+            else False,
         }
+
+    @staticmethod
+    def _policy_create_values(env, kwargs):
+        applies_to = kwargs.get("applies_to", "all")
+        dept_ids = (
+            env["hr.department"]
+            .browse(kwargs.get("department_ids", []) or [])
+            .exists()
+            .ids
+        )
+        grade_ids = (
+            env["hr.grade"].browse(kwargs.get("grade_ids", []) or []).exists().ids
+        )
+        emp_ids = (
+            env["hr.employee"]
+            .browse(kwargs.get("employee_ids", []) or [])
+            .exists()
+            .ids
+        )
+        if applies_to == "department" and not dept_ids:
+            raise ValidationError(_("Select at least one department."))
+        if applies_to == "grade" and not grade_ids:
+            raise ValidationError(_("Select at least one grade."))
+        if applies_to == "employee" and not emp_ids:
+            raise ValidationError(_("Select at least one employee."))
+        values = {
+            "name": kwargs.get("name"),
+            "description": kwargs.get("description", ""),
+            "policy_type_id": kwargs.get("policy_type_id"),
+            "document_type_ids": [
+                fields.Command.set(
+                    env["doc.document.type"]
+                    .browse(kwargs.get("document_type_ids", []) or [])
+                    .exists()
+                    .ids
+                )
+            ],
+            "schedule": kwargs.get("schedule") or False,
+            "custom_schedule_days": kwargs.get("custom_schedule_days", 30),
+            "applies_to": applies_to,
+            "department_ids": [fields.Command.set(dept_ids)],
+            "grade_ids": [fields.Command.set(grade_ids)],
+            "employee_ids": [fields.Command.set(emp_ids)],
+            "minimum_documents": kwargs.get("minimum_documents", 1),
+            "grace_period_days": kwargs.get("grace_period_days", 0),
+            "effective_date": kwargs.get("effective_date") or False,
+            "active": kwargs.get("active", True),
+            "allow_waiver": kwargs.get("allow_waiver", True),
+            "alert_schedule_days": kwargs.get("alert_schedule_days", "60,30,15,7,0"),
+            "escalate_manager_days": kwargs.get("escalate_manager_days", 0),
+            "escalate_hr_days": kwargs.get("escalate_hr_days", 7),
+            "auto_request_renewal": kwargs.get("auto_request_renewal", True),
+            "event_trigger": kwargs.get("event_trigger") or False,
+            "due_days": kwargs.get("due_days", 14),
+            "reminder_frequency_days": kwargs.get("reminder_frequency_days", 3),
+            "assigned_reviewer_id": int(kwargs.get("assigned_reviewer_id"))
+            if kwargs.get("assigned_reviewer_id")
+            else False,
+            "audit_frequency": kwargs.get("audit_frequency", "quarterly"),
+            "sample_pct": kwargs.get("sample_pct", 100),
+            "assigned_auditor_id": int(kwargs.get("assigned_auditor_id"))
+            if kwargs.get("assigned_auditor_id")
+            else False,
+            "lifecycle_status": kwargs.get("lifecycle_status") or "active",
+            "policy_category": kwargs.get("policy_category") or "",
+            "policy_visibility": kwargs.get("policy_visibility") or "employees",
+            "policy_audience": kwargs.get("policy_audience") or "everyone",
+            "source_document_id": int(kwargs.get("source_document_id") or 0) or False,
+            "ai_drafted": bool(kwargs.get("ai_drafted")),
+        }
+        if values["lifecycle_status"] == "draft":
+            values["active"] = False
+        if values["lifecycle_status"] == "archived":
+            values["active"] = False
+        if not values["name"] or not values["policy_type_id"]:
+            raise ValidationError(_("Name and policy type are required."))
+        if not env["doc.document.type"].browse(
+            kwargs.get("document_type_ids", []) or []
+        ).exists():
+            raise ValidationError(_("Select at least one required document type."))
+        return values
 
     @staticmethod
     def _evaluation_data(evaluation):
@@ -385,85 +477,98 @@ class ComplianceController(http.Controller):
             require_document_admin()
         except AccessError as error:
             return {"success": False, "message": str(error)}
-        applies_to = kwargs.get("applies_to", "all")
-        dept_ids = (
-            request.env["hr.department"]
-            .browse(kwargs.get("department_ids", []) or [])
-            .exists()
-            .ids
-        )
-        grade_ids = (
-            request.env["hr.grade"]
-            .browse(kwargs.get("grade_ids", []) or [])
-            .exists()
-            .ids
-        )
-        emp_ids = (
-            request.env["hr.employee"]
-            .browse(kwargs.get("employee_ids", []) or [])
-            .exists()
-            .ids
-        )
-
-        if applies_to == "department" and not dept_ids:
-            return {"success": False, "message": "Select at least one department."}
-        if applies_to == "grade" and not grade_ids:
-            return {"success": False, "message": "Select at least one grade."}
-        if applies_to == "employee" and not emp_ids:
-            return {"success": False, "message": "Select at least one employee."}
-
-        values = {
-            "name": kwargs.get("name"),
-            "description": kwargs.get("description", ""),
-            "policy_type_id": kwargs.get("policy_type_id"),
-            "document_type_ids": [
-                fields.Command.set(
-                    request.env["doc.document.type"]
-                    .browse(kwargs.get("document_type_ids", []) or [])
-                    .exists()
-                    .ids
-                )
-            ],
-            "schedule": kwargs.get("schedule") or False,
-            "custom_schedule_days": kwargs.get("custom_schedule_days", 30),
-            "applies_to": applies_to,
-            "department_ids": [fields.Command.set(dept_ids)],
-            "grade_ids": [fields.Command.set(grade_ids)],
-            "employee_ids": [fields.Command.set(emp_ids)],
-            "minimum_documents": kwargs.get("minimum_documents", 1),
-            "grace_period_days": kwargs.get("grace_period_days", 0),
-            "effective_date": kwargs.get("effective_date") or False,
-            "active": kwargs.get("active", True),
-            # Type-specific parameters
-            "allow_waiver": kwargs.get("allow_waiver", True),
-            "alert_schedule_days": kwargs.get("alert_schedule_days", "60,30,15,7,0"),
-            "escalate_manager_days": kwargs.get("escalate_manager_days", 0),
-            "escalate_hr_days": kwargs.get("escalate_hr_days", 7),
-            "auto_request_renewal": kwargs.get("auto_request_renewal", True),
-            "event_trigger": kwargs.get("event_trigger") or False,
-            "due_days": kwargs.get("due_days", 14),
-            "reminder_frequency_days": kwargs.get("reminder_frequency_days", 3),
-            "assigned_reviewer_id": int(kwargs.get("assigned_reviewer_id")) if kwargs.get("assigned_reviewer_id") else False,
-            "audit_frequency": kwargs.get("audit_frequency", "quarterly"),
-            "sample_pct": kwargs.get("sample_pct", 100),
-            "assigned_auditor_id": int(kwargs.get("assigned_auditor_id")) if kwargs.get("assigned_auditor_id") else False,
-            "lifecycle_status": kwargs.get("lifecycle_status") or "active",
-            "policy_category": kwargs.get("policy_category") or "",
-            "policy_visibility": kwargs.get("policy_visibility") or "employees",
-            "policy_audience": kwargs.get("policy_audience") or "everyone",
-            "source_document_id": int(kwargs.get("source_document_id") or 0) or False,
-            "ai_drafted": bool(kwargs.get("ai_drafted")),
-        }
-        if values["lifecycle_status"] == "draft":
-            values["active"] = False
-        if values["lifecycle_status"] == "archived":
-            values["active"] = False
-        if not values["name"] or not values["policy_type_id"]:
-            return {"success": False, "message": "Name and policy type are required."}
         try:
+            values = self._policy_create_values(request.env, kwargs)
             policy = request.env["doc.compliance.policy"].create(values)
         except (AccessError, ValidationError) as error:
             return {"success": False, "message": str(error)}
+        return {"success": True, "data": self._policy_data(policy)}
+
+    @http.route(
+        "/api/compliance/policies/propose-from-ai",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def propose_policy_from_ai(self, **kwargs):
+        try:
+            require_document_admin()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        name = (kwargs.get("name") or "").strip()
+        if not name:
+            return {"success": False, "message": "Policy name is required."}
+        try:
+            proposal = organizational_openrouter.propose_policy_from_brief(
+                request.env,
+                name,
+                brief=kwargs.get("description"),
+                policy_type_id=kwargs.get("policy_type_id"),
+                document_type_ids=kwargs.get("document_type_ids"),
+            )
+        except ValueError as error:
+            return {"success": False, "message": error.args[0]}
+        except RuntimeError as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": proposal}
+
+    @http.route(
+        "/api/compliance/policies/link-document",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def link_policy_document(self, **kwargs):
+        try:
+            require_document_admin()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        policy = request.env["doc.compliance.policy"].browse(
+            int(kwargs.get("policy_id") or 0)
+        ).exists()
+        document = request.env["doc.document"].browse(
+            int(kwargs.get("document_id") or 0)
+        ).exists()
+        if not policy or not document:
+            return {"success": False, "message": "Policy or document not found."}
+        if document.folder_id.folder_type != "organizational":
+            return {
+                "success": False,
+                "message": "Only organizational library files can be linked.",
+            }
+        document.check_access_rule("read")
+        if document.linked_policy_id and document.linked_policy_id.id != policy.id:
+            return {
+                "success": False,
+                "message": "This file is already linked to another policy.",
+            }
+        document.write({"is_policy": True, "linked_policy_id": policy.id})
+        policy.sudo().write({"source_document_id": document.id})
+        return {"success": True, "data": self._policy_data(policy)}
+
+    @http.route(
+        "/api/compliance/policies/unlink-document",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def unlink_policy_document(self, **kwargs):
+        try:
+            require_document_admin()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        policy = request.env["doc.compliance.policy"].browse(
+            int(kwargs.get("policy_id") or 0)
+        ).exists()
+        if not policy:
+            return {"success": False, "message": "Policy not found."}
+        document = policy.source_document_id
+        policy.sudo().write({"source_document_id": False})
+        if document:
+            document.write({"linked_policy_id": False, "is_policy": False})
         return {"success": True, "data": self._policy_data(policy)}
 
     @http.route(

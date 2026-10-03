@@ -91,6 +91,36 @@ class DocEmployeeFilesConfig(models.Model):
     integration_mapping_json = fields.Text(default="{}")
     category_action_matrix_json = fields.Text(default="{}")
 
+    default_org_access_scope = fields.Selection(
+        [
+            ("all_staff", "All Staff"),
+            ("department", "By Department"),
+            ("grade", "By Grade Level"),
+            ("individual", "Individual Employees"),
+            ("private", "Private"),
+            ("company_owned", "Company owned"),
+            ("admin_only", "Admin Only"),
+        ],
+        string="Default organizational visibility",
+        default="private",
+    )
+    default_org_restricted_scope = fields.Selection(
+        [
+            ("department", "By Department"),
+            ("grade", "By Grade Level"),
+            ("individual", "Individual Employees"),
+        ],
+        string="Default restricted dimension",
+        default="department",
+    )
+    org_company_owned_user_ids = fields.Many2many(
+        "res.users",
+        "doc_ef_config_company_owned_user_rel",
+        "config_id",
+        "user_id",
+        string="Company-owned access delegates",
+    )
+
     _sql_constraints = [
         (
             "company_uniq",
@@ -98,6 +128,54 @@ class DocEmployeeFilesConfig(models.Model):
             "Only one Employee Files configuration per company.",
         ),
     ]
+
+    @api.model
+    def default_company_owned_admin_users(self, company=None):
+        """Super admins and document administrators (initial delegate roster)."""
+        company = company or self.env.company
+        Users = self.env["res.users"].sudo()
+        group_xml_ids = (
+            "base.group_system",
+            "cleon_document_management.group_document_admin",
+            "cleon_document_management.group_document_manager",
+        )
+        group_ids = []
+        for xml_id in group_xml_ids:
+            group = self.env.ref(xml_id, raise_if_not_found=False)
+            if group:
+                group_ids.append(group.id)
+        if not group_ids:
+            return Users.browse()
+        return Users.search(
+            [
+                ("active", "=", True),
+                ("company_ids", "in", company.id),
+                ("groups_id", "in", group_ids),
+            ],
+            order="name",
+        )
+
+    def get_org_company_owned_delegate_users(self):
+        self.ensure_one()
+        if self.org_company_owned_user_ids:
+            return self.org_company_owned_user_ids.filtered("active")
+        return self.default_company_owned_admin_users(self.company_id)
+
+    def user_can_access_company_owned(self, user, uploader_user=None):
+        self.ensure_one()
+        user = user or self.env.user
+        if not user or not user.active:
+            return False
+        if uploader_user and user.id == uploader_user.id:
+            return True
+        perm = self.env["doc.organizational.files.permission"]
+        if user.has_group("base.group_system"):
+            return True
+        if user.has_group("cleon_document_management.group_document_admin"):
+            return True
+        if perm.user_is_platform_admin(user) or perm.user_has_legacy_manager(user):
+            return True
+        return user in self.get_org_company_owned_delegate_users()
 
     @api.model
     def get_for_company(self, company=None):
@@ -186,4 +264,19 @@ class DocEmployeeFilesConfig(models.Model):
             "notification_routing_json": self.notification_routing_json or "{}",
             "integration_mapping_json": self.integration_mapping_json or "{}",
             "category_action_matrix_json": self.category_action_matrix_json or "{}",
+            "default_org_access_scope": self.default_org_access_scope or "private",
+            "default_org_restricted_scope": self.default_org_restricted_scope
+            or "department",
+            "org_company_owned_user_ids": self.org_company_owned_user_ids.ids,
+            "org_company_owned_users": [
+                {
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email or user.login,
+                }
+                for user in self.org_company_owned_user_ids.sorted("name")
+            ],
+            "default_company_owned_admin_user_ids": self.default_company_owned_admin_users(
+                self.company_id
+            ).ids,
         }

@@ -1,7 +1,13 @@
 "use client";
 
-import { Upload, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Plus, Upload, X } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import {
+  useCreateDocumentType,
+  useCurrentUser,
+  useSettings,
+} from "../../../hooks/useDocuments";
 import type { DocumentType } from "../../../lib/types";
 import {
   firstUploadMetadataError,
@@ -11,7 +17,15 @@ import {
 } from "../../../lib/uploadMetadataHelpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
+import {
+  clearDocumentUploadDraft,
+  readDocumentUploadDraft,
+  writeDocumentUploadDraft,
+} from "../../../lib/documentUploadDraft";
+import DocumentTypeFormDialog, {
+  emptyDocumentTypeForm,
+  type DocumentTypeFormValues,
+} from "./DocumentTypeForm";
 import ModalDialog from "./ModalDialog";
 import ThemedSelect from "./ThemedSelect";
 
@@ -34,6 +48,8 @@ export default function DocumentUploadModal({
   error,
   progress,
   submitLabel,
+  draftKey,
+  zIndex = 50,
   onClose,
   onSubmit,
 }: {
@@ -47,26 +63,136 @@ export default function DocumentUploadModal({
   error?: string;
   progress?: string;
   submitLabel?: string;
+  draftKey?: string;
+  zIndex?: number;
   onClose: () => void;
   onSubmit: (payload: DocumentUploadPayload) => Promise<void>;
 }) {
-  const [files, setFiles] = useState<File[]>([]);
-  const [typeIds, setTypeIds] = useState<string[]>([]);
-  const [expiryDates, setExpiryDates] = useState<string[]>([]);
-  const [issueDates, setIssueDates] = useState<string[]>([]);
-  const [descriptions, setDescriptions] = useState<string[]>([]);
-  const [bulkTypeId, setBulkTypeId] = useState(lockedTypeId ?? "");
+  const savedDraft = draftKey ? readDocumentUploadDraft(draftKey) : undefined;
+  const [files, setFiles] = useState<File[]>(() => savedDraft?.files ?? []);
+  const [typeIds, setTypeIds] = useState<string[]>(() => savedDraft?.typeIds ?? []);
+  const [expiryDates, setExpiryDates] = useState<string[]>(
+    () => savedDraft?.expiryDates ?? [],
+  );
+  const [issueDates, setIssueDates] = useState<string[]>(
+    () => savedDraft?.issueDates ?? [],
+  );
+  const [descriptions, setDescriptions] = useState<string[]>(
+    () => savedDraft?.descriptions ?? [],
+  );
+  const [bulkTypeId, setBulkTypeId] = useState(
+    () => savedDraft?.bulkTypeId ?? lockedTypeId ?? "",
+  );
   const [dragging, setDragging] = useState(false);
   const [localError, setLocalError] = useState("");
+  const [createdTypes, setCreatedTypes] = useState<DocumentType[]>([]);
+  const [newTypeFileIndex, setNewTypeFileIndex] = useState<number | null>(null);
+  const [newTypeForm, setNewTypeForm] = useState<DocumentTypeFormValues>(
+    emptyDocumentTypeForm(),
+  );
+  const [newTypeError, setNewTypeError] = useState("");
+  const user = useCurrentUser();
+  const createDocumentType = useCreateDocumentType();
+  const typeCreatorOpen = newTypeFileIndex !== null;
+  const typeSettings = useSettings(typeCreatorOpen);
+  const canCreateDocumentType = user.data?.is_document_manager === true;
+
+  useEffect(() => {
+    if (!draftKey) return;
+    writeDocumentUploadDraft(draftKey, {
+      files,
+      typeIds,
+      expiryDates,
+      issueDates,
+      descriptions,
+      bulkTypeId,
+    });
+  }, [draftKey, files, typeIds, expiryDates, issueDates, descriptions, bulkTypeId]);
 
   useEffect(() => {
     if (lockedTypeId) setBulkTypeId(lockedTypeId);
   }, [lockedTypeId]);
 
+  const dismiss = () => {
+    if (draftKey) clearDocumentUploadDraft(draftKey);
+    onClose();
+  };
+
+  const allDocumentTypes = useMemo(() => {
+    const byId = new Map(documentTypes.map((type) => [type.id, type]));
+    for (const type of createdTypes) {
+      byId.set(type.id, type);
+    }
+    return Array.from(byId.values());
+  }, [createdTypes, documentTypes]);
+
   const typeOptions = useMemo(
-    () => documentTypes.map((type) => ({ value: String(type.id), label: type.name })),
-    [documentTypes],
+    () =>
+      allDocumentTypes.map((type) => ({ value: String(type.id), label: type.name })),
+    [allDocumentTypes],
   );
+
+  const openNewTypeDialog = (fileIndex: number) => {
+    setNewTypeError("");
+    setNewTypeForm(emptyDocumentTypeForm());
+    setNewTypeFileIndex(fileIndex);
+  };
+
+  const closeNewTypeDialog = () => {
+    setNewTypeFileIndex(null);
+    setNewTypeError("");
+    setNewTypeForm(emptyDocumentTypeForm());
+  };
+
+  const submitNewDocumentType = async (event: FormEvent) => {
+    event.preventDefault();
+    if (newTypeFileIndex === null) return;
+    if (!newTypeForm.name.trim()) {
+      setNewTypeError("Enter a name for the document type.");
+      return;
+    }
+    setNewTypeError("");
+    try {
+      const result = await createDocumentType.mutateAsync({
+        name: newTypeForm.name.trim(),
+        category: newTypeForm.category,
+        description: newTypeForm.description,
+        is_mandatory_default: newTypeForm.is_mandatory_default,
+        expiry_applicable: newTypeForm.expiry_applicable,
+        require_upload_approval: newTypeForm.require_upload_approval,
+        require_issue_date: newTypeForm.require_issue_date,
+        require_description: newTypeForm.require_description,
+        enable_versioning: newTypeForm.enable_versioning,
+        duplicate_detection_mode: newTypeForm.duplicate_detection_mode,
+        approval_flow: newTypeForm.approval_flow,
+        approver_ids: newTypeForm.approver_ids,
+        default_retention_years: newTypeForm.default_retention_years,
+      });
+      if (!result.success || !result.data) {
+        setNewTypeError(result.message || "The document type could not be created.");
+        return;
+      }
+      const created = result.data;
+      setCreatedTypes((current) =>
+        current.some((item) => item.id === created.id)
+          ? current
+          : [...current, created],
+      );
+      const targetIndex = newTypeFileIndex;
+      setTypeIds((current) =>
+        current.map((item, index) =>
+          index === targetIndex ? String(created.id) : item,
+        ),
+      );
+      closeNewTypeDialog();
+    } catch (caught: unknown) {
+      const message =
+        caught instanceof Error
+          ? caught.message
+          : "The document type could not be created.";
+      setNewTypeError(message);
+    }
+  };
 
   const applyFiles = (next: File[]) => {
     const preset = lockedTypeId ?? "";
@@ -96,7 +222,7 @@ export default function DocumentUploadModal({
           expiryDates,
           issueDates,
           descriptions,
-          documentTypes,
+          allDocumentTypes,
         );
 
   const submit = async (event: React.FormEvent) => {
@@ -113,17 +239,20 @@ export default function DocumentUploadModal({
       issueDates,
       descriptions,
     });
+    if (draftKey) clearDocumentUploadDraft(draftKey);
   };
 
   const displayError = localError || error;
 
   return (
+    <>
     <ModalDialog
       title={title}
       eyebrow={eyebrow}
       description={description}
-      onClose={onClose}
+      onClose={dismiss}
       size="lg"
+      zIndex={zIndex}
       titleClassName="text-xl"
     >
       <form className="flex flex-col gap-4" onSubmit={(event) => void submit(event)}>
@@ -215,16 +344,14 @@ export default function DocumentUploadModal({
                               options={typeOptions}
                             />
                           </div>
-                          {index === 0 ? (
-                            <InlineDocumentTypeCreator
-                              onCreated={(type) =>
-                                setTypeIds((current) =>
-                                  current.map((item, i) =>
-                                    i === index ? String(type.id) : item,
-                                  ),
-                                )
-                              }
-                            />
+                          {canCreateDocumentType && index === 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openNewTypeDialog(index)}
+                              className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-brand-pink hover:underline"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> New type
+                            </button>
                           ) : null}
                         </div>
                       )}
@@ -232,12 +359,12 @@ export default function DocumentUploadModal({
                     <label className="min-w-0">
                       <span className="label">
                         Issue date
-                        {typeRequiresIssueDate(typeId, documentTypes) ? " (required)" : ""}
+                        {typeRequiresIssueDate(typeId, allDocumentTypes) ? " (required)" : ""}
                       </span>
                       <Input
                         type="date"
                         className="mt-1"
-                        required={typeRequiresIssueDate(typeId, documentTypes)}
+                        required={typeRequiresIssueDate(typeId, allDocumentTypes)}
                         value={issueDates[index] ?? ""}
                         onChange={(event) =>
                           setIssueDates((current) =>
@@ -248,7 +375,7 @@ export default function DocumentUploadModal({
                         }
                       />
                     </label>
-                    {typeRequiresExpiry(typeId, documentTypes) ? (
+                    {typeRequiresExpiry(typeId, allDocumentTypes) ? (
                       <label className="min-w-0">
                         <span className="label">Expiry date (required)</span>
                         <Input
@@ -269,15 +396,15 @@ export default function DocumentUploadModal({
                     <label className="min-w-0 sm:col-span-2">
                       <span className="label">
                         Description
-                        {typeRequiresDescription(typeId, documentTypes)
+                        {typeRequiresDescription(typeId, allDocumentTypes)
                           ? " (required)"
                           : ""}
                       </span>
                       <Input
                         className="mt-1"
-                        required={typeRequiresDescription(typeId, documentTypes)}
+                        required={typeRequiresDescription(typeId, allDocumentTypes)}
                         placeholder={
-                          typeRequiresDescription(typeId, documentTypes)
+                          typeRequiresDescription(typeId, allDocumentTypes)
                             ? "Required"
                             : "Optional"
                         }
@@ -328,7 +455,7 @@ export default function DocumentUploadModal({
         ) : null}
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="ghost" onClick={dismiss}>
             Cancel
           </Button>
           <Button type="submit" disabled={pending || Boolean(blockReason)}>
@@ -337,5 +464,22 @@ export default function DocumentUploadModal({
         </div>
       </form>
     </ModalDialog>
+    {typeCreatorOpen && typeof document !== "undefined"
+      ? createPortal(
+          <DocumentTypeFormDialog
+            form={newTypeForm}
+            setForm={setNewTypeForm}
+            onClose={closeNewTypeDialog}
+            onSubmit={submitNewDocumentType}
+            saving={createDocumentType.isPending}
+            allApprovers={typeSettings.data?.approvers ?? []}
+            error={newTypeError}
+            zIndex={zIndex + 10}
+            submitLabel="Add type"
+          />,
+          document.body,
+        )
+      : null}
+    </>
   );
 }

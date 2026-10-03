@@ -119,7 +119,7 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
           onClose={() => closeCurrent(false)}
           size="sm"
           fullscreenable={false}
-          zIndex={80}
+          zIndex={200}
           backdropClassName="bg-slate-950/45"
           titleClassName="text-xl"
         >
