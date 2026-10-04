@@ -93,6 +93,14 @@
                             <span class="r_graph-detail-tag" t-if="state.focusedNodeData.hasReporting">Reporting</span>
                             <span class="r_graph-detail-tag" t-if="state.focusedNodeData.hasPeer">Peer / Team</span>
                         </div>
+                        <div t-if="state.focusedNodeData.connectionSummaryText" class="r_graph-detail-reporting">
+                            <div class="r_graph-detail-reporting-title">
+                                <t t-esc="state.focusedNodeData.connectionSummaryTitle"/>
+                            </div>
+                            <div class="r_graph-detail-reporting-text">
+                                <t t-esc="state.focusedNodeData.connectionSummaryText"/>
+                            </div>
+                        </div>
                         <div class="r_graph-detail-footer">
                             <button class="r_graph-profile-btn" t-on-click="() => this.props.openProfile(state.focusedNodeData.id)">
                                 View Profile <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>

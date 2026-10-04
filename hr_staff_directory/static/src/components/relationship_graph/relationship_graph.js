@@ -191,9 +191,155 @@ export class StaffDirectoryRelationshipGraph extends Component {
         this.focusNode(d);
     }
 
+    firstName(name) {
+        const parts = (name || '').trim().split(/\s+/);
+        return parts[0] || name || '';
+    }
+
+    formatNameList(names) {
+        if (!names.length) return '';
+        if (names.length === 1) return names[0];
+        if (names.length === 2) return `${names[0]} & ${names[1]}`;
+        return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`;
+    }
+
+    /** First 4 first-names, then "+N more" when the list is longer. */
+    formatPeerPreview(peers) {
+        const names = peers.map((p) => this.firstName(p.name));
+        const limit = 4;
+        if (names.length <= limit) {
+            return this.formatNameList(names);
+        }
+        return `${this.formatNameList(names.slice(0, limit))} +${names.length - limit} more`;
+    }
+
+    /** Manager label for "reports to …" — prefer name; fall back to job title. */
+    managerDisplayLabel(manager) {
+        const name = (manager.name || '').trim();
+        if (name) return name;
+        return (manager.job_title || '').trim() || 'their manager';
+    }
+
+    getGraphNodes() {
+        return this.simulation ? this.simulation.nodes() : [];
+    }
+
+    getFocusedContext(nodeId) {
+        const nodes = this.getGraphNodes();
+        const focused = nodes.find((n) => n.id === nodeId);
+        if (!focused) return null;
+
+        const peers = focused.grade
+            ? nodes
+                .filter((n) => n.id !== nodeId && n.grade === focused.grade)
+                .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+            : [];
+        const reports = nodes
+            .filter((n) => n.manager_id === nodeId)
+            .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        const manager = focused.manager_id
+            ? nodes.find((n) => n.id === focused.manager_id)
+            : null;
+        const dept = (focused.dept || '').trim();
+
+        return {
+            focused,
+            who: this.firstName(focused.name),
+            peers,
+            reports,
+            manager,
+            dept,
+        };
+    }
+
+    buildReportingSummary(nodeId) {
+        const ctx = this.getFocusedContext(nodeId);
+        if (!ctx) return '';
+
+        const { who, manager, reports } = ctx;
+        const reportNames = this.formatNameList(reports.map((r) => this.firstName(r.name)));
+
+        if (!manager && !reports.length) {
+            return `${who} has no manager in this view.`;
+        }
+        if (!manager) {
+            return `${who} has no manager in this view and leads ${reportNames}.`;
+        }
+
+        const managerLabel = this.managerDisplayLabel(manager);
+        if (!reports.length) {
+            return `${who} reports to ${managerLabel}.`;
+        }
+        return `${who} reports to ${managerLabel} and leads ${reportNames}.`;
+    }
+
+    buildPeerOnlySummary(nodeId) {
+        const ctx = this.getFocusedContext(nodeId);
+        if (!ctx) return '';
+
+        const { who, peers, dept } = ctx;
+        if (!peers.length) {
+            return `${who} has no peers in this view.`;
+        }
+
+        const preview = this.formatPeerPreview(peers);
+        const team = dept || 'their';
+        return `${who} is peers with ${preview} in the ${team} team.`;
+    }
+
+    buildAllConnectionsSummary(nodeId) {
+        const ctx = this.getFocusedContext(nodeId);
+        if (!ctx) return '';
+
+        const { who, peers, reports, dept } = ctx;
+        const reportClause = reports.length
+            ? `reports from ${this.formatNameList(reports.map((r) => this.firstName(r.name)))}`
+            : 'no direct reports';
+
+        if (!peers.length) {
+            return `${who} has no peers in this view, and ${reportClause}.`;
+        }
+
+        const preview = this.formatPeerPreview(peers);
+        const deptClause = dept ? ` in ${dept}` : '';
+        return `${who} has peers with ${preview}${deptClause}, and ${reportClause}.`;
+    }
+
+    buildConnectionSummary(nodeId) {
+        const reportingOn = this.state.modes.reporting;
+        const peerOn = this.state.modes.peer;
+
+        if (!reportingOn && !peerOn) {
+            return { title: '', text: '' };
+        }
+        if (reportingOn && peerOn) {
+            return {
+                title: 'All Connections 🔗',
+                text: this.buildAllConnectionsSummary(nodeId),
+            };
+        }
+        if (reportingOn) {
+            return {
+                title: 'Reporting Lines 📋',
+                text: this.buildReportingSummary(nodeId),
+            };
+        }
+        return {
+            title: 'Peers / Team 👥',
+            text: this.buildPeerOnlySummary(nodeId),
+        };
+    }
+
     focusNode(d) {
         this.state.focusedNodeId = d.id;
-        this.state.focusedNodeData = d;
+        const summary = this.buildConnectionSummary(d.id);
+        this.state.focusedNodeData = {
+            ...d,
+            hasReporting: false,
+            hasPeer: false,
+            connectionSummaryTitle: summary.title,
+            connectionSummaryText: summary.text,
+        };
         this.recalculateConnections(d.id);
         this.highlightNodes();
     }
@@ -215,10 +361,16 @@ export class StaffDirectoryRelationshipGraph extends Component {
                 }
             }
         });
-        
+
         if (this.state.focusedNodeData && this.state.focusedNodeData.id === nodeId) {
-            this.state.focusedNodeData.hasReporting = hasReporting;
-            this.state.focusedNodeData.hasPeer = hasPeer;
+            const summary = this.buildConnectionSummary(nodeId);
+            this.state.focusedNodeData = {
+                ...this.state.focusedNodeData,
+                hasReporting,
+                hasPeer,
+                connectionSummaryTitle: summary.title,
+                connectionSummaryText: summary.text,
+            };
         }
     }
 
