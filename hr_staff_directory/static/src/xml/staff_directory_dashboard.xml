@@ -456,7 +456,7 @@
                                                     <img src="/hr_staff_directory/static/src/components/full_profile/chat_bot_avatar.png" alt="CleonAI"/>
                                                 </div>
                                                 <span class="sdir-ss-cleon-title">CleonAI</span>
-                                                <button type="button" class="sdir-ss-cleon-fs" title="Open full-screen CleonAI">
+                                                <button type="button" class="sdir-ss-cleon-fs" title="Open full-screen CleonAI" t-on-click="() => this.openCleonAiFullScreen()">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
                                                     Full Screen
                                                 </button>
@@ -494,26 +494,62 @@
                                                     </ol>
                                                     <div class="sdir-ss-cleon-section-title">Quick Actions</div>
                                                     <div class="sdir-ss-cleon-actions">
-                                                        <button type="button"><span class="sdir-ss-cleon-action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span>Export Report</button>
-                                                        <button type="button"><span class="sdir-ss-cleon-action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg></span>Share View</button>
+                                                        <button type="button" t-on-click="exportCleonAiRoster"><span class="sdir-ss-cleon-action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span>Export Report</button>
+                                                        <button type="button" t-on-click="shareCleonAiView"><span class="sdir-ss-cleon-action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg></span>Share View</button>
                                                         <button type="button" t-on-click="() => this.setSmartSearchView('org')"><span class="sdir-ss-cleon-action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg></span>Org Chart</button>
                                                         <button type="button" t-on-click="toggleOrgSidebar"><span class="sdir-ss-cleon-action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/></svg></span>Filter Data</button>
                                                     </div>
+                                                    <t t-if="state.cleonAiMessages.length">
+                                                        <div class="sdir-ss-cleon-section-title">Conversation</div>
+                                                        <div class="sdir-ss-cleon-chat">
+                                                            <t t-foreach="state.cleonAiMessages" t-as="msg" t-key="msg_index">
+                                                                <div t-att-class="'sdir-ss-cleon-msg sdir-ss-cleon-msg-' + msg.role">
+                                                                    <div class="sdir-ss-cleon-msg-role" t-esc="msg.role === 'user' ? 'You' : 'CleonAI'"/>
+                                                                    <div class="sdir-ss-cleon-md" t-out="this.formatCleonAiMarkdown(msg.text)"/>
+                                                                </div>
+                                                            </t>
+                                                        </div>
+                                                    </t>
+                                                    <t t-if="state.cleonAiLoading and state.cleonAiTab === 'summary'">
+                                                        <div class="sdir-ss-cleon-loading">Thinking…</div>
+                                                    </t>
                                                 </t>
                                                 <t t-else="">
-                                                    <div class="sdir-ss-cleon-placeholder">Coming soon</div>
+                                                    <t t-if="state.cleonAiLoading and !this.cleonAiActiveTabAnswer">
+                                                        <div class="sdir-ss-cleon-loading">Thinking…</div>
+                                                    </t>
+                                                    <t t-elif="this.cleonAiActiveTabAnswer">
+                                                        <div class="sdir-ss-cleon-p sdir-ss-cleon-answer sdir-ss-cleon-md" t-out="this.formatCleonAiMarkdown(this.cleonAiActiveTabAnswer)"/>
+                                                    </t>
+                                                    <t t-elif="this.cleonAiActiveTabError">
+                                                        <p class="sdir-ss-cleon-p sdir-ss-cleon-error" t-esc="this.cleonAiActiveTabError"/>
+                                                        <button type="button" class="sdir-ss-cleon-retry" t-on-click="retryCleonAiTab">
+                                                            Try again
+                                                        </button>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div class="sdir-ss-cleon-placeholder">Ask CleonAI below to generate this view.</div>
+                                                    </t>
                                                 </t>
                                             </div>
                                             <div class="sdir-ss-cleon-footer">
                                                 <div class="sdir-ss-cleon-ask">
-                                                    <input type="text" placeholder="Ask CleonAI anything..."/>
-                                                    <button type="button" class="sdir-ss-cleon-send">
+                                                    <input type="text"
+                                                           placeholder="Ask CleonAI anything..."
+                                                           t-att-value="state.cleonAiQuestion"
+                                                           t-on-input="onCleonAiQuestionInput"
+                                                           t-on-keydown="onCleonAiQuestionKeydown"
+                                                           t-att-disabled="state.cleonAiLoading"/>
+                                                    <button type="button"
+                                                            class="sdir-ss-cleon-send"
+                                                            t-on-click="() => this.askCleonAi()"
+                                                            t-att-disabled="state.cleonAiLoading">
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>
                                                     </button>
                                                 </div>
                                                 <div class="sdir-ss-cleon-ask-meta">
                                                     <p>Opens in full-screen workspace</p>
-                                                    <button type="button">
+                                                    <button type="button" t-on-click="() => this.openCleonAiFullScreen()">
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
                                                         Full Screen
                                                     </button>

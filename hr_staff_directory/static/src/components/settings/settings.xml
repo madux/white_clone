@@ -276,6 +276,52 @@
                             </div>
                         </t>
 
+                        <t t-elif="state.activeSection === 'cleo'">
+                            <div class="sdir-settings-section-head">
+                                <h2>Cleo &amp; Cleon AI</h2>
+                                <p>Control how the Staff Directory assistant appears and opens.</p>
+                            </div>
+
+                            <div class="sdir-settings-card">
+                                <div class="sdir-settings-card-header">
+                                    <span>Smart Search panel</span>
+                                </div>
+                                <div class="sdir-settings-card-body">
+                                    <div class="sdir-settings-row">
+                                        <div class="sdir-settings-row-text">
+                                            <div class="sdir-settings-row-title">Open CleonAI by default</div>
+                                            <div class="sdir-settings-row-desc">Show the CleonAI side panel when Org Structure / Smart Search loads</div>
+                                        </div>
+                                        <div class="sdir-settings-segment">
+                                            <button type="button"
+                                                    t-att-class="'sdir-settings-segment-btn' + (props.settings.cleonPanelOpen ? ' active' : '')"
+                                                    t-on-click="() => this.setCleonPanelOpen(true)">Open</button>
+                                            <button type="button"
+                                                    t-att-class="'sdir-settings-segment-btn' + (!props.settings.cleonPanelOpen ? ' active' : '')"
+                                                    t-on-click="() => this.setCleonPanelOpen(false)">Collapsed</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="sdir-settings-card">
+                                <div class="sdir-settings-card-header">
+                                    <span>Global assistant</span>
+                                </div>
+                                <div class="sdir-settings-card-body">
+                                    <div class="sdir-settings-row sdir-settings-row-stack">
+                                        <div class="sdir-settings-row-text">
+                                            <div class="sdir-settings-row-title">CleonAI workspace</div>
+                                            <div class="sdir-settings-row-desc">Opens the shared CleonAI shell with Staff Directory context. Live answers require a configured AI provider.</div>
+                                        </div>
+                                        <button type="button" class="sdir-settings-secondary-btn" t-on-click="openCleonAiAssistant">
+                                            Ask CleonAI
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+
                         <t t-else="">
                             <div class="sdir-settings-section-head">
                                 <h2 t-esc="activeSectionLabel"/>

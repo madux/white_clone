@@ -982,6 +982,49 @@ export class StaffDirectoryPeopleList extends Component {
         }
     }
 
+    askCleonAiOnSegment() {
+        const seg = this.state.currentSegmentData;
+        if (!seg) {
+            this.toast.show('warning', 'Open a segment first');
+            return;
+        }
+        const members = seg.members || [];
+        let onLeave = 0;
+        let active = 0;
+        let remote = 0;
+        const deptCounts = {};
+        for (const p of members) {
+            const life = String(p.lifecycle_state || 'active').toLowerCase().replace(/[^a-z]/g, '');
+            if (life === 'onleave') onLeave++;
+            else if (life === 'active' || life === 'probation') active++;
+            if (String(p.work_mode || '').toLowerCase().includes('remote')) remote++;
+            const d = p.department || 'Other';
+            deptCounts[d] = (deptCounts[d] || 0) + 1;
+        }
+        const top_departments = Object.entries(deptCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+        const name = seg.name || 'Saved segment';
+        this.closeActOnSegmentModal();
+        window.dispatchEvent(new CustomEvent('cleon-ai-open', {
+            detail: {
+                screen: 'staff_directory.segment',
+                title: `Staff Directory — ${name}`,
+                segment_name: name,
+                segment_count: seg.metrics?.total ?? members.length,
+                kpis: {
+                    total: members.length,
+                    active,
+                    onLeave,
+                    remote,
+                },
+                top_departments,
+                ask: `Summarize the segment "${name}"`,
+            },
+        }));
+    }
+
     openSegmentChatBox() {
         const seg = this.state.currentSegmentData;
         if (!seg) return;

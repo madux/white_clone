@@ -72,6 +72,7 @@ export class StaffDirectoryFullProfile extends Component {
             if (nextProps.activeProfile && nextProps.activeProfile.id !== this.props.activeProfile?.id) {
                 this.state.activeTab = nextProps.initialTab || 'overview';
                 this._ensureActiveTabVisible();
+                Promise.resolve().then(() => this.emitProfileAiContext());
             } else if (nextProps.initialTab && nextProps.initialTab !== this.props.initialTab) {
                 this.state.activeTab = nextProps.initialTab;
                 this._ensureActiveTabVisible();
@@ -81,12 +82,53 @@ export class StaffDirectoryFullProfile extends Component {
             this._clockTimer = setInterval(() => {
                 this.state.localTime = this._formatLocalTime();
             }, 1000);
+            this.emitProfileAiContext();
         });
         onWillUnmount(() => {
             if (this._clockTimer) {
                 clearInterval(this._clockTimer);
             }
         });
+    }
+
+    buildProfileAiContext() {
+        const p = this.props.activeProfile || {};
+        const tos = p.time_off_summary;
+        let leave_summary = '';
+        if (typeof tos === 'string') {
+            leave_summary = tos;
+        } else if (tos && typeof tos === 'object') {
+            const pending = tos.pending_count ?? 0;
+            const remaining = tos.public_holidays_remaining ?? tos.public_holidays_total ?? 0;
+            leave_summary = `${pending} pending leave request(s); ~${remaining} public holiday(s) remaining`;
+        }
+        return {
+            screen: 'staff_directory.profile',
+            title: p.name || 'Employee Profile',
+            employee_id: p.id,
+            employee_name: p.name || '',
+            department: p.department || '',
+            job_title: p.job_title || '',
+            lifecycle: p.lifecycle_state || '',
+            leave_summary,
+        };
+    }
+
+    emitProfileAiContext() {
+        if (!this.props.activeProfile?.id) {
+            return;
+        }
+        window.dispatchEvent(new CustomEvent('cleon-ai-context', {
+            detail: this.buildProfileAiContext(),
+        }));
+    }
+
+    openCleonAi(ask = '') {
+        const detail = this.buildProfileAiContext();
+        const first = (detail.employee_name || 'this person').split(' ')[0];
+        const question = (ask || '').trim() || `Summarize ${first}'s profile`;
+        detail.ask = question;
+        window.dispatchEvent(new CustomEvent('cleon-ai-open', { detail }));
     }
 
     isTabVisible(key) {

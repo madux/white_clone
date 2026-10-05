@@ -3,6 +3,7 @@
 import { Component, onMounted, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { formatAssistantMarkdown } from "@cleon_ai/js/markdown";
 
 export class CleonAiAssistant extends Component {
     static template = "cleon_ai.CleonAiAssistant";
@@ -39,6 +40,27 @@ export class CleonAiAssistant extends Component {
             this.setContext(event?.detail || null);
         };
 
+        this.openListener = async (event) => {
+            const detail = event?.detail || null;
+            let question = "";
+            if (detail && typeof detail === "object") {
+                const context = { ...detail };
+                question = context.ask ? String(context.ask).trim() : "";
+                delete context.ask;
+                this.setContext(context);
+            } else if (detail) {
+                this.setContext(detail);
+            }
+            this.state.open = true;
+            if (this.state.context) {
+                await this.refreshSummary();
+            }
+            if (question) {
+                this.state.question = question;
+                await this.ask();
+            }
+        };
+
         this.onNavigationChange = () => {
             // When navigating between Odoo routes/actions, reset context unless the new page announces itself
             this.setContext(null);
@@ -46,11 +68,13 @@ export class CleonAiAssistant extends Component {
 
         onMounted(() => {
             window.addEventListener("cleon-ai-context", this.contextListener);
+            window.addEventListener("cleon-ai-open", this.openListener);
             window.addEventListener("hashchange", this.onNavigationChange);
         });
 
         onWillUnmount(() => {
             window.removeEventListener("cleon-ai-context", this.contextListener);
+            window.removeEventListener("cleon-ai-open", this.openListener);
             window.removeEventListener("hashchange", this.onNavigationChange);
         });
     }
@@ -114,6 +138,10 @@ export class CleonAiAssistant extends Component {
                 text: error?.data?.message || error.message || "The assistant could not answer this question.",
             });
         }
+    }
+
+    formatMessage(text) {
+        return formatAssistantMarkdown(text);
     }
 
     onQuestionKeydown(event) {

@@ -448,3 +448,26 @@
     padding-top: 10px;
     padding-bottom: 10px;
 }
+
+.sdir-settings-row-stack {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.sdir-settings-secondary-btn {
+    padding: 9px 16px;
+    border-radius: 9px;
+    border: 1px solid rgba(233, 30, 140, 0.35);
+    background: rgba(233, 30, 140, 0.06);
+    color: rgb(233, 30, 140);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.15s;
+}
+
+.sdir-settings-secondary-btn:hover {
+    background: rgba(233, 30, 140, 0.12);
+}

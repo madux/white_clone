@@ -3,6 +3,7 @@
 import { Component, onMounted, onPatched, onWillStart, onWillUnmount, useRef, useState, useExternalListener } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { formatAssistantMarkdown } from "@cleon_ai/js/markdown";
 
 import { StaffDirectoryProfilePanel } from "./../components/profile_panel/profile_panel";
 import { StaffDirectoryPeopleList } from "./../components/people_list/people_list";
@@ -63,6 +64,7 @@ export class StaffDirectoryDashboard extends Component {
 
     setup() {
         this.rpc = useService("rpc");
+        this.orm = useService("orm");
         this.toast = useService("hr_staff_directory.toast");
         this.busService = this.env.services.bus_service;
         this.rootRef = useRef("root");
@@ -210,8 +212,13 @@ export class StaffDirectoryDashboard extends Component {
             calYear: new Date().getFullYear(),
             calMonth: new Date().getMonth(), // 0-indexed
             calViewMode: 'month', // month | week | list
-            cleonAiOpen: true,
+            cleonAiOpen: initialSettings.cleonPanelOpen !== false,
             cleonAiTab: 'summary',
+            cleonAiQuestion: '',
+            cleonAiLoading: false,
+            cleonAiMessages: [],
+            cleonAiTabAnswers: { insights: null, risks: null, recommendations: null },
+            cleonAiTabErrors: { insights: null, risks: null, recommendations: null },
             // Smart Search saved filter sets (local; applied back into smartSearchSelected)
             orgSavedFilters: [],
             smartSearchSaving: false,
@@ -331,11 +338,13 @@ export class StaffDirectoryDashboard extends Component {
             // onPatched does not run on the initial mount (OWL MountFiber skips
             // patched hooks), so size the input here for the first paint.
             this._autosizeJumpInput(this.jumpInput.el);
+            this.emitDirectoryAiContext();
         });
 
         onWillUnmount(() => {
             document.removeEventListener("keydown", this._boundOnKeyDown);
             document.removeEventListener("click", this._boundOnClick);
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", { detail: null }));
             // Stop receiving notifications for this instance.
             if (activeSdirHandler === this._boundOnDirectoryUpdate) {
                 activeSdirHandler = null;
@@ -409,6 +418,7 @@ export class StaffDirectoryDashboard extends Component {
             }
             this._applyPeopleData(d.people || []);
             await this._migrateLocalSmartSearchFiltersIfNeeded();
+            this.emitDirectoryAiContext();
         } catch (e) {
             console.error('[SDIR] people data load failed', e);
         } finally {
@@ -688,7 +698,7 @@ export class StaffDirectoryDashboard extends Component {
         this.toast.show('success', 'Settings applied');
     }
 
-    _applyDirectorySettings(settings, { applyLandingTab = false } = {}) {
+    _applyDirectorySettings(settings, { applyLandingTab = false, applyCleonPanel = false } = {}) {
         const prevOrgSubTab = this.state.settings?.orgSubTab;
         const next = normalizeDirectorySettings(settings);
         this.state.settings = next;
@@ -698,6 +708,9 @@ export class StaffDirectoryDashboard extends Component {
         }
         if (applyLandingTab) {
             this.state.activeTab = SDIR_LANDING_TO_TAB[next.landingTab] || 'people';
+        }
+        if (applyLandingTab || applyCleonPanel) {
+            this.state.cleonAiOpen = next.cleonPanelOpen !== false;
         }
         return next;
     }
@@ -738,11 +751,15 @@ export class StaffDirectoryDashboard extends Component {
 
     async updateDirectorySettings(partial) {
         const optimistic = normalizeDirectorySettings({ ...this.state.settings, ...partial });
-        this._applyDirectorySettings(optimistic);
+        this._applyDirectorySettings(optimistic, {
+            applyCleonPanel: Object.prototype.hasOwnProperty.call(partial || {}, 'cleonPanelOpen'),
+        });
         try {
             const saved = await this._rpcDirectorySettings('update_my_settings', [optimistic]);
             if (!settingsEqual(saved, this.state.settings)) {
-                this._applyDirectorySettings(saved);
+                this._applyDirectorySettings(saved, {
+                    applyCleonPanel: Object.prototype.hasOwnProperty.call(partial || {}, 'cleonPanelOpen'),
+                });
             }
         } catch (e) {
             console.error('Failed to save Staff Directory settings', e);
@@ -751,10 +768,10 @@ export class StaffDirectoryDashboard extends Component {
     }
 
     async resetDirectorySettings() {
-        this._applyDirectorySettings(SDIR_DEFAULT_SETTINGS);
+        this._applyDirectorySettings(SDIR_DEFAULT_SETTINGS, { applyCleonPanel: true });
         try {
             const saved = await this._rpcDirectorySettings('reset_my_settings');
-            this._applyDirectorySettings(saved);
+            this._applyDirectorySettings(saved, { applyCleonPanel: true });
             this.toast.show('success', 'Settings reset to defaults');
         } catch (e) {
             console.error('Failed to reset Staff Directory settings', e);
@@ -1143,6 +1160,26 @@ export class StaffDirectoryDashboard extends Component {
             ? `Department: ${chips.join(', ')}`
             : chips.join(', ');
         return `Showing ${k.total} employees filtered by ${by}. The workforce is ${k.activePct}% active.`;
+    }
+
+    get cleonAiActiveTabAnswer() {
+        const tab = this.state.cleonAiTab;
+        if (!tab || tab === 'summary') {
+            return null;
+        }
+        return this.state.cleonAiTabAnswers[tab] || null;
+    }
+
+    get cleonAiActiveTabError() {
+        const tab = this.state.cleonAiTab;
+        if (!tab || tab === 'summary') {
+            return null;
+        }
+        return this.state.cleonAiTabErrors[tab] || null;
+    }
+
+    formatCleonAiMarkdown(text) {
+        return formatAssistantMarkdown(text);
     }
 
     setSmartSearchTab(tab) {
@@ -2008,10 +2045,207 @@ export class StaffDirectoryDashboard extends Component {
 
     setCleonAiTab(tab) {
         this.state.cleonAiTab = tab;
+        if (tab !== 'summary') {
+            this._ensureCleonAiTabAnswer(tab);
+        }
+    }
+
+    retryCleonAiTab() {
+        const tab = this.state.cleonAiTab;
+        if (!tab || tab === 'summary') {
+            return;
+        }
+        this.state.cleonAiTabAnswers[tab] = null;
+        this.state.cleonAiTabErrors[tab] = null;
+        this._ensureCleonAiTabAnswer(tab);
     }
 
     toggleCleonAi() {
         this.state.cleonAiOpen = !this.state.cleonAiOpen;
+    }
+
+    _rosterKpisFromPeople(people) {
+        const list = people || [];
+        let onLeave = 0;
+        let active = 0;
+        let remote = 0;
+        let newHires = 0;
+        const today = new Date();
+        const days30 = 30 * 24 * 60 * 60 * 1000;
+        for (const p of list) {
+            const life = (p.lifecycle_state || 'active').toLowerCase().replace(/[^a-z]/g, '');
+            if (life === 'onleave') onLeave++;
+            else if (life === 'active' || life === 'probation') active++;
+            const mode = String(p.work_mode || '').toLowerCase();
+            if (mode.includes('remote')) remote++;
+            if (p.create_date || p.start_date) {
+                const d = new Date(p.create_date || p.start_date);
+                if (!Number.isNaN(d.getTime()) && today - d <= days30) newHires++;
+            }
+        }
+        return {
+            total: list.length,
+            active,
+            onLeave,
+            remote,
+            newHires,
+        };
+    }
+
+    _topDepartmentsFromPeople(people, limit = 5) {
+        const counts = {};
+        for (const p of people || []) {
+            const d = p.department || 'Other';
+            counts[d] = (counts[d] || 0) + 1;
+        }
+        return Object.entries(counts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, limit);
+    }
+
+    buildDirectoryAiContext(overrides = {}) {
+        const tab = this.state.activeTab;
+        const isOrg = tab === 'org';
+        const people = isOrg ? this.smartSearchPeople : this.filteredPeople();
+        const kpis = this._rosterKpisFromPeople(people);
+        return {
+            screen: isOrg ? 'staff_directory.org' : 'staff_directory.people',
+            title: isOrg
+                ? 'Staff Directory — Organizational Structure'
+                : 'Staff Directory — People',
+            kpis: {
+                total: kpis.total,
+                active: kpis.active,
+                onLeave: kpis.onLeave,
+                remote: kpis.remote,
+                newHires: kpis.newHires,
+            },
+            top_departments: this._topDepartmentsFromPeople(people),
+            filters: isOrg
+                ? { ...this.state.smartSearchSelected }
+                : { ...this.state.activeFilters },
+            view: isOrg ? this.state.smartSearchView : 'people',
+            ...overrides,
+        };
+    }
+
+    emitDirectoryAiContext() {
+        window.dispatchEvent(new CustomEvent('cleon-ai-context', {
+            detail: this.buildDirectoryAiContext(),
+        }));
+    }
+
+    openCleonAiFullScreen(ask = '') {
+        const detail = this.buildDirectoryAiContext();
+        const question = (ask || this.state.cleonAiQuestion || '').trim();
+        if (question) {
+            detail.ask = question;
+            this.state.cleonAiQuestion = '';
+        }
+        window.dispatchEvent(new CustomEvent('cleon-ai-open', { detail }));
+    }
+
+    onCleonAiQuestionInput(ev) {
+        this.state.cleonAiQuestion = ev.target.value;
+    }
+
+    onCleonAiQuestionKeydown(ev) {
+        if (ev.key === 'Enter') {
+            ev.preventDefault();
+            this.askCleonAi();
+        }
+    }
+
+    async askCleonAi(suggestion = '') {
+        const question = (suggestion || this.state.cleonAiQuestion || '').trim();
+        if (!question || this.state.cleonAiLoading) {
+            return;
+        }
+        this.state.cleonAiOpen = true;
+        this.state.cleonAiTab = 'summary';
+        this.state.cleonAiMessages.push({ role: 'user', text: question });
+        this.state.cleonAiQuestion = '';
+        this.state.cleonAiLoading = true;
+        const context = this.buildDirectoryAiContext();
+        this.emitDirectoryAiContext();
+        try {
+            const result = await this.orm.call(
+                'cleon.ai.gateway',
+                'ask_assistant',
+                [question, context],
+            );
+            const hrFallback = !result.answered && result.provider && !result.provider.configured;
+            this.state.cleonAiMessages.push({
+                role: 'assistant',
+                text: hrFallback
+                    ? "I'm not able to answer that right now. For help, please contact HR directly."
+                    : (result.message || 'No answer returned.'),
+            });
+        } catch (error) {
+            this.state.cleonAiMessages.push({
+                role: 'assistant',
+                text: error?.data?.message || error.message || 'The assistant could not answer this question.',
+            });
+        } finally {
+            this.state.cleonAiLoading = false;
+        }
+    }
+
+    async _ensureCleonAiTabAnswer(tab) {
+        if (!tab || tab === 'summary' || this.state.cleonAiTabAnswers[tab] || this.state.cleonAiLoading) {
+            return;
+        }
+        const prompts = {
+            insights: 'What workforce insights stand out in the current filtered roster?',
+            risks: 'What risks or gaps should HR watch in this roster view?',
+            recommendations: 'What practical recommendations do you have for this roster view?',
+        };
+        const question = prompts[tab];
+        if (!question) {
+            return;
+        }
+        this.state.cleonAiLoading = true;
+        this.state.cleonAiTabErrors[tab] = null;
+        try {
+            const result = await this.orm.call(
+                'cleon.ai.gateway',
+                'ask_assistant',
+                [question, this.buildDirectoryAiContext()],
+            );
+            if (!result.answered) {
+                // Transient provider errors (e.g. Gemini 503) must not be cached as answers.
+                this.state.cleonAiTabErrors[tab] =
+                    result.message || "I'm not able to answer that right now. Please try again.";
+                return;
+            }
+            this.state.cleonAiTabAnswers[tab] = result.message || 'No answer returned.';
+        } catch (error) {
+            this.state.cleonAiTabErrors[tab] =
+                error?.data?.message || error.message || 'Unable to load this view.';
+        } finally {
+            this.state.cleonAiLoading = false;
+        }
+    }
+
+    exportCleonAiRoster() {
+        const people = this.state.activeTab === 'org' ? this.smartSearchPeople : this.filteredPeople();
+        const dateStr = new Date().toISOString().slice(0, 10);
+        this.exportToCSV(people, `staff_directory_cleon_${dateStr}.csv`);
+        this.toast.show('success', 'Roster exported');
+    }
+
+    shareCleonAiView() {
+        const text = this.smartSearchSummaryText;
+        if (navigator.clipboard && text) {
+            navigator.clipboard.writeText(text).then(() => {
+                this.toast.show('success', 'View summary copied');
+            }).catch(() => {
+                this.toast.show('warning', 'Could not copy summary');
+            });
+            return;
+        }
+        this.toast.show('warning', 'Clipboard not available');
     }
 
     resetSmartSearchFilters() {
@@ -2020,7 +2254,10 @@ export class StaffDirectoryDashboard extends Component {
             cleared[id] = [];
         }
         this.state.smartSearchSelected = cleared;
+        this.state.cleonAiTabAnswers = { insights: null, risks: null, recommendations: null };
+        this.state.cleonAiTabErrors = { insights: null, risks: null, recommendations: null };
         this._clearAppliedSmartSearchFilter();
+        this.emitDirectoryAiContext();
     }
 
     isSmartSearchOptionChecked(categoryId, optionValue) {
@@ -2041,7 +2278,10 @@ export class StaffDirectoryDashboard extends Component {
         }
         selected[categoryId] = current;
         this.state.smartSearchSelected = selected;
+        this.state.cleonAiTabAnswers = { insights: null, risks: null, recommendations: null };
+        this.state.cleonAiTabErrors = { insights: null, risks: null, recommendations: null };
         this._clearAppliedSmartSearchFilter();
+        this.emitDirectoryAiContext();
     }
 
     onSaveSmartSearchFilters() {
@@ -2698,6 +2938,7 @@ export class StaffDirectoryDashboard extends Component {
         if (tab === 'org') {
             this.state.smartSearchTab = this.state.settings.orgSubTab || 'overview';
         }
+        this.emitDirectoryAiContext();
     }
 
 

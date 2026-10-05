@@ -1,6 +1,6 @@
 {
     'name':  'CLEONHR Staff Directory',
-    'version':  '17.0.1.0.7',
+    'version':  '17.0.1.0.11',
     'category':  'CleonHR-HR ADMIN',
     'summary':  'Comprehensive Staff Directory Dashboard with workforce analytics',
     'description':  '\n        Staff Directory Dashboard for CleonHR\n        ======================================\n        - Real-time Staff KPI Metrics\n        - Headcount Growth Trend (area chart)\n        - Department Distribution (horizontal bar chart)\n        - Employment Type & Gender distribution (donut charts)\n        - Recent Activities, Upcoming Birthdays, Work Anniversaries\n        - Compliance Status, Training Progress, Work Location\n        - Probation Periods & Contract Renewals\n        - Performance Ratings & Skills Overview\n        - Diversity & Inclusion Metrics\n    ',
@@ -14,7 +14,8 @@
     'hr_skills',
     'mail',
     'web',
-    'hr_administration'
+    'hr_administration',
+    'cleon_ai',
     ],
  'data':  [
         'views/assets.xml',

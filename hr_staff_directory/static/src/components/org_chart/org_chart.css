@@ -1933,6 +1933,113 @@
     object-fit: contain;
 }
 
+.sdir-ss-cleon-chat {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.sdir-ss-cleon-msg {
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #F9FAFB;
+    border: 1px solid #F3F4F6;
+}
+
+.sdir-ss-cleon-msg-user {
+    background: rgba(233, 30, 140, 0.06);
+    border-color: rgba(233, 30, 140, 0.15);
+}
+
+.sdir-ss-cleon-msg-role {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #9CA3AF;
+    margin-bottom: 3px;
+}
+
+.sdir-ss-cleon-msg p,
+.sdir-ss-cleon-md .o_cai_md_p {
+    margin: 0 0 6px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #374151;
+}
+
+.sdir-ss-cleon-md .o_cai_md_p:last-child {
+    margin-bottom: 0;
+}
+
+.sdir-ss-cleon-md strong {
+    font-weight: 700;
+}
+
+.sdir-ss-cleon-md em {
+    font-style: italic;
+}
+
+.sdir-ss-cleon-md code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    background: #F3F4F6;
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+.sdir-ss-cleon-md .o_cai_md_list {
+    margin: 4px 0 8px;
+    padding-left: 18px;
+}
+
+.sdir-ss-cleon-md .o_cai_md_list li {
+    margin: 4px 0;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #374151;
+}
+
+.sdir-ss-cleon-loading {
+    font-size: 11px;
+    color: #E91E8C;
+    font-weight: 600;
+    padding: 8px 0 4px;
+}
+
+.sdir-ss-cleon-answer.sdir-ss-cleon-md {
+    white-space: normal;
+}
+
+.sdir-ss-cleon-error {
+    color: #B91C1C;
+    white-space: pre-wrap;
+}
+
+.sdir-ss-cleon-retry {
+    margin-top: 8px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(233, 30, 140, 0.35);
+    background: rgba(233, 30, 140, 0.06);
+    color: #E91E8C;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.sdir-ss-cleon-retry:hover {
+    background: rgba(233, 30, 140, 0.12);
+}
+
+.sdir-ss-cleon-send:disabled,
+.sdir-ss-cleon-ask input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 /* ════ SMART SEARCH OVERVIEW TAB ════════════════════════════════════════════ */
 
 .sdir-ss-overview {

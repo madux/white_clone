@@ -88,6 +88,11 @@ class HRStaffDirectorySettings(models.Model):
         default='overview',
         required=True,
     )
+    cleon_panel_open = fields.Boolean(
+        string='Open CleonAI Panel by Default',
+        default=True,
+        help='When enabled, the Smart Search CleonAI side panel starts open on Org Structure.',
+    )
 
     _sql_constraints = [
         ('user_uniq', 'unique(user_id)', 'Each user has one Staff Directory settings record.'),
@@ -109,6 +114,7 @@ class HRStaffDirectorySettings(models.Model):
             'peopleSortField': self.people_sort_field or 'name',
             'peopleSortDir': self.people_sort_dir or 'asc',
             'orgSubTab': self.org_sub_tab or 'overview',
+            'cleonPanelOpen': bool(self.cleon_panel_open),
         }
 
     @api.model
@@ -123,6 +129,7 @@ class HRStaffDirectorySettings(models.Model):
         sort_field = values.get('peopleSortField', values.get('people_sort_field'))
         sort_dir = values.get('peopleSortDir', values.get('people_sort_dir'))
         org_sub_tab = values.get('orgSubTab', values.get('org_sub_tab'))
+        cleon_panel = values.get('cleonPanelOpen', values.get('cleon_panel_open'))
         clean = {}
         if landing in ('people', 'teams', 'relationship'):
             clean['landing_tab'] = landing
@@ -140,6 +147,8 @@ class HRStaffDirectorySettings(models.Model):
             clean['people_sort_dir'] = sort_dir
         if org_sub_tab in ('overview', 'teams', 'calendar', 'analytics'):
             clean['org_sub_tab'] = org_sub_tab
+        if cleon_panel is not None:
+            clean['cleon_panel_open'] = bool(cleon_panel)
         return clean
 
     @api.model
@@ -174,5 +183,6 @@ class HRStaffDirectorySettings(models.Model):
             'people_sort_field': 'name',
             'people_sort_dir': 'asc',
             'org_sub_tab': 'overview',
+            'cleon_panel_open': True,
         })
         return rec._to_frontend()

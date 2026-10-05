@@ -13,6 +13,7 @@ export const SDIR_DEFAULT_SETTINGS = {
     peopleSortField: "name", // name | dept | role | startDate | gradeLevel | location
     peopleSortDir: "asc", // asc | desc
     orgSubTab: "overview", // overview | teams | calendar | analytics
+    cleonPanelOpen: true, // Smart Search CleonAI panel starts open
 };
 
 /** Map settings landingTab → dashboard activeTab */
@@ -62,6 +63,7 @@ export function normalizeDirectorySettings(raw) {
         orgSubTab: ["overview", "teams", "calendar", "analytics"].includes(src.orgSubTab)
             ? src.orgSubTab
             : SDIR_DEFAULT_SETTINGS.orgSubTab,
+        cleonPanelOpen: src.cleonPanelOpen === false ? false : true,
     };
 }
 
@@ -94,7 +96,8 @@ export function settingsEqual(a, b) {
         left.peoplePageSize === right.peoplePageSize &&
         left.peopleSortField === right.peopleSortField &&
         left.peopleSortDir === right.peopleSortDir &&
-        left.orgSubTab === right.orgSubTab
+        left.orgSubTab === right.orgSubTab &&
+        left.cleonPanelOpen === right.cleonPanelOpen
     );
 }
 
@@ -176,5 +179,19 @@ export class StaffDirectorySettings extends Component {
 
     onOrgSubTabChange(ev) {
         this.props.onUpdate({ orgSubTab: ev.target.value });
+    }
+
+    setCleonPanelOpen(open) {
+        this.props.onUpdate({ cleonPanelOpen: !!open });
+    }
+
+    openCleonAiAssistant() {
+        window.dispatchEvent(new CustomEvent("cleon-ai-open", {
+            detail: {
+                screen: "staff_directory.people",
+                title: "Staff Directory — People",
+                ask: "Summarize the people currently in view",
+            },
+        }));
     }
 }

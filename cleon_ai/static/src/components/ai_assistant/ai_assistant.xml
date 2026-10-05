@@ -41,7 +41,7 @@
               </div>
               <div class="o_cai_messages">
                 <div t-foreach="state.messages" t-as="message" t-key="message_index" t-att-class="'o_cai_msg ' + message.role">
-                  <p t-esc="message.text"/>
+                  <div class="o_cai_msg_body" t-out="this.formatMessage(message.text)"/>
                   <a t-if="message.link" t-att-href="message.link" class="o_cai_msg_link" target="_blank">View Details →</a>
                   <div t-if="message.role === 'assistant' and state.messageFeedback[message_index] === undefined" class="o_cai_msg_fb">
                     <button t-on-click="() => this.rateMessage(message_index, true)" title="Helpful"><i class="fa fa-thumbs-o-up"/></button>

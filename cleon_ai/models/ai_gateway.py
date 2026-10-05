@@ -4,6 +4,7 @@ import binascii
 import json
 import logging
 import os
+import time
 import uuid
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -64,11 +65,101 @@ class CleonAiGateway(models.AbstractModel):
         }
 
     @api.model
+    def _normalize_gemini_model(self, raw):
+        """Strip ListModels-style prefixes; keep a current generateContent default."""
+        model = (raw or "").strip()
+        if model.startswith("models/"):
+            model = model[len("models/"):]
+        return model or "gemini-3.8-flash"
+
+    @api.model
+    def _gemini_http_detail(self, error):
+        try:
+            return json.loads(error.read().decode("utf-8")).get("error", {}).get("message", "") or ""
+        except (ValueError, AttributeError, UnicodeDecodeError):
+            return ""
+
+    @api.model
+    def _gemini_generate_content(self, api_key, model, prompt):
+        """POST generateContent; returns parsed JSON. Raises HTTPError/URLError."""
+        payload = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode("utf-8")
+        request = Request(
+            "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent" % model,
+            data=payload,
+            headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+            method="POST",
+        )
+        with urlopen(request, timeout=30) as response:
+            return json.loads(response.read().decode("utf-8"))
+
+    @api.model
+    def _gemini_generate_content_with_retry(self, api_key, model, prompt, attempts=3):
+        """Retry transient Gemini capacity errors (429 / 503) with short backoff."""
+        last_error = None
+        for attempt in range(max(1, attempts)):
+            try:
+                return self._gemini_generate_content(api_key, model, prompt)
+            except HTTPError as error:
+                last_error = error
+                # Body can be read only once — stash detail on the exception for callers.
+                error.gemini_detail = self._gemini_http_detail(error)
+                if error.code in (429, 503) and attempt < attempts - 1:
+                    self._logger.warning(
+                        "Gemini model %s returned HTTP %s (attempt %s/%s); backing off",
+                        model, error.code, attempt + 1, attempts,
+                    )
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
+                raise
+        raise last_error
+
+    @api.model
+    def _gemini_text_from_response(self, data):
+        text = "".join(
+            part.get("text", "")
+            for candidate in data.get("candidates", [])
+            for part in candidate.get("content", {}).get("parts", [])
+        ).strip()
+        if not text:
+            raise ValidationError(_("Gemini returned no text for this request."))
+        return text
+
+    @api.model
+    def _raise_gemini_http_error(self, error, model, detail=""):
+        """User-facing Gemini HTTP failure. Prefer model-availability hints over opaque privacy text."""
+        detail = (detail or "").strip()
+        self._logger.warning(
+            "Gemini request rejected with HTTP %s for model %s: %s",
+            error.code, model, (detail[:300] if detail else "no detail"),
+        )
+        if error.code == 404:
+            raise ValidationError(_(
+                "Gemini model '%(model)s' is not available for generateContent (HTTP 404). "
+                "Set system parameter cleon_ai.model to a current model such as gemini-3.8-flash "
+                "(ListModels can still show retired models).",
+                model=model,
+            ))
+        if error.code in (429, 503):
+            raise ValidationError(_(
+                "Gemini is busy right now (HTTP %(code)s). Wait a few seconds and try again, "
+                "or set cleon_ai.model to a lighter model such as gemini-flash-lite-latest.",
+                code=error.code,
+            ))
+        # Provider status text is safe (key/quota/model); never echo request bodies.
+        if detail and len(detail) <= 280 and "\n" not in detail:
+            raise ValidationError(_("Gemini rejected the request (HTTP %(code)s): %(detail)s") % {
+                "code": error.code, "detail": detail,
+            })
+        raise ValidationError(_("Gemini rejected the request (HTTP %(code)s).") % {"code": error.code})
+
+    @api.model
     def _call_gemini(self, question, screen_context=None):
         """Call Gemini without storing the secret in application logs or responses."""
         params = self.env["ir.config_parameter"].sudo()
         api_key = params.get_param("cleon_ai.gemini_api_key", "") or os.environ.get("GEMINI_API_KEY", "")
-        model = params.get_param("cleon_ai.model", "") or "gemini-2.5-flash"
+        model = self._normalize_gemini_model(params.get_param("cleon_ai.model", ""))
+        model_fallback = "gemini-3.8-flash"
+        capacity_fallback = "gemini-flash-lite-latest"
         if not api_key:
             raise ValidationError(_("Gemini is selected, but no Gemini API key is configured."))
         context = screen_context or {}
@@ -79,39 +170,52 @@ class CleonAiGateway(models.AbstractModel):
                 "Answer only with helpful, concise guidance and do not claim to perform actions.\n\nUser question: %(question)s",
                 screen=context.get("screen"), question=question,
             )
-        payload = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode("utf-8")
-        request = Request(
-            "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent" % model,
-            data=payload,
-            headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
-            method="POST",
-        )
         try:
-            with urlopen(request, timeout=30) as response:
-                data = json.loads(response.read().decode("utf-8"))
+            data = self._gemini_generate_content_with_retry(api_key, model, prompt)
         except HTTPError as error:
-            # Google returns useful status details (invalid model/key/quota),
-            # but never include the request headers or secret in the message.
-            try:
-                detail = json.loads(error.read().decode("utf-8")).get("error", {}).get("message", "")
-            except (ValueError, AttributeError):
-                detail = ""
-            self._logger.warning("Gemini request rejected with HTTP %s: %s", error.code, "response withheld")
-            suffix = (": " + "Provider response withheld for privacy.") if detail else ""
-            raise ValidationError(_("Gemini rejected the request (HTTP %(code)s)%(suffix)s") % {
-                "code": error.code, "suffix": suffix,
-            })
+            detail = getattr(error, "gemini_detail", None) or self._gemini_http_detail(error)
+            # New AI Studio keys often ListModels gemini-2.5-* but reject generateContent.
+            if error.code == 404 and model != model_fallback:
+                self._logger.warning(
+                    "Gemini model %s returned HTTP 404 (%s); retrying with %s",
+                    model, detail[:200] if detail else "no detail", model_fallback,
+                )
+                try:
+                    data = self._gemini_generate_content_with_retry(api_key, model_fallback, prompt)
+                except HTTPError as retry_error:
+                    self._raise_gemini_http_error(
+                        retry_error,
+                        model_fallback,
+                        getattr(retry_error, "gemini_detail", None) or self._gemini_http_detail(retry_error),
+                    )
+                except (URLError, TimeoutError, ValueError) as retry_error:
+                    self._logger.warning("Gemini fallback request failed: %s", retry_error)
+                    raise ValidationError(_("Gemini could not reach the provider. Check the Odoo server's network access."))
+                if params.get_param("cleon_ai.model", "") != model_fallback:
+                    params.set_param("cleon_ai.model", model_fallback)
+            elif error.code in (429, 503) and model != capacity_fallback:
+                # Busy flagship model — one shot on a lighter Flash-Lite alias.
+                self._logger.warning(
+                    "Gemini model %s returned HTTP %s; trying capacity fallback %s",
+                    model, error.code, capacity_fallback,
+                )
+                try:
+                    data = self._gemini_generate_content_with_retry(api_key, capacity_fallback, prompt, attempts=2)
+                except HTTPError as retry_error:
+                    self._raise_gemini_http_error(
+                        retry_error,
+                        capacity_fallback,
+                        getattr(retry_error, "gemini_detail", None) or self._gemini_http_detail(retry_error),
+                    )
+                except (URLError, TimeoutError, ValueError) as retry_error:
+                    self._logger.warning("Gemini capacity fallback failed: %s", retry_error)
+                    raise ValidationError(_("Gemini could not reach the provider. Check the Odoo server's network access."))
+            else:
+                self._raise_gemini_http_error(error, model, detail)
         except (URLError, TimeoutError, ValueError) as error:
             self._logger.warning("Gemini request failed: %s", error)
             raise ValidationError(_("Gemini could not reach the provider. Check the Odoo server's network access."))
-        text = "".join(
-            part.get("text", "")
-            for candidate in data.get("candidates", [])
-            for part in candidate.get("content", {}).get("parts", [])
-        ).strip()
-        if not text:
-            raise ValidationError(_("Gemini returned no text for this request."))
-        return text
+        return self._gemini_text_from_response(data)
 
     @api.model
     def _call_openai_compatible(self, question, screen_context=None, provider="openai"):
@@ -193,7 +297,7 @@ class CleonAiGateway(models.AbstractModel):
         """Transcribe short inline audio without retaining the recording."""
         params = self.env["ir.config_parameter"].sudo()
         api_key = params.get_param("cleon_ai.gemini_api_key", "") or os.environ.get("GEMINI_API_KEY", "")
-        model = params.get_param("cleon_ai.transcription_model", "") or params.get_param("cleon_ai.model", "") or "gemini-2.5-flash"
+        model = params.get_param("cleon_ai.transcription_model", "") or params.get_param("cleon_ai.model", "") or "gemini-3.8-flash"
         if not api_key:
             raise ValidationError(_("Gemini is selected, but no Gemini API key is configured."))
         payload = json.dumps({
