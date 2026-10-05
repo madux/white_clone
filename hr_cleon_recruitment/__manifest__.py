@@ -10,7 +10,8 @@
     """,
     'author': 'MaachSoftware',
     'depends': [
-        'hr', 
+        'hr',
+        'base_addons',
         'hr_recruitment', 
         'hr_cbt_portal_recruitment', 
         'ik_multi_branch',
@@ -27,6 +28,8 @@
         'views/hr_candidate_profile_form.xml',
         'views/hr_recruitment_views.xml',
         'views/candidate_create_wizard.xml',
+        # Defines the creation form used by hr_recruitment_base below.
+        'views/job_creation_process.xml',
         'views/hr_recruitment_base.xml',
         'views/hr_offer_wizard.xml',
         'wizard/survey_question.xml',
@@ -34,7 +37,6 @@
         'views/hr_offer.xml',
         'views/talent_mobility.xml',
         # 'views/job_create_wizard.xml',
-        'views/job_creation_process.xml',
         'data/mail_templates.xml',
         'views/menu.xml',
 

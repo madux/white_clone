@@ -2,6 +2,7 @@
 import logging
 import re
 from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 
@@ -11,7 +12,7 @@ class HrLeaveType(models.Model):
     _inherit = "hr.leave.type"
 
     description = fields.Text(string="Description")
-    leave_code = fields.Char(string="Code / Abbreviation", size=10, required=True, default="LT")
+    leave_code = fields.Char(string="Code / Abbreviation", size=4, required=True, default="LT")
     cleon_category = fields.Selection(
         [
             ("paid", "Paid"),
@@ -40,6 +41,13 @@ class HrLeaveType(models.Model):
 
     allow_carryover = fields.Boolean(string="Allow Carryover", default=True)
     allow_encashment = fields.Boolean(string="Allow Encashment", default=False)
+    max_carryover_days = fields.Float(string="Maximum Carry-Forward Days", default=0.0)
+    carryover_expiry_rule = fields.Selection([
+        ("never", "Never"),
+        ("three_months", "3 Months"),
+        ("six_months", "6 Months"),
+        ("end_next_year", "End of Next Year"),
+    ], string="Carry-Forward Expiry", default="never")
     max_balance_cap = fields.Float(string="Maximum Balance Cap", default=0.0)
 
     eligibility_scope = fields.Selection(
@@ -74,6 +82,7 @@ class HrLeaveType(models.Model):
         default="year_start",
         required=True,
     )
+    monthly_accrual_rate = fields.Float(string="Monthly Accrual Rate (Days)", default=0.0)
     tenure_based_accrual = fields.Boolean(string="Tenure-based Accrual Scaling", default=False)
     tenure_tier_ids = fields.One2many("hr.leave.type.tenure.tier", "leave_type_id", string="Tenure Scaling Tiers")
 
@@ -93,6 +102,13 @@ class HrLeaveType(models.Model):
         default="single",
         required=True,
     )
+    approval_stage_ids = fields.One2many(
+        "hr.leave.type.approval.stage", "leave_type_id", string="Approval Stages",
+        copy=True,
+    )
+    approval_chain_id = fields.Many2one(
+        "cleon.approval.chain", string="Linked Approval Chain", ondelete="set null", copy=False
+    )
     supporting_document_policy = fields.Selection(
         [
             ("always", "Always Required"),
@@ -104,6 +120,15 @@ class HrLeaveType(models.Model):
         required=True,
     )
     minimum_notice_days = fields.Integer(string="Minimum Notice Period (days)", default=0)
+    minimum_request_days = fields.Float(string="Minimum Request Days", default=0.0)
+    advance_booking_days = fields.Integer(
+        string="Maximum Advance Booking Window (days)", default=0,
+        help="Zero means that requests may be booked any number of days in advance.",
+    )
+    retroactive_request_days = fields.Integer(
+        string="Retroactive Request Window (days)", default=0,
+        help="Zero disables retroactive employee requests.",
+    )
     allow_half_day = fields.Boolean(string="Allow Half-Day Requests", default=True)
 
     max_consecutive_days = fields.Integer(string="Maximum Consecutive Days", default=0)
@@ -116,11 +141,15 @@ class HrLeaveType(models.Model):
     @api.constrains(
         "minimum_service_months", "minimum_notice_days", "max_consecutive_days",
         "team_overlap_percent", "leave_code", "cleon_color_hex", "company_id",
+        "monthly_accrual_rate", "max_carryover_days", "minimum_request_days",
+        "advance_booking_days", "retroactive_request_days", "approval_workflow",
     )
     def _check_policy_constraints(self):
         for rec in self:
             if not rec.leave_code or not rec.leave_code.strip():
                 raise ValidationError(_("Code / Abbreviation is required."))
+            if len(rec.leave_code.strip()) > 4:
+                raise ValidationError(_("Code / Abbreviation must contain no more than 4 characters."))
             duplicate = self.with_context(active_test=False).search_count([
                 ("id", "!=", rec.id),
                 ("company_id", "=", rec.company_id.id or False),
@@ -137,15 +166,33 @@ class HrLeaveType(models.Model):
                 raise ValidationError(_("Minimum service period cannot be negative."))
             if rec.minimum_notice_days < 0:
                 raise ValidationError(_("Minimum notice period cannot be negative."))
+            if rec.minimum_request_days < 0:
+                raise ValidationError(_("Minimum request duration cannot be negative."))
+            if rec.monthly_accrual_rate < 0 or rec.max_carryover_days < 0:
+                raise ValidationError(_("Accrual and carry-forward values cannot be negative."))
+            if rec.advance_booking_days < 0 or rec.retroactive_request_days < 0:
+                raise ValidationError(_("Booking windows cannot be negative."))
             if rec.max_consecutive_days < 0:
                 raise ValidationError(_("Maximum consecutive days cannot be negative."))
             if rec.team_overlap_percent < 0 or rec.team_overlap_percent > 100:
                 raise ValidationError(_("Team overlap percentage must be between 0 and 100."))
+            if rec.approval_workflow == "multi" and not rec.approval_stage_ids:
+                raise ValidationError(_("A multi-level approval workflow requires at least one approval stage."))
 
     def unlink(self):
         for rec in self:
             if rec.is_system_leave_type or rec.name in ("Annual Leave", "Sick Leave", "Paid Time Off"):
                 raise UserError(_("System leave types ('%s') cannot be deleted.") % rec.name)
+            request_count = self.env["hr.leave"].sudo().search_count([
+                ("holiday_status_id", "=", rec.id),
+            ])
+            allocation_count = self.env["hr.leave.allocation"].sudo().search_count([
+                ("holiday_status_id", "=", rec.id),
+            ])
+            if request_count or allocation_count:
+                raise UserError(_(
+                    "Leave type '%s' has request or allocation history and cannot be deleted. Archive it instead."
+                ) % rec.name)
         return super().unlink()
 
     def _get_eligible_employees(self):
@@ -179,7 +226,10 @@ class HrLeaveType(models.Model):
 
         # 2. Employment type filter
         if self.employee_type_ids:
-            emps = emps.filtered(lambda e: hasattr(e, "contract_type_id") and e.contract_type_id.id in self.employee_type_ids.ids)
+            emps = emps.filtered(
+                lambda e: hasattr(e, "employee_type_id")
+                and e.employee_type_id.id in self.employee_type_ids.ids
+            )
 
         # 3. Location filter
         if self.location_ids:
@@ -193,22 +243,295 @@ class HrLeaveType(models.Model):
 
         return emps
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._sync_cleon_approval_chain()
+        records._sync_native_validation_from_policies()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        if self.env.context.get("skip_leave_validation_sync"):
+            return res
+        if any(f in vals for f in ("approval_workflow", "approval_stage_ids", "name", "company_id")):
+            self._sync_cleon_approval_chain()
+        if "approval_workflow" in vals or "leave_validation_type" in vals:
+            self._sync_native_validation_from_policies()
+        return res
+
+    def _sync_native_validation_from_policies(self):
+        """Keep Odoo's submission state aligned with Cleon's approval policy.
+
+        ``hr_holidays`` uses ``leave_validation_type`` during ``create`` and
+        ``action_confirm``.  If it remains ``no_validation`` while a Cleon
+        policy requires approval, Odoo validates the leave before the shared
+        approval engine has a chance to create its instance.
+
+        A leave type is global while policies can target different employee
+        populations, so any active approval-required policy must keep the
+        native type in a pending-capable state.  Employee-specific bypasses
+        are then finalised explicitly by the shared approval engine.
+        """
+        if "hr.leave.policy.line" not in self.env:
+            return
+        PolicyLine = self.env["hr.leave.policy.line"]
+        for leave_type in self.with_context(active_test=False):
+            active_lines = PolicyLine.sudo().search([
+                ("leave_type_id", "=", leave_type.id),
+                ("active", "=", True),
+                ("policy_id.state", "=", "active"),
+                ("policy_id.active", "=", True),
+            ])
+            if active_lines:
+                approval_required = any(active_lines.mapped("policy_id.approval_required"))
+            else:
+                approval_required = leave_type.approval_workflow != "none"
+            expected = (
+                "both" if approval_required and leave_type.approval_workflow == "multi"
+                else "hr" if approval_required
+                else "no_validation"
+            )
+            if leave_type.leave_validation_type != expected:
+                leave_type.with_context(skip_leave_validation_sync=True).write({
+                    "leave_validation_type": expected,
+                })
+
+    def _sync_cleon_approval_chain(self):
+        for leave_type in self:
+            if "cleon.approval.chain" not in self.env or "cleon.approval.workflow.type" not in self.env:
+                continue
+            if leave_type.approval_workflow != "multi" or not leave_type.approval_stage_ids:
+                if leave_type.approval_chain_id:
+                    leave_type.approval_chain_id.sudo().write({"active": False})
+                    leave_type.sudo().write({"approval_chain_id": False})
+                continue
+            wft = self.env["cleon.approval.workflow.type"].sudo().search([("code", "=", "leave_request")], limit=1)
+            if not wft:
+                continue
+            chain = leave_type.approval_chain_id
+            company = leave_type.company_id or self.env.company
+            if not chain or not chain.exists():
+                chain = self.env["cleon.approval.chain"].sudo().create({
+                    "name": _("%s Approval Chain") % leave_type.name,
+                    "company_id": company.id,
+                    "workflow_type_id": wft.id,
+                    "active": True,
+                    "is_default": False,
+                })
+                leave_type.sudo().write({"approval_chain_id": chain.id})
+            else:
+                chain.sudo().write({
+                    "name": _("%s Approval Chain") % leave_type.name,
+                    "company_id": company.id,
+                    "active": True,
+                })
+
+            existing_steps = chain.step_ids
+            new_steps_vals = []
+            for stage in leave_type.approval_stage_ids.sorted("sequence"):
+                timeout_hours = stage.escalation_value * (24 if stage.escalation_unit == "days" else 1) if stage.escalation_value else 24
+                st = stage.approver_type
+                if st == "direct_manager":
+                    approver_type = "line_manager"
+                    completion_mode = "single"
+                elif st == "department_head":
+                    approver_type = "target_resolver"
+                    completion_mode = "single"
+                elif st in ("hr_manager", "hr_director", "finance_director", "ceo"):
+                    approver_type = "target_resolver"
+                    completion_mode = "any"
+                else:
+                    approver_type = "target_resolver"
+                    completion_mode = "any"
+
+                new_steps_vals.append({
+                    "chain_id": chain.id,
+                    "sequence": stage.sequence,
+                    "name": st.replace("_", " ").title(),
+                    "step_code": st,
+                    "completion_mode": completion_mode,
+                    "approver_type": approver_type,
+                    "approver_group_id": False,
+                    "sla_timeout_hours": timeout_hours,
+                    "sla_action": "escalate_next",
+                })
+            existing_steps.sudo().unlink()
+            self.env["cleon.approval.step"].sudo().create(new_steps_vals)
+
+    @api.model
+    def _backfill_legacy_approval_chains(self):
+        """Internal / migration helper to synchronize all existing Leave Types."""
+        if not self.env.is_superuser() and not self.env.user.has_group("hr_leave_dashboard.group_leave_permission_configuration"):
+            raise AccessError(_("Only Configuration managers or migrations may run the approval chain backfill."))
+        leave_types = self.sudo().search([])
+        leave_types._sync_cleon_approval_chain()
+        return len(leave_types)
+
+    def _annual_entitlement_for_employee(self, employee, effective_date):
+        self.ensure_one()
+        policy_line = self._active_policy_line(employee, effective_date)
+        if policy_line:
+            multiplier = {"annually": 1, "monthly": 12, "weekly": 52}[policy_line.accrual_period]
+            return max(policy_line.accrual_amount * multiplier, 0.0)
+        amount = self.max_entitlement or 0.0
+        hire_date = getattr(employee, "first_contract_date", False) or getattr(employee, "employment_date", False)
+        if self.tenure_based_accrual and self.tenure_tier_ids and hire_date:
+            years = max(0, relativedelta(effective_date, hire_date).years)
+            tier = self.tenure_tier_ids.sorted("year_from").filtered(
+                lambda row: years >= row.year_from and (not row.year_to or years <= row.year_to)
+            )[:1]
+            if tier:
+                amount = tier.days_per_year
+        return max(amount, 0.0)
+
+    def _accrual_is_suspended(self, employee, effective_date):
+        self.ensure_one()
+        reasons = []
+        if self.suspension_probation:
+            contract = getattr(employee, "contract_id", False)
+            trial_end = getattr(contract, "trial_date_end", False) if contract else False
+            if trial_end and trial_end >= effective_date:
+                reasons.append(_("probation period"))
+        active_leaves = self.env["hr.leave"].sudo().search([
+            ("employee_id", "=", employee.id), ("state", "=", "validate"),
+            ("is_cancelled", "=", False),
+            ("request_date_from", "<=", effective_date), ("request_date_to", ">=", effective_date),
+        ])
+        if self.suspension_unpaid_leave and active_leaves.filtered(lambda leave: leave.holiday_status_id.cleon_category == "unpaid"):
+            reasons.append(_("unpaid leave"))
+        if self.suspension_extended_sick and active_leaves.filtered(lambda leave: leave.number_of_days > 30):
+            reasons.append(_("extended sick leave"))
+        if self.suspension_disciplinary:
+            pseudo_leave = self.env["hr.leave"].new({"employee_id": employee.id})
+            if pseudo_leave._has_active_disciplinary_suspension():
+                reasons.append(_("disciplinary suspension"))
+        return reasons
+
+    @api.model
+    def _cron_process_policy_accruals(self, process_date=None):
+        today = fields.Date.from_string(process_date) if process_date else fields.Date.context_today(self)
+        processed = self.env["hr.leave.policy.line"].sudo()._process_policy_accruals(today)
+        governed_type_ids = self.env["hr.leave.policy.line"].sudo().search([
+            ("active", "=", True), ("policy_id.state", "=", "active"),
+            ("policy_id.active", "=", True),
+        ]).leave_type_id.ids
+        types = self.sudo().search([
+            ("active", "=", True),
+            ("accrual_method", "in", ("year_start", "monthly", "hire_anniversary", "first_year_prorated")),
+            ("id", "not in", governed_type_ids),
+        ])
+        Run = self.env["hr.leave.accrual.run"].sudo()
+        for leave_type in types:
+            for employee in leave_type._get_eligible_employees():
+                hire_date = getattr(employee, "first_contract_date", False) or getattr(employee, "employment_date", False)
+                annual = leave_type._annual_entitlement_for_employee(employee, today)
+                effective = today
+                amount = 0.0
+                period_key = False
+                reason = False
+                if leave_type.accrual_method == "monthly":
+                    period_key = "monthly:%s" % today.strftime("%Y-%m")
+                    amount = leave_type.monthly_accrual_rate or annual / 12.0
+                    effective = today.replace(day=1)
+                    reason = _("Monthly accrual for %s") % today.strftime("%B %Y")
+                elif leave_type.accrual_method == "year_start":
+                    period_key = "year:%s" % today.year
+                    effective = today.replace(month=1, day=1)
+                    amount = annual
+                    reason = _("Annual allocation for %s") % today.year
+                elif leave_type.accrual_method == "hire_anniversary":
+                    if not hire_date or (hire_date.month, hire_date.day) != (today.month, today.day):
+                        continue
+                    period_key = "anniversary:%s" % today.year
+                    amount = annual
+                    reason = _("Hire-date anniversary accrual for %s") % today.year
+                elif leave_type.accrual_method == "first_year_prorated":
+                    if hire_date and hire_date.year == today.year:
+                        if today != hire_date:
+                            continue
+                        months_remaining = 12 - hire_date.month + 1
+                        amount = annual * months_remaining / 12.0
+                        period_key = "prorated:%s" % today.year
+                        reason = _("First-year prorated allocation (%d months)") % months_remaining
+                    else:
+                        period_key = "year:%s" % today.year
+                        effective = today.replace(month=1, day=1)
+                        amount = annual
+                        reason = _("Post-proration annual allocation for %s") % today.year
+                if not period_key or Run.search_count([
+                    ("employee_id", "=", employee.id),
+                    ("leave_type_id", "=", leave_type.id),
+                    ("period_key", "=", period_key),
+                ]):
+                    continue
+                suspended = leave_type._accrual_is_suspended(employee, today)
+                if suspended:
+                    Run.create({
+                        "employee_id": employee.id, "leave_type_id": leave_type.id,
+                        "period_key": period_key, "effective_date": effective,
+                        "amount": 0.0, "reason": _("Accrual suspended: %s") % ", ".join(suspended),
+                    })
+                    continue
+                current = self.env["hr.leave.balance.transaction"]._current_balance(employee.id, leave_type.id)
+                if leave_type.max_balance_cap:
+                    amount = min(amount, max(leave_type.max_balance_cap - current, 0.0))
+                amount = round(amount, 2)
+                if amount <= 0:
+                    Run.create({
+                        "employee_id": employee.id, "leave_type_id": leave_type.id,
+                        "period_key": period_key, "effective_date": effective,
+                        "amount": 0.0, "reason": _("No accrual due after applying the balance cap."),
+                    })
+                    continue
+                allocation = self.env["hr.leave.allocation"].sudo().create({
+                    "private_name": reason,
+                    "holiday_type": "employee", "employee_id": employee.id,
+                    "holiday_status_id": leave_type.id, "number_of_days": amount,
+                    "date_from": effective,
+                    "date_to": effective + relativedelta(years=1, days=-1),
+                    "notes": reason,
+                })
+                if allocation.state != "validate":
+                    allocation.action_validate()
+                Run.create({
+                    "employee_id": employee.id, "leave_type_id": leave_type.id,
+                    "period_key": period_key, "effective_date": effective,
+                    "amount": amount, "allocation_id": allocation.id, "reason": reason,
+                })
+                balance_after = self.env["hr.leave.balance.transaction"]._current_balance(employee.id, leave_type.id)
+                self.env["hr.leave.balance.transaction"]._record_transaction({
+                    "employee_id": employee.id, "leave_type_id": leave_type.id,
+                    "transaction_type": "accrual", "effective_date": effective,
+                    "delta": amount, "balance_after": balance_after,
+                    "allocation_id": allocation.id, "reason": reason,
+                })
+                self.env["hr.leave.audit.log"].sudo().create({
+                    "action": "accrual_processed", "module_area": "accrual",
+                    "entity_type": "accrual_plan", "employee_id": employee.id,
+                    "leave_type_id": leave_type.id, "is_system": True,
+                    "actor_label": "System", "note": _("%s: %.2f days") % (reason, amount),
+                })
+                processed += 1
+        return processed
+
     @api.model
     def get_leave_types_list_data(self):
         self.env["hr.leave"]._check_leave_dashboard_access()
         leave_types = self.with_context(active_test=False).search([("company_id", "in", [False, self.env.company.id])], order="sequence asc, id asc")
 
-        # Grouped query for aggregate total days used across approved leaves
-        leaves_data = self.env["hr.leave"].read_group(
+        # Aggregate configured/validated entitlement rather than usage. The
+        # list specification calls for total allocated days; usage belongs in
+        # the balance/details views.
+        allocation_data = self.env["hr.leave.allocation"].read_group(
             domain=[
                 ("holiday_status_id", "in", leave_types.ids),
                 ("state", "=", "validate"),
-                ("is_cancelled", "=", False),
             ],
             fields=["number_of_days:sum"],
             groupby=["holiday_status_id"],
         )
-        used_days_map = {row["holiday_status_id"][0]: row["number_of_days"] for row in leaves_data if row["holiday_status_id"]}
+        allocated_days_map = {row["holiday_status_id"][0]: row["number_of_days"] for row in allocation_data if row["holiday_status_id"]}
 
         # Grouped query for active request count per leave type
         active_req_data = self.env["hr.leave"].read_group(
@@ -237,7 +560,8 @@ class HrLeaveType(models.Model):
                 "applicable_gender": lt.applicable_gender or "all",
                 "allow_carryover": bool(lt.allow_carryover),
                 "assigned_count": len(eligible_emps),
-                "total_days_used": round(used_days_map.get(lt.id, 0.0), 1),
+                "total_days_allocated": round(allocated_days_map.get(lt.id, 0.0), 1),
+                "total_days_used": round(allocated_days_map.get(lt.id, 0.0), 1),
                 "active": bool(lt.active),
                 "sequence": lt.sequence or 100,
                 "active_request_count": active_req_map.get(lt.id, 0),
@@ -246,12 +570,18 @@ class HrLeaveType(models.Model):
                 "minimum_service_months": lt.minimum_service_months or 0,
                 "accrual_method": lt.accrual_method or "year_start",
                 "allow_carry_forward": bool(lt.allow_carryover),
+                "max_carryover_days": lt.max_carryover_days or 0.0,
+                "carryover_expiry_rule": lt.carryover_expiry_rule or "never",
                 "allow_encashment": bool(lt.allow_encashment),
                 "max_balance_cap": lt.max_balance_cap or 0.0,
+                "monthly_accrual_rate": lt.monthly_accrual_rate or 0.0,
                 "tenure_based_accrual": bool(lt.tenure_based_accrual),
                 "approval_workflow": lt.approval_workflow or "single",
                 "supporting_document_policy": lt.supporting_document_policy or "never",
                 "minimum_notice_days": lt.minimum_notice_days or 0,
+                "minimum_request_days": lt.minimum_request_days or 0.0,
+                "advance_booking_days": lt.advance_booking_days or 0,
+                "retroactive_request_days": lt.retroactive_request_days or 0,
                 "allow_half_day": bool(lt.allow_half_day),
                 "max_consecutive_days": lt.max_consecutive_days or 0,
                 "allow_negative_balance": bool(lt.allow_negative_balance),
@@ -268,6 +598,13 @@ class HrLeaveType(models.Model):
                     {"id": t.id, "year_from": t.year_from, "year_to": t.year_to or 0, "days_per_year": t.days_per_year}
                     for t in lt.tenure_tier_ids
                 ],
+                "approval_stages": [{
+                    "id": stage.id,
+                    "sequence": stage.sequence,
+                    "approver_type": stage.approver_type,
+                    "escalation_value": stage.escalation_value,
+                    "escalation_unit": stage.escalation_unit,
+                } for stage in lt.approval_stage_ids.sorted(lambda item: (item.sequence, item.id))],
             })
         return res_list
 
@@ -297,13 +634,26 @@ class HrLeaveType(models.Model):
     @api.model
     def save_leave_type_configuration(self, vals):
         self.env["hr.leave"]._check_leave_dashboard_access()
+        if not (vals.get("name") or "").strip():
+            raise ValidationError(_("Leave type name is required."))
+        if not vals.get("unlimitedEntitlement") and float(vals.get("maxEntitlement", 0.0)) <= 0:
+            raise ValidationError(_("Entitlement must be greater than zero unless Unlimited is enabled."))
+        if self.env["hr.core_employment_type"].search_count([]) and not vals.get("employeeTypeIds"):
+            raise ValidationError(_("Select at least one applicable employment type."))
+        if self.env["hr.work.location"].search_count([]) and not vals.get("locationIds"):
+            raise ValidationError(_("Select at least one applicable location."))
+        if vals.get("accrualMethod") == "monthly" and float(vals.get("monthlyAccrualRate", 0.0)) <= 0:
+            raise ValidationError(_("Monthly accrual requires a days-per-month rate greater than zero."))
+        if vals.get("allowCarryForward") and float(vals.get("maxCarryoverDays", 0.0)) <= 0:
+            raise ValidationError(_("Carry-forward requires a maximum number of days."))
         record_id = vals.get("id")
         tenure_tiers_data = vals.pop("tenure_tiers", None)
+        approval_stages_data = vals.pop("approval_stages", None)
 
         # Build clean write/create dictionary
         values = {
             "name": vals.get("name", "").strip(),
-            "leave_code": (vals.get("code") or vals.get("name") or "LT").strip().upper()[:10],
+            "leave_code": (vals.get("code") or vals.get("name") or "LT").strip().upper()[:4],
             "description": vals.get("description", ""),
             "cleon_color_hex": vals.get("colorHex", "#3B82F6"),
             "cleon_category": vals.get("category", "paid"),
@@ -315,6 +665,7 @@ class HrLeaveType(models.Model):
             "minimum_service_months": int(vals.get("minimumServiceMonths", 0)),
 
             "accrual_method": vals.get("accrualMethod", "year_start"),
+            "monthly_accrual_rate": float(vals.get("monthlyAccrualRate", 0.0)),
             "tenure_based_accrual": bool(vals.get("tenureBasedAccrual")),
             "suspension_unpaid_leave": bool(vals.get("suspensionUnpaidLeave")),
             "suspension_disciplinary": bool(vals.get("suspensionDisciplinary")),
@@ -323,12 +674,23 @@ class HrLeaveType(models.Model):
             "suspension_unauthorized_absence": bool(vals.get("suspensionUnauthorizedAbsence")),
 
             "allow_carryover": bool(vals.get("allowCarryForward")),
-            "allow_encashment": bool(vals.get("allowEncashment")) if vals.get("allowCarryForward") else False,
-            "max_balance_cap": float(vals.get("maxBalanceCap", 0.0)) if vals.get("allowCarryForward") else 0.0,
+            "allow_encashment": bool(vals.get("allowEncashment")),
+            "max_carryover_days": float(vals.get("maxCarryoverDays", 0.0)) if vals.get("allowCarryForward") else 0.0,
+            "carryover_expiry_rule": vals.get("carryoverExpiryRule", "never") if vals.get("allowCarryForward") else "never",
+            "max_balance_cap": float(vals.get("maxBalanceCap", 0.0)),
 
             "approval_workflow": vals.get("approvalWorkflow", "single"),
+            "leave_validation_type": {
+                "none": "no_validation",
+                "single": "hr",
+                "multi": "hr",
+            }.get(vals.get("approvalWorkflow", "single"), "hr"),
             "supporting_document_policy": vals.get("supportingDocumentPolicy", "never"),
+            "support_document": vals.get("supportingDocumentPolicy", "never") != "never",
             "minimum_notice_days": int(vals.get("minimumNoticeDays", 0)),
+            "minimum_request_days": float(vals.get("minimumRequestDays", 0.0)),
+            "advance_booking_days": int(vals.get("advanceBookingDays", 0)),
+            "retroactive_request_days": int(vals.get("retroactiveRequestDays", 0)),
             "allow_half_day": bool(vals.get("allowHalfDay")),
 
             "max_consecutive_days": int(vals.get("maxConsecutiveDays", 0)),
@@ -366,6 +728,20 @@ class HrLeaveType(models.Model):
         else:
             values["tenure_tier_ids"] = [(5, 0, 0)]
 
+        if vals.get("approvalWorkflow") == "multi":
+            stages = approval_stages_data or [{
+                "approver_type": "direct_manager", "escalation_value": 2,
+                "escalation_unit": "days",
+            }]
+            values["approval_stage_ids"] = [(5, 0, 0)] + [(0, 0, {
+                "sequence": (index + 1) * 10,
+                "approver_type": stage.get("approver_type", "direct_manager"),
+                "escalation_value": int(stage.get("escalation_value", 0)),
+                "escalation_unit": stage.get("escalation_unit", "days"),
+            }) for index, stage in enumerate(stages)]
+        else:
+            values["approval_stage_ids"] = [(5, 0, 0)]
+
         if record_id:
             lt = self.browse(int(record_id))
             lt.write(values)
@@ -391,6 +767,42 @@ class HrLeaveType(models.Model):
                 _logger.warning("Could not create audit log entry: %s", e)
 
         return {"id": lt.id, "name": lt.name}
+
+    @api.model
+    def import_leave_type_pack(self, pack):
+        self.env["hr.leave"]._check_leave_dashboard_access()
+        packs = {
+            "standard": [
+                ("Annual Leave", "AL", 20, "paid"), ("Sick Leave", "SL", 10, "paid"),
+                ("Maternity Leave", "ML", 84, "paid"), ("Paternity Leave", "PL", 14, "paid"),
+                ("Compassionate Leave", "CL", 5, "paid"),
+            ],
+            "nigeria": [
+                ("Annual Leave", "AL", 20, "paid"), ("Sick Leave", "SL", 12, "paid"),
+                ("Casual Leave", "CSL", 5, "paid"), ("Maternity Leave", "ML", 84, "paid"),
+                ("Paternity Leave", "PL", 14, "paid"), ("Compassionate Leave", "CL", 5, "paid"),
+            ],
+        }
+        definitions = packs.get(pack)
+        if not definitions:
+            raise ValidationError(_("Unknown leave type starter pack."))
+        employment_types = self.env["hr.core_employment_type"].search([])
+        locations = self.env["hr.work.location"].search([])
+        created = 0
+        for name, code, entitlement, category in definitions:
+            if self.with_context(active_test=False).search_count([
+                ("company_id", "in", [False, self.env.company.id]), ("leave_code", "=ilike", code),
+            ]):
+                continue
+            self.create({
+                "name": name, "leave_code": code, "max_entitlement": entitlement,
+                "cleon_category": category, "cleon_color_hex": "#3B82F6",
+                "employee_type_ids": [(6, 0, employment_types.ids)],
+                "location_ids": [(6, 0, locations.ids)],
+                "company_id": self.env.company.id,
+            })
+            created += 1
+        return {"created": created, "message": _("%d leave type(s) imported.") % created}
 
     @api.model
     def get_leave_type_employee_data(self, leave_type_id):
@@ -439,6 +851,42 @@ class HrLeaveType(models.Model):
         return res
 
     @api.model
+    def get_leave_type_policies_data(self, leave_type_id):
+        self.env["hr.leave"]._check_leave_dashboard_access()
+        lt = self.browse(int(leave_type_id))
+        if not lt.exists():
+            return []
+
+        lines = self.env["hr.leave.policy.line"].search([
+            ("leave_type_id", "=", lt.id),
+            ("active", "=", True),
+            ("policy_id.active", "=", True),
+        ])
+        res = []
+        for line in lines:
+            policy = line.policy_id
+            compensation_label = dict(line._fields["compensation"].selection).get(line.compensation, line.compensation)
+            unit_label = dict(line._fields["unit"].selection).get(line.unit, line.unit)
+            period_label = dict(line._fields["accrual_period"].selection).get(line.accrual_period, line.accrual_period)
+            entitlement_str = f"{line.accrual_amount:g} {line.unit}" if line.accrual_amount else "0"
+            res.append({
+                "id": policy.id,
+                "name": policy.name,
+                "code": policy.code,
+                "state": policy.state,
+                "compensation": compensation_label,
+                "unit": unit_label,
+                "entitlement": entitlement_str,
+                "accrual_period": period_label,
+                "minimum_notice_days": line.minimum_notice_days,
+                "document_policy": dict(line._fields["document_policy"].selection).get(line.document_policy, line.document_policy),
+                "allow_carry_forward": policy.allow_carry_forward,
+                "maximum_carry_forward": policy.maximum_carry_forward,
+                "assigned_count": len(policy._eligible_employees()),
+            })
+        return res
+
+    @api.model
     def update_leave_types_sequence(self, reordered_ids):
         self.env["hr.leave"]._check_leave_dashboard_access()
         for index, type_id in enumerate(reordered_ids, start=1):
@@ -463,7 +911,17 @@ class HrLeaveType(models.Model):
         return True
 
     @api.model
-    def evaluate_leave_request_policy(self, employee_id, leave_type_id, date_from, date_to, requested_days=1.0, half_day=False):
+    def evaluate_leave_request_policy(
+        self,
+        employee_id,
+        leave_type_id,
+        date_from,
+        date_to,
+        requested_days=1.0,
+        half_day=False,
+        enforce_submission_timing=True,
+        exclude_leave_id=False,
+    ):
         lt = self.browse(int(leave_type_id))
         emp = self.env["hr.employee"].browse(int(employee_id))
         res = {
@@ -472,6 +930,9 @@ class HrLeaveType(models.Model):
             "notice_ok": True,
             "max_consecutive_ok": True,
             "document_required": False,
+            "accepted_document_types": [],
+            "blackout_exception_available": False,
+            "blackout_window_id": False,
             "team_overlap": {"percentage": 0.0, "threshold": lt.team_overlap_percent, "exceeded": False, "blocking": False},
             "warnings": [],
             "errors": [],
@@ -482,67 +943,120 @@ class HrLeaveType(models.Model):
             res["errors"].append(_("Invalid leave type or employee selection."))
             return res
 
+        request = self.env["hr.leave"].sudo().browse(int(exclude_leave_id)).exists() if exclude_leave_id else self.env["hr.leave"]
+        policy_line = request._policy_rule_line() if request and request.governing_rule_snapshot else lt._active_policy_line(emp, date_from)
+        policy = policy_line.policy_id if policy_line else False
+
         # 1. Full Eligibility Rule Check
         eligible_emps = lt._get_eligible_employees()
-        if emp.id not in eligible_emps.ids:
+        if not (request and request.governing_policy_id) and emp.id not in eligible_emps.ids:
             res["eligible"] = False
             res["errors"].append(_("Employee %s is not eligible for %s under its policy rules.") % (emp.name, lt.name))
 
         # 2. Minimum Service Period Check (using hire/contract date)
-        if lt.minimum_service_months > 0:
+        minimum_service_months = policy.minimum_tenure_months if policy else lt.minimum_service_months
+        if minimum_service_months > 0:
             hire_date = getattr(emp, "first_contract_date", None) or getattr(emp, "employment_date", None) or (emp.create_date.date() if emp.create_date else fields.Date.today())
             service_days = (fields.Date.today() - hire_date).days
-            required_days = lt.minimum_service_months * 30
+            required_days = minimum_service_months * 30
             if service_days < required_days:
                 res["eligible"] = False
-                res["errors"].append(_("Minimum service period of %d months required. (Current service: %d days).") % (lt.minimum_service_months, service_days))
+                res["errors"].append(_("Minimum service period of %d months required. (Current service: %d days).") % (minimum_service_months, service_days))
 
         # 3. Minimum Notice Period Check
-        if lt.minimum_notice_days > 0 and date_from:
+        minimum_notice_days = policy_line.minimum_notice_days if policy_line else lt.minimum_notice_days
+        if enforce_submission_timing and minimum_notice_days > 0 and date_from:
             try:
                 start_dt = fields.Date.from_string(date_from)
                 notice_given = (start_dt - fields.Date.today()).days
-                if notice_given < lt.minimum_notice_days:
+                if notice_given < minimum_notice_days:
                     res["notice_ok"] = False
-                    res["warnings"].append(_("Notice period of %d days required. (Given: %d days).") % (lt.minimum_notice_days, max(0, notice_given)))
+                    res["warnings"].append(_("Notice period of %d days required. (Given: %d days).") % (minimum_notice_days, max(0, notice_given)))
             except Exception:
                 pass
 
+        start_dt = fields.Date.from_string(date_from) if date_from else False
+        end_dt = fields.Date.from_string(date_to) if date_to else False
+        today = fields.Date.context_today(self)
+        if enforce_submission_timing and start_dt:
+            days_before_today = (today - start_dt).days
+            retroactive_days = lt.retroactive_request_days if not policy_line else (999999 if policy_line.allow_backdated else 0)
+            if days_before_today > retroactive_days:
+                res["errors"].append(
+                    _("The selected start date is outside the allowed retroactive request window of %d day(s).")
+                    % retroactive_days
+                )
+            days_in_advance = (start_dt - today).days
+            if not policy_line and lt.advance_booking_days and days_in_advance > lt.advance_booking_days:
+                res["errors"].append(
+                    _("Requests may be booked at most %d day(s) in advance.")
+                    % lt.advance_booking_days
+                )
+
+        minimum_request_days = policy_line.minimum_duration if policy_line else lt.minimum_request_days
+        if minimum_request_days and requested_days < minimum_request_days:
+            res["errors"].append(
+                _("Request length (%.1f days) is below the minimum of %.1f days.")
+                % (requested_days, minimum_request_days)
+            )
+
+        if start_dt and end_dt and "hr.leave.blackout.period" in self.env:
+            blackout_domain = [
+                ("company_id", "=", emp.company_id.id),
+                ("active", "=", True),
+                ("state", "=", "active"),
+                ("date_from", "<=", end_dt),
+                ("date_to", ">=", start_dt),
+                "|", ("leave_type_ids", "=", False), ("leave_type_ids", "in", lt.id),
+            ]
+            blackout = self.env["hr.leave.blackout.period"].sudo().search(blackout_domain).filtered(
+                lambda window: window.applies_to == "all"
+                or (window.applies_to == "departments" and emp.department_id in window.department_ids)
+                or (window.applies_to == "policies" and policy and getattr(policy, "id", False) in window.policy_ids.ids)
+                or (window.applies_to == "groups" and any(emp in group.employee_ids for group in window.group_ids))
+            )[:1]
+            if blackout:
+                res["blackout_window_id"] = blackout.id
+                approved_exception_path = bool(request and request.blackout_exception_requested and request.blackout_exception_window_id == blackout)
+                if blackout.exception_mode == "approval":
+                    res["blackout_exception_available"] = True
+                    res["warnings"].append(_("The selected dates overlap '%s' and require authorised exception approval.") % blackout.name)
+                    if not approved_exception_path and exclude_leave_id:
+                        res["errors"].append(_("A blackout exception must be requested for '%s'.") % blackout.name)
+                else:
+                    res["errors"].append(_("The selected dates are blocked by '%s' (%s).") % (blackout.name, blackout.reason or _("no reason supplied")))
+
         # 4. Supporting Document Policy
-        if lt.supporting_document_policy == "always":
+        if policy_line:
+            res["document_required"] = policy_line.document_policy == "required" and (
+                not policy_line.document_required_after_days or requested_days >= policy_line.document_required_after_days
+            )
+            res["accepted_document_types"] = [item.strip() for item in (policy_line.accepted_document_types or "").split(",") if item.strip()]
+        elif lt.supporting_document_policy == "always":
             res["document_required"] = True
         elif lt.supporting_document_policy == "conditional" and requested_days > 3:
             res["document_required"] = True
 
         # 5. Consecutive Days Restriction
-        if lt.max_consecutive_days > 0 and requested_days > lt.max_consecutive_days:
+        maximum_duration = policy_line.maximum_duration if policy_line else lt.max_consecutive_days
+        if maximum_duration > 0 and requested_days > maximum_duration:
             res["max_consecutive_ok"] = False
-            res["errors"].append(_("Request length (%.1f days) exceeds maximum consecutive days limit (%d days).") % (requested_days, lt.max_consecutive_days))
+            res["errors"].append(_("Request length (%.1f days) exceeds maximum consecutive days limit (%.1f days).") % (requested_days, maximum_duration))
 
         # 6. Half Day Request Restriction
-        if half_day and not lt.allow_half_day:
+        if half_day and not (policy_line.allow_half_day and policy.allow_half_day if policy_line else lt.allow_half_day):
             res["errors"].append(_("Half-day requests are not permitted for %s.") % lt.name)
 
         # 7. Balance & Allow Negative Balance Check
-        if not lt.unlimited_entitlement:
-            allocs = self.env["hr.leave.allocation"].search([
-                ("holiday_status_id", "=", lt.id),
-                ("employee_id", "=", emp.id),
-                ("state", "=", "validate"),
-            ])
-            total_alloc = sum(allocs.mapped("number_of_days")) or (lt.max_entitlement if lt.max_entitlement is not None else 20.0)
-
-            used_leaves = self.env["hr.leave"].search([
-                ("holiday_status_id", "=", lt.id),
-                ("employee_id", "=", emp.id),
-                ("state", "=", "validate"),
-                ("is_cancelled", "=", False),
-            ])
-            total_used = sum(used_leaves.mapped("number_of_days"))
-            remaining_balance = total_alloc - total_used
+        if not lt.unlimited_entitlement and lt.requires_allocation == "yes":
+            components = self.env["hr.leave.balance.transaction"].sudo()._balance_components(
+                [emp.id], [lt.id], exclude_leave_id=exclude_leave_id,
+            )
+            remaining_balance = components.get((emp.id, lt.id), {}).get("available", 0.0)
 
             if requested_days > remaining_balance:
-                if not lt.allow_negative_balance:
+                allow_negative = policy_line.allow_negative_balance if policy_line else lt.allow_negative_balance
+                if not allow_negative:
                     res["balance_ok"] = False
                     res["eligible"] = False
                     res["errors"].append(
@@ -556,20 +1070,23 @@ class HrLeaveType(models.Model):
                     )
 
         # 8. Team Overlap Calculation & Block Threshold Check
-        if lt.team_overlap_percent > 0 and emp.department_id and date_from and date_to:
+        if not policy_line and lt.team_overlap_percent > 0 and emp.department_id and date_from and date_to:
             dept_emps = self.env["hr.employee"].search([
                 ("department_id", "=", emp.department_id.id),
                 ("active", "=", True),
             ])
             dept_count = max(1, len(dept_emps))
 
-            overlapping_leaves = self.env["hr.leave"].search([
+            overlap_domain = [
                 ("department_id", "=", emp.department_id.id),
                 ("state", "in", ("confirm", "validate1", "validate")),
                 ("is_cancelled", "=", False),
                 ("date_from", "<=", date_to),
                 ("date_to", ">=", date_from),
-            ])
+            ]
+            if exclude_leave_id:
+                overlap_domain.append(("id", "!=", int(exclude_leave_id)))
+            overlapping_leaves = self.env["hr.leave"].search(overlap_domain)
             on_leave_emp_ids = set(overlapping_leaves.mapped("employee_id.id"))
             on_leave_emp_ids.add(emp.id)
 
@@ -591,4 +1108,28 @@ class HrLeaveType(models.Model):
                         % (lt.team_overlap_percent, overlap_pct)
                     )
 
+        if policy_line:
+            if not policy_line.allow_overlap and start_dt and end_dt:
+                overlap = self.env["hr.leave"].sudo().search_count([
+                    ("employee_id", "=", emp.id), ("id", "!=", int(exclude_leave_id or 0)),
+                    ("state", "in", ["confirm", "validate1", "validate"]),
+                    ("is_cancelled", "=", False), ("request_date_from", "<=", end_dt),
+                    ("request_date_to", ">=", start_dt),
+                ])
+                if overlap:
+                    res["errors"].append(_("This policy does not permit overlapping leave requests."))
+            if policy_line.waiting_period_days:
+                hire_date = getattr(emp, "first_contract_date", False)
+                if not hire_date or not start_dt or (start_dt - hire_date).days < policy_line.waiting_period_days:
+                    res["eligible"] = False
+                    res["errors"].append(_("The policy waiting period has not been met, or the employee's hire date is missing."))
+            if not policy.allow_multiple_requests:
+                pending = self.env["hr.leave"].sudo().search_count([
+                    ("employee_id", "=", emp.id), ("holiday_status_id", "=", lt.id),
+                    ("id", "!=", int(exclude_leave_id or 0)), ("is_cancelled", "=", False),
+                    ("state", "in", ["confirm", "validate1", "validate"]),
+                    ("request_date_to", ">=", today),
+                ])
+                if pending:
+                    res["errors"].append(_("This policy does not allow multiple future requests for the same Leave Type."))
         return res

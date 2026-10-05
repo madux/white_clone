@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Preserve historical assignments while replacing generated policies once. -->
+    <function model="hr.leave.policy" name="_seed_default_leave_policies"/>
+</odoo>

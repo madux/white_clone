@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.LeaveConfiguration" owl="1">
+    <div class="leaveapp o_leave_configuration">
+      <CalendarSidebar activeMenu="'configuration'"/>
+      <main class="o_leave_configuration_main">
+        <div t-if="state.loading" class="o_leave_configuration_loading"><i class="fa fa-spinner fa-spin"/> Loading configuration…</div>
+        <t t-else="">
+          <nav t-if="availableTabs.length" class="o_leave_configuration_tabs" aria-label="Leave configuration sections">
+            <button t-foreach="availableTabs" t-as="tab" t-key="tab.key" t-att-class="state.activeTab === tab.key ? 'active' : ''" t-on-click="() => this.setTab(tab.key)">
+              <i t-att-class="'fa ' + tab.icon"/><span t-esc="tab.label"/>
+            </button>
+          </nav>
+          <div t-if="!state.activeTab" class="o_leave_configuration_denied">
+            <i class="fa fa-lock"/><h3>Configuration access is not assigned</h3><p>Ask an administrator to grant an operational or configuration permission.</p>
+          </div>
+          <LeavePoliciesPage t-elif="state.activeTab === 'policies'" embedded="true"/>
+          <LeaveBalancesPage t-elif="state.activeTab === 'balances'" embedded="true"/>
+          <OfficialHolidaysPage t-elif="state.activeTab === 'holidays'"/>
+          <BlackoutWindowsPage t-elif="state.activeTab === 'blackouts'"/>
+          <WorkflowsApp t-elif="state.activeTab === 'approvals'" targetModel="'hr.leave'"/>
+          <LeaveSettingsPage t-elif="state.activeTab === 'general'" embedded="true" onOpenLeaveTypes.bind="openLeaveTypes"/>
+        </t>
+      </main>
+    </div>
+  </t>
+</templates>

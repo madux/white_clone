@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.EmployeeSelectList" owl="1">
+    <section class="o_leave_employee_picker">
+      <div class="o_leave_employee_picker_toolbar">
+        <input type="search" t-model="state.search" placeholder="Search employees, IDs or departments…" aria-label="Search employees"/>
+        <span><t t-esc="props.selectedIds.length"/> selected</span>
+        <button type="button" t-on-click="selectAll" t-att-disabled="!visibleEmployees.length">Select all</button>
+        <button type="button" t-on-click="deselectAll" t-att-disabled="!visibleEmployees.length">Deselect all</button>
+      </div>
+      <div class="o_leave_employee_picker_scroll">
+        <table>
+          <thead><tr>
+            <th><input type="checkbox" aria-label="Select or deselect visible employees" t-att-checked="allVisibleSelected" t-att-disabled="!visibleEmployees.length" t-on-change="toggleVisible"/></th>
+            <th>Employee</th><th>Employee ID</th><th>Department</th>
+          </tr></thead>
+          <tbody>
+            <tr t-foreach="visibleEmployees" t-as="employee" t-key="employee.id">
+              <td><input type="checkbox" t-att-aria-label="'Select ' + employee.name" t-att-checked="props.selectedIds.includes(employee.id)" t-on-change="() => props.onToggle(employee.id)"/></td>
+              <td><div class="o_leave_employee_picker_person"><img t-att-src="employee.avatar_url || '/web/image/hr.employee/' + employee.id + '/avatar_128'" alt=""/><span t-esc="employee.name"/></div></td>
+              <td t-esc="employee.code || '—'"/><td t-esc="employee.department || '—'"/>
+            </tr>
+            <tr t-if="!visibleEmployees.length"><td colspan="4" class="o_leave_employee_picker_empty" t-esc="props.emptyMessage || 'No matching employees.'"/></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </t>
+</templates>

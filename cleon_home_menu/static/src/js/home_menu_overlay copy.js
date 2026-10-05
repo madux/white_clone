@@ -372,7 +372,7 @@
         },
 
         /* ---------------------------------------------------------------- */
-        /*  Intercept the Home Menu button                              */
+        /*  Intercept the Odoo Home Menu button                              */
         /*                                                                   */
         /*  The button looks like:                                           */
         /*    <button class="dropdown-toggle" title="Home Menu"              */

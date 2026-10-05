@@ -83,7 +83,7 @@
                     </div>
                 </div>
             </footer>
-            <script src="/cleon_license/static/src/js/application_page.js"/>
+            <script src="/cleon_home_menu/static/src/js/application_page.js"/>
         </t>
     </template>
 

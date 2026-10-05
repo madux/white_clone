@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cleon_approval.menu_cleon_approval_root" model="ir.ui.menu">
+        <field name="parent_id" ref="hr_administration.hr_administration_dashboard"/>
+        <field name="icon_class">fa fa-sitemap</field>
+        <field name="icon_color">#EC4899</field>
+        <field name="category_name">CleonHR-HR Admin</field>
+    </record>
+</odoo>

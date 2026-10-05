@@ -22,7 +22,8 @@
 
     <record id="action_hr_leave_requests_custom" model="ir.actions.client">
         <field name="name">Leave Requests</field>
-        <field name="tag">hr_leave_requests_page</field>
+        <field name="tag">hr_leave_dashboard.MyLeaveRequests</field>
+        <field name="context">{'request_workspace_tab': 'records'}</field>
     </record>
 
     <record id="action_hr_leave_calendar" model="ir.actions.client">
@@ -30,18 +31,28 @@
         <field name="tag">hr_leave_dashboard.LeaveCalendarPage</field>
     </record>
 
+    <record id="action_hr_leave_get_started" model="ir.actions.client">
+        <field name="name">Get Started</field>
+        <field name="tag">hr_leave_dashboard.GetStartedPage</field>
+    </record>
+
+    <record id="action_hr_leave_configuration" model="ir.actions.client">
+        <field name="name">Leave Configuration</field>
+        <field name="tag">hr_leave_dashboard.LeaveConfiguration</field>
+    </record>
+
     <menuitem id="menu_hr_leave_dashboard"
             name="Dashboard"
             action="action_hr_leave_dashboard"
             parent="hr_holidays.menu_hr_holidays_root"
             sequence="0"
-            groups="hr_holidays.group_hr_holidays_user,hr_holidays.group_hr_holidays_manager,base.group_system"/>
+            groups="base.group_user"/>
 
     <menuitem id="hr_holidays.menu_hr_holidays_dashboard"
             name="Leave Calendar"
             action="action_hr_leave_calendar"
             parent="hr_holidays.menu_hr_holidays_root"
             sequence="1"
-            groups="hr_holidays.group_hr_holidays_manager,base.group_system"/>
+            groups="base.group_user"/>
 
 </odoo>

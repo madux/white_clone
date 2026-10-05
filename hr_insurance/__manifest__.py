@@ -15,10 +15,11 @@
         - Upcoming Events
         - Full integration with App* HR models
     """,
-    'author': 'MaachSoft',
+    'author': 'Maach Soft',
     'website': '',
     'depends': [
         'base',
+        'base_addons',
         'hr',
         'cleon_settings',
         # 'hr_contract',
@@ -32,7 +33,6 @@
         'sequence/sequence.xml',
         'views/hmo_market_place.xml',
         'views/hr_insurance.xml',
-        'views/hmoplan.xml',
         'views/hospital.xml',
         'views/hmo_enrollment.xml',
         'views/hmo_checklist.xml',
@@ -44,7 +44,7 @@
             'hr_insurance/static/src/css/hr_insurance.css',
             'hr_insurance/static/src/css/hmo_market_place.css',
             'hr_insurance/static/src/css/qms_css.css',
-            # 'hr_insurance/static/src/css/qms_css.css',
+            'hr_insurance/static/src/css/qms_css.css',
             # 'hr_administration/static/src/js/dashboard.js',
         ],
     },

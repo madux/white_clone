@@ -9,7 +9,7 @@ class hmoPlanValue(models.Model):
     _name = 'hmo.plan.value'
     _description = 'CLEON HMOPLAN VALUE'
 
-    name = fields.Char("Name", required=True, size=100)
+    name = fields.Char("Name", required=True, size=10)
     description = fields.Char("Description", size=100)
 
 
@@ -17,34 +17,17 @@ class hmoTags(models.Model):
     _name = 'hmo.tags'
     _description = 'CLEON TAG'
 
-    name = fields.Char("Tag name", required=True, size=100)
+    name = fields.Char("Tag name", required=True, size=10)
 
 class hmoPlan(models.Model):
     _name = 'hmo.plan'
     _description = 'CLEON HMOPLAN'
 
-    code = fields.Char("Code", required=False, size=100)
-    name = fields.Char("Plan", required=True, size=100)
+    name = fields.Char("Plan", required=True, size=10)
     hmo_marketplace_id = fields.Many2one('hmo.marketplace')
     hmo_plan_value_ids = fields.Many2many('hmo.plan.value', string="Plan Values")
     plan_price = fields.Float("Amount per Person")
-    active = fields.Boolean("Active")
     max_person = fields.Integer("Maximum Person", default=1)
-
-    def open_record(self):
-        view_id = self.env.ref('hr_insurance.view_hmo_plan_form').id
-        ret = {
-            'name': "HMO Plan",
-            'view_mode': 'form',
-            'view_id': view_id,
-            'view_type': 'form',
-            'res_model': 'hmo.plan',
-            'res_id': self.id,
-            'type': 'ir.actions.act_window',
-            'domain': [],
-            'target': 'new'
-            }
-        return ret
 
 
 class hmoHospital(models.Model):

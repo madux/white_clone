@@ -157,18 +157,6 @@
                                 </tree>
                             </field>
                         </page>
-                        <page string="📝 Plans" name="plans">
-                            <field name="hmo_plan_ids" readonly="0">
-                                <tree>
-                                    <field name="name"/>
-                                    <field name="hmo_marketplace_id" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
-                                    <field name="hmo_plan_value_ids" widget="many2many_tags" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
-                                    <field name="plan_price"/>
-                                    <field name="max_person"/>
-
-                                </tree>
-                            </field>
-                        </page>
                     </notebook>
                 </sheet>
                 <!-- ── Chatter ── -->
@@ -202,7 +190,9 @@
 
     <field name="arch" type="xml">
 
-        <kanban class="o_hmo_marketplace_kanban" create="1" records_draggable="0">
+        <kanban class="o_hmo_marketplace_kanban"
+                create="1"
+                records_draggable="0">
 
             <field name="name"/>
             <field name="street"/>
@@ -211,100 +201,128 @@
             <field name="state_id"/>
             <field name="total_hospital"/>
             <field name="hmo_tag_ids"/>
-            <field name="hmo_plan_ids"/>
-            <field name="code"/>
 
-            <!-- STATIC HEADER (unchanged) -->
+            <!-- STATIC HEADER -->
             <header>
                 <div class="marketplace-header">
+
                     <div class="topbar">
+
                         <div>
                             <h1>HMO Marketplace</h1>
-                            <p>Browse and compare health insurance providers</p>
+
+                            <p>
+                                Browse and compare health insurance providers
+                            </p>
                         </div>
+
                         <div class="top-actions">
-                            <button type="object" name="not_open_button" class="btn-hmo btn-primary-hmo">＋ Onboard Your HMO</button>
-                            <button type="object" name="not_open_button" class="btn-hmo btn-outline-hmo">⤴ Bulk Upload</button>
-                            <button name="not_open_button" type="object" class="btn-hmo btn-light-hmo">🛡 Take Tour</button>
-                        </div>
-                    </div>
-                    <div class="toolbar">
-                        <div class="search-box">🔍</div>
-                        <div class="toolbar-actions">
-                            <button name="not_open_button" type="object" class="icon-btn active">▦</button>
-                            <button name="not_open_button" type="object" class="icon-btn">☰</button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+                            <button type="object" name="not_open_button"
+                                    class="btn-hmo btn-primary-hmo">
+                                ＋ Onboard Your HMO
+                            </button>
 
-            <!-- CARD TEMPLATE -->
-            <templates>
-                <t t-name="kanban-box">
+                            <button type="object" name="not_open_button"
+                                    class="btn-hmo btn-outline-hmo">
+                                ⤴ Bulk Upload
+                            </button>
 
-                    <div class="oe_kanban_card ins_provider_card">
-
-                        <!-- Top row: avatar, name/contact, verified badge -->
-                        <div class="ins_card_top">
-
-                            <div class="ins_avatar ins_avatar_pink">
-                                <t t-esc="record.code.value or (record.name.value and record.name.value.substring(0,2).toUpperCase())"/>
-                            </div>
-
-                            <div class="ins_provider_info">
-                                <h3 class="ins_provider_name">
-                                    <field name="name" readonly="1"/>
-                                </h3>
-
-                                <p class="ins_contact_line">
-                                    <i class="fa fa-map-marker ins_contact_icon"/>
-                                    <field name="street" readonly="1"/><t t-if="record.state_id.value">, <field name="state_id" readonly="1"/></t>
-                                </p>
-
-                                <p class="ins_contact_line">
-                                    <i class="fa fa-phone ins_contact_icon"/>
-                                    <field name="phone" readonly="1"/>
-                                </p>
-
-                                <p class="ins_contact_line">
-                                    <i class="fa fa-envelope ins_contact_icon"/>
-                                    <field name="email" readonly="1"/>
-                                </p>
-                            </div>
-
-                            <div class="ins_verified_badge" title="Verified provider">
-                                <i class="fa fa-check-circle"/>
-                            </div>
-
-                        </div>
-
-                        <!-- Tags: category tags (blue) + plan tags (purple) -->
-                        <div class="ins_tags_row">
-                            <div class="ins_tag_group ins_tag_group_type">
-                                <field name="hmo_tag_ids" widget="many2many_tags" readonly="1"/>
-                            </div>
-                            <div class="ins_tag_group ins_tag_group_plan">
-                                <field name="hmo_plan_ids" widget="many2many_tags" readonly="1"/>
-                            </div>
-                        </div>
-
-                        <div class="ins_divider"/>
-
-                        <!-- Footer -->
-                        <div class="ins_card_footer">
-                            <span class="ins_hospital_count">
-                                <i class="fa fa-hospital-o ins_contact_icon"/>
-                                <field name="total_hospital" readonly="1"/> hospitals
-                            </span>
-
-                            <button name="open_action_hmo_marketplace" type="object" class="ins_view_details_btn">
-                                View Details
+                            <button name="not_open_button" type="object"
+                                    class="btn-hmo btn-light-hmo">
+                                🛡 Take Tour
                             </button>
                         </div>
 
                     </div>
 
+                    <div class="toolbar">
+
+                        <div class="search-box">
+                            🔍
+                            <!-- <input type="text" placeholder="Search HMO providers..."/> -->
+                        </div>
+
+                        <div class="toolbar-actions">
+                            <button name="not_open_button" type="object" class="icon-btn active">▦</button>
+                            <button name="not_open_button" type="object" class="icon-btn">☰</button>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </header>
+
+            <!-- CARD TEMPLATE -->
+            <templates>
+
+                <t t-name="kanban-box">
+
+                    <div class="oe_kanban_card provider-card">
+
+                        <div class="provider-top">
+
+                            <div class="provider-brand pink">
+                                <field name="code" readonly="1"/>
+                            </div>
+
+                            <div class="provider-info">
+
+                                <h3>
+                                    <field name="name" readonly="1"/>
+                                </h3>
+
+                                <p>
+                                    📍
+                                    <field name="street" readonly="1"/>,
+                                    <field name="state_id" readonly="1"/>
+                                </p>
+
+                                <p>
+                                    📞
+                                    <field name="phone" readonly="1"/>
+                                </p>
+
+                                <p>
+                                    ✉
+                                    <field name="email" readonly="1"/>
+                                </p>
+
+                            </div>
+
+                            <div class="verified">
+                                🛡
+                            </div>
+
+                        </div>
+
+                        <div class="tags">
+                            <field name="hmo_tag_ids"
+                                   widget="many2many_tags" readonly="1"/>
+                            <field name="hmo_plan_ids"
+                                   widget="one2many_list" readonly="1"/>
+                        </div>
+
+                        <div class="card-footer">
+
+                            <span>
+                                🏥
+                                <field name="total_hospital" readonly="1"/>
+                                hospitals
+                            </span>
+
+                            <button name="open_action_hmo_marketplace"
+                                    type="object"
+                                    class="btn btn-primary-hmo">
+                                View Details
+                            </button>
+
+                        </div>
+
+                    </div>
+
                 </t>
+
             </templates>
 
         </kanban>

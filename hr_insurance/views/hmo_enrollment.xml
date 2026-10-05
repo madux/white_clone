@@ -115,11 +115,9 @@
 
                             <!-- <div class="qms-divider"/> -->
                             <group>
-                                <field name="hmo_plan_ids" string="HMO Plan ids" widget="many2many_tags"/>
                                 <field name="plan_id" string="Plan" options="{'no_open': true, 'no_create': true}" readonly="state != 'draft'"/>
                                 <field name="hmo_tag_id" string="Coverage Class" options="{'no_open': true, 'no_create': true}" readonly="state != 'draft'"/>
                             </group>
-                             <!-- domain="[('id', 'in', pipeline_stage_ids)]" -->
                         </group>
                     </div>
                     <header>

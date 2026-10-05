@@ -5,10 +5,15 @@ import { Component, onWillUnmount, useState, useRef, onWillStart, useEffect } fr
 import { loadBundle } from "@web/core/assets";
 import { useService } from "@web/core/utils/hooks";
 import { CalendarSidebar } from "../components/calendar_sidebar";
+import { LeaveSetupCompletion, LeaveSetupWizard } from "../components/setup_wizard/setup_wizard";
 
 export class HrLeaveDashboard extends Component {
     static template = "hr_leave_dashboard.Dashboard";
-    static components = { CalendarSidebar };
+    static components = { CalendarSidebar, LeaveSetupWizard, LeaveSetupCompletion };
+    static props = {
+        embedded: { type: Boolean, optional: true },
+        access: { type: Object, optional: true },
+    };
 
     setup() {
         this.action = useService("action");
@@ -22,6 +27,7 @@ export class HrLeaveDashboard extends Component {
         this.approvalChart = useRef("approvalChart");
 
         this.state = useState({
+            expandedCards: {},
             months: 6,
             kpis: {
                 total_employees: 0,
@@ -39,7 +45,6 @@ export class HrLeaveDashboard extends Component {
             departmentCoverage: [],
             recentRequests: [],
             sidebarCollapsed: false,
-            viewMode: "admin",
             loading: true,
             // ── Welcome Modal ──────────────────────────
             showWelcomeModal: false,
@@ -54,32 +59,27 @@ export class HrLeaveDashboard extends Component {
             showCompletionScreen: false,
             checklist: {
                 check_leave_type: false,
+                check_approval_workflow: false,
                 check_allocate_balance: false,
                 check_set_country: false,
                 check_review_request: false,
-                check_run_report: false,
             },
             completedChecklistCount: 0,
         });
 
         this.onKeyDown = (ev) => {
-            if (ev.key === "Escape") {
-                if (this.state.showCompletionScreen) {
-                    this.closeCompletionScreen();
-                } else if (this.state.showWizard) {
-                    this.closeWizard();
-                } else if (this.state.showWelcomeModal) {
-                    this.closeWelcomeModal();
-                }
+            if (ev.key === "Escape" && this.state.showWelcomeModal) {
+                this.closeWelcomeModal();
             }
         };
 
         onWillStart(async () => {
             const force = new URLSearchParams(window.location.search).get("leave_setup") === "1" || Boolean(this.props.action?.context?.open_setup_wizard);
-            const [, setup] = await Promise.all([
-                loadBundle("web.chartjs_lib"),
-                this.orm.call("hr.leave.setup.progress", "get_welcome_state", [], { force }),
-            ]);
+            const canConfigure = !this.props.embedded || Boolean(this.props.access?.can_configure);
+            const setupPromise = canConfigure
+                ? this.orm.call("hr.leave.setup.progress", "get_welcome_state", [], { force })
+                : Promise.resolve({ state: "completed", current_step: 0, show_welcome: false });
+            const [, setup] = await Promise.all([loadBundle("web.chartjs_lib"), setupPromise]);
             this.state.setupState = setup.state;
             this.state.setupStep = setup.current_step;
             if (setup.checklist) {
@@ -114,6 +114,15 @@ export class HrLeaveDashboard extends Component {
 
         useEffect(
             () => {
+                this.renderTrends(this.state.trends);
+                this.renderByType(this.state.byType);
+                this.renderApproval(this.state.approval);
+            },
+            () => [this.state.trends, this.state.byType, this.state.approval, this.byTypeChart.el]
+        );
+
+        useEffect(
+            () => {
                 this.fetchAndRender(this.state.months);
                 return () => {
                     if (this.charts.trends) this.charts.trends.destroy();
@@ -133,20 +142,18 @@ export class HrLeaveDashboard extends Component {
     setTrendMonths(months) {
         if (months !== 6 && months !== 12 || months === this.state.months) return;
         this.state.months = months;
-        this.fetchAndRender(months);
+    }
+
+    toggleCard(name) {
+        this.state.expandedCards[name] = !this.state.expandedCards[name];
+    }
+
+    cardClass(name) {
+        return `panel dashboard-card dashboard-card-${name}${this.state.expandedCards[name] ? ' is-expanded' : ''}`;
     }
 
     toggleLeaveSidebar() {
         window.dispatchEvent(new CustomEvent("cleonhr:toggle-leave-sidebar"));
-    }
-
-    /* FR-072: Admin vs Employee View toggle. */
-    setViewMode(mode) {
-        if (!["admin", "employee"].includes(mode)) return;
-        this.state.viewMode = mode;
-        if (mode === "employee") {
-            return this.action.doAction("hr_leave_dashboard.action_hr_leave_employee_dashboard");
-        }
     }
 
     /* FR-067: Coverage percentage color class helper. */
@@ -224,60 +231,29 @@ export class HrLeaveDashboard extends Component {
     //  SETUP WIZARD METHODS
     // ═══════════════════════════════════════════════════════════════
 
-    goBackFromWizard() {
-        if (this.state.wizardStep <= 1) {
-            this.state.showWizard = false;
-            this.state.reviewMode = false;
-            this.state.showCompletionScreen = false;
-            this.state.showWelcomeModal = true;
-        } else {
-            this.state.wizardStep -= 1;
-        }
-    }
-
-    async nextWizardStep() {
-        const nextStep = this.state.wizardStep + 1;
-
-        if (this.state.reviewMode) {
-            if (nextStep > 5) {
-                this.state.showWizard = false;
-                this.state.reviewMode = false;
-                this.state.showCompletionScreen = true;
-            } else {
-                this.state.wizardStep = nextStep;
-            }
-            return;
-        }
-
-        if (nextStep > 5) {
-            const result = await this.orm.call("hr.leave.setup.progress", "complete_setup", []);
-            this.state.setupState = result.state;
-            this.state.showWizard = false;
-            this.state.showCompletionScreen = true;
-            return;
-        }
-        const saved = await this.orm.call(
-            "hr.leave.setup.progress", "advance_step", [], { step: nextStep }
-        );
-        this.state.setupStep = saved.current_step;
-        this.state.wizardStep = nextStep;
-    }
-
-    async skipWizard() {
-        this.state.showWizard = false;
-        if (!this.state.reviewMode) {
-            await this.orm.call("hr.leave.setup.progress", "skip_wizard", []);
-        }
-        this.state.reviewMode = false;
-    }
-
     closeWizard() {
         this.state.showWizard = false;
         this.state.reviewMode = false;
     }
 
-    goToLeaveTypesFromWizard() {
-        return this.openLeaveTypes();
+    backFromWizardStart() {
+        this.state.showWizard = false;
+        this.state.reviewMode = false;
+        this.state.showCompletionScreen = false;
+        this.state.showWelcomeModal = true;
+    }
+
+    wizardCompleted(result) {
+        this.state.setupState = result.state || "completed";
+        this.state.setupStep = 5;
+        this.state.showWizard = false;
+        this.state.reviewMode = false;
+        this.state.showCompletionScreen = true;
+    }
+
+    wizardSkipped() {
+        this.state.showWizard = false;
+        this.state.reviewMode = false;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -293,13 +269,6 @@ export class HrLeaveDashboard extends Component {
         if (res && res.checklist) {
             this.state.checklist = res.checklist;
             this.state.completedChecklistCount = res.completed_count || 0;
-        }
-    }
-
-    onChecklistKeydown(ev, itemKey) {
-        if (ev.key === "Enter" || ev.key === " ") {
-            ev.preventDefault();
-            this.toggleChecklistItem(itemKey);
         }
     }
 
@@ -327,7 +296,7 @@ export class HrLeaveDashboard extends Component {
     }
 
     openLeaveTypes() {
-        return this.action.doAction("hr_holidays.open_view_holiday_status");
+        return this.openConfiguration("leave_types");
     }
 
     openLeaveRequests() {
@@ -339,7 +308,20 @@ export class HrLeaveDashboard extends Component {
     }
 
     openLeaveBalances() {
-        return this.action.doAction("hr_leave_dashboard.action_hr_leave_balances_custom");
+        return this.openConfiguration("balances");
+    }
+
+    openStaffContext() {
+        return this.openLeaveBalances();
+    }
+
+    openCoverageContext() {
+        const el = this.el?.querySelector(".coverage-table-wrap, .panel:has(.coverage-table)");
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else {
+            this.openLeaveCalendar();
+        }
     }
 
     openReports() {
@@ -347,7 +329,13 @@ export class HrLeaveDashboard extends Component {
     }
 
     openSettings() {
-        return this.action.doAction("base_setup.action_general_configuration");
+        return this.openConfiguration("general");
+    }
+
+    openConfiguration(tab) {
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_configuration", {
+            additionalContext: { configuration_tab: tab },
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -381,9 +369,10 @@ export class HrLeaveDashboard extends Component {
             this.state.recentRequests = data.recent_requests || [];
             this.state.loading = false;
 
-            if (data.trends) this.renderTrends(data.trends);
-            if (data.by_type) this.renderByType(data.by_type);
-            if (data.approval_overview) this.renderApproval(data.approval_overview);
+
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", {
+                detail: { screen: "leave.dashboard", title: "Leave Dashboard" },
+            }));
         }).fail((err) => {
             if (err.statusText === "abort") return;
             console.error("Dashboard load failed", err);
@@ -406,7 +395,7 @@ export class HrLeaveDashboard extends Component {
                     { label: "Rejected", data: d.rejected, borderColor: "#dc3545", tension: 0.4 },
                 ],
             },
-            options: { responsive: true, plugins: { legend: { position: "bottom" } }, scales: { y: { beginAtZero: true } } },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } }, scales: { y: { beginAtZero: true } } },
         });
 
         $(this.el).find("[data-summary='total']").text(d.summary.total);

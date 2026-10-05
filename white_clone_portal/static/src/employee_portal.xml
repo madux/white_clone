@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="white_clone_portal.EmployeePortal">
+    <div class="cep-app">
+      <aside class="portal-sidebar cep-sidebar">
+        <div class="cep-brand"><i class="fa fa-user-circle"/><strong>EMPLOYEE PORTAL</strong><small t-esc="employeeName"/></div>
+        <button t-att-class="'cep-nav ' + (state.page === 'dashboard' ? 'active' : '')" t-on-click="() => this.setPage('dashboard')"><i class="fa fa-home"/>Dashboard</button>
+        <t t-foreach="sections" t-as="section" t-key="section.id">
+          <button class="cep-nav cep-section" t-on-click="() => this.toggleSection(section.id)" t-att-aria-expanded="!state.collapsed[section.id]"><i t-att-class="'fa ' + section.icon"/><strong t-esc="section.label"/><i t-att-class="'fa cep-chevron ' + (state.collapsed[section.id] ? 'fa-chevron-down' : 'fa-chevron-up')"/></button>
+          <div t-if="!state.collapsed[section.id]" class="cep-children">
+            <button t-foreach="section.pages" t-as="page" t-key="page.id" t-att-class="'cep-nav ' + (state.page === page.id ? 'active' : '')" t-att-title="page.description || page.label" t-on-click="() => this.setPage(page.id)"><i t-att-class="'fa ' + page.icon"/><span t-esc="page.label"/></button>
+          </div>
+        </t>
+      </aside>
+      <main class="cep-main">
+        <t t-if="state.page === 'dashboard'">
+          <section class="cep-welcome"><div><h2>Welcome back, <t t-esc="employeeName"/>!</h2><p>Your personal HR workspace.</p></div><button t-foreach="welcomeActions" t-as="page" t-key="page.id" t-on-click="() => this.setPage(page.id)"><i t-att-class="'fa ' + page.icon"/> <t t-esc="page.label"/></button></section>
+          <p t-if="state.failures.length" class="alert alert-warning" role="status">Some employee services could not be loaded: <t t-esc="state.failures.join(', ')"/>. Reload to try again.</p>
+          <t t-foreach="dashboards" t-as="provider" t-key="provider.id">
+            <t t-component="provider.dashboard" t-props="state.contexts[provider.id].dashboard" navigate.bind="setPage"/>
+          </t>
+          <p t-if="!sections.length and !state.failures.length" class="cep-empty">Employee services will appear here when enabled for your account.</p>
+        </t>
+        <t t-elif="currentPage"><t t-component="currentPage.component" t-key="state.page" t-props="currentProps"/></t>
+      </main>
+    </div>
+  </t>
+</templates>

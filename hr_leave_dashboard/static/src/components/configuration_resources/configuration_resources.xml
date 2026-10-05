@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <t t-name="hr_leave_dashboard.ResourceToolbar">
+    <header class="o_cr_header">
+      <div>
+        <h2 t-esc="title"/>
+        <p t-esc="subtitle"/>
+      </div>
+      <div>
+        <input class="o_cr_search_input" t-model="state.search" placeholder="Search…" t-on-input="() => this.state.page = 1"/>
+        <t t-if="buttonLabel === 'Add Blackout Window'">
+          <button t-if="state.canExport" class="btn btn-outline-secondary btn-sm" t-on-click="exportRows">
+            <i class="fa fa-download me-1"/> Export CSV
+          </button>
+          <label class="o_cr_import_label">
+            <i class="fa fa-upload me-1"/> Import Blackout Windows
+            <input type="file" accept=".csv,text/csv" t-on-change="importBlackouts"/>
+          </label>
+        </t>
+        <button class="btn btn-primary" t-on-click="add">+ <t t-esc="buttonLabel"/></button>
+      </div>
+    </header>
+  </t>
+
+  <t t-name="hr_leave_dashboard.ResourceActions">
+    <div class="o_cr_actions">
+      <button type="button" class="o_lp_menu_btn" t-on-click.stop="() => this.toggleActionMenu(row.id)" aria-label="More actions">
+        <i class="fa fa-ellipsis-v"/>
+      </button>
+      <div t-if="state.actionMenu === row.id" class="o_lp_menu" t-on-click.stop="() => {}">
+        <button t-on-click="() => this.view(row)"><i class="fa fa-eye me-1"/> View Details</button>
+        <button t-on-click="() => this.edit(row)"><i class="fa fa-pencil me-1"/> <t t-esc="actionLabel('Edit')"/></button>
+        <button t-on-click="() => this.duplicate(row)"><i class="fa fa-copy me-1"/> <t t-esc="actionLabel('Duplicate')"/></button>
+        <t t-if="this.model === 'hr.leave.blackout.period'">
+          <span class="o_lp_action_heading">Change Status</span>
+          <button t-on-click="() => this.setStatus(row, 'draft')"><i class="fa fa-file-o me-1"/> Draft</button>
+          <button t-on-click="() => this.setStatus(row, 'scheduled')"><i class="fa fa-clock-o me-1"/> Scheduled</button>
+          <button t-on-click="() => this.setStatus(row, 'active')"><i class="fa fa-check-circle-o me-1"/> Active</button>
+        </t>
+        <t t-else="">
+          <button t-on-click="() => this.change(row)"><i class="fa fa-power-off me-1"/> <t t-esc="statusActionLabel(row)"/></button>
+        </t>
+        <button class="danger" t-on-click="() => this.remove(row)"><i class="fa fa-trash me-1"/> <t t-esc="actionLabel('Delete')"/></button>
+      </div>
+    </div>
+  </t>
+
+  <t t-name="hr_leave_dashboard.OfficialHolidaysPage">
+    <section class="o_cr_page">
+      <t t-call="hr_leave_dashboard.ResourceToolbar">
+        <t t-set="title">Official Holidays</t>
+        <t t-set="subtitle">Public, religious, regional, and organisation holidays used by leave calculations.</t>
+        <t t-set="buttonLabel">Add Public Holiday</t>
+      </t>
+
+      <div t-if="state.loading" class="text-center py-5 text-muted">
+        <i class="fa fa-circle-o-notch fa-spin fa-2x mb-2"/>
+        <p class="mb-0">Loading official holidays…</p>
+      </div>
+      <div t-elif="!visibleRows.length" class="text-center py-5 text-muted bg-white border rounded">
+        <i class="fa fa-calendar-o fa-2x mb-2 text-muted"/>
+        <h4 class="h6 font-weight-bold mb-1">No official holidays found</h4>
+        <p class="small text-muted mb-0">Add a new public holiday or clear your search query.</p>
+      </div>
+      <t t-else="">
+        <div class="o_lp_table_wrap">
+          <table class="o_lp_table">
+            <thead>
+              <tr>
+                <th>Holiday Name</th>
+                <th>Dates</th>
+                <th>Type</th>
+                <th>Applies To</th>
+                <th>Repeats</th>
+                <th>Country / Region</th>
+                <th>Status</th>
+                <th>Created By</th>
+                <th>Last Updated</th>
+                <th class="text-end pe-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr t-foreach="pagedRows" t-as="row" t-key="row.id">
+                <td>
+                  <button type="button" class="o_lp_policy_name" t-on-click="() => this.view(row)" t-esc="row.name"/>
+                </td>
+                <td t-esc="formatDateRange(row)"/>
+                <td t-esc="holidayTypeLabel(row.type)"/>
+                <td t-esc="row.locations"/>
+                <td t-esc="repeatLabel(row.repeats)"/>
+                <td t-esc="row.country_region"/>
+                <td>
+                  <span t-att-class="'o_lp_status ' + (row.active ? 'active' : 'inactive')">
+                    <t t-esc="row.active ? 'Active' : 'Inactive'"/>
+                  </span>
+                </td>
+                <td t-esc="row.created_by"/>
+                <td t-esc="row.last_updated"/>
+                <td class="text-end pe-3">
+                  <t t-call="hr_leave_dashboard.ResourceActions"/>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ListPager t-if="!state.loading and visibleRows.length" total="visibleRows.length" page="currentPage" pageSize="state.pageSize" label="'holidays'" onPageChange.bind="goToPage" onPageSizeChange.bind="changePageSize"/>
+      </t>
+
+      <SettingsPanel t-if="state.form" close="() => this.close()" wide="true">
+        <t t-set-slot="header">
+          <div>
+            <h3><t t-esc="state.form.viewOnly ? 'Holiday Details' : (state.form.id ? 'Edit' : 'Add')"/> <t t-if="!state.form.viewOnly">Official Holiday</t></h3>
+            <p class="o_lp_subtitle">Define the holiday dates, audience and recurrence.</p>
+          </div>
+          <button class="o_lp_close_btn" t-on-click="close" aria-label="Close">×</button>
+        </t>
+        <div t-att-class="'o_lp_form o_lp_grid ' + (state.form.viewOnly ? 'o_cr_readonly' : '')">
+          <label>Holiday Name<input maxlength="255" t-model="state.form.name" t-att-disabled="state.form.viewOnly"/></label>
+          <label>Holiday Type
+            <select t-model="state.form.type" t-att-disabled="state.form.viewOnly">
+              <option value="public">Public Holiday</option>
+              <option value="religious">Religious Holiday</option>
+              <option value="regional">Regional Holiday</option>
+              <option value="observance">Observance</option>
+            </select>
+          </label>
+          <label>Start Date<input type="date" t-model="state.form.date_from" t-on-change="onStartDateChange" t-att-disabled="state.form.viewOnly"/></label>
+          <label>End Date<input type="date" t-model="state.form.date_to" t-att-disabled="state.form.viewOnly"/></label>
+          <label>Applies To
+            <select t-model="state.form.applies_to" t-att-disabled="state.form.viewOnly">
+              <option value="all">All Employees</option>
+              <option value="locations">Specific Locations</option>
+            </select>
+          </label>
+          <label>Repeats
+            <select t-model="state.form.repeats" t-att-disabled="state.form.viewOnly">
+              <option value="once">One-off</option>
+              <option value="annually">Annually</option>
+            </select>
+          </label>
+          <label>Country
+            <select t-model="state.form.country_id" t-on-change="onHolidayCountryChange" t-att-disabled="state.form.viewOnly">
+              <option value="">Select country</option>
+              <option t-foreach="state.catalog.countries || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+            </select>
+          </label>
+          <label>Region / State
+            <select t-model="state.form.state_id" t-att-disabled="state.form.viewOnly">
+              <option value="">Select region</option>
+              <option t-foreach="holidayStates" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+            </select>
+          </label>
+          <label>Status
+            <select t-model="state.form.active" t-att-disabled="state.form.viewOnly">
+              <option t-att-value="true">Active</option>
+              <option t-att-value="false">Inactive</option>
+            </select>
+          </label>
+          <label class="full">Description (<t t-esc="(state.form.description || '').length"/>/255)
+            <textarea maxlength="255" t-model="state.form.description" t-att-readonly="state.form.viewOnly"/>
+          </label>
+          <div t-if="state.form.applies_to === 'locations' and !state.form.viewOnly" class="full">
+            <TagsPicker options="state.options" selected="selectedLocations" toggle="(id) => this.toggle('location_ids', id)" placeholder="'Select locations…'"/>
+          </div>
+        </div>
+        <t t-set-slot="footer">
+          <button t-on-click="close">Close</button>
+          <button t-if="state.form.viewOnly" class="o_lp_primary" t-on-click="() => this.edit(state.form)">Edit Holiday</button>
+          <button t-else="" class="o_lp_primary" t-on-click="save">Save Holiday</button>
+        </t>
+      </SettingsPanel>
+    </section>
+  </t>
+
+  <t t-name="hr_leave_dashboard.BlackoutWindowsPage">
+    <section class="o_cr_page">
+      <t t-call="hr_leave_dashboard.ResourceToolbar">
+        <t t-set="title">Blackout Windows</t>
+        <t t-set="subtitle">Periods when employees cannot apply for leave.</t>
+        <t t-set="buttonLabel">Add Blackout Window</t>
+      </t>
+
+      <div t-if="state.loading" class="text-center py-5 text-muted">
+        <i class="fa fa-circle-o-notch fa-spin fa-2x mb-2"/>
+        <p class="mb-0">Loading blackout windows…</p>
+      </div>
+      <div t-elif="!visibleRows.length" class="text-center py-5 text-muted bg-white border rounded">
+        <i class="fa fa-ban fa-2x mb-2 text-muted"/>
+        <h4 class="h6 font-weight-bold mb-1">No blackout windows found</h4>
+        <p class="small text-muted mb-0">Add a new blackout window or clear your search query.</p>
+      </div>
+      <t t-else="">
+        <div class="o_lp_table_wrap">
+          <table class="o_lp_table">
+            <thead>
+              <tr>
+                <th>Window Name</th>
+                <th>Dates</th>
+                <th>Duration</th>
+                <th>Applies To</th>
+                <th>Scope</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Created By</th>
+                <th>Last Updated</th>
+                <th class="text-end pe-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr t-foreach="pagedRows" t-as="row" t-key="row.id">
+                <td>
+                  <button type="button" class="o_lp_policy_name" t-on-click="() => this.view(row)" t-esc="row.name"/>
+                </td>
+                <td t-esc="formatDateRange(row)"/>
+                <td><t t-esc="row.duration"/> days</td>
+                <td t-esc="row.departments"/>
+                <td t-esc="scopeLabel(row.applies_to)"/>
+                <td t-esc="row.reason"/>
+                <td>
+                  <span t-att-class="'o_lp_status ' + row.state">
+                    <t t-esc="row.state === 'draft' ? 'Draft' : (row.state === 'scheduled' ? 'Scheduled' : 'Active')"/>
+                  </span>
+                </td>
+                <td t-esc="row.created_by"/>
+                <td t-esc="row.last_updated"/>
+                <td class="text-end pe-3">
+                  <t t-call="hr_leave_dashboard.ResourceActions"/>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ListPager t-if="!state.loading and visibleRows.length" total="visibleRows.length" page="currentPage" pageSize="state.pageSize" label="'blackout windows'" onPageChange.bind="goToPage" onPageSizeChange.bind="changePageSize"/>
+      </t>
+
+      <SettingsPanel t-if="state.form" close="() => this.close()" wide="true">
+        <t t-set-slot="header">
+          <div>
+            <h3><t t-esc="state.form.viewOnly ? 'Blackout Details' : (state.form.id ? 'Edit' : 'Add')"/> <t t-if="!state.form.viewOnly">Blackout Window</t></h3>
+            <p class="o_lp_subtitle">Define when leave requests are restricted.</p>
+          </div>
+          <button class="o_lp_close_btn" t-on-click="close" aria-label="Close">×</button>
+        </t>
+        <div t-att-class="'o_lp_form o_lp_grid ' + (state.form.viewOnly ? 'o_cr_readonly' : '')">
+          <label>Window Name<input t-model="state.form.name" t-att-disabled="state.form.viewOnly"/></label>
+          <label>Status
+            <select t-model="state.form.state" t-att-disabled="state.form.viewOnly">
+              <option value="draft">Draft</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="active">Active</option>
+            </select>
+          </label>
+          <label>Start Date<input type="date" t-model="state.form.date_from" t-att-disabled="state.form.viewOnly"/></label>
+          <label>End Date<input type="date" t-model="state.form.date_to" t-att-disabled="state.form.viewOnly"/></label>
+          <label>Applies To
+            <select t-model="state.form.applies_to" t-att-disabled="state.form.viewOnly">
+              <option value="all">All Employees</option>
+              <option value="departments">Specific Departments</option>
+              <option value="policies">Specific Leave Policies</option>
+              <option value="groups">Specific Groups</option>
+            </select>
+          </label>
+          <div t-if="state.form.applies_to === 'departments'" class="full">
+            <TagsPicker options="state.options" selected="selectedDepartments" toggle="(id) => this.toggle('department_ids', id)" placeholder="'Select departments…'"/>
+          </div>
+          <div t-if="state.form.applies_to === 'policies'" class="full">
+            <TagsPicker options="state.catalog.policies || []" selected="selectedPolicies" toggle="(id) => this.toggle('policy_ids', id)" placeholder="'Select leave policies…'"/>
+          </div>
+          <div t-if="state.form.applies_to === 'groups'" class="full">
+            <TagsPicker options="state.catalog.groups || []" selected="selectedGroups" toggle="(id) => this.toggle('group_ids', id)" placeholder="'Select custom groups…'"/>
+          </div>
+          <label>Exception Behaviour
+            <select t-model="state.form.exception_mode" t-att-disabled="state.form.viewOnly">
+              <option value="hard_block">Block completely</option>
+              <option value="approval">Permit authorised exception</option>
+            </select>
+          </label>
+          <label t-if="state.form.exception_mode === 'approval'">Approval Flow
+            <select t-model="state.form.exception_chain_id" t-att-disabled="state.form.viewOnly">
+              <option value="">Select approval flow</option>
+              <option t-foreach="state.catalog.chains || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+            </select>
+          </label>
+          <label class="full">Reason (<t t-esc="(state.form.reason || '').length"/>/255)
+            <textarea maxlength="255" t-model="state.form.reason" t-att-readonly="state.form.viewOnly"/>
+          </label>
+          <section class="full">
+            <b>Live Preview</b>
+            <p><t t-esc="state.form.name || 'Untitled window'"/> · <t t-esc="state.form.date_from || 'Start'"/> – <t t-esc="state.form.date_to || 'End'"/> · <t t-esc="scopeLabel(state.form.applies_to)"/> · <t t-esc="state.form.state"/></p>
+            <p t-if="state.form.reason"><t t-esc="state.form.reason"/></p>
+          </section>
+        </div>
+        <t t-set-slot="footer">
+          <button t-on-click="close">Close</button>
+          <button t-if="state.form.viewOnly" class="o_lp_primary" t-on-click="() => this.edit(state.form)">Edit Window</button>
+          <button t-else="" class="o_lp_primary" t-on-click="save">Save Blackout Window</button>
+        </t>
+      </SettingsPanel>
+    </section>
+  </t>
+
+</templates>

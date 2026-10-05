@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="cleon_calendar.Calendar">
+        <div t-att-class="'o_ccal o_ccal_view_' + nav.view">
+
+            <!-- Toolbar -->
+            <header t-if="props.showToolbar" class="o_ccal_toolbar">
+                <div class="o_ccal_toolbar_row">
+                    <t t-slot="toolbarStart"/>
+                    <div t-if="props.views.length > 1" class="btn-group btn-group-sm" role="group">
+                        <t t-foreach="props.views" t-as="view" t-key="view">
+                            <button type="button"
+                                    t-att-class="'btn ' + (nav.view === view ? 'btn-primary' : 'btn-outline-secondary')"
+                                    t-att-title="viewMeta[view].title"
+                                    t-on-click="() => this.setView(view)">
+                                <i t-att-class="'fa ' + viewMeta[view].icon"/>
+                            </button>
+                        </t>
+                    </div>
+                    <t t-slot="actions"/>
+                </div>
+
+                <div class="o_ccal_toolbar_row">
+                    <button type="button" class="btn btn-sm btn-light border" t-on-click="() => this.navigate(-1)" title="Previous">
+                        <i class="fa fa-chevron-left"/>
+                    </button>
+                    <div class="position-relative">
+                        <button type="button" class="btn btn-sm btn-light border fw-bold dropdown-toggle o_ccal_period" t-on-click="togglePicker">
+                            <t t-esc="periodLabel"/>
+                        </button>
+                        <div t-if="nav.pickerOpen" class="o_ccal_picker shadow p-3 bg-white border rounded">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <button type="button" class="btn btn-sm btn-link p-0 text-dark" t-on-click="() => nav.pickerYear--"><i class="fa fa-chevron-left"/></button>
+                                <strong class="small" t-esc="nav.pickerYear"/>
+                                <button type="button" class="btn btn-sm btn-link p-0 text-dark" t-on-click="() => nav.pickerYear++"><i class="fa fa-chevron-right"/></button>
+                            </div>
+                            <div class="o_ccal_picker_grid">
+                                <t t-foreach="monthShort" t-as="mName" t-key="mName_index">
+                                    <button type="button"
+                                            t-att-class="'btn btn-sm ' + (nav.date.getFullYear() === nav.pickerYear and nav.date.getMonth() === mName_index ? 'btn-primary' : 'btn-light')"
+                                            t-on-click="() => this.goTo(new Date(nav.pickerYear, mName_index, 1))"
+                                            t-esc="mName"/>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-light border" t-on-click="() => this.navigate(1)" title="Next">
+                        <i class="fa fa-chevron-right"/>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border fw-bold ms-2" t-on-click="goToToday">Today</button>
+                </div>
+            </header>
+
+            <t t-slot="banner"/>
+
+            <div t-if="props.loading" class="text-center py-5 text-muted">
+                <i class="fa fa-circle-o-notch fa-spin fa-2x mb-2"/>
+                <p class="mb-0">Loading calendar...</p>
+            </div>
+
+            <div t-elif="props.error" class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
+                <span><i class="fa fa-exclamation-triangle me-2"/><t t-esc="props.error"/></span>
+                <button t-if="props.onRetry" type="button" class="btn btn-sm btn-outline-danger" t-on-click="() => props.onRetry()">Retry</button>
+            </div>
+
+            <t t-else="">
+
+                <!-- MONTH -->
+                <div t-if="nav.view === 'month'" class="o_ccal_month border rounded shadow-sm bg-white overflow-hidden">
+                    <div class="o_ccal_weekdays">
+                        <div t-foreach="weekdayLabels" t-as="label" t-key="label_index" t-esc="label"/>
+                    </div>
+                    <div t-foreach="monthWeeks" t-as="week" t-key="week_index" class="o_ccal_week">
+                        <t t-foreach="week" t-as="day" t-key="day.ymd">
+                            <t t-set="events" t-value="getDayEvents(day.ymd)"/>
+                            <div t-att-class="'o_ccal_cell' + (day.isCurrentMonth ? '' : ' o_ccal_other') + (day.isToday ? ' o_ccal_today' : '') + (isSelected(day.ymd) ? ' o_ccal_selected' : '') + (props.selectable or props.onDayClick ? ' o_ccal_interactive' : '')"
+                                 t-att-title="props.dayTitle"
+                                 t-on-mousedown="(ev) => this.onCellMouseDown(day.ymd, ev)"
+                                 t-on-mouseenter="() => this.onCellMouseEnter(day.ymd)"
+                                 t-on-mouseup="() => this.onCellMouseUp(day.ymd)"
+                                 t-on-click="() => this.onCellClick(day.ymd)">
+                                <span class="o_ccal_daynum" t-esc="day.dayNumber"/>
+                                <t t-if="props.showDayContent and props.slots and props.slots.dayContent">
+                                    <t t-slot="dayContent" day="day" events="events"/>
+                                </t>
+                                <div t-else="" class="o_ccal_stack">
+                                    <t t-set="markers" t-value="events.filter((e) => this.isMarker(e))"/>
+                                    <t t-set="items" t-value="events.filter((e) => !this.isMarker(e))"/>
+                                    <t t-foreach="markers.concat(items.slice(0, props.maxEventsPerDay))" t-as="event" t-key="event.id">
+                                        <div t-att-class="eventClass(event) + ' o_ccal_block'"
+                                             t-att-style="eventStyle(event)"
+                                             t-att-title="event.tooltip or event.title"
+                                             t-on-mousedown.stop=""
+                                             t-on-click.stop="() => this.onEventClick(event)">
+                                            <t t-if="props.slots and props.slots.event">
+                                                <t t-slot="event" event="event" view="'month'"/>
+                                            </t>
+                                            <t t-else="">
+                                                <i t-if="event.icon" t-att-class="'fa me-1 ' + event.icon"/>
+                                                <span t-if="eventTimeLabel(event)" class="o_ccal_time me-1" t-esc="eventTimeLabel(event)"/>
+                                                <span t-esc="event.title"/>
+                                            </t>
+                                        </div>
+                                    </t>
+                                    <div t-if="items.length > props.maxEventsPerDay" class="o_ccal_more"
+                                         t-on-mousedown.stop=""
+                                         t-on-click.stop="() => this.onMoreClick(day.ymd, events)">
+                                        +<t t-esc="items.length - props.maxEventsPerDay"/> more
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- WEEK -->
+                <div t-elif="nav.view === 'week'" class="o_ccal_weekview border rounded shadow-sm bg-white overflow-hidden">
+                    <div class="o_ccal_weekview_head">
+                        <div t-foreach="weekDays" t-as="day" t-key="day.ymd"
+                             t-att-class="'o_ccal_weekview_col_head' + (day.isToday ? ' o_ccal_today' : '') + (props.onDayClick ? ' o_ccal_interactive' : '')"
+                             t-on-click="() => props.onDayClick and props.onDayClick(day.ymd, day.events)">
+                            <span class="o_ccal_weekview_dayname" t-esc="day.dayName"/>
+                            <strong class="o_ccal_weekview_daynum" t-esc="day.dayNumber"/>
+                        </div>
+                    </div>
+                    <div class="o_ccal_weekview_body">
+                        <div t-foreach="weekDays" t-as="day" t-key="day.ymd" class="o_ccal_weekview_col">
+                            <div t-if="!day.events.length" class="o_ccal_empty" t-esc="props.emptyText"/>
+                            <t t-foreach="day.events" t-as="event" t-key="event.id">
+                                <div t-att-class="eventClass(event) + ' o_ccal_card'"
+                                     t-att-style="eventStyle(event)"
+                                     t-att-title="event.tooltip or event.title"
+                                     t-on-click="() => this.onEventClick(event)">
+                                    <t t-if="props.slots and props.slots.event">
+                                        <t t-slot="event" event="event" view="'week'"/>
+                                    </t>
+                                    <t t-else="">
+                                        <strong class="o_ccal_card_title">
+                                            <i t-if="event.icon" t-att-class="'fa me-1 ' + event.icon"/><t t-esc="event.title"/>
+                                        </strong>
+                                        <span t-if="eventTimeLabel(event)" class="o_ccal_card_line" t-esc="eventTimeLabel(event)"/>
+                                        <span t-if="event.subtitle" class="o_ccal_card_line" t-esc="event.subtitle"/>
+                                        <span t-if="event.detail" class="o_ccal_card_line o_ccal_card_detail" t-esc="event.detail"/>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DAY -->
+                <div t-elif="nav.view === 'day'" class="o_ccal_dayview border rounded p-4 bg-white shadow-sm">
+                    <h4 class="h5 fw-bold mb-3"><t t-esc="props.dayHeading"/> <t t-esc="periodLabel"/></h4>
+                    <div t-if="!dayEvents.length" class="text-center py-5 text-muted">
+                        <i class="fa fa-smile-o fa-2x mb-2 text-success"/>
+                        <p class="mb-0" t-esc="props.emptyText"/>
+                    </div>
+                    <div t-else="" class="d-flex flex-column gap-3">
+                        <t t-foreach="dayEvents" t-as="event" t-key="event.id">
+                            <div t-if="isMarker(event)" t-att-class="'alert alert-light border mb-0 ' + (event.className or '')">
+                                <i t-if="event.icon" t-att-class="'fa me-2 ' + event.icon"/>
+                                <strong t-esc="event.title"/>
+                                <t t-if="event.subtitle"> · <t t-esc="event.subtitle"/></t>
+                            </div>
+                            <div t-else=""
+                                 t-att-class="'o_ccal_dayrow p-3 border rounded d-flex align-items-center justify-content-between ' + (event.className or '') + (isClickable(event) ? ' o_ccal_clickable' : '')"
+                                 t-on-click="() => this.onEventClick(event)">
+                                <t t-if="props.slots and props.slots.event">
+                                    <t t-slot="event" event="event" view="'day'"/>
+                                </t>
+                                <t t-else="">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="o_ccal_dot_lg" t-att-style="'background-color: ' + (event.color or '#64748B')"/>
+                                        <div>
+                                            <h5 class="mb-0 fw-bold text-dark" t-esc="event.title"/>
+                                            <span class="text-muted small">
+                                                <t t-if="eventTimeLabel(event)"><t t-esc="eventTimeLabel(event)"/> · </t>
+                                                <t t-esc="event.subtitle"/>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span t-if="event.badge" t-att-class="'badge ' + (event.badge.className or 'bg-secondary')" t-esc="event.badge.label"/>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- YEAR -->
+                <div t-elif="nav.view === 'year'" class="o_ccal_yearview">
+                    <t t-slot="yearHeader"/>
+                    <div class="o_ccal_year_grid">
+                        <div t-foreach="yearMonths" t-as="month" t-key="month.number" class="o_ccal_year_month border rounded p-3 bg-white shadow-sm">
+                            <strong class="o_ccal_year_title mb-2 o_ccal_clickable" t-esc="month.name"
+                                    t-on-click="() => this.goTo(month.date, props.views.includes('month') ? 'month' : nav.view)"/>
+                            <t t-slot="yearMonthSummary" month="month"/>
+                            <div class="o_ccal_mini">
+                                <div t-foreach="weekdayLabels" t-as="label" t-key="label_index" class="o_ccal_mini_head" t-esc="label[0]"/>
+                                <div t-foreach="month.days" t-as="d" t-key="d.ymd" t-att-class="'o_ccal_mini_day ' + getYearDayClass(d)" t-esc="d.dayNumber"/>
+                            </div>
+                            <t t-slot="yearMonthFooter" month="month"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div t-if="props.slots and props.slots.legend" class="o_ccal_legend border rounded p-3 bg-white mt-4 shadow-sm">
+                    <t t-slot="legend"/>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>

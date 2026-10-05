@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <!-- Safe defaults. Administrators can edit these from Technical > System Parameters. -->
+    <record id="param_cleon_ai_provider" model="ir.config_parameter">
+        <field name="key">cleon_ai.provider</field>
+        <field name="value">none</field>
+    </record>
+    <record id="param_cleon_ai_model" model="ir.config_parameter">
+        <field name="key">cleon_ai.model</field>
+        <field name="value"/>
+    </record>
+    <record id="param_cleon_ai_transcription_model" model="ir.config_parameter">
+        <field name="key">cleon_ai.transcription_model</field>
+        <field name="value"/>
+    </record>
+    <record id="param_cleon_ai_live_calls_enabled" model="ir.config_parameter">
+        <field name="key">cleon_ai.live_calls_enabled</field>
+        <field name="value">False</field>
+    </record>
+    <record id="param_cleon_ai_gemini_api_key" model="ir.config_parameter">
+        <field name="key">cleon_ai.gemini_api_key</field>
+        <field name="value"/>
+    </record>
+    <record id="param_cleon_ai_openai_api_key" model="ir.config_parameter">
+        <field name="key">cleon_ai.openai_api_key</field>
+        <field name="value"/>
+    </record>
+    <record id="param_cleon_ai_openai_base_url" model="ir.config_parameter">
+        <field name="key">cleon_ai.openai_base_url</field>
+        <field name="value">https://api.openai.com/v1</field>
+    </record>
+    <record id="param_cleon_ai_local_base_url" model="ir.config_parameter">
+        <field name="key">cleon_ai.local_base_url</field>
+        <field name="value">http://127.0.0.1:8080/v1</field>
+    </record>
+    <record id="param_cleon_ai_local_api_key" model="ir.config_parameter">
+        <field name="key">cleon_ai.local_api_key</field>
+        <field name="value"/>
+    </record>
+    <record id="param_cleon_ai_ollama_base_url" model="ir.config_parameter">
+        <field name="key">cleon_ai.ollama_base_url</field>
+        <field name="value">http://127.0.0.1:11434</field>
+    </record>
+</odoo>

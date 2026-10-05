@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Reusable leave-approval blueprints.  A template names a reusable
+        configuration; the linked chain is the route that is instantiated for
+        an actual leave request.  Keeping those records separate prevents the
+        configuration screen from being confused with the approval queue.
+    -->
+    <record id="approval_chain_standard_leave" model="cleon.approval.chain">
+        <field name="name">Standard Leave Approval</field>
+        <field name="code">LEAVE_STANDARD</field>
+        <field name="company_id" ref="base.main_company"/>
+        <field name="workflow_type_id" ref="wft_leave_request"/>
+        <field name="route_type">multi</field>
+        <field name="on_approval">next</field>
+        <field name="on_rejection">stop</field>
+        <field name="is_default" eval="True"/>
+        <field name="sequence">10</field>
+        <field name="active" eval="False"/>
+        <field name="description">Default approval route for standard leave requests.</field>
+    </record>
+    <record id="approval_step_standard_manager" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_standard_leave"/><field name="sequence">10</field>
+        <field name="name">Direct Manager Review</field><field name="approver_type">line_manager</field>
+    </record>
+    <record id="approval_step_standard_department" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_standard_leave"/><field name="sequence">20</field>
+        <field name="name">Department Head Approval</field><field name="approver_type">department_head</field>
+    </record>
+
+    <record id="approval_chain_department_head" model="cleon.approval.chain">
+        <field name="name">Department Head Approval</field><field name="code">LEAVE_DEPARTMENT</field>
+        <field name="company_id" ref="base.main_company"/><field name="workflow_type_id" ref="wft_leave_request"/>
+        <field name="route_type">single</field><field name="on_approval">complete</field><field name="on_rejection">stop</field>
+        <field name="is_default" eval="False"/><field name="sequence">20</field>
+        <field name="active" eval="False"/>
+        <field name="description">For leave requests governed directly by the employee's department head.</field>
+    </record>
+    <record id="approval_step_department_head" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_department_head"/><field name="sequence">10</field>
+        <field name="name">Department Head Approval</field><field name="approver_type">department_head</field>
+    </record>
+
+    <record id="approval_chain_executive" model="cleon.approval.chain">
+        <field name="name">Executive Approval</field><field name="code">LEAVE_EXECUTIVE</field>
+        <field name="company_id" ref="base.main_company"/><field name="workflow_type_id" ref="wft_leave_request"/>
+        <field name="route_type">multi</field><field name="on_approval">next</field><field name="on_rejection">stop</field>
+        <field name="is_default" eval="False"/><field name="sequence">30</field>
+        <field name="active" eval="False"/>
+        <field name="description">For executive-level leave requests requiring management escalation.</field>
+    </record>
+    <record id="approval_step_executive_manager" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_executive"/><field name="sequence">10</field>
+        <field name="name">Direct Manager Review</field><field name="approver_type">line_manager</field>
+    </record>
+    <record id="approval_step_executive_senior" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_executive"/><field name="sequence">20</field>
+        <field name="name">Executive Approval</field><field name="approver_type">managers_manager</field>
+    </record>
+
+    <record id="approval_chain_hr_review" model="cleon.approval.chain">
+        <field name="name">HR Review (Sensitive Leaves)</field><field name="code">LEAVE_HR_REVIEW</field>
+        <field name="company_id" ref="base.main_company"/><field name="workflow_type_id" ref="wft_leave_request"/>
+        <field name="route_type">multi</field><field name="on_approval">next</field><field name="on_rejection">stop</field>
+        <field name="is_default" eval="False"/><field name="sequence">40</field><field name="escalation_days">1</field><field name="auto_approve_days">3</field>
+        <field name="active" eval="False"/>
+        <field name="description">For sensitive leave requests that require HR review after management approval.</field>
+    </record>
+    <record id="approval_step_hr_manager" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_hr_review"/><field name="sequence">10</field>
+        <field name="name">Direct Manager Review</field><field name="approver_type">line_manager</field>
+    </record>
+    <record id="approval_step_hr_department" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_hr_review"/><field name="sequence">20</field>
+        <field name="name">Department Head Review</field><field name="approver_type">department_head</field>
+    </record>
+    <record id="approval_step_hr_executive" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_hr_review"/><field name="sequence">30</field>
+        <field name="name">HR / Executive Review</field><field name="approver_type">managers_manager</field>
+    </record>
+
+    <record id="approval_chain_short_leave" model="cleon.approval.chain">
+        <field name="name">Auto Approval (Short Leaves)</field><field name="code">LEAVE_SHORT_AUTO</field>
+        <field name="company_id" ref="base.main_company"/><field name="workflow_type_id" ref="wft_leave_request"/>
+        <field name="route_type">single</field><field name="on_approval">complete</field><field name="on_rejection">stop</field>
+        <field name="is_default" eval="False"/><field name="sequence">50</field><field name="auto_approve_days">1</field>
+        <field name="active" eval="False"/>
+        <field name="description">For short leave where an outstanding approval can be auto-approved after one day.</field>
+    </record>
+    <record id="approval_step_short_leave" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_short_leave"/><field name="sequence">10</field>
+        <field name="name">Direct Manager Review</field><field name="approver_type">line_manager</field>
+    </record>
+
+    <record id="approval_chain_project_team" model="cleon.approval.chain">
+        <field name="name">Project Team Approval</field><field name="code">LEAVE_PROJECT</field>
+        <field name="company_id" ref="base.main_company"/><field name="workflow_type_id" ref="wft_leave_request"/>
+        <field name="route_type">multi</field><field name="on_approval">next</field><field name="on_rejection">stop</field>
+        <field name="is_default" eval="False"/><field name="sequence">60</field>
+        <field name="active" eval="False"/>
+        <field name="description">Reusable route for project-related leave; assign it to the appropriate leave policy.</field>
+    </record>
+    <record id="approval_step_project_manager" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_project_team"/><field name="sequence">10</field>
+        <field name="name">Direct Manager Review</field><field name="approver_type">line_manager</field>
+    </record>
+    <record id="approval_step_project_department" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_project_team"/><field name="sequence">20</field>
+        <field name="name">Department Head Approval</field><field name="approver_type">department_head</field>
+    </record>
+
+    <record id="approval_chain_individual_employee" model="cleon.approval.chain">
+        <field name="name">Individual Employee Approval</field><field name="code">LEAVE_INDIVIDUAL</field>
+        <field name="company_id" ref="base.main_company"/><field name="workflow_type_id" ref="wft_leave_request"/>
+        <field name="route_type">single</field><field name="on_approval">complete</field><field name="on_rejection">stop</field>
+        <field name="is_default" eval="False"/><field name="sequence">70</field>
+        <field name="active" eval="False"/>
+        <field name="description">Reusable route for a leave policy assigned to an individual employee.</field>
+    </record>
+    <record id="approval_step_individual_manager" model="cleon.approval.step">
+        <field name="chain_id" ref="approval_chain_individual_employee"/><field name="sequence">10</field>
+        <field name="name">Direct Manager Review</field><field name="approver_type">line_manager</field>
+    </record>
+
+    <!-- Activate only after their required steps have been created. -->
+    <record id="approval_chain_standard_leave" model="cleon.approval.chain"><field name="active" eval="True"/></record>
+    <record id="approval_chain_department_head" model="cleon.approval.chain"><field name="active" eval="True"/></record>
+    <record id="approval_chain_executive" model="cleon.approval.chain"><field name="active" eval="True"/></record>
+    <record id="approval_chain_hr_review" model="cleon.approval.chain"><field name="active" eval="True"/></record>
+    <record id="approval_chain_short_leave" model="cleon.approval.chain"><field name="active" eval="True"/></record>
+    <record id="approval_chain_project_team" model="cleon.approval.chain"><field name="active" eval="True"/></record>
+    <record id="approval_chain_individual_employee" model="cleon.approval.chain"><field name="active" eval="True"/></record>
+    <function model="cleon.approval.chain" name="write">
+        <value model="cleon.approval.chain" search="[('id', 'in', [ref('approval_chain_standard_leave'), ref('approval_chain_department_head'), ref('approval_chain_executive'), ref('approval_chain_hr_review'), ref('approval_chain_short_leave'), ref('approval_chain_project_team'), ref('approval_chain_individual_employee')])]"/>
+        <value eval="{'active': True}"/>
+    </function>
+
+    <record id="approval_template_standard_leave" model="hr.leave.approval.template">
+        <field name="name">Standard Leave Approval</field><field name="company_id" ref="base.main_company"/><field name="template_type">global</field>
+        <field name="description">Default reusable blueprint for standard leave policies.</field><field name="chain_id" ref="approval_chain_standard_leave"/>
+    </record>
+    <record id="approval_template_department_head" model="hr.leave.approval.template">
+        <field name="name">Department Head Approval</field><field name="company_id" ref="base.main_company"/><field name="template_type">global</field>
+        <field name="description">Single-level department-head approval blueprint.</field><field name="chain_id" ref="approval_chain_department_head"/>
+    </record>
+    <record id="approval_template_executive" model="hr.leave.approval.template">
+        <field name="name">Executive Approval</field><field name="company_id" ref="base.main_company"/><field name="template_type">global</field>
+        <field name="description">Two-level management-to-executive approval blueprint.</field><field name="chain_id" ref="approval_chain_executive"/>
+    </record>
+    <record id="approval_template_hr_review" model="hr.leave.approval.template">
+        <field name="name">HR Review (Sensitive Leaves)</field><field name="company_id" ref="base.main_company"/><field name="template_type">global</field>
+        <field name="description">Three-level sensitive-leave blueprint with escalation and auto-approval timers.</field><field name="chain_id" ref="approval_chain_hr_review"/>
+    </record>
+    <record id="approval_template_short_leave" model="hr.leave.approval.template">
+        <field name="name">Auto Approval (Short Leaves)</field><field name="company_id" ref="base.main_company"/><field name="template_type">global</field>
+        <field name="description">Short-leave blueprint with a one-day auto-approval timer.</field><field name="chain_id" ref="approval_chain_short_leave"/>
+    </record>
+    <record id="approval_template_project_team" model="hr.leave.approval.template">
+        <field name="name">Project Team Approval</field><field name="company_id" ref="base.main_company"/><field name="template_type">global</field>
+        <field name="description">Reusable project-policy approval blueprint.</field><field name="chain_id" ref="approval_chain_project_team"/>
+    </record>
+    <record id="approval_template_individual_employee" model="hr.leave.approval.template">
+        <field name="name">Individual Employee Approval</field><field name="company_id" ref="base.main_company"/><field name="template_type">global</field>
+        <field name="description">Reusable blueprint for policies scoped to an individual employee.</field><field name="chain_id" ref="approval_chain_individual_employee"/>
+    </record>
+</odoo>

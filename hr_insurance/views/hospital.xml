@@ -50,8 +50,10 @@
         <field name="model">hmo.hospital</field>
         <field name="arch" type="xml">
             <form string="HMO Market Place" class="o_qms_form">
-                <!-- ══ STATUS BAR ══ --> 
-                <sheet> 
+                <!-- ══ STATUS BAR ══ -->
+                 
+                <sheet>
+                     
                     <!-- ══ HERO HEADER BANNER ══ -->
                     <div class="qms-header-hero">
                         <div class="d-flex justify-content-between align-items-start">
@@ -160,96 +162,8 @@
             <field name="phone"/>
             <field name="email"/>
             <field name="state_id"/>
-            <!-- STATIC HEADER (unchanged) -->
-            <header>
-                <div class="marketplace-header">
-                    <div class="topbar">
-                        <div>
-                            <h1>HMO Hospital</h1>
-                            <p>Browse Hospitals</p>
-                        </div>
-                        <div class="top-actions">
-                            <button type="object" name="open_record" class="btn-hmo btn-primary-hmo">＋ Onboard Your HMO Hospitals</button>
-                            <button type="object" name="open_record" class="btn-hmo btn-outline-hmo">⤴ Bulk Upload</button>
-                            <button name="open_record" type="object" class="btn-hmo btn-light-hmo">🛡 Take Tour</button>
-                        </div>
-                    </div>
-                    <div class="toolbar">
-                        <div class="search-box">🔍</div>
-                        <div class="toolbar-actions">
-                            <button name="open_record" type="object" class="icon-btn active">▦</button>
-                            <button name="open_record" type="object" class="icon-btn">☰</button>
-                        </div>
-                    </div>
-                </div>
-            </header>
-            <!-- CARD TEMPLATE -->
             <!-- CARD TEMPLATE -->
             <templates>
-                <t t-name="kanban-box"> 
-                    <div class="oe_kanban_card ins_provider_card">
-
-                        <!-- Top row: avatar, name/contact, verified badge -->
-                        <div class="ins_card_top">
-
-                            <div class="ins_avatar ins_avatar_pink">
-                                <t t-esc="record.hospital_no.value or (record.hospital_name.value and record.hospital_name.value.substring(0,2).toUpperCase())"/>
-                            </div> 
-                            <div class="ins_provider_info">
-                                <h3 class="ins_provider_name">
-                                    <field name="hospital_name" readonly="1"/>
-                                </h3>
-
-                                <p class="ins_contact_line">
-                                    <i class="fa fa-map-marker ins_contact_icon"/>
-                                    <field name="street" readonly="1"/><t t-if="record.state_id.value">, <field name="state_id" readonly="1"/></t>
-                                </p>
-
-                                <p class="ins_contact_line">
-                                    <i class="fa fa-phone ins_contact_icon"/>
-                                    <field name="phone" readonly="1"/>
-                                </p>
-
-                                <p class="ins_contact_line">
-                                    <i class="fa fa-envelope ins_contact_icon"/>
-                                    <field name="email" readonly="1"/>
-                                </p>
-                                <p class="ins_contact_line">
-                                    <i class="fa fa-envelope ins_contact_icon"/>
-                                    <field name="state_id" readonly="1"/>
-                                </p>
-                            </div>
-                            <div class="ins_verified_badge" title="Verified provider">
-                                <i class="fa fa-check-circle"/>
-                            </div>
-                        </div>
-                        <!-- Tags: category tags (blue) + plan tags (purple) -->
-                        <!-- <div class="ins_tags_row">
-                            <div class="ins_tag_group ins_tag_group_type">
-                                <field name="hmo_tag_ids" widget="many2many_tags" readonly="1"/>
-                            </div>
-                            <div class="ins_tag_group ins_tag_group_plan">
-                                <field name="hmo_plan_ids" widget="many2many_tags" readonly="1"/>
-                            </div>
-                        </div>-->
-
-                        <div class="ins_divider"/>
-
-                        <div class="ins_card_footer">
-                            <span class="ins_hospital_count">
-                                <i class="fa fa-hospital-o ins_contact_icon"/>
-                            </span>
-
-                            <button name="open_record" type="object" class="ins_view_details_btn">
-                                View Details
-                            </button>
-                        </div> 
-
-                    </div>
-
-                </t>
-            </templates>
-            <!-- <templates>
 
                 <t t-name="kanban-box">
 
@@ -304,7 +218,7 @@
 
                 </t>
 
-            </templates> -->
+            </templates>
 
         </kanban>
 

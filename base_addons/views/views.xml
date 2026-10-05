@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="base.menu_module_tree" model="ir.ui.menu">
-        <field name="icon_class">fa fa-building</field>
+        <field name="icon_class">fa fa-th-large</field>
+        <field name="icon_color">#EC4899</field>
         <field name="category_name">CleonHR-HR Setting</field>
+        <field name="sequence">150</field>
     </record>
 
     <record id="base.menu_administration" model="ir.ui.menu">
-        <field name="icon_class">fa fa-building</field>
+        <field name="icon_class">fa fa-cog</field>
+        <field name="icon_color">#64748B</field>
         <field name="category_name">CleonHR-HR Setting</field>
+        <field name="sequence">160</field>
     </record>
     <record id="view_ir_ui_menu_inherited" model="ir.ui.view">
         <field name="name">ir.ui.menu.inherited</field>
@@ -17,6 +21,8 @@
 
             <xpath expr="//field[@name='sequence']" position="after">
                 <field name="category_name"/>
+                <field name="icon_class"/>
+                <field name="icon_color"/>
             </xpath>
         </field>
     </record>

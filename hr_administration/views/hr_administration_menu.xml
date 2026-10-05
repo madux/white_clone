@@ -152,7 +152,7 @@
         id="hr_administration_dashboard"
         name="HR Admin"
         action="hr_administration.action_view_employee_kanban_custom"
-        sequence="1"
+        sequence="2"
     />
         <!-- parent="hr_administration_root" -->
 
