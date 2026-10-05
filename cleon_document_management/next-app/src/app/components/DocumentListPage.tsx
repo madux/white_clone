@@ -8,6 +8,7 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import ModalDialog from "./ModalDialog";
@@ -73,6 +74,12 @@ import FolderDescriptionAssist from "./FolderDescriptionAssist";
 import OrgFolderIcon from "./OrgFolderIcon";
 import SectionTabs from "./SectionTabs";
 import OrganizationalPoliciesPanel from "./OrganizationalPoliciesPanel";
+import OrganizationalStorageBar from "./OrganizationalStorageBar";
+import { useToast } from "../../../hooks/useToast";
+import {
+  isPendingApprovalResponse,
+  notifyPendingApproval,
+} from "../../../lib/pendingApproval";
 
 type PageKind = "employee" | "organization" | "organizational";
 type ViewMode = "list" | "cards";
@@ -94,6 +101,12 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
   const folderNameQuery = params.get("folder_name");
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const { showToast } = useToast();
+  const libraryHome = useQuery({
+    queryKey: ["organizational-library-home"],
+    queryFn: () => api.getOrganizationalLibraryHome(),
+    enabled: isOrganizationPage,
+  });
   const [selected, setSelected] = useState<number[]>([]);
   const [movingFolders, setMovingFolders] = useState(false);
   const [movingFoldersPending, setMovingFoldersPending] = useState(false);
@@ -408,6 +421,11 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
             Unable to load this library.
           </p>
         )}
+        {isOrganizationPage && orgSectionTab === "folders" ? (
+          <div className="mb-2">
+            <OrganizationalStorageBar storage={libraryHome.data?.storage} />
+          </div>
+        ) : null}
         {isOrganizationPage && orgSectionTab === "policies" ? null : isLoading ? (
           <div className="flex flex-col gap-2 p-4">
             <Skeleton className="h-8 w-full" />
@@ -644,6 +662,7 @@ function FolderCreateModal({
 }) {
   const create = useCreateFolder();
   const { showAlert } = useAppDialog();
+  const { showToast } = useToast();
   const documentTypes = useDocumentTypes();
   const targets = useComplianceTargets();
   const folders = useFolders();
@@ -1006,6 +1025,11 @@ function FolderCreateModal({
           ? scopeIds
           : [],
     });
+    if (isPendingApprovalResponse(result)) {
+      notifyPendingApproval(result, showToast);
+      onClose();
+      return;
+    }
     if (!result.success) {
       await showAlert(result.message || "Unable to create folder.", {
         title: "Unable to create folder",
@@ -1030,13 +1054,11 @@ function FolderCreateModal({
     [approverIds, approverOptions],
   );
 
-  return (
-    <ModalDialog
-      title={step === "configure" ? "Create folder" : "Review folder"}
-      eyebrow={kind === "employee" ? "Employee folder" : "Organizational folder"}
-      onClose={onClose}
-      size="lg"
-    >
+  const folderFormTitle = step === "configure" ? "Create folder" : "Review folder";
+  const folderFormEyebrow =
+    kind === "employee" ? "Employee folder" : "Organizational folder";
+  const folderFormBody = (
+    <>
       {step === "configure" ? (
         <form onSubmit={goToReview}>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -1372,6 +1394,18 @@ function FolderCreateModal({
           </div>
         </div>
       )}
+    </>
+  );
+
+  return (
+    <ModalDialog
+      title={folderFormTitle}
+      eyebrow={folderFormEyebrow}
+      onClose={onClose}
+      size="lg"
+      closeDisabled={create.isPending}
+    >
+      {folderFormBody}
     </ModalDialog>
   );
 }

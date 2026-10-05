@@ -3,12 +3,14 @@ import json
 import logging
 import re
 
-from odoo import fields, http
+from odoo import _, fields, http
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.http import request
 from odoo.osv import expression
 
-from odoo.addons.cleon_document_management.controllers.access import user_is_document_admin
+from odoo.addons.cleon_document_management.controllers.document_actions import (
+    _draft_policy_guard,
+)
 from odoo.addons.cleon_document_management.models import organizational_openrouter
 
 _logger = logging.getLogger(__name__)
@@ -83,6 +85,9 @@ class OrganizationalFilesController(http.Controller):
         if not document or document.folder_id.folder_type != "organizational":
             return {"success": False, "message": "Document not found."}
         document.check_access_rule("read")
+        blocked = _draft_policy_guard(document, "manage_access")
+        if blocked:
+            return blocked
         try:
             document.folder_id.assert_unlocked()
             values = document._prepare_organizational_access_values(
@@ -121,6 +126,9 @@ class OrganizationalFilesController(http.Controller):
         if not document:
             return {"success": False, "message": "Document not found."}
         document.check_access_rule("read")
+        blocked = _draft_policy_guard(document, "assign")
+        if blocked:
+            return blocked
         policy_id = kwargs.get("linked_policy_id")
         template_id = kwargs.get("linked_template_document_id")
         values = {}
@@ -155,6 +163,9 @@ class OrganizationalFilesController(http.Controller):
         if not document:
             return {"success": False, "message": "Document not found."}
         document.check_access_rule("read")
+        blocked = _draft_policy_guard(document, "copy")
+        if blocked:
+            return blocked
         destination = document.folder_id
         if folder_id:
             destination = request.env["doc.folder"].browse(int(folder_id)).exists()
@@ -298,6 +309,15 @@ class OrganizationalFilesController(http.Controller):
         trimmed = (name or "").strip()
         if not trimmed:
             return {"success": False, "message": "Document name is required."}
+        approval = request.env["doc.organizational.approval.service"]
+        gate = approval.submit_or_block(
+            request.env.user,
+            "edit_rename_description_colour",
+            {"document_id": document.id, "name": trimmed, "folder_id": document.folder_id.id},
+            name=_("Rename document: %s") % trimmed,
+        )
+        if not gate.get("execute"):
+            return approval.pending_api_response(gate.get("request"))
         try:
             document.folder_id.assert_unlocked()
             document.write({"name": trimmed})
@@ -371,6 +391,19 @@ class OrganizationalFilesController(http.Controller):
             parent = self._org_folder(parent_id)
             if not parent:
                 return {"success": False, "message": "Destination folder not found."}
+        approval = request.env["doc.organizational.approval.service"]
+        gate = approval.submit_or_block(
+            request.env.user,
+            "move",
+            {
+                "folder_id": folder.id,
+                "parent_id": parent.id if parent else False,
+                "move_kind": "folder",
+            },
+            name=_("Move folder: %s") % folder.folder_name,
+        )
+        if not gate.get("execute"):
+            return approval.pending_api_response(gate.get("request"))
         try:
             folder.action_move_folder(parent)
         except UserError as error:
@@ -1162,6 +1195,9 @@ class OrganizationalFilesController(http.Controller):
         document = self._org_document(document_id)
         if not document:
             return {"success": False, "message": "Document not found."}
+        blocked = _draft_policy_guard(document, "create_template")
+        if blocked:
+            return blocked
         document.write({"is_template": True})
         request.env["doc.object.audit"].log(document, "create_template", "Marked as master template")
         return {"success": True, "data": document.serialize_for_api(request.env.user)}
@@ -1294,8 +1330,10 @@ class OrganizationalFilesController(http.Controller):
     def ai_policy_draft(self, name=None, **kwargs):
         """Return AI proposal only; policy is created after user confirms in review."""
         perm = self._perm()
-        if not perm.user_can_manage_org_document(request.env.user) and not user_is_document_admin(
-            request.env.user
+        user = request.env.user
+        dms = request.env["doc.dms.permission"]
+        if not perm.user_can_manage_org_document(user) and not dms.user_has_dms_permission(
+            user, "add_policy"
         ):
             return {"success": False, "message": "You do not have permission to draft a policy."}
         title = (name or "").strip()
@@ -1540,9 +1578,154 @@ class OrganizationalFilesController(http.Controller):
         document = version.document_id
         if document.folder_id.folder_type != "organizational":
             return {"success": False, "message": "Version not found."}
+        blocked = _draft_policy_guard(document, "restore")
+        if blocked:
+            return blocked
         try:
             document.folder_id.assert_unlocked()
             version.action_restore_as_new_version()
         except UserError as error:
             return {"success": False, "message": error.args[0]}
         return {"success": True, "data": document.serialize_for_api(request.env.user)}
+
+    @http.route(
+        "/api/organizational/library-home",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def library_home(self, **kwargs):
+        perm = self._perm()
+        user = request.env.user
+        perm.require_org_library(user)
+        Folder = request.env["doc.folder"]
+        Document = request.env["doc.document"]
+        Attachment = request.env["ir.attachment"]
+        root_folders = Folder.search(
+            [
+                ("folder_type", "=", "organizational"),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+                ("parent_id", "=", False),
+            ],
+            order="folder_name",
+        )
+        accessible_roots = root_folders.filtered(lambda folder: folder._user_can_access(user))
+        recent_documents = Document.search(
+            [
+                ("folder_id.folder_type", "=", "organizational"),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ],
+            order="write_date desc",
+            limit=12,
+        )
+        recent_documents = recent_documents.filtered(
+            lambda document: document.folder_id._user_can_access(user)
+        )
+        org_documents = Document.search(
+            [
+                ("folder_id.folder_type", "=", "organizational"),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ]
+        )
+        attachment_ids = org_documents.mapped("attachment_id").ids
+        used_bytes = sum(
+            Attachment.browse(attachment_ids).mapped("file_size")
+        )
+        params = request.env["ir.config_parameter"].sudo()
+        try:
+            quota_gb = float(
+                params.get_param(
+                    "cleon_document_management.org_storage_quota_gb", "100"
+                )
+            )
+        except (TypeError, ValueError):
+            quota_gb = 100.0
+        quota_bytes = int(quota_gb * 1024 * 1024 * 1024)
+        return {
+            "success": True,
+            "data": {
+                "root_folder_count": len(accessible_roots),
+                "recent_files": [
+                    {
+                        "id": document.id,
+                        "name": document.name,
+                        "folder_id": document.folder_id.id,
+                        "folder_name": document.folder_id.folder_name,
+                        "mime_type": document.attachment_id.mimetype
+                        if document.attachment_id
+                        else "",
+                        "updated_at": fields.Datetime.to_string(document.write_date),
+                    }
+                    for document in recent_documents
+                ],
+                "storage": {
+                    "used_bytes": used_bytes,
+                    "quota_bytes": quota_bytes,
+                    "quota_gb": quota_gb,
+                },
+            },
+        }
+
+    @http.route(
+        "/api/organizational/retention/review-queue",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def retention_review_queue(self, **kwargs):
+        perm = self._perm()
+        user = request.env.user
+        if not (
+            perm.user_can_manage_org_document(user)
+            or perm.user_is_org_super_admin(user)
+        ):
+            return {"success": False, "message": "Permission denied."}
+        documents = request.env["doc.document"].search(
+            [
+                ("folder_id.folder_type", "=", "organizational"),
+                ("retention_review_due", "=", True),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ],
+            order="write_date desc",
+            limit=200,
+        )
+        return {
+            "success": True,
+            "data": [doc.serialize_for_api(user) for doc in documents],
+        }
+
+    @http.route(
+        "/api/organizational/retention/dispose",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def retention_dispose(self, document_id=None, action="archive", **kwargs):
+        perm = self._perm()
+        user = request.env.user
+        if not (
+            perm.user_can_manage_org_document(user)
+            or perm.user_is_org_super_admin(user)
+        ):
+            return {"success": False, "message": "Permission denied."}
+        document = request.env["doc.document"].browse(int(document_id or 0)).exists()
+        if not document or document.folder_id.folder_type != "organizational":
+            return {"success": False, "message": "Document not found."}
+        if document.legal_hold_active:
+            return {"success": False, "message": "Document is on legal hold."}
+        dispose_action = action or kwargs.get("dispose_action") or "archive"
+        if dispose_action == "delete":
+            if not perm.user_has_org_permission(user, "permanent_delete"):
+                return {"success": False, "message": "Permanent delete is not permitted."}
+            document.write({"deleted_at": fields.Datetime.now(), "active": False})
+        else:
+            document.write({"state": "expired"})
+        document.write({"retention_review_due": False})
+        return {"success": True, "data": document.serialize_for_api(user)}

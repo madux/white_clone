@@ -165,6 +165,7 @@ export default function ProfilesConfigPanel() {
           size="2xl"
           titleClassName="text-xl"
           backdropClassName="bg-slate-900/40"
+          minimizable={false}
         >
           <form onSubmit={save}>
             <label className="mt-4 block">

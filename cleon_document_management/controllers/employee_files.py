@@ -24,10 +24,7 @@ class EmployeeFilesController(http.Controller):
 
     @staticmethod
     def _require_admin():
-        if not request.env.user.has_group(
-            "cleon_document_management.group_document_admin"
-        ) and not request.env.user.has_group("base.group_system"):
-            raise AccessError("Document administrator access is required.")
+        request.env["doc.dms.permission"].require_super_admin(request.env.user)
 
     @staticmethod
     def _require_admin_or_manager():

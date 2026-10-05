@@ -1,3 +1,4 @@
+import { formatStatusLabel } from "./formatLabel";
 import type {
   ComplianceTargetEmployee,
   EmployeeFileHeaderField,
@@ -89,7 +90,7 @@ function headerValueForKey(
     case "status":
       if (summary?.state === "inactive") return "Inactive";
       if (employee?.lifecycle_status) {
-        return employee.lifecycle_status.replace(/_/g, " ");
+        return formatStatusLabel(employee.lifecycle_status);
       }
       return "Active";
     case "work_email":

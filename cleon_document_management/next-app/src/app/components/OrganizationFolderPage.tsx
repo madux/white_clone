@@ -256,9 +256,12 @@ export default function OrganizationFolderPage() {
           label={
             document.link_status === "broken"
               ? "Broken link"
-              : document.active === false
-                ? "Inactive"
-                : "Active"
+              : document.state === "draft" ||
+                  document.distribution_status === "deactivated"
+                ? "Draft"
+                : document.active === false
+                  ? "Inactive"
+                  : "Active"
           }
           tone={document.link_status === "broken" ? "danger" : undefined}
         />
@@ -281,6 +284,20 @@ export default function OrganizationFolderPage() {
         orgGradeIds={document.org_grade_ids ?? []}
         orgEmployeeIds={document.org_employee_ids ?? []}
         onMove={() => setMovingIds([document.id])}
+        draftPolicyFolder={
+          folder?.folder_kind === "policy" &&
+          policyRegistry.data?.lifecycle_status === "draft"
+        }
+        folderAccess={
+          folder
+            ? {
+                access_scope: folder.access_scope,
+                department_ids: folder.department_ids ?? [],
+                grade_ids: folder.grade_ids ?? [],
+                employee_ids: folder.employee_ids ?? [],
+              }
+            : null
+        }
       />
     ),
   }));
@@ -370,6 +387,10 @@ export default function OrganizationFolderPage() {
             onClear={() => setSelectedDocumentIds([])}
             documents={visibleDocuments}
             organizational
+            draftPolicyFolder={
+              folder?.folder_kind === "policy" &&
+              policyRegistry.data?.lifecycle_status === "draft"
+            }
             onMove={folderLocked ? undefined : () => setMovingIds(selectedDocumentIds)}
           />
         </div>

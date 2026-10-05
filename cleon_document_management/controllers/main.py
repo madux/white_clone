@@ -8,7 +8,32 @@ from odoo.osv import expression
 import base64
 import logging
 
+from odoo.addons.cleon_document_management.controllers.access import (
+    require_manage_document_types,
+    require_manage_ef_tenant_config,
+    require_manage_org_tenant_config,
+    require_manage_retention_lifecycle,
+    settings_panel_access_message,
+)
+
 _logger = logging.getLogger(__name__)
+
+
+def _as_bool(value, default=False):
+    """Coerce JSON-RPC params (bool, 0/1, \"true\"/\"false\" strings) reliably."""
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in ("", "0", "false", "no", "off"):
+            return False
+        if normalized in ("1", "true", "yes", "on"):
+            return True
+    return bool(value)
 
 
 def _attachment_bytes(attachment):
@@ -195,6 +220,18 @@ def _metadata_values_for_upload(document_type, issue_date, description, expiry_v
     return values
 
 
+class _UploadBytes:
+    """Minimal file-like object for approval execution from staged attachments."""
+
+    def __init__(self, filename, content, mimetype):
+        self.filename = filename or "document"
+        self._content = content or b""
+        self.mimetype = mimetype or "application/octet-stream"
+
+    def read(self):
+        return self._content
+
+
 def _process_document_upload(
     upload,
     document_type,
@@ -268,6 +305,14 @@ def _process_document_upload(
             "upload",
             _("Uploaded %s") % document.name,
         )
+        if not request.env["doc.org.malware.scanner"].process_org_document(document):
+            raise ValidationError(
+                _(
+                    "This file was quarantined by the malware scanner and is not "
+                    "available in the folder. For local dev, set CLEON_CLAMAV_ENABLED=0 "
+                    "in .env and restart Odoo."
+                )
+            )
     return document
 
 
@@ -348,13 +393,24 @@ class DocumentUICreation(http.Controller):
             "default_company_owned_admin_user_ids": config.default_company_owned_admin_users(
                 config.company_id
             ).ids,
+            "org_approval_sla_hours": config.org_approval_sla_hours or 48,
+            "org_approval_reminder_hours_before_sla": config.org_approval_reminder_hours_before_sla
+            or 6,
+            "org_approval_escalation_user_id": config.org_approval_escalation_user_id.id or False,
+            "org_approval_delegate_user_id": config.org_approval_delegate_user_id.id or False,
+            "org_approval_delegate_until": fields.Datetime.to_string(
+                config.org_approval_delegate_until
+            )
+            if config.org_approval_delegate_until
+            else False,
         }
 
     @staticmethod
-    def _require_settings_manager():
-        return request.env.user.has_group(
-            "cleon_document_management.group_document_manager"
-        )
+    def _settings_denied():
+        message = settings_panel_access_message()
+        if message:
+            return {"success": False, "message": message}
+        return None
 
     @http.route(
         "/api/get-document-type",
@@ -380,13 +436,10 @@ class DocumentUICreation(http.Controller):
     )
     def create_document_type(self, **kwargs):
         """Create a document type without leaving the current document form."""
-        if not request.env.user.has_group(
-            "cleon_document_management.group_document_manager"
-        ):
-            return {
-                "success": False,
-                "message": "Only document managers can create document types.",
-            }
+        try:
+            require_manage_document_types()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
 
         name = (kwargs.get("name") or "").strip()
         if not name:
@@ -464,8 +517,9 @@ class DocumentUICreation(http.Controller):
         "/api/settings", type="json", auth="user", methods=["POST"], csrf=False
     )
     def get_settings(self, **kwargs):
-        if not self._require_settings_manager():
-            return {"success": False, "message": "Document manager access is required."}
+        denied = self._settings_denied()
+        if denied:
+            return denied
         types = request.env["doc.document.type"].with_context(active_test=False).search(
             [], order="sequence, name"
         )
@@ -491,8 +545,10 @@ class DocumentUICreation(http.Controller):
         csrf=False,
     )
     def save_settings_document_type(self, **kwargs):
-        if not self._require_settings_manager():
-            return {"success": False, "message": "Document manager access is required."}
+        try:
+            require_manage_document_types()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
         name = (kwargs.get("name") or "").strip()
         category = kwargs.get("category") or "other"
         valid_categories = {"hr", "finance", "legal", "identity", "employment", "medical", "training", "other"}
@@ -551,8 +607,10 @@ class DocumentUICreation(http.Controller):
         csrf=False,
     )
     def toggle_settings_document_type(self, id=None, **kwargs):
-        if not self._require_settings_manager():
-            return {"success": False, "message": "Document manager access is required."}
+        try:
+            require_manage_document_types()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
         item = request.env["doc.document.type"].with_context(active_test=False).browse(int(id or 0)).exists()
         if not item:
             return {"success": False, "message": "Document type not found."}
@@ -567,8 +625,10 @@ class DocumentUICreation(http.Controller):
         csrf=False,
     )
     def delete_settings_document_type(self, id=None, **kwargs):
-        if not self._require_settings_manager():
-            return {"success": False, "message": "Document manager access is required."}
+        try:
+            require_manage_document_types()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
         item = (
             request.env["doc.document.type"]
             .with_context(active_test=False)
@@ -591,8 +651,25 @@ class DocumentUICreation(http.Controller):
         csrf=False,
     )
     def save_settings(self, **kwargs):
-        if not self._require_settings_manager():
-            return {"success": False, "message": "Document manager access is required."}
+        try:
+            require_manage_retention_lifecycle()
+            require_manage_ef_tenant_config()
+            if any(
+                key in kwargs
+                for key in (
+                    "default_org_access_scope",
+                    "default_org_restricted_scope",
+                    "org_company_owned_user_ids",
+                    "org_approval_sla_hours",
+                    "org_approval_reminder_hours_before_sla",
+                    "org_approval_escalation_user_id",
+                    "org_approval_delegate_user_id",
+                    "org_approval_delegate_until",
+                )
+            ):
+                require_manage_org_tenant_config()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
         flow = kwargs.get("default_approval_flow") or "any"
         retention = kwargs.get("default_retention_period") or "7"
         try:
@@ -668,6 +745,46 @@ class DocumentUICreation(http.Controller):
             ]
         if org_scope_values:
             config.write(org_scope_values)
+        org_approval_values = {}
+        if "org_approval_sla_hours" in kwargs:
+            try:
+                org_approval_values["org_approval_sla_hours"] = max(
+                    int(kwargs.get("org_approval_sla_hours") or 48), 1
+                )
+            except (TypeError, ValueError):
+                return {
+                    "success": False,
+                    "message": "Organisational approval SLA must be a valid number of hours.",
+                }
+        if "org_approval_reminder_hours_before_sla" in kwargs:
+            try:
+                org_approval_values["org_approval_reminder_hours_before_sla"] = max(
+                    int(kwargs.get("org_approval_reminder_hours_before_sla") or 6), 0
+                )
+            except (TypeError, ValueError):
+                return {
+                    "success": False,
+                    "message": "Approval reminder lead time must be a valid number of hours.",
+                }
+        if "org_approval_escalation_user_id" in kwargs:
+            escalation_id = int(kwargs.get("org_approval_escalation_user_id") or 0) or False
+            if escalation_id:
+                escalation_id = (
+                    request.env["res.users"].browse(escalation_id).exists().id or False
+                )
+            org_approval_values["org_approval_escalation_user_id"] = escalation_id
+        if "org_approval_delegate_user_id" in kwargs:
+            delegate_id = int(kwargs.get("org_approval_delegate_user_id") or 0) or False
+            if delegate_id:
+                delegate_id = request.env["res.users"].browse(delegate_id).exists().id or False
+            org_approval_values["org_approval_delegate_user_id"] = delegate_id
+        if "org_approval_delegate_until" in kwargs:
+            raw_until = kwargs.get("org_approval_delegate_until")
+            org_approval_values["org_approval_delegate_until"] = (
+                fields.Datetime.to_datetime(raw_until) if raw_until else False
+            )
+        if org_approval_values:
+            config.write(org_approval_values)
         return {"success": True, "data": self._settings_values()}
 
     @http.route(
@@ -720,6 +837,40 @@ class DocumentUICreation(http.Controller):
                         "success": False,
                         "message": "A folder with this name already exists.",
                     }
+                approval = request.env["doc.organizational.approval.service"]
+                approval_payload = {
+                    key: kwargs.get(key)
+                    for key in (
+                        "name",
+                        "nameElm",
+                        "description",
+                        "descriptionElm",
+                        "parent_id",
+                        "access_scope",
+                        "folder_kind",
+                        "organize_by",
+                        "folder_color",
+                        "retention_period",
+                        "department_ids",
+                        "grade_ids",
+                        "employee_ids",
+                        "allowed_document_type_ids",
+                    )
+                    if key in kwargs
+                }
+                approval_payload["name"] = name
+                approval_payload["nameElm"] = name
+                approval_payload["description"] = description
+                approval_payload["descriptionElm"] = description
+                gate = approval.submit_or_block(
+                    request.env.user,
+                    "create_folder",
+                    approval_payload,
+                    name=_("Create folder: %s") % name,
+                )
+                if not gate.get("execute"):
+                    pending = gate.get("request")
+                    return approval.pending_api_response(pending)
             elif not name:
                 return {"success": False, "message": "Folder name is required."}
 
@@ -1173,6 +1324,45 @@ class DocumentUICreation(http.Controller):
             return {"success": False, "message": str(e)}
 
     @http.route(
+        "/api/delete-folders", type="json", auth="user", methods=["POST"], csrf=False
+    )
+    def delete_folders(self, folder_ids=None, **kwargs):
+        try:
+            ids = sorted(
+                {int(value) for value in (folder_ids or []) if str(value).isdigit()}
+            )
+            if not ids:
+                return {"success": False, "message": "Select at least one folder."}
+
+            folders = request.env["doc.folder"].browse(ids).exists()
+            if len(folders) != len(set(ids)):
+                return {"success": False, "message": "One or more folders were not found."}
+
+            org_perm = request.env["doc.organizational.files.permission"]
+            user = request.env.user
+            for folder in folders:
+                folder.check_access_rule("read")
+                if folder.folder_type == "organizational" and not org_perm.user_can_folder_delete(
+                    user
+                ):
+                    return {
+                        "success": False,
+                        "message": "You do not have permission to delete one or more folders.",
+                    }
+
+            for folder in folders:
+                folder.action_move_to_recycle_bin()
+
+            return {
+                "success": True,
+                "message": f"Moved {len(folders)} folder(s) to the recycle bin.",
+                "data": {"folder_ids": folders.ids},
+            }
+
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    @http.route(
         "/api/archive-folder", type="json", auth="user", methods=["POST"], csrf=False
     )
     def archive_folder(self, id=None, **kwargs):
@@ -1370,29 +1560,67 @@ class DocumentUICreation(http.Controller):
     def get_documents(self, folder_id=False, **kwargs):
         """List documents, optionally filtered by folder_id."""
         try:
-            domain = (
-                []
-                if kwargs.get("include_inactive")
-                and request.env.user.has_group(
-                    "cleon_document_management.group_document_manager"
+            user = request.env.user
+            env = request.env
+            include_inactive = _as_bool(kwargs.get("include_inactive"))
+            folder_id_int = int(folder_id) if folder_id else False
+            is_doc_manager = user.has_group(
+                "cleon_document_management.group_document_manager"
+            ) or user.has_group(
+                "cleon_document_management.group_document_admin"
+            )
+            use_folder_working_set = include_inactive and bool(folder_id_int)
+
+            if use_folder_working_set:
+                documents = (
+                    env["doc.document"]
+                    .sudo()
+                    .with_context(active_test=False)
+                    .search(
+                        [
+                            ("deleted_at", "=", False),
+                            ("folder_id", "=", folder_id_int),
+                        ],
+                        order="create_date desc",
+                    )
                 )
-                else [
+                visible_documents = documents.filtered(
+                    lambda document: document._visible_in_folder_document_list(
+                        user, include_inactive=True
+                    )
+                )
+            elif include_inactive and is_doc_manager:
+                domain = [("deleted_at", "=", False)]
+                if folder_id_int:
+                    domain.append(("folder_id", "=", folder_id_int))
+                documents = (
+                    env["doc.document"]
+                    .with_context(active_test=False)
+                    .search(domain, order="create_date desc")
+                )
+                visible_documents = documents.filtered(
+                    lambda document: document.folder_id.folder_type
+                    != "organizational"
+                    or document._organizational_user_can_access(user)
+                )
+            else:
+                domain = [
                     ("active", "=", True),
                     ("deleted_at", "=", False),
                     ("folder_id.active", "=", True),
                     ("folder_id.deleted_at", "=", False),
                     ("folder_id.distribution_status", "=", "active"),
                 ]
-            )
-            if folder_id:
-                domain.append(("folder_id", "=", int(folder_id)))
-
-            documents = request.env["doc.document"].search(domain, order="create_date desc")
-            user = request.env.user
-            visible_documents = documents.filtered(
-                lambda document: document.folder_id.folder_type != "organizational"
-                or document._organizational_user_can_access(user)
-            )
+                if folder_id_int:
+                    domain.append(("folder_id", "=", folder_id_int))
+                documents = env["doc.document"].search(
+                    domain, order="create_date desc"
+                )
+                visible_documents = documents.filtered(
+                    lambda document: document.folder_id.folder_type
+                    != "organizational"
+                    or document._organizational_user_can_access(user)
+                )
             return {
                 "success": True,
                 "count": len(visible_documents),
@@ -2130,7 +2358,10 @@ class DocumentUICreation(http.Controller):
         doc = request.env["doc.document"].browse(doc_id).exists()
         if not doc:
             return {"success": False, "message": "Document not found."}
-        doc.check_access_rule("read")
+        try:
+            doc.assert_organizational_user_can_access(request.env.user)
+        except AccessError:
+            return {"success": False, "message": "You do not have access to this document."}
         versions = doc.version_ids.sorted(key=lambda item: item.version_number, reverse=True)
         return {
             "success": True,
@@ -2161,9 +2392,12 @@ class DocumentUICreation(http.Controller):
         if not doc:
             return {"success": False, "message": "Document not found."}
         try:
-            doc.check_access_rule("read")
-        except AccessError:
-            return {"success": False, "message": "You do not have access to this document."}
+            doc.assert_organizational_user_can_access(request.env.user)
+        except AccessError as error:
+            return {
+                "success": False,
+                "message": error.args[0] if error.args else "You do not have access to this document.",
+            }
         return {
             "success": True,
             "data": doc.serialize_for_api(
@@ -2182,7 +2416,10 @@ class DocumentUICreation(http.Controller):
         doc = request.env["doc.document"].browse(doc_id).exists()
         if not doc or not doc.attachment_id:
             return request.not_found()
-        doc.check_access_rule("read")
+        try:
+            doc.assert_organizational_user_can_access(request.env.user)
+        except AccessError:
+            return request.not_found()
         variant = request.httprequest.args.get("variant")
         if variant == "current":
             attachment = doc.attachment_id
@@ -2238,12 +2475,57 @@ class DocumentUICreation(http.Controller):
             return request.make_json_response(
                 {"success": False, "message": str(error)}, status=403
             )
-        documents = request.env["doc.document"]
         expiry_dates = _upload_expiry_dates()
         issue_dates = _upload_issue_dates()
         descriptions = _upload_descriptions()
         replace_document_ids = _upload_replace_document_ids()
         change_notes = _upload_change_notes()
+        approval = request.env["doc.organizational.approval.service"]
+        replace_action = any(value for value in replace_document_ids)
+        action_key = "replace_version" if replace_action else "upload_link_import_scan"
+        if not approval.user_can_execute_without_approval(request.env.user, action_key):
+            staged = request.env["ir.attachment"].sudo()
+            staged_ids = []
+            for upload in uploads:
+                staged_ids.append(
+                    staged.create(
+                        {
+                            "name": upload.filename or "document",
+                            "datas": base64.b64encode(upload.read()),
+                            "mimetype": upload.mimetype or "application/octet-stream",
+                        }
+                    ).id
+                )
+            payload = {
+                "folder_id": folder.id,
+                "document_type_ids": document_type_ids,
+                "expiry_dates": expiry_dates,
+                "issue_dates": issue_dates,
+                "descriptions": descriptions,
+                "replace_document_ids": replace_document_ids,
+                "change_notes": change_notes,
+                "is_template": request.httprequest.form.get("is_template")
+                in ("1", "true", "True"),
+            }
+            label = (
+                _("Replace version (%s file(s))") % len(uploads)
+                if replace_action
+                else _("Upload %s file(s)") % len(uploads)
+            )
+            gate = approval.submit_or_block(
+                request.env.user,
+                action_key,
+                payload,
+                name=label,
+            )
+            if not gate.get("execute"):
+                pending = gate.get("request")
+                pending.write(
+                    {"staging_attachment_ids": [fields.Command.set(staged_ids)]}
+                )
+                return request.make_json_response(approval.pending_api_response(pending))
+            request.env["ir.attachment"].browse(staged_ids).sudo().unlink()
+        documents = request.env["doc.document"]
         try:
             for index, upload in enumerate(uploads):
                 type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
@@ -2396,7 +2678,10 @@ class DocumentUICreation(http.Controller):
         doc = request.env["doc.document"].browse(doc_id).exists()
         if not doc or not doc.attachment_id:
             return request.not_found()
-        doc.check_access_rule("read")
+        try:
+            doc.assert_organizational_user_can_access(request.env.user)
+        except AccessError:
+            return request.not_found()
         attachment = doc.attachment_id
         return request.make_response(
             _attachment_bytes(attachment),

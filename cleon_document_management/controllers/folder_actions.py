@@ -352,6 +352,88 @@ class DocumentFolderActions(http.Controller):
             "employee_ids": employees.ids,
         }
 
+    @http.route(
+        "/api/lifecycle-bulk-action",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def lifecycle_bulk_action(self, records=None, action=None, **kwargs):
+        items = records or kwargs.get("items") or []
+        if not items:
+            return {"success": False, "message": "Select at least one item."}
+        if action not in ("restore", "permanent_delete"):
+            return {"success": False, "message": "Unsupported lifecycle action."}
+
+        user = request.env.user
+        is_manager = user.has_group(
+            "cleon_document_management.group_document_manager"
+        )
+        Document = request.env["doc.document"]
+        Folder = request.env["doc.folder"]
+
+        def _delete_failure(error):
+            message = error.args[0] if getattr(error, "args", None) else str(error)
+            return {"success": False, "message": message}
+
+        for item in items:
+            record_type = (item or {}).get("record_type")
+            record_id = int((item or {}).get("id") or 0)
+            if not record_id or record_type not in ("document", "folder"):
+                return {"success": False, "message": "Invalid lifecycle selection."}
+
+            if record_type == "document":
+                document = Document.with_context(active_test=False).browse(record_id).exists()
+                if not document:
+                    return {"success": False, "message": "Document not found."}
+                document.check_access_rule("read")
+                if action == "restore":
+                    if not is_manager and not document._user_owns_document():
+                        return {
+                            "success": False,
+                            "message": "You can only restore your own documents.",
+                        }
+                    document.action_restore()
+                else:
+                    if not is_manager:
+                        return {
+                            "success": False,
+                            "message": "Document manager access is required.",
+                        }
+                    try:
+                        document.unlink()
+                    except (UserError, ValidationError, AccessError) as error:
+                        return _delete_failure(error)
+                continue
+
+            folder = Folder.with_context(active_test=False).browse(record_id).exists()
+            if not folder:
+                return {"success": False, "message": "Folder not found."}
+            folder.check_access_rule("read")
+            if action == "restore":
+                folder.action_restore()
+            else:
+                if not is_manager:
+                    return {
+                        "success": False,
+                        "message": "Document manager access is required.",
+                    }
+                linked = len(folder._get_recycle_linked_documents())
+                try:
+                    if linked > 0:
+                        folder.action_force_permanent_delete()
+                    else:
+                        folder.action_permanent_delete()
+                except (UserError, ValidationError, AccessError) as error:
+                    return _delete_failure(error)
+
+        return {
+            "success": True,
+            "message": f"Updated {len(items)} item(s).",
+            "data": {"count": len(items), "action": action},
+        }
+
     @http.route("/api/folder-lifecycle", type="json", auth="user", methods=["POST"], csrf=False)
     def folder_lifecycle(self, lifecycle="archived", **kwargs):
         if not request.env.user.has_group(

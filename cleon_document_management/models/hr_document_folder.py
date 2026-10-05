@@ -94,6 +94,11 @@ class DocumentFolder(models.Model):
         "parent_id",
         string="Child Folders",
     )
+    legal_hold_ids = fields.One2many(
+        "doc.legal.hold",
+        "folder_id",
+        string="Legal holds",
+    )
 
     department_ids = fields.Many2many(
         "hr.department",
@@ -300,11 +305,20 @@ class DocumentFolder(models.Model):
     )
 
     def _compute_document_count(self):
+        Document = self.env["doc.document"]
         for folder in self:
-            folder.document_count = self.env["doc.document"].search_count([
-                ("folder_id", "=", folder.id),
-                ("active", "=", True),
-            ])
+            domain = [("folder_id", "=", folder.id)]
+            if (
+                folder.folder_type == "organizational"
+                and (folder.folder_kind or "folder") == "policy"
+            ):
+                domain.append(("deleted_at", "=", False))
+                folder.document_count = Document.with_context(
+                    active_test=False
+                ).search_count(domain)
+            else:
+                domain.append(("active", "=", True))
+                folder.document_count = Document.search_count(domain)
 
     @api.constrains("require_upload_approval", "approver_ids", "approval_flow")
     def _check_approval_configuration(self):
@@ -754,6 +768,143 @@ class DocumentFolder(models.Model):
             return employee in self.employee_ids
         return False
 
+    @api.model
+    def _allowed_document_access_scopes_for_folder_scope(self, folder_access_scope):
+        """Scopes a document may use when overriding folder access (must not widen)."""
+        scope = folder_access_scope or "all_staff"
+        if scope == "all_staff":
+            return [
+                "all_staff",
+                "department",
+                "grade",
+                "individual",
+                "private",
+                "company_owned",
+                "admin_only",
+            ]
+        if scope == "admin_only":
+            return ["admin_only"]
+        if scope == "private":
+            return ["private", "company_owned", "admin_only"]
+        if scope == "company_owned":
+            return ["company_owned", "private", "admin_only"]
+        if scope == "department":
+            return ["department", "individual", "private", "company_owned", "admin_only"]
+        if scope == "grade":
+            return ["grade", "individual", "private", "company_owned", "admin_only"]
+        if scope == "individual":
+            return ["individual", "private", "company_owned", "admin_only"]
+        return [scope, "individual", "private", "company_owned", "admin_only"]
+
+    def validate_document_access_targets(
+        self,
+        scope,
+        department_ids=None,
+        grade_ids=None,
+        employee_ids=None,
+    ):
+        """Ensure document-level access stays within this folder's audience."""
+        self.ensure_one()
+        if self.folder_type != "organizational":
+            return
+        scope = (scope or "all_staff").strip()
+        allowed_scopes = self._allowed_document_access_scopes_for_folder_scope(
+            self.access_scope
+        )
+        if scope not in allowed_scopes:
+            raise ValidationError(
+                _("Document access cannot be wider than the folder audience.")
+            )
+        if scope in ("private", "admin_only", "company_owned"):
+            return
+        if scope == "all_staff" and self.access_scope != "all_staff":
+            raise ValidationError(
+                _("Document access cannot be wider than the folder audience.")
+            )
+
+        folder_employees = self._get_scope_employees()
+        Employee = self.env["hr.employee"]
+        Department = self.env["hr.department"]
+        Grade = self.env["hr.grade"]
+
+        if scope == "department":
+            departments = Department.browse(
+                [int(value) for value in (department_ids or []) if str(value).isdigit()]
+            ).exists()
+            if not departments:
+                raise ValidationError(_("Select at least one department for document access."))
+            if self.access_scope == "department":
+                extra = set(departments.ids) - set(self.department_ids.ids)
+                if extra:
+                    raise ValidationError(
+                        _("Departments must stay within the folder audience.")
+                    )
+            employees = Employee.search(
+                [("active", "=", True), ("department_id", "in", departments.ids)]
+            )
+            outsiders = employees.filtered(lambda employee: employee not in folder_employees)
+            if outsiders:
+                raise ValidationError(
+                    _("Some departments include employees outside the folder audience.")
+                )
+        elif scope == "grade":
+            grades = Grade.browse(
+                [int(value) for value in (grade_ids or []) if str(value).isdigit()]
+            ).exists()
+            if not grades:
+                raise ValidationError(_("Select at least one grade for document access."))
+            if self.access_scope == "grade":
+                extra = set(grades.ids) - set(self.grade_ids.ids)
+                if extra:
+                    raise ValidationError(
+                        _("Grades must stay within the folder audience.")
+                    )
+            employees = Employee.search(
+                [("active", "=", True), ("grade_id", "in", grades.ids)]
+            )
+            outsiders = employees.filtered(lambda employee: employee not in folder_employees)
+            if outsiders:
+                raise ValidationError(
+                    _("Some grades include employees outside the folder audience.")
+                )
+        elif scope == "individual":
+            employees = Employee.browse(
+                [int(value) for value in (employee_ids or []) if str(value).isdigit()]
+            ).exists()
+            if not employees:
+                raise ValidationError(_("Select at least one employee for document access."))
+            outsiders = employees.filtered(lambda employee: employee not in folder_employees)
+            if outsiders:
+                raise ValidationError(
+                    _("Selected employees are outside the folder audience.")
+                )
+
+    def _revalidate_document_access_overrides(self):
+        """Reset document overrides that no longer fit the folder audience."""
+        Document = self.env["doc.document"]
+        for folder in self.filtered(lambda item: item.folder_type == "organizational"):
+            overrides = Document.search(
+                [
+                    ("folder_id", "=", folder.id),
+                    ("org_use_folder_access", "=", False),
+                    ("org_access_scope", "!=", False),
+                ]
+            )
+            for document in overrides:
+                try:
+                    folder.validate_document_access_targets(
+                        document.org_access_scope,
+                        department_ids=document.org_department_ids.ids,
+                        grade_ids=document.org_grade_ids.ids,
+                        employee_ids=document.org_employee_ids.ids,
+                    )
+                except ValidationError:
+                    document.write(
+                        Document._prepare_organizational_access_values(
+                            True, folder=folder
+                        )
+                    )
+
     def _get_scope_employees(self):
         """Return employees who fall within this folder's organizational access scope."""
         self.ensure_one()
@@ -1037,6 +1188,7 @@ class DocumentFolder(models.Model):
                 )
         if pending & self.ORGANIZATIONAL_SCOPE_FIELDS:
             self._clamp_children_to_parent_scope()
+            self._revalidate_document_access_overrides()
         return result
 
     def unlink(self):

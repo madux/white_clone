@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CLEON DOCUMENT MANAGEMENT",
-    "version": "17.0.1.37.0",
+    "version": "17.0.1.38.0",
     "category": "CleonHR Document Management",
     "sequence": -1,
     "summary": "CLEON DOCUMENT MANAGEMENT",
@@ -24,6 +24,7 @@
         "data/policy_scratch_template.xml",
         "views/template_views.xml",
         "data/organizational_automation_cron.xml",
+        "data/org_files_cron.xml",
     ],
     "assets": {
         "web.assets_backend": [

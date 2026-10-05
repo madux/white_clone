@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { formatStatusLabel } from "../../../lib/formatLabel";
 
 export type StatusTone =
   | "neutral"
@@ -51,6 +52,19 @@ function toneFromLabel(label: string): StatusTone {
   return "neutral";
 }
 
+/** Format raw API status tokens; leave already-friendly phrases unchanged. */
+function pillDisplayLabel(label: string): string {
+  const trimmed = label.trim();
+  if (!trimmed) return trimmed;
+  if (/\d/.test(trimmed) && /\s/.test(trimmed)) {
+    return trimmed;
+  }
+  if (/_/.test(trimmed) || /^[a-z][a-z0-9_-]*$/i.test(trimmed)) {
+    return formatStatusLabel(trimmed, trimmed);
+  }
+  return trimmed;
+}
+
 function badgeVariant(
   tone: StatusTone,
 ):
@@ -83,5 +97,8 @@ export default function StatusPill({
   tone?: StatusTone;
 }) {
   if (!label) return <span>—</span>;
-  return <Badge variant={badgeVariant(tone ?? toneFromLabel(label))}>{label}</Badge>;
+  const display = pillDisplayLabel(label);
+  return (
+    <Badge variant={badgeVariant(tone ?? toneFromLabel(display))}>{display}</Badge>
+  );
 }

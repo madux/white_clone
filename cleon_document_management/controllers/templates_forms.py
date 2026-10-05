@@ -23,11 +23,15 @@ RATE_LIMITS = {
 
 
 class TemplatesFormsController(http.Controller):
+    def _dms(self):
+        return request.env["doc.dms.permission"]
+
     def _is_manager(self):
         user = request.env.user
-        return user.has_group("base.group_system") or user.has_group(
-            "cleon_document_management.group_document_manager"
-        )
+        dms = self._dms()
+        if dms.user_is_odoo_break_glass_admin(user):
+            return True
+        return dms.user_has_dms_permission(user, "templates_create_edit")
 
     def _deny(self, message="You are not allowed to manage templates and forms."):
         request.env["doc.template.audit.event"].log_event(

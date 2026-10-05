@@ -11,6 +11,7 @@ import SectionTabs from "./SectionTabs";
 import SlideOver from "./SlideOver";
 import DocumentShortcutNotice from "./DocumentShortcutNotice";
 import { isOrgDocumentLinkedToPolicy } from "../../../lib/policyDocumentName";
+import { documentStatusDisplayLabel } from "../../../lib/documentStatusLabel";
 
 type AccessUser = { id: number; name: string };
 
@@ -36,10 +37,8 @@ function formatBytes(bytes?: number) {
 function statusLabel(document?: DocDocument) {
   if (!document) return "Active";
   if (document.link_status === "broken") return "Broken link";
-  if (document.active === false) return "Inactive";
   if (document.distribution_status === "archived") return "Archived";
-  if (document.approval_state === "pending") return "Pending approval";
-  return "Active";
+  return documentStatusDisplayLabel(document);
 }
 
 export default function DocumentDetailsPanel({
@@ -54,6 +53,7 @@ export default function DocumentDetailsPanel({
   onMove,
   onDelete,
   onManageAccess,
+  versionHistoryReadOnly = false,
   activityRefreshKey = 0,
 }: {
   documentId: number;
@@ -62,11 +62,12 @@ export default function DocumentDetailsPanel({
   organizational?: boolean;
   onClose: () => void;
   onDownload: () => void;
-  onShare: () => void;
+  onShare?: () => void;
   onRename?: () => void;
   onMove?: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
   onManageAccess?: () => void;
+  versionHistoryReadOnly?: boolean;
   activityRefreshKey?: number;
 }) {
   const [tab, setTab] = useState<"details" | "activity" | "versions">("details");
@@ -195,10 +196,12 @@ export default function DocumentDetailsPanel({
               <Download className="h-4 w-4" />
               Download
             </button>
-            <button type="button" onClick={onShare} className="secondary-button inline-flex items-center gap-1.5">
-              <Share2 className="h-4 w-4" />
-              Share
-            </button>
+            {onShare ? (
+              <button type="button" onClick={onShare} className="secondary-button inline-flex items-center gap-1.5">
+                <Share2 className="h-4 w-4" />
+                Share
+              </button>
+            ) : null}
             {onRename ? (
               <button type="button" onClick={onRename} className="secondary-button inline-flex items-center gap-1.5">
                 <Pencil className="h-4 w-4" />
@@ -211,14 +214,16 @@ export default function DocumentDetailsPanel({
                 Move
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={onDelete}
-              className="secondary-button inline-flex items-center gap-1.5 text-red-600 hover:bg-red-50"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </button>
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="secondary-button inline-flex items-center gap-1.5 text-red-600 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -246,6 +251,7 @@ export default function DocumentDetailsPanel({
         <DocumentVersionsFooter
           documentId={documentId}
           currentVersionNumber={document?.current_version_number}
+          readOnlyHistory={versionHistoryReadOnly}
         />
       ) : null}
     </SlideOver>

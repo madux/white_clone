@@ -1,13 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ModalDialog from "./ModalDialog";
+import { useCurrentUser } from "../../../hooks/useDocuments";
+import { canExternalShareOrg } from "../../../lib/organizationalFilesAccess";
 import OrganizationalAccessScopeFields, {
   validateOrganizationalScope,
 } from "./OrganizationalAccessScopeFields";
 import { useComplianceTargets } from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
 import { api } from "../../../lib/api";
+import {
+  allowedDocumentAccessScopes,
+  filterDepartmentsForFolderScope,
+  filterEmployeesForFolderScope,
+  filterGradesForFolderScope,
+  initialDocumentAccessScope,
+  type FolderAccessContext,
+} from "../../../lib/organizationalDocumentAccess";
+import { coerceAccessScope } from "../../../lib/organizationalFolderScope";
 
 export default function ManageAccessDocumentModal({
   documentId,
@@ -17,6 +28,7 @@ export default function ManageAccessDocumentModal({
   orgDepartmentIds,
   orgGradeIds,
   orgEmployeeIds,
+  folderAccess,
   onClose,
   onSaved,
 }: {
@@ -27,13 +39,17 @@ export default function ManageAccessDocumentModal({
   orgDepartmentIds: number[];
   orgGradeIds: number[];
   orgEmployeeIds: number[];
+  folderAccess?: FolderAccessContext | null;
   onClose: () => void;
   onSaved?: () => void;
 }) {
   const targets = useComplianceTargets();
+  const resolvedFolderAccess = folderAccess ?? null;
   const { showAlert } = useAppDialog();
   const [useFolderAccess, setUseFolderAccess] = useState(orgUseFolderAccess);
-  const [accessScope, setAccessScope] = useState(orgAccessScope || "department");
+  const [accessScope, setAccessScope] = useState(
+    initialDocumentAccessScope(resolvedFolderAccess, orgAccessScope),
+  );
   const [scopeIds, setScopeIds] = useState<number[]>(() => {
     if (orgAccessScope === "department") return orgDepartmentIds;
     if (orgAccessScope === "grade") return orgGradeIds;
@@ -42,7 +58,8 @@ export default function ManageAccessDocumentModal({
   });
   const [scopeSearch, setScopeSearch] = useState("");
   const [saving, setSaving] = useState(false);
-
+  const currentUserQuery = useCurrentUser();
+  const currentUser = currentUserQuery.data;
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!useFolderAccess) {
@@ -98,7 +115,8 @@ export default function ManageAccessDocumentModal({
           <OrganizationalAccessScopeFields
             accessScope={accessScope}
             onAccessScopeChange={(value) => {
-              setAccessScope(value);
+              setAccessScope(coerceAccessScope(value, resolvedFolderAccess?.access_scope));
+              setScopeIds([]);
               if (value === "private" || value === "admin_only" || value === "company_owned") {
                 setUseFolderAccess(false);
               }
@@ -107,9 +125,19 @@ export default function ManageAccessDocumentModal({
             onScopeIdsChange={setScopeIds}
             scopeSearch={scopeSearch}
             onScopeSearchChange={setScopeSearch}
-            departments={targets.data?.departments ?? []}
-            grades={targets.data?.grades ?? []}
-            employees={targets.data?.employees ?? []}
+            departments={filterDepartmentsForFolderScope(
+              targets.data?.departments ?? [],
+              resolvedFolderAccess,
+            )}
+            grades={filterGradesForFolderScope(
+              targets.data?.grades ?? [],
+              resolvedFolderAccess,
+            )}
+            employees={filterEmployeesForFolderScope(
+              targets.data?.employees ?? [],
+              resolvedFolderAccess,
+            )}
+            allowedScopes={allowedDocumentAccessScopes(resolvedFolderAccess)}
             hideAdminOnly
           />
         ) : null}

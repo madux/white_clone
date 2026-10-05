@@ -16,7 +16,7 @@ export function approvalDisplayLabel(
   >,
 ) {
   if (document.has_pending_revision && document.approval_state === "pending") {
-    return "Update pending approval";
+    return "Update Pending Approval";
   }
   if (document.approval_state === "approved") return "Approved";
   if (document.approval_state === "rejected") return "Rejected";

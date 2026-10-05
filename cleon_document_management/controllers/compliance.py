@@ -6,7 +6,12 @@ from odoo.http import request
 
 from odoo.addons.cleon_document_management.models import organizational_openrouter
 
-from .access import require_document_admin, user_is_document_admin
+from .access import (
+    require_compliance_export,
+    require_compliance_manage,
+    require_compliance_run,
+    require_compliance_view,
+)
 
 CANONICAL_POLICY_TYPE_NAMES = {
     "document_requirement": "Document Requirement",
@@ -715,8 +720,10 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def evaluate_policy(self, policy_id, **kwargs):
-        if not user_is_document_admin(request.env.user):
-            return {"success": False, "message": "Document administrator access is required."}
+        try:
+            require_compliance_manage()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
         policy = request.env["doc.compliance.policy"].browse(policy_id).exists()
         if not policy:
             return {"success": False, "message": "Policy not found."}
@@ -836,8 +843,10 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def evaluation_run_export(self, run_id, **kwargs):
-        if not user_is_document_admin(request.env.user):
-            return {"success": False, "message": "Document administrator access is required."}
+        try:
+            require_compliance_export()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
         run = request.env["doc.compliance.evaluation.run"].browse(run_id).exists()
         if not run:
             return {"success": False, "message": "Run not found."}
@@ -857,8 +866,10 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def evaluation_run_request(self, run_id, **kwargs):
-        if not user_is_document_admin(request.env.user):
-            return {"success": False, "message": "Document administrator access is required."}
+        try:
+            require_compliance_run()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
         run = request.env["doc.compliance.evaluation.run"].browse(run_id).exists()
         if not run:
             return {"success": False, "message": "Run not found."}
@@ -913,8 +924,10 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def compliance_report(self, report_key, **kwargs):
-        if not user_is_document_admin(request.env.user):
-            return {"success": False, "message": "Document administrator access is required."}
+        try:
+            require_compliance_view()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
         handlers = {
             "summary": self._report_summary,
             "missing_per_run": self._report_missing_per_run,
@@ -1388,10 +1401,11 @@ class ComplianceController(http.Controller):
                 "success": False,
                 "message": "Employee, policy, reason, and valid-until date are required.",
             }
-        is_admin = request.env.user.has_group(
-            "cleon_document_management.group_document_admin"
-        )
-        if not policy.allow_waiver and not is_admin:
+        dms = request.env["doc.dms.permission"]
+        can_override = dms.user_has_dms_permission(
+            request.env.user, "compliance_manage_exceptions"
+        ) or dms.user_is_super_admin(request.env.user)
+        if not policy.allow_waiver and not can_override:
             return {
                 "success": False,
                 "message": "This policy does not allow waiver or exemption requests.",

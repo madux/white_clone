@@ -109,8 +109,8 @@ const employeeFilesSteps: GuideStep[] = [
     id: "ef-pending-approvals",
     title: "Pending approvals",
     description:
-      "Employee document uploads and inbox items awaiting approval appear under Pending approvals on the home workspace.",
-    href: "/pages/employee?tab=pending-approvals",
+      "Employee document uploads and inbox items awaiting approval appear under Approval requests in the sidebar.",
+    href: "/pages/approvals?kind=employee",
     action: "Open queue",
   },
   {

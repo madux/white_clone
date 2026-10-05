@@ -232,14 +232,20 @@ export default function DocumentUploadModal({
       return;
     }
     setLocalError("");
-    await onSubmit({
-      files,
-      documentTypeIds: typeIds,
-      expiryDates,
-      issueDates,
-      descriptions,
-    });
-    if (draftKey) clearDocumentUploadDraft(draftKey);
+    try {
+      await onSubmit({
+        files,
+        documentTypeIds: typeIds,
+        expiryDates,
+        issueDates,
+        descriptions,
+      });
+      if (draftKey) clearDocumentUploadDraft(draftKey);
+    } catch (caught: unknown) {
+      const message =
+        caught instanceof Error ? caught.message : "Upload failed.";
+      setLocalError(message);
+    }
   };
 
   const displayError = localError || error;

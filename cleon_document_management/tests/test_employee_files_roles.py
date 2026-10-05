@@ -118,8 +118,8 @@ class TestEmployeeFilesRoles(TransactionCase):
         role_id = service.migrate_legacy_document_managers()
         role = self.Role.browse(role_id)
         self.assertTrue(role.exists())
-        self.assertTrue(role.is_migration_seed)
-        self.assertEqual(role.employee_scope, "all")
+        self.assertEqual(role.role_template_key, "hr_admin")
+        self.assertTrue(role.is_system_template)
 
     def test_role_authoring_requires_platform_admin(self):
         user = self.env["res.users"].create(

@@ -1,5 +1,9 @@
 // cleon_document_management/next-app/lib/api.ts
 import axios from "axios";
+import {
+  assertOrgUploadSucceeded,
+  type OrgUploadApiResult,
+} from "./orgDocumentUpload";
 import type {
   DocFolder,
   DocDocument,
@@ -46,6 +50,8 @@ declare global {
       is_admin?: boolean;
       is_document_manager?: boolean;
       is_document_admin?: boolean;
+      is_super_admin?: boolean;
+      dms_permissions?: import("./types").DmsPermissionsMap;
       employee_files_permissions?: import("./types").EmployeeFilesPermissions;
       organizational_files_permissions?: import("./types").OrganizationalFilesPermissions;
     };
@@ -133,6 +139,8 @@ export const api = {
         is_admin: rawUser.is_admin,
         is_document_manager: rawUser.is_document_manager,
         is_document_admin: rawUser.is_document_admin,
+        is_super_admin: rawUser.is_super_admin,
+        dms_permissions: rawUser.dms_permissions,
         employee_files_permissions: rawUser.employee_files_permissions,
         organizational_files_permissions: rawUser.organizational_files_permissions,
       };
@@ -274,6 +282,13 @@ export const api = {
   deleteFolder: (id: number) =>
     rpc<{ success: boolean; message: string }>("/api/delete-folder", { id }),
 
+  deleteFolders: (folder_ids: number[]) =>
+    rpc<{
+      success: boolean;
+      message: string;
+      data?: { folder_ids: number[] };
+    }>("/api/delete-folders", { folder_ids }),
+
   archiveFolder: (id: number) =>
     rpc<{ success: boolean; message: string }>("/api/archive-folder", { id }),
 
@@ -376,11 +391,24 @@ export const api = {
       form.append("is_template", "1");
     }
     return multipartClient
-      .post<{
-        success: boolean;
-        data: DocDocument;
-      }>("/api/upload-document", form)
-      .then((response) => response.data);
+      .post<OrgUploadApiResult & { data?: DocDocument; documents?: DocDocument[] }>(
+        "/api/upload-document",
+        form,
+      )
+      .then((response) => {
+        const data = response.data;
+        assertOrgUploadSucceeded(data);
+        return data;
+      })
+      .catch((err: unknown) => {
+        if (axios.isAxiosError(err) && err.response?.data) {
+          const body = err.response.data as { message?: string };
+          if (body.message) {
+            throw new Error(body.message);
+          }
+        }
+        throw err;
+      });
   },
 
   uploadMyDocument: (payload: {
@@ -896,6 +924,34 @@ export const api = {
       payload,
     ),
 
+  documentsAction: (payload: {
+    document_ids: number[];
+    action:
+      | "favorite"
+      | "pin"
+      | "delete"
+      | "archive"
+      | "restore"
+      | "activate"
+      | "deactivate"
+      | "permanent_delete";
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      pending_approval?: boolean;
+      data?: { document_ids: number[]; action: string };
+    }>("/api/documents-action", payload),
+
+  lifecycleBulkAction: (payload: {
+    action: "restore" | "permanent_delete";
+    records: { record_type: "document" | "folder"; id: number }[];
+  }) =>
+    rpc<{ success: boolean; message?: string; data?: { count: number; action: string } }>(
+      "/api/lifecycle-bulk-action",
+      payload,
+    ),
+
   acknowledgeDocument: (id: number) =>
     rpc<{ success: boolean; data: { acknowledged: boolean; acknowledged_at?: string }; message?: string }>(
       "/api/document/acknowledge",
@@ -1294,6 +1350,111 @@ export const api = {
     rpc<{ success: boolean; data: import("./types").EmployeeFilesDocumentTypeOption[] }>(
       "/api/employee-files/roles/document-types",
     ).then((result) => result.data),
+
+  listOrganizationalApprovals: (
+    state?: string,
+    filters?: {
+      action_key?: string;
+      requested_by_id?: number;
+      overdue_only?: boolean;
+      limit?: number;
+    },
+  ) =>
+    rpc<{ success: boolean; data: import("./types").OrganizationalApprovalRequest[] }>(
+      "/api/organizational/approvals",
+      { state, ...filters },
+    ).then((result) => result.data),
+
+  approveOrganizationalApproval: (requestId: number, note = "") =>
+    rpc<{ success: boolean }>("/api/organizational/approvals/approve", {
+      request_id: requestId,
+      note,
+    }),
+
+  rejectOrganizationalApproval: (requestId: number, note = "") =>
+    rpc<{ success: boolean }>("/api/organizational/approvals/reject", {
+      request_id: requestId,
+      note,
+    }),
+
+  withdrawOrganizationalApproval: (requestId: number) =>
+    rpc<{ success: boolean }>("/api/organizational/approvals/withdraw", {
+      request_id: requestId,
+    }),
+
+  bulkApproveOrganizationalApprovals: (requestIds: number[], note = "") =>
+    rpc<{ success: boolean; data: import("./types").OrganizationalApprovalBulkResult }>(
+      "/api/organizational/approvals/bulk-approve",
+      { request_ids: requestIds, note },
+    ).then((result) => result.data),
+
+  bulkRejectOrganizationalApprovals: (requestIds: number[], note = "") =>
+    rpc<{ success: boolean; data: import("./types").OrganizationalApprovalBulkResult }>(
+      "/api/organizational/approvals/bulk-reject",
+      { request_ids: requestIds, note },
+    ).then((result) => result.data),
+
+  listOrganizationalExternalShares: (documentId: number) =>
+    rpc<{ success: boolean; data: Record<string, unknown>[] }>(
+      "/api/organizational/documents/share-links",
+      { document_id: documentId },
+    ).then((result) => result.data),
+
+  createOrganizationalExternalShare: (payload: Record<string, unknown>) =>
+    rpc<{ success: boolean; data: Record<string, unknown> }>(
+      "/api/organizational/documents/share-links/create",
+      payload,
+    ).then((result) => result.data),
+
+  revokeOrganizationalExternalShare: (shareId: number) =>
+    rpc<{ success: boolean }>("/api/organizational/documents/share-links/revoke", {
+      share_id: shareId,
+    }),
+
+  listOrganizationalLegalHolds: (payload: { document_id?: number; folder_id?: number }) =>
+    rpc<{ success: boolean; data: Record<string, unknown>[] }>(
+      "/api/organizational/legal-holds",
+      payload,
+    ).then((result) => result.data),
+
+  placeOrganizationalLegalHold: (payload: Record<string, unknown>) =>
+    rpc<{ success: boolean; data: Record<string, unknown> }>(
+      "/api/organizational/legal-holds/place",
+      payload,
+    ).then((result) => result.data),
+
+  releaseOrganizationalLegalHold: (holdId: number) =>
+    rpc<{ success: boolean }>("/api/organizational/legal-holds/release", {
+      hold_id: holdId,
+    }),
+
+  getOrganizationalLibraryHome: () =>
+    rpc<{
+      success: boolean;
+      data: {
+        root_folder_count: number;
+        recent_files: {
+          id: number;
+          name: string;
+          folder_id: number;
+          folder_name: string;
+          mime_type?: string;
+          updated_at?: string;
+        }[];
+        storage: { used_bytes: number; quota_bytes: number; quota_gb: number };
+      };
+    }>("/api/organizational/library-home", {}).then((result) => result.data),
+
+  listOrganizationalRetentionReview: () =>
+    rpc<{ success: boolean; data: import("./types").DocDocument[] }>(
+      "/api/organizational/retention/review-queue",
+    ).then((result) => result.data),
+
+  disposeOrganizationalRetention: (documentId: number, action: "archive" | "delete") =>
+    rpc<{ success: boolean }>("/api/organizational/retention/dispose", {
+      document_id: documentId,
+      action,
+    }),
 
   getEmployeeFilesConfig: () =>
     rpc<{ success: boolean; data: import("./types").EmployeeFilesConfig }>(

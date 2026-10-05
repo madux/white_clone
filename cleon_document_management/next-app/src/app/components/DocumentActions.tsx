@@ -23,7 +23,12 @@ import {
   canArchiveEmployeeDocuments,
   canDeleteEmployeeDocuments,
 } from "../../../lib/employeeFilesAccess";
-import { useCurrentUser, useDocumentAction, useFolders } from "../../../hooks/useDocuments";
+import {
+  useCurrentUser,
+  useDocumentAction,
+  useDocumentsAction,
+  useFolders,
+} from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
 import { useClickOutside } from "../../../hooks/useClickOutside";
 import { offlineMessage, useOnlineStatus } from "../../../lib/useOnlineStatus";
@@ -38,6 +43,13 @@ import {
   canManageOrgDocumentAccess,
   canManageOrgDocuments,
 } from "../../../lib/organizationalFilesAccess";
+import { documentInDraftPolicyFolder } from "../../../lib/draftPolicyFolder";
+import {
+  filterEmployeesForFolderScope,
+  folderAccessFromDocument,
+  type FolderAccessContext,
+} from "../../../lib/organizationalDocumentAccess";
+import { useComplianceTargets } from "../../../hooks/useDocuments";
 import ActionMenuCategory from "./ActionMenuCategory";
 
 export default function DocumentActions({
@@ -57,6 +69,8 @@ export default function DocumentActions({
   folderLocked = false,
   sourceUrl,
   linkStatus,
+  draftPolicyFolder = false,
+  folderAccess = null,
 }: {
   documentId: number;
   documentName: string;
@@ -74,9 +88,23 @@ export default function DocumentActions({
   folderLocked?: boolean;
   sourceUrl?: string;
   linkStatus?: string;
+  /** When true, only Details and Organise (favorite, pin, move) are available. */
+  draftPolicyFolder?: boolean;
+  folderAccess?: FolderAccessContext | null;
 }) {
   const action = useDocumentAction();
+  const complianceTargets = useComplianceTargets(organizational);
+  const bulkAction = useDocumentsAction();
   const folders = useFolders();
+  const draftPolicy =
+    draftPolicyFolder ||
+    (organizational ? documentInDraftPolicyFolder(document) : false);
+  const resolvedFolderAccess =
+    folderAccess ?? (organizational ? folderAccessFromDocument(document) : null);
+  const assignableEmployees = filterEmployeesForFolderScope(
+    complianceTargets.data?.employees ?? [],
+    resolvedFolderAccess,
+  );
   const currentUser = useCurrentUser();
   const { showConfirm, showAlert } = useAppDialog();
   const online = useOnlineStatus();
@@ -148,9 +176,7 @@ export default function DocumentActions({
         }))
       )
         return;
-      for (const id of deleteIds) {
-        await action.mutateAsync({ id, action: "delete" });
-      }
+      await bulkAction.mutateAsync({ document_ids: deleteIds, action: "delete" });
       setOpen(false);
       return;
     }
@@ -225,7 +251,7 @@ export default function DocumentActions({
               Move to folder
             </button>
           )}
-          {organizational && canManage && !folderLocked && (
+          {!draftPolicy && organizational && canManage && !folderLocked && (
             <>
               <button type="button" onClick={() => { setCopyToOpen(true); setOpen(false); }} className="menu-item">
                 <Copy />
@@ -237,7 +263,7 @@ export default function DocumentActions({
               </button>
             </>
           )}
-          {organizational && canManage && !folderLocked && (
+          {!draftPolicy && organizational && canManage && !folderLocked && (
             <button
               type="button"
               className="menu-item"
@@ -248,10 +274,10 @@ export default function DocumentActions({
               Create template
             </button>
           )}
-          {organizational && (
+          {!draftPolicy && organizational && (
             <ActionMenuCategory label="Access" />
           )}
-          {organizational && canManageAccess && !folderLocked && (
+          {!draftPolicy && organizational && canManageAccess && !folderLocked && (
             <button
               type="button"
               onClick={() => {
@@ -264,7 +290,7 @@ export default function DocumentActions({
               Manage access
             </button>
           )}
-          {organizational && canManage && showPolicyEmployeeAssign && (
+          {!draftPolicy && organizational && canManage && showPolicyEmployeeAssign && (
             <button
               type="button"
               onClick={() => {
@@ -278,7 +304,7 @@ export default function DocumentActions({
               Assign to employee
             </button>
           )}
-          {organizational && canManage && !showPolicyEmployeeAssign && (
+          {!draftPolicy && organizational && canManage && !showPolicyEmployeeAssign && (
             <button
               type="button"
               onClick={() => {
@@ -292,7 +318,7 @@ export default function DocumentActions({
               Grant individual access
             </button>
           )}
-          {organizational && canManage && (
+          {!draftPolicy && organizational && canManage && (
             <button
               type="button"
               className="menu-item"
@@ -312,38 +338,42 @@ export default function DocumentActions({
               Automate
             </button>
           )}
-          <ActionMenuCategory label="Lifecycle" />
-          {canArchive ? (
-            <button type="button" onClick={() => run("archive")} className="menu-item">
-              <Archive />
-              Archive document
-            </button>
+          {!draftPolicy ? (
+            <>
+              <ActionMenuCategory label="Lifecycle" />
+              {canArchive ? (
+                <button type="button" onClick={() => run("archive")} className="menu-item">
+                  <Archive />
+                  Archive document
+                </button>
+              ) : null}
+              {organizational && (
+                <button
+                  type="button"
+                  onClick={() => run(active === false ? "activate" : "deactivate")}
+                  className="menu-item"
+                >
+                  {active === false ? <ToggleRight /> : <ToggleLeft />}
+                  {active === false ? "Activate document" : "Deactivate document"}
+                </button>
+              )}
+              {organizational && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await action.mutateAsync({ id: documentId, action: "print" });
+                    api.downloadDocument(documentId);
+                    setOpen(false);
+                  }}
+                  className="menu-item"
+                >
+                  <Printer />
+                  Print
+                </button>
+              )}
+            </>
           ) : null}
-          {organizational && (
-            <button
-              type="button"
-              onClick={() => run(active === false ? "activate" : "deactivate")}
-              className="menu-item"
-            >
-              {active === false ? <ToggleRight /> : <ToggleLeft />}
-              {active === false ? "Activate document" : "Deactivate document"}
-            </button>
-          )}
-          {organizational && (
-            <button
-              type="button"
-              onClick={async () => {
-                await action.mutateAsync({ id: documentId, action: "print" });
-                api.downloadDocument(documentId);
-                setOpen(false);
-              }}
-              className="menu-item"
-            >
-              <Printer />
-              Print
-            </button>
-          )}
-          {sourceUrl ? (
+          {!draftPolicy && sourceUrl ? (
             <button
               type="button"
               className="menu-item"
@@ -368,9 +398,9 @@ export default function DocumentActions({
           organizational={organizational}
           onClose={() => setDetailsOpen(false)}
           onDownload={() => api.downloadDocument(documentId)}
-          onShare={() => void copyLink()}
+          onShare={draftPolicy ? undefined : () => void copyLink()}
           onRename={
-            organizational && canManage && !folderLocked
+            !draftPolicy && organizational && canManage && !folderLocked
               ? () => {
                   setRenameValue(documentName);
                   setRenameOpen(true);
@@ -385,12 +415,17 @@ export default function DocumentActions({
                 }
               : undefined
           }
-          onDelete={() => void run("delete").then(() => setDetailsOpen(false))}
+          onDelete={
+            draftPolicy
+              ? undefined
+              : () => void run("delete").then(() => setDetailsOpen(false))
+          }
           onManageAccess={
-            organizational && canManageAccess && !folderLocked
+            !draftPolicy && organizational && canManageAccess && !folderLocked
               ? () => setManageAccessOpen(true)
               : undefined
           }
+          versionHistoryReadOnly={draftPolicy}
           activityRefreshKey={activityRefreshKey}
         />
       ) : null}
@@ -403,6 +438,7 @@ export default function DocumentActions({
           orgDepartmentIds={orgDepartmentIds}
           orgGradeIds={orgGradeIds}
           orgEmployeeIds={orgEmployeeIds}
+          folderAccess={resolvedFolderAccess}
           onClose={() => setManageAccessOpen(false)}
           onSaved={() => setActivityRefreshKey((key) => key + 1)}
         />
@@ -494,6 +530,7 @@ export default function DocumentActions({
             mode="single"
             selectedIds={assignEmployeeIds}
             onChange={(ids) => setAssignEmployeeIds(ids)}
+            employees={assignableEmployees}
             placeholder="Search employees by name, department, or job title…"
           />
           <div className="mt-5 flex justify-end gap-2">

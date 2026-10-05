@@ -617,4 +617,43 @@ class TestOrganizationalPermissions(TransactionCase):
         self.assertTrue(folder.with_user(delegate)._user_can_access(delegate))
         self.assertFalse(folder.with_user(outsider)._user_can_access(outsider))
 
+    def test_document_access_must_stay_within_department_folder(self):
+        dept_a = self.env["hr.department"].create({"name": "Folder scope A"})
+        dept_b = self.env["hr.department"].create({"name": "Folder scope B"})
+        folder = self.env["doc.folder"].create(
+            {
+                "folder_name": "Department scoped folder",
+                "folder_type": "organizational",
+                "access_scope": "department",
+                "department_ids": [(6, 0, dept_a.ids)],
+            }
+        )
+        employee_outside = self.env["hr.employee"].create(
+            {
+                "name": "Outside employee",
+                "department_id": dept_b.id,
+            }
+        )
+        with self.assertRaises(ValidationError):
+            self.env["doc.document"]._prepare_organizational_access_values(
+                False,
+                org_access_scope="department",
+                department_ids=[dept_b.id],
+                folder=folder,
+            )
+        with self.assertRaises(ValidationError):
+            self.env["doc.document"]._prepare_organizational_access_values(
+                False,
+                org_access_scope="individual",
+                employee_ids=[employee_outside.id],
+                folder=folder,
+            )
+        values = self.env["doc.document"]._prepare_organizational_access_values(
+            False,
+            org_access_scope="department",
+            department_ids=[dept_a.id],
+            folder=folder,
+        )
+        self.assertEqual(values["org_access_scope"], "department")
+
 

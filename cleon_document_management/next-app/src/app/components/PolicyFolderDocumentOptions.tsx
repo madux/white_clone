@@ -7,6 +7,7 @@ import type { DocFolder, OrganizationalPolicy } from "../../../lib/types";
 import { api } from "../../../lib/api";
 import { useDocumentTypes, useUploadDocument } from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
+import { isOrgUploadPendingApprovalError } from "../../../lib/orgDocumentUpload";
 import { offlineMessage, useOnlineStatus } from "../../../lib/useOnlineStatus";
 import DocumentUploadModal from "./DocumentUploadModal";
 import type { DocumentUploadPayload } from "./DocumentUploadModal";
@@ -22,32 +23,49 @@ type PolicyFolderDocumentOptionsProps = {
   asMenu?: boolean;
 };
 
+export type PolicyDocumentSource = "upload" | "select" | "custom";
+
 export function PolicyFolderChooserCards({
   disabled,
   onUpload,
   onSelectExisting,
   onCreateCustom,
+  selectionMode = false,
+  selectedSource = null,
+  onSelectSource,
 }: {
   disabled?: boolean;
   onUpload: () => void;
   onSelectExisting: () => void;
   onCreateCustom: () => void;
+  selectionMode?: boolean;
+  selectedSource?: PolicyDocumentSource | null;
+  onSelectSource?: (source: PolicyDocumentSource) => void;
 }) {
-  const items = [
+  const items: {
+    key: PolicyDocumentSource;
+    title: string;
+    description: string;
+    onClick: () => void;
+    icon: typeof FilePlus2;
+  }[] = [
     {
+      key: "upload",
       title: "Upload Document",
       description: "Upload a PDF or file into this policy folder.",
       onClick: onUpload,
       icon: FilePlus2,
     },
     {
+      key: "select",
       title: "Select Existing",
       description:
-        "Add files from the library. They move into this policy folder from their current location.",
+        "Classify an existing library document as a policy by reference; metadata is inherited when it is already typed as Policy.",
       onClick: onSelectExisting,
       icon: FileSearch,
     },
     {
+      key: "custom",
       title: "Create Custom",
       description: "Start a blank policy document you can fill in later.",
       onClick: onCreateCustom,
@@ -62,8 +80,18 @@ export function PolicyFolderChooserCards({
           key={item.title}
           type="button"
           disabled={disabled}
-          onClick={item.onClick}
-          className="rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-brand-pink disabled:opacity-50"
+          onClick={() => {
+            if (selectionMode && onSelectSource) {
+              onSelectSource(item.key);
+              return;
+            }
+            item.onClick();
+          }}
+          className={`rounded-xl border px-4 py-3 text-left transition hover:border-brand-pink disabled:opacity-50 ${
+            selectionMode && selectedSource === item.key
+              ? "border-brand-pink ring-2 ring-brand-pink/20"
+              : "border-slate-200"
+          }`}
         >
           <item.icon className="mb-2 h-5 w-5 text-brand-pink" aria-hidden />
           <strong className="block text-sm text-slate-900">{item.title}</strong>
@@ -149,15 +177,24 @@ export default function PolicyFolderDocumentOptions({
       });
       return;
     }
-    await upload.mutateAsync({
-      files: payload.files,
-      folder_id: folder.id,
-      document_type_ids: payload.documentTypeIds.map(Number),
-      expiry_dates: payload.expiryDates,
-      issue_dates: payload.issueDates,
-      descriptions: payload.descriptions,
-    });
-    setShowUpload(false);
+    try {
+      await upload.mutateAsync({
+        files: payload.files,
+        folder_id: folder.id,
+        document_type_ids: payload.documentTypeIds.map(Number),
+        expiry_dates: payload.expiryDates,
+        issue_dates: payload.issueDates,
+        descriptions: payload.descriptions,
+      });
+      setShowUpload(false);
+    } catch (error: unknown) {
+      if (isOrgUploadPendingApprovalError(error)) {
+        await showAlert(error.message, { title: "Pending approval" });
+        setShowUpload(false);
+        return;
+      }
+      throw error;
+    }
   };
 
   const menuGroups: NewMenuGroup[] = [

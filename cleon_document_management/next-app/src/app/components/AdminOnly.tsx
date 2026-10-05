@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useCurrentUser } from "../../../hooks/useDocuments";
+import { userIsSuperAdmin } from "../../../lib/dmsAccess";
 
 export default function AdminOnly({ children }: { children: React.ReactNode }) {
   const user = useCurrentUser();

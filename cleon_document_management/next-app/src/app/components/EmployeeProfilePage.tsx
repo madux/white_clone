@@ -51,6 +51,7 @@ import { canReviewDocument } from "../../../lib/approvalHelpers";
 import { groupEmployeeDocuments } from "../../../lib/groupEmployeeDocuments";
 import SectionTabs from "./SectionTabs";
 import StatusPill from "./StatusPill";
+import { formatStatusLabel } from "../../../lib/formatLabel";
 import LibraryBreadcrumb from "./LibraryBreadcrumb";
 import NewMenu from "./NewMenu";
 import AppSelect from "./AppSelect";
@@ -601,7 +602,9 @@ export default function EmployeeProfilePage() {
             {currentEvaluations.map((evaluation) => (
               <li key={evaluation.id} className="flex justify-between gap-4 border-b border-slate-100 pb-2">
                 <span>{evaluation.policy_name}</span>
-                <span className="font-medium">{evaluation.status}</span>
+                <span className="font-medium">
+                  {formatStatusLabel(evaluation.status)}
+                </span>
               </li>
             ))}
           </ul>

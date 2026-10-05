@@ -74,7 +74,7 @@ export default function Dashboard() {
       subtitle: item.document_type || item.department || undefined,
       href: item.employee_id
         ? `/pages/employee/profile/?employee=${item.employee_id}`
-        : "/pages/employee?tab=pending-approvals",
+        : "/pages/approvals?kind=employee",
       owner: item.employee_name || "—",
       ownerHref: item.employee_id
         ? `/pages/employee/profile/?employee=${item.employee_id}`
@@ -154,7 +154,7 @@ export default function Dashboard() {
       <div>
         <TableHeading
           title="Suggested"
-          href="/pages/employee?tab=pending-approvals"
+          href="/pages/approvals?kind=employee"
           hrefLabel="Open queue"
         />
         <div className="app-page-body">

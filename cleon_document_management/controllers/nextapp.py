@@ -94,6 +94,9 @@ class NextAppController(http.Controller):
 
     def _get_user_script(self, user):
         """Generates window.__ODOO_USER__ injection script."""
+        request.env["doc.employee.files.role.service"].sudo().ensure_odoo_admin_super_admin_bindings(
+            user
+        )
         user_data = json.dumps(
             {
                 "user_id": user.id,
@@ -111,6 +114,12 @@ class NextAppController(http.Controller):
                 "organizational_files_permissions": user_organizational_files_permissions(
                     user, request.env
                 ),
+                "dms_permissions": request.env[
+                    "doc.dms.permission"
+                ].effective_permissions(user),
+                "is_super_admin": request.env[
+                    "doc.dms.permission"
+                ].user_is_super_admin(user),
             }
         )
         return f"<script>window.__ODOO_USER__={user_data}</script>"
@@ -169,6 +178,9 @@ class NextAppController(http.Controller):
     def api_me(self, **kwargs):
         try:
             user = request.env.user
+            request.env["doc.employee.files.role.service"].sudo().ensure_odoo_admin_super_admin_bindings(
+                user
+            )
             return {
                 "success": True,
                 "data": {
@@ -187,6 +199,12 @@ class NextAppController(http.Controller):
                     "organizational_files_permissions": user_organizational_files_permissions(
                         user, request.env
                     ),
+                    "dms_permissions": request.env[
+                        "doc.dms.permission"
+                    ].effective_permissions(user),
+                    "is_super_admin": request.env[
+                        "doc.dms.permission"
+                    ].user_is_super_admin(user),
                     "groups": user.groups_id.mapped("name"),
                 },
             }
@@ -261,6 +279,8 @@ class NextAppController(http.Controller):
                     "employee_id": document.employee_id.id if document.employee_id else 0,
                     "document": document.name,
                     "document_type": document.document_type_id.name,
+                    "mime_type": document.mime_type or "",
+                    "source_url": document.source_url or "",
                     "employee": employee,
                     "folder_id": document.folder_id.id,
                     "folder_type": document.folder_id.folder_type,
@@ -307,6 +327,8 @@ class NextAppController(http.Controller):
                 "id": document.id,
                 "name": document.name,
                 "document_type": document.document_type_id.name,
+                "mime_type": document.mime_type or "",
+                "source_url": document.source_url or "",
                 "employee_id": employee.id,
                 "employee_name": employee.name,
                 "department": employee.department_id.name or "",

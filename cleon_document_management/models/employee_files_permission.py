@@ -2,7 +2,7 @@
 from odoo import _, api, models
 from odoo.exceptions import AccessError
 
-from .employee_files_role import DEPENDENT_ACTION_FIELDS, EF_ACTION_FIELDS
+from .dms_permission_catalog import EF_FIELD_TO_DMS_KEY
 
 ACTION_API_KEYS = {
     "action_view": "view",
@@ -21,14 +21,16 @@ class DocEmployeeFilesPermission(models.AbstractModel):
     _description = "Employee Files permission resolver"
 
     @api.model
+    def _dms(self):
+        return self.env["doc.dms.permission"]
+
+    @api.model
     def _user_employee(self, user):
         return user.sudo().employee_id
 
     @api.model
     def user_is_platform_admin(self, user):
-        return user.has_group("base.group_system") or user.has_group(
-            "cleon_document_management.group_document_admin"
-        )
+        return self._dms().user_is_platform_admin(user)
 
     @api.model
     def user_has_legacy_manager(self, user):
@@ -39,24 +41,14 @@ class DocEmployeeFilesPermission(models.AbstractModel):
         return user.sudo().employee_files_role_ids.filtered(lambda role: role.active)
 
     @api.model
-    def _role_grants_employee_files_view(self, user):
-        for role in self.user_assigned_roles(user):
-            if any(line.action_view for line in role.line_ids):
-                return True
-        return False
-
-    @api.model
     def user_has_ef_roles(self, user):
-        if self.user_is_platform_admin(user) or self.user_has_legacy_manager(user):
+        if self.user_is_platform_admin(user):
             return True
-        return self._role_grants_employee_files_view(user)
+        return self.user_can_access_ef_home(user)
 
     @api.model
     def user_can_access_ef_home(self, user):
-        """Browse Employee Files admin surfaces (any scope beyond pure self-service)."""
-        if self.user_is_platform_admin(user) or self.user_has_legacy_manager(user):
-            return True
-        return self._role_grants_employee_files_view(user)
+        return self._dms().user_has_dms_permission(user, "view_employee_files")
 
     @api.model
     def _employee_in_scope(self, user, target_employee, role):
@@ -80,23 +72,11 @@ class DocEmployeeFilesPermission(models.AbstractModel):
         return False
 
     @api.model
-    def _line_matches_document(self, line, document):
-        doc_type = document.document_type_id
-        if line.applies_all_categories:
-            return True
-        if line.document_type_id and doc_type and line.document_type_id == doc_type:
-            return True
-        if line.category_group and doc_type and line.category_group == doc_type.category:
-            return True
-        return False
-
-    @api.model
-    def _line_allows_action(self, line, action_field):
-        if action_field not in EF_ACTION_FIELDS:
+    def _role_has_ef_action(self, role, action_field):
+        dms_key = EF_FIELD_TO_DMS_KEY.get(action_field)
+        if not dms_key:
             return False
-        if not line.action_view:
-            return False
-        return bool(line[action_field])
+        return bool(role.get_dms_permissions_dict().get(dms_key))
 
     @api.model
     def user_owns_employee_file(self, user, employee):
@@ -105,7 +85,7 @@ class DocEmployeeFilesPermission(models.AbstractModel):
 
     @api.model
     def user_can_on_employee(self, user, employee, action_field):
-        if self.user_is_platform_admin(user) or self.user_has_legacy_manager(user):
+        if self._dms().user_is_odoo_break_glass_admin(user):
             return True
         if self.user_owns_employee_file(user, employee):
             if action_field in (
@@ -120,12 +100,8 @@ class DocEmployeeFilesPermission(models.AbstractModel):
         for role in self.user_assigned_roles(user):
             if not self._employee_in_scope(user, employee, role):
                 continue
-            for line in role.line_ids:
-                if line.action_view and line[action_field]:
-                    if action_field == "action_view":
-                        return True
-                    if line.applies_all_categories or line.document_type_id or line.category_group:
-                        return True
+            if self._role_has_ef_action(role, action_field):
+                return True
         return False
 
     @api.model
@@ -133,27 +109,7 @@ class DocEmployeeFilesPermission(models.AbstractModel):
         if not document:
             return False
         employee = document.employee_id
-        if self.user_is_platform_admin(user) or self.user_has_legacy_manager(user):
-            return True
-        if self.user_owns_employee_file(user, employee):
-            if action_field in (
-                "action_view",
-                "action_upload",
-                "action_download",
-            ):
-                return True
-            return False
-        if not employee:
-            return False
-        for role in self.user_assigned_roles(user):
-            if not self._employee_in_scope(user, employee, role):
-                continue
-            for line in role.line_ids:
-                if not self._line_matches_document(line, document):
-                    continue
-                if self._line_allows_action(line, action_field):
-                    return True
-        return False
+        return self.user_can_on_employee(user, employee, action_field)
 
     @api.model
     def require_employee_action(self, user, employee, action_key):
@@ -184,21 +140,19 @@ class DocEmployeeFilesPermission(models.AbstractModel):
 
     @api.model
     def require_role_authoring(self, user):
-        if not self.user_is_platform_admin(user):
-            raise AccessError(
-                _("Document administrator access is required to manage Employee Files roles.")
-            )
+        self._dms().require_assign_dms_roles(user)
 
     @api.model
     def serialize_user_permissions(self, user):
+        dms = self._dms()
+        perms = dms.effective_permissions(user)
         roles = self.user_assigned_roles(user)
         scopes = sorted({role.employee_scope for role in roles})
         action_union = {api_key: False for api_key in ACTION_API_KEYS.values()}
-        for role in roles:
-            for line in role.line_ids:
-                for field_name, api_key in ACTION_API_KEYS.items():
-                    if self._line_allows_action(line, field_name):
-                        action_union[api_key] = True
+        for field_name, api_key in ACTION_API_KEYS.items():
+            dms_key = EF_FIELD_TO_DMS_KEY.get(field_name)
+            if dms_key and perms.get(dms_key):
+                action_union[api_key] = True
         return {
             "can_access_ef_home": self.user_can_access_ef_home(user),
             "is_platform_admin": self.user_is_platform_admin(user),
@@ -207,9 +161,8 @@ class DocEmployeeFilesPermission(models.AbstractModel):
             "assigned_role_names": roles.mapped("name"),
             "employee_scopes": scopes,
             "actions_any_category": action_union,
-            "can_approve": action_union["approve"]
-            or self.user_is_platform_admin(user)
-            or self.user_has_legacy_manager(user),
-            "can_manage_ef_settings": action_union["manage_settings"]
+            "can_approve": action_union["approve"] or self.user_is_platform_admin(user),
+            "can_manage_ef_settings": perms.get("ef_manage_ef_settings")
+            or perms.get("manage_ef_tenant_config")
             or self.user_is_platform_admin(user),
         }

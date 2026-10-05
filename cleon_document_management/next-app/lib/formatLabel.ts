@@ -1,6 +1,7 @@
 const STATUS_LABELS: Record<string, string> = {
   active: "Active",
   inactive: "Inactive",
+  ok: "OK",
   approved: "Approved",
   rejected: "Rejected",
   pending: "Pending",

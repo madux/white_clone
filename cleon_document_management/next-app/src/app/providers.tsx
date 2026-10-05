@@ -5,6 +5,7 @@ import { Suspense, useState } from "react";
 import { NavigationHistoryProvider } from "../../hooks/useNavigationHistory";
 import { ToastProvider } from "../../hooks/useToast";
 import { AppDialogProvider } from "../../hooks/useAppDialog";
+import { FormWindowProvider } from "@/app/components/FormWindowProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -26,7 +27,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <ToastProvider>
           <TooltipProvider>
             <AppDialogProvider>
-              <NavigationHistoryProvider>{children}</NavigationHistoryProvider>
+              <FormWindowProvider>
+                <NavigationHistoryProvider>{children}</NavigationHistoryProvider>
+              </FormWindowProvider>
             </AppDialogProvider>
           </TooltipProvider>
         </ToastProvider>

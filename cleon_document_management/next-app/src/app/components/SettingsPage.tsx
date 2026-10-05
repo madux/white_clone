@@ -165,6 +165,8 @@ export default function SettingsPage() {
   } | null>(null);
 
   const canManageRoles =
+    currentUser.data?.dms_permissions?.assign_dms_roles === true ||
+    currentUser.data?.is_super_admin === true ||
     currentUser.data?.is_document_admin === true ||
     currentUser.data?.is_admin === true;
 

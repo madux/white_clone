@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  AlertCircle,
-  Clock3,
-  ExternalLink,
-  FileText,
-} from "lucide-react";
+import { AlertCircle, Clock3, ExternalLink, Inbox } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -24,6 +19,30 @@ import EmptyState from "./EmptyState";
 import PersonCell from "./PersonCell";
 import SectionTabs from "./SectionTabs";
 import StatusPill from "./StatusPill";
+import { FileTypeIcon } from "./FileTypeIcon";
+
+function ApprovalDocumentIcon({
+  name,
+  document_type,
+  mime_type,
+  source_url,
+}: {
+  name: string;
+  document_type?: string;
+  mime_type?: string;
+  source_url?: string;
+}) {
+  return (
+    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center [&_svg]:max-h-full [&_svg]:max-w-full">
+      <FileTypeIcon
+        name={name}
+        document_type={document_type}
+        mime_type={mime_type}
+        source_url={source_url}
+      />
+    </span>
+  );
+}
 
 const statusMeta = {
   pending_review: {
@@ -149,9 +168,7 @@ export default function EmployeeFilesPendingApprovalsPanel() {
 
       <section className="app-page-body ef-table">
         {uploads.isLoading || approvalInbox.isLoading ? (
-          <div className="p-10 text-center text-sm font-semibold text-slate-400">
-            Loading pending approvals…
-          </div>
+          <EmptyState title="Loading pending approvals…" loading />
         ) : showInbox.length || items.length ? (
           <div className="overflow-x-auto">
             <table className="dms-table ef-table min-w-full">
@@ -173,9 +190,12 @@ export default function EmployeeFilesPendingApprovalsPanel() {
                   >
                     <td className="px-5 py-4">
                       <div className="flex items-start gap-3">
-                        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-50 text-brand-pink">
-                          <FileText className="h-4 w-4" />
-                        </span>
+                        <ApprovalDocumentIcon
+                          name={item.document}
+                          document_type={item.document_type}
+                          mime_type={item.mime_type}
+                          source_url={item.source_url}
+                        />
                         <div>
                           <p className="font-semibold text-slate-900">
                             {item.document}
@@ -226,9 +246,12 @@ export default function EmployeeFilesPendingApprovalsPanel() {
                     >
                       <td className="px-5 py-4">
                         <div className="flex items-start gap-3">
-                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-50 text-brand-pink">
-                            <FileText className="h-4 w-4" />
-                          </span>
+                          <ApprovalDocumentIcon
+                            name={item.name}
+                            document_type={item.document_type}
+                            mime_type={item.mime_type}
+                            source_url={item.source_url}
+                          />
                           <div>
                             <p className="font-semibold text-slate-900">
                               {item.name}
@@ -307,8 +330,9 @@ export default function EmployeeFilesPendingApprovalsPanel() {
           </div>
         ) : (
           <EmptyState
+            icon={Inbox}
             title="No pending approvals"
-            description="Uploads awaiting your decision will appear here."
+            description="Employee uploads and inbox items awaiting your decision will appear here."
           />
         )}
       </section>

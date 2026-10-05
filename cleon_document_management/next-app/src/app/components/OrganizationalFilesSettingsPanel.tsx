@@ -16,6 +16,11 @@ type SettingsShape = {
   org_company_owned_user_ids?: number[];
   org_company_owned_user_ids_saved?: boolean;
   default_company_owned_admin_user_ids?: number[];
+  org_approval_sla_hours?: number;
+  org_approval_reminder_hours_before_sla?: number;
+  org_approval_escalation_user_id?: number | false;
+  org_approval_delegate_user_id?: number | false;
+  org_approval_delegate_until?: string | false;
 };
 
 export default function OrganizationalFilesSettingsPanel({
@@ -179,6 +184,103 @@ export default function OrganizationalFilesSettingsPanel({
             {delegateIds.length} user(s) selected. Document and platform administrators always keep
             access even if unchecked here.
           </p>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-base font-semibold text-slate-900">Organisational approval workflow</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          SLA, reminders, escalation, and temporary delegation for gated folder and document
+          actions (F43).
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <label className="block text-sm">
+            <span className="font-semibold">SLA (hours)</span>
+            <input
+              type="number"
+              min={1}
+              className="field mt-1"
+              value={values.org_approval_sla_hours ?? 48}
+              onChange={(event) =>
+                onChange({ org_approval_sla_hours: Number(event.target.value) || 48 })
+              }
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="font-semibold">Reminder before due (hours)</span>
+            <input
+              type="number"
+              min={0}
+              className="field mt-1"
+              value={values.org_approval_reminder_hours_before_sla ?? 6}
+              onChange={(event) =>
+                onChange({
+                  org_approval_reminder_hours_before_sla: Number(event.target.value) || 0,
+                })
+              }
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="font-semibold">Escalation approver</span>
+            <select
+              className="field mt-1"
+              value={values.org_approval_escalation_user_id || ""}
+              onChange={(event) =>
+                onChange({
+                  org_approval_escalation_user_id: event.target.value
+                    ? Number(event.target.value)
+                    : false,
+                })
+              }
+            >
+              <option value="">Default (error escalation user)</option>
+              {delegateOptions.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className="font-semibold">Delegate approver</span>
+            <select
+              className="field mt-1"
+              value={values.org_approval_delegate_user_id || ""}
+              onChange={(event) =>
+                onChange({
+                  org_approval_delegate_user_id: event.target.value
+                    ? Number(event.target.value)
+                    : false,
+                })
+              }
+            >
+              <option value="">None</option>
+              {delegateOptions.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm sm:col-span-2">
+            <span className="font-semibold">Delegate until (optional)</span>
+            <input
+              type="datetime-local"
+              className="field mt-1"
+              value={
+                values.org_approval_delegate_until
+                  ? String(values.org_approval_delegate_until).slice(0, 16)
+                  : ""
+              }
+              onChange={(event) =>
+                onChange({
+                  org_approval_delegate_until: event.target.value
+                    ? new Date(event.target.value).toISOString()
+                    : false,
+                })
+              }
+            />
+          </label>
         </div>
       </div>
 

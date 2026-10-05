@@ -28,6 +28,63 @@ class ShareLink(models.Model):
 
     is_revoked = fields.Boolean()
 
+    is_external = fields.Boolean(
+        string="External share",
+        default=False,
+        help="Share link accessible outside the organisation (password / watermark).",
+    )
+    watermark_enabled = fields.Boolean(default=False)
+    access_log_ids = fields.One2many(
+        "doc.share.access.log",
+        "share_link_id",
+        string="Access log",
+    )
+
+    document_id = fields.Many2one(
+        "doc.document",
+        string="Document",
+        ondelete="cascade",
+        index=True,
+    )
+
+    def is_valid(self):
+        self.ensure_one()
+        if not self.active or self.is_revoked:
+            return False
+        if self.expiry_date and self.expiry_date < fields.Datetime.now():
+            return False
+        return True
+
+    def log_access(self, action="view", ip_address="", user_agent=""):
+        self.ensure_one()
+        self.env["doc.share.access.log"].sudo().create(
+            {
+                "share_link_id": self.id,
+                "action": action,
+                "ip_address": ip_address or "",
+                "user_agent": (user_agent or "")[:500],
+            }
+        )
+        self.sudo().write({"access_count": (self.access_count or 0) + 1})
+
+    def serialize_for_api(self):
+        self.ensure_one()
+        return {
+            "id": self.id,
+            "token": self.token,
+            "active": self.active,
+            "access_type": self.access_type,
+            "expiry_date": fields.Datetime.to_string(self.expiry_date)
+            if self.expiry_date
+            else "",
+            "password_protected": bool(self.password_protected),
+            "is_external": bool(self.is_external),
+            "watermark_enabled": bool(self.watermark_enabled),
+            "access_count": self.access_count or 0,
+            "is_revoked": bool(self.is_revoked),
+            "document_id": self.document_id.id or self.attachment_id.id or False,
+        }
+
 
 class FolderShareLink(models.Model):
     _name = "doc.folder.share.link"

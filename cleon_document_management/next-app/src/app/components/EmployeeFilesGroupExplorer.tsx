@@ -21,6 +21,7 @@ import ListPagination from "./ListPagination";
 import PersonCell from "./PersonCell";
 import SortableTable from "./SortableTable";
 import StatusPill from "./StatusPill";
+import { formatStatusLabel } from "../../../lib/formatLabel";
 import {
   Table,
   TableBody,
@@ -707,7 +708,7 @@ function EmployeeRow({
           label={
             file.attention_count
               ? `${file.attention_count} need attention`
-              : file.status || file.state || "OK"
+              : formatStatusLabel(file.status || file.state || "ok")
           }
         />
       </td>

@@ -10,6 +10,7 @@ import PersonCell from "./PersonCell";
 import { tableSortMark, toggleTableSortKey } from "../../../lib/tableSortKey";
 import SortableTable from "./SortableTable";
 import StatusPill from "./StatusPill";
+import { documentStatusDisplayLabel } from "../../../lib/documentStatusLabel";
 
 const SORTABLE: Record<string, string> = {
   Document: "name",
@@ -30,12 +31,8 @@ type Props = {
   sortKey: string;
   onSortChange: (order: string) => void;
   isLoading?: boolean;
+  onOpenDocument?: (document: DocDocument) => void;
 };
-
-function statusLabel(doc: DocDocument) {
-  if (doc.approval_state === "pending") return "Pending approval";
-  return doc.state || "—";
-}
 
 export default function EmployeeFilesDocumentResults({
   items,
@@ -48,6 +45,7 @@ export default function EmployeeFilesDocumentResults({
   sortKey,
   onSortChange,
   isLoading,
+  onOpenDocument,
 }: Props) {
   const show = (col: EmployeeFilesDocumentColumnId) => visibleColumns.includes(col);
 
@@ -78,10 +76,11 @@ export default function EmployeeFilesDocumentResults({
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((doc) => (
-            <Link
+            <button
               key={doc.id}
-              href={`/pages/employee/profile?employee=${doc.employee_id}&doc=${doc.id}`}
-              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-pink-200 hover:shadow-md"
+              type="button"
+              onClick={() => onOpenDocument?.(doc)}
+              className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-pink-200 hover:shadow-md"
             >
               <div className="flex items-start gap-3">
                 <FileTypeIcon
@@ -95,11 +94,11 @@ export default function EmployeeFilesDocumentResults({
                   <p className="mt-1 text-xs text-slate-500">{doc.employee_name}</p>
                   <p className="mt-2 text-xs text-slate-400">
                     {doc.document_category_label ?? doc.document_type} ·{" "}
-                    {statusLabel(doc)}
+                    {documentStatusDisplayLabel(doc)}
                   </p>
                 </div>
               </div>
-            </Link>
+            </button>
           ))}
         </div>
         <ListPagination
@@ -173,10 +172,35 @@ export default function EmployeeFilesDocumentResults({
           </thead>
           <tbody>
             {items.map((doc) => (
-              <tr key={doc.id}>
+              <tr
+                key={doc.id}
+                className={onOpenDocument ? "cursor-pointer hover:bg-slate-50/80" : undefined}
+                onClick={
+                  onOpenDocument
+                    ? (event) => {
+                        const target = event.target as HTMLElement;
+                        if (target.closest("a, button")) return;
+                        onOpenDocument(doc);
+                      }
+                    : undefined
+                }
+              >
                 {show("name") ? (
                   <td className="dms-col-doc-name font-medium text-slate-800">
-                    {doc.name}
+                    <button
+                      type="button"
+                      onClick={() => onOpenDocument?.(doc)}
+                      className="inline-flex max-w-full items-center gap-2 text-left hover:text-brand-pink"
+                    >
+                      <FileTypeIcon
+                        name={doc.name}
+                        mime_type={doc.mime_type}
+                        document_type={doc.document_type}
+                        source_url={doc.source_url}
+                        className="h-5 w-4 shrink-0"
+                      />
+                      <span className="truncate">{doc.name}</span>
+                    </button>
                   </td>
                 ) : null}
                 {show("employee") ? (
@@ -207,7 +231,7 @@ export default function EmployeeFilesDocumentResults({
                 ) : null}
                 {show("status") ? (
                   <td>
-                    <StatusPill label={statusLabel(doc)} />
+                    <StatusPill label={documentStatusDisplayLabel(doc)} />
                   </td>
                 ) : null}
                 {show("uploadDate") ? (
@@ -219,12 +243,13 @@ export default function EmployeeFilesDocumentResults({
                   <td className="text-slate-500">{doc.expiry_date ?? "—"}</td>
                 ) : null}
                 <td className="dms-col-actions">
-                  <Link
-                    href={`/pages/employee/profile?employee=${doc.employee_id}&doc=${doc.id}`}
+                  <button
+                    type="button"
+                    onClick={() => onOpenDocument?.(doc)}
                     className="text-xs font-bold text-brand-pink hover:underline"
                   >
                     View
-                  </Link>
+                  </button>
                 </td>
               </tr>
             ))}

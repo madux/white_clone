@@ -316,6 +316,25 @@ class Document(models.Model):
     )
     ocr_error = fields.Text(readonly=True)
 
+    processing_status = fields.Selection(
+        [
+            ("pending_scan", "Pending scan"),
+            ("scanning", "Scanning"),
+            ("ready", "Ready"),
+            ("quarantined", "Quarantined"),
+            ("scan_failed", "Scan failed"),
+        ],
+        default="pending_scan",
+        index=True,
+    )
+    legal_hold_ids = fields.One2many(
+        "doc.legal.hold",
+        "document_id",
+        string="Legal holds",
+    )
+    legal_hold_active = fields.Boolean(compute="_compute_legal_hold_active")
+    retention_review_due = fields.Boolean(default=False, index=True)
+
     approval_ids = fields.One2many(
         "doc.document.approval",
         "document_id",
@@ -325,6 +344,18 @@ class Document(models.Model):
     acknowledgement_ids = fields.One2many(
         "doc.document.acknowledgement", "document_id", string="Acknowledgements"
     )
+
+    @api.depends("legal_hold_ids.active", "folder_id")
+    def _compute_legal_hold_active(self):
+        Hold = self.env["doc.legal.hold"]
+        for document in self:
+            domain = [
+                ("active", "=", True),
+                "|",
+                ("document_id", "=", document.id),
+                ("folder_id", "=", document.folder_id.id),
+            ]
+            document.legal_hold_active = bool(Hold.search_count(domain))
 
     version_ids = fields.One2many(
         "doc.document.version",
@@ -472,6 +503,23 @@ class Document(models.Model):
             allowed = self._employee_self_service_write_fields() | self._mail_thread_internal_write_fields(vals)
             if set(vals) - allowed:
                 raise AccessError(_("You can only update your document favorites and pins."))
+        if not self.env.context.get("skip_policy_folder_activation_guard"):
+            activating = (
+                vals.get("active") is True
+                or vals.get("distribution_status") == "active"
+                or vals.get("state") == "approved"
+            )
+            if activating:
+                blocked = self.filtered(
+                    lambda document: document._in_policy_folder()
+                    and not document._policy_folder_allows_document_activation()
+                )
+                if blocked:
+                    raise UserError(
+                        _(
+                            "Activate the policy folder before activating documents inside it."
+                        )
+                    )
         result = super().write(vals)
         drop_keys = {"deleted_at", "active", "distribution_status"}
         if drop_keys & set(vals):
@@ -508,6 +556,8 @@ class Document(models.Model):
             Automation.search([("document_id", "in", self.ids)]).execute("document_rejected")
         if {"name", "description", "folder_id"}.intersection(vals):
             Automation.search([("document_id", "in", self.ids)]).execute("document_updated")
+        if "folder_id" in vals:
+            self.filtered(lambda document: document._in_policy_folder())._demote_to_policy_folder_draft()
         return result
 
     def unlink(self):
@@ -515,10 +565,15 @@ class Document(models.Model):
             for document in self:
                 if not document._can_ef_manage_document("action_delete"):
                     raise AccessError(_("You do not have permission to delete this document."))
+        for document in self:
+            document._check_draft_policy_allows_action("delete")
+        self.env["doc.organizational.policy"].clear_primary_document_references(self)
+        self.env["doc.quarantine.file"].cleanup_for_documents(self)
         return super().unlink()
 
     def action_archive(self):
         for document in self:
+            document._check_draft_policy_allows_action("archive")
             if not document._can_ef_manage_document("action_archive"):
                 raise AccessError(_("You do not have permission to archive this document."))
         self.write({"active": False, "distribution_status": "archived", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
@@ -534,16 +589,58 @@ class Document(models.Model):
         for document in self:
             if not document._can_ef_manage_document("action_delete") and not document._user_owns_document():
                 raise AccessError(_("You do not have permission to restore this document."))
+            if (
+                document._in_policy_folder()
+                and not document._policy_folder_allows_document_activation()
+            ):
+                raise UserError(
+                    _(
+                        "Activate the policy folder before activating documents inside it."
+                    )
+                )
         self.write({"active": True, "distribution_status": "active", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
 
     def action_deactivate(self):
+        org_perm = self.env["doc.organizational.files.permission"]
+        user = self.env.user
         for document in self:
-            if not document._can_ef_manage_document("action_delete"):
-                raise AccessError(_("You do not have permission to deactivate this document."))
-        self.write({"active": False, "distribution_status": "deactivated", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
+            document._check_draft_policy_allows_action("deactivate")
+            folder = document.folder_id
+            if folder.folder_type == "organizational":
+                if not (
+                    org_perm.user_can_manage_org_document(user)
+                    or org_perm.user_can_delete_org_document(user)
+                    or org_perm.user_is_platform_admin(user)
+                    or org_perm.user_has_legacy_manager(user)
+                    or user.has_group(
+                        "cleon_document_management.group_document_manager"
+                    )
+                    or user.has_group(
+                        "cleon_document_management.group_document_admin"
+                    )
+                ):
+                    raise AccessError(
+                        _("You do not have permission to deactivate this document.")
+                    )
+            elif not document._can_ef_manage_document("action_delete"):
+                raise AccessError(
+                    _("You do not have permission to deactivate this document.")
+                )
+        for document in self:
+            vals = {
+                "active": False,
+                "distribution_status": "deactivated",
+                "deleted_at": False,
+                "deleted_by": False,
+                "recycle_bin_until": False,
+            }
+            if document._in_policy_folder():
+                vals["state"] = "draft"
+            document.write(vals)
 
     def action_move_to_recycle_bin(self):
         for document in self:
+            document._check_draft_policy_allows_action("delete")
             if not document._can_ef_manage_document("action_delete"):
                 raise AccessError(_("You do not have permission to delete this document."))
         now = fields.Datetime.now()
@@ -1020,8 +1117,14 @@ class Document(models.Model):
                     )
 
             if folder and folder.folder_type == "organizational":
-                vals.setdefault("state", "approved")
-                vals.setdefault("approval_state", "not_required")
+                if (folder.folder_kind or "folder") == "policy":
+                    vals.update(self._policy_folder_create_defaults(folder))
+                    if "state" not in vals:
+                        vals.setdefault("state", "approved")
+                        vals.setdefault("approval_state", "not_required")
+                else:
+                    vals.setdefault("state", "approved")
+                    vals.setdefault("approval_state", "not_required")
             if folder and folder.folder_kind == "policy":
                 self.env["doc.organizational.policy"].apply_folder_document_defaults(
                     folder, vals
@@ -1229,6 +1332,79 @@ class Document(models.Model):
         self.ensure_one()
         return (self.folder_id.folder_kind or "folder") == "policy"
 
+    _DRAFT_POLICY_ORGANISE_ACTIONS = frozenset({"favorite", "pin", "move"})
+
+    def _in_draft_policy_folder(self):
+        self.ensure_one()
+        if not self._in_policy_folder():
+            return False
+        return not self._policy_folder_allows_document_activation()
+
+    def _check_draft_policy_allows_action(self, action):
+        self.ensure_one()
+        if action in self._DRAFT_POLICY_ORGANISE_ACTIONS:
+            return
+        if self._in_draft_policy_folder():
+            raise UserError(
+                _(
+                    "Activate the policy before performing this action on documents inside it."
+                )
+            )
+
+    def _policy_registry_for_folder(self, folder=None):
+        folder = folder or self.folder_id
+        if not folder or (folder.folder_kind or "folder") != "policy":
+            return self.env["doc.organizational.policy"].browse()
+        return self.env["doc.organizational.policy"].for_folder(folder)
+
+    def _policy_folder_allows_document_activation(self):
+        """Policy registry and folder must be active before child documents can go live."""
+        self.ensure_one()
+        if not self._in_policy_folder():
+            return True
+        folder = self.folder_id
+        if not folder.active or folder.deleted_at or folder.distribution_status != "active":
+            return False
+        policy = self._policy_registry_for_folder(folder)
+        if not policy:
+            return False
+        return bool(policy.active and policy.lifecycle_status == "active")
+
+    def _policy_folder_draft_values(self):
+        return {
+            "state": "draft",
+            "active": False,
+            "distribution_status": "deactivated",
+        }
+
+    def _demote_to_policy_folder_draft(self):
+        """Force draft/inactive while the parent policy folder is not activated."""
+        candidates = self.filtered(
+            lambda document: document._in_policy_folder()
+            and not document.deleted_at
+            and document.distribution_status != "archived"
+            and (
+                document.active
+                or document.distribution_status != "deactivated"
+                or document.state != "draft"
+            )
+        )
+        if not candidates:
+            return
+        candidates.with_context(skip_policy_folder_activation_guard=True).write(
+            candidates[0]._policy_folder_draft_values()
+        )
+
+    @api.model
+    def _policy_folder_create_defaults(self, folder):
+        """Initial document state for uploads in a policy folder."""
+        if not folder or (folder.folder_kind or "folder") != "policy":
+            return {}
+        policy = self.env["doc.organizational.policy"].for_folder(folder)
+        if policy and policy.active and policy.lifecycle_status == "active":
+            return {}
+        return self.new({"folder_id": folder.id})._policy_folder_draft_values()
+
     @api.model
     def create_policy_scratch_draft(self, folder, name, document_type_id):
         folder.ensure_one()
@@ -1353,6 +1529,59 @@ class Document(models.Model):
         user = user or self.env.user
         return self.filtered(lambda document: document._organizational_user_can_access(user))
 
+    def _user_can_manage_org_folder_contents(self, user=None):
+        user = user or self.env.user
+        perm = self.env["doc.organizational.files.permission"]
+        return bool(
+            user.has_group("cleon_document_management.group_document_manager")
+            or user.has_group("cleon_document_management.group_document_admin")
+            or perm.user_can_manage_org_document(user)
+            or perm.user_can_manage_org_policy_lifecycle(user)
+            or perm.user_can_delete_org_document(user)
+            or perm.user_is_platform_admin(user)
+            or perm.user_has_legacy_manager(user)
+        )
+
+    def _visible_in_folder_document_list(self, user=None, include_inactive=False):
+        """Whether a document should appear in a folder file list (incl. deactivated drafts)."""
+        self.ensure_one()
+        user = user or self.env.user
+        if self.deleted_at:
+            return False
+        folder = self.folder_id
+        if folder.folder_type != "organizational":
+            if include_inactive:
+                return True
+            return bool(self.active and self.distribution_status == "active")
+        if not self._organizational_user_can_access(user):
+            return False
+        if self.active and self.distribution_status == "active":
+            return True
+        if not include_inactive:
+            return False
+        if self._user_can_manage_org_folder_contents(user):
+            return True
+        perm = self.env["doc.organizational.files.permission"]
+        if self._in_policy_folder() and (
+            perm.user_can_upload_org(user)
+            or perm.user_can_manage_org_policy_lifecycle(user)
+        ):
+            return True
+        if self.create_uid == user or self.owner_id == user:
+            return True
+        return False
+
+    def assert_organizational_user_can_access(self, user=None):
+        """Record-rule read plus organizational audience (folder + document scope)."""
+        self.ensure_one()
+        user = user or self.env.user
+        self.check_access_rule("read")
+        if (
+            self.folder_id.folder_type == "organizational"
+            and not self._organizational_user_can_access(user)
+        ):
+            raise AccessError(_("You do not have access to this document."))
+
     def _organizational_user_can_access(self, user=None):
         self.ensure_one()
         user = user or self.env.user
@@ -1364,12 +1593,19 @@ class Document(models.Model):
         perm = self.env["doc.organizational.files.permission"]
         if (folder.folder_kind or "folder") == "policy":
             policy = self.env["doc.organizational.policy"].for_folder(folder)
-            if (
-                policy
-                and policy.lifecycle_status == "draft"
-                and not perm.user_can_manage_org_policy_lifecycle(user)
-            ):
-                return False
+            if policy and policy.lifecycle_status == "draft":
+                if perm.user_can_manage_org_policy_lifecycle(user):
+                    pass
+                elif user.has_group("cleon_document_management.group_document_admin"):
+                    pass
+                elif user.has_group("cleon_document_management.group_document_manager"):
+                    pass
+                elif perm.user_is_platform_admin(user):
+                    pass
+                elif self.create_uid == user or self.owner_id == user:
+                    pass
+                else:
+                    return False
         visibility = self.policy_visibility or "employees"
         if self._in_policy_folder():
             policy = self.env["doc.organizational.policy"].for_folder(folder)
@@ -1461,6 +1697,13 @@ class Document(models.Model):
             raise ValidationError(_("Select at least one grade for document access."))
         if scope == "individual" and not (employee_ids or []):
             raise ValidationError(_("Select at least one employee for document access."))
+        if folder and folder.folder_type == "organizational":
+            folder.validate_document_access_targets(
+                scope,
+                department_ids=department_ids,
+                grade_ids=grade_ids,
+                employee_ids=employee_ids,
+            )
         return values
 
     def _is_organizational_library_document(self):
@@ -1605,6 +1848,9 @@ class Document(models.Model):
             "state": self.state,
             "approval_state": self.approval_state,
             "ocr_state": self.ocr_state,
+            "processing_status": self.processing_status,
+            "legal_hold_active": bool(self.legal_hold_active),
+            "retention_review_due": bool(self.retention_review_due),
             "has_expiry": self.has_expiry,
             "expiry_date": self.expiry_date,
             "issue_date": self.issue_date,
@@ -1644,6 +1890,14 @@ class Document(models.Model):
             "linked_policy_name": self.linked_policy_id.name or "",
             "organizational_policy_id": org_policy.id or False,
             "organizational_policy_name": org_policy.name or "",
+            "folder_kind": self.folder_id.folder_kind or "folder",
+            "folder_access_scope": self.folder_id.access_scope or "all_staff",
+            "folder_department_ids": self.folder_id.department_ids.ids,
+            "folder_grade_ids": self.folder_id.grade_ids.ids,
+            "folder_employee_ids": self.folder_id.employee_ids.ids,
+            "organizational_policy_lifecycle_status": (
+                org_policy.lifecycle_status if org_policy else False
+            ),
             "linked_template_document_id": self.linked_template_document_id.id or False,
             "linked_template_document_name": self.linked_template_document_id.name or "",
             "policy_editor_document_id": self.policy_editor_document_id.id or False,

@@ -15,6 +15,25 @@ class DocEmployeeFilesConfig(models.Model):
     )
 
     setup_complete = fields.Boolean(default=False)
+    org_approval_sla_hours = fields.Integer(
+        string="Organisational approval SLA (hours)",
+        default=48,
+    )
+    org_approval_reminder_hours_before_sla = fields.Integer(
+        string="Organisational approval reminder (hours before due)",
+        default=6,
+    )
+    org_approval_escalation_user_id = fields.Many2one(
+        "res.users",
+        string="Organisational approval escalation approver",
+    )
+    org_approval_delegate_user_id = fields.Many2one(
+        "res.users",
+        string="Organisational approval delegate",
+    )
+    org_approval_delegate_until = fields.Datetime(
+        string="Organisational approval delegate until",
+    )
 
     primary_organizing_dimension = fields.Selection(
         [
@@ -279,4 +298,15 @@ class DocEmployeeFilesConfig(models.Model):
             "default_company_owned_admin_user_ids": self.default_company_owned_admin_users(
                 self.company_id
             ).ids,
+            "org_approval_sla_hours": self.org_approval_sla_hours or 48,
+            "org_approval_reminder_hours_before_sla": self.org_approval_reminder_hours_before_sla
+            or 6,
+            "org_approval_escalation_user_id": self.org_approval_escalation_user_id.id
+            or False,
+            "org_approval_delegate_user_id": self.org_approval_delegate_user_id.id or False,
+            "org_approval_delegate_until": fields.Datetime.to_string(
+                self.org_approval_delegate_until
+            )
+            if self.org_approval_delegate_until
+            else "",
         }

@@ -1,3 +1,4 @@
+import { userHasDmsPermission, userIsSuperAdmin } from "./dmsAccess";
 import type { EmployeeFilesPermissions, User } from "./types";
 
 export function employeeFilesPermissions(
@@ -10,8 +11,9 @@ export function canAccessEmployeeFilesAdmin(user?: User | null): boolean {
   if (!user) return false;
   return (
     user.employee_files_permissions?.can_access_ef_home === true ||
+    userHasDmsPermission(user, "view_employee_files") ||
     user.is_document_manager === true ||
-    user.is_document_admin === true
+    userIsSuperAdmin(user)
   );
 }
 
@@ -20,8 +22,9 @@ export function canApproveEmployeeDocuments(user?: User | null): boolean {
   const perms = user.employee_files_permissions;
   return (
     perms?.can_approve === true ||
+    userHasDmsPermission(user, "ef_approve") ||
     user.is_document_manager === true ||
-    user.is_document_admin === true
+    userIsSuperAdmin(user)
   );
 }
 
@@ -30,7 +33,8 @@ export function canArchiveEmployeeDocuments(user?: User | null): boolean {
   const perms = user.employee_files_permissions;
   return (
     perms?.actions_any_category?.archive === true ||
-    user.is_document_admin === true ||
+    userHasDmsPermission(user, "ef_archive") ||
+    userIsSuperAdmin(user) ||
     user.is_document_manager === true
   );
 }
@@ -40,7 +44,8 @@ export function canDeleteEmployeeDocuments(user?: User | null): boolean {
   const perms = user.employee_files_permissions;
   return (
     perms?.actions_any_category?.delete === true ||
-    user.is_document_admin === true ||
+    userHasDmsPermission(user, "ef_delete") ||
+    userIsSuperAdmin(user) ||
     user.is_document_manager === true
   );
 }

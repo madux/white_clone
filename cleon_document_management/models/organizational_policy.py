@@ -159,6 +159,17 @@ class DocOrganizationalPolicy(models.Model):
             policies.unlink()
 
     @api.model
+    def clear_primary_document_references(self, documents):
+        """Drop policy registry pointers before permanently deleting documents."""
+        if not documents:
+            return
+        policies = self.sudo().with_context(active_test=False).search(
+            [("document_id", "in", documents.ids)]
+        )
+        if policies:
+            policies.write({"document_id": False})
+
+    @api.model
     def for_folder(self, folder):
         if not folder or folder.folder_kind != "policy":
             return self.browse()
@@ -227,6 +238,25 @@ class DocOrganizationalPolicy(models.Model):
         if document:
             return document._organizational_user_can_access(user)
         return folder._user_can_access(user)
+
+    def write(self, vals):
+        result = super().write(vals)
+        if {"lifecycle_status", "active"} & set(vals):
+            self._sync_folder_documents_for_lifecycle()
+        return result
+
+    def _sync_folder_documents_for_lifecycle(self):
+        Document = self.env["doc.document"]
+        for policy in self:
+            folder = policy.folder_id
+            if not folder:
+                continue
+            documents = Document.search([("folder_id", "=", folder.id)])
+            if not documents:
+                continue
+            if policy.active and policy.lifecycle_status == "active":
+                continue
+            documents._demote_to_policy_folder_draft()
 
     def serialize_for_api(self, user=None):
         self.ensure_one()

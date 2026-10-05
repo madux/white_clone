@@ -9,12 +9,7 @@ import {
   useEmployeeFilesHomeStats,
   useEmployeeFileSummaries,
 } from "../../../hooks/useEmployeeFiles";
-import {
-  useApprovalInbox,
-  useCurrentUser,
-  useDocumentTypes,
-  usePendingEmployeeUploads,
-} from "../../../hooks/useDocuments";
+import { useCurrentUser, useDocumentTypes } from "../../../hooks/useDocuments";
 import CompliancePage from "./CompliancePage";
 import SectionTabs from "./SectionTabs";
 import EmployeeFilesGroupExplorer from "./EmployeeFilesGroupExplorer";
@@ -25,7 +20,6 @@ import { employeeFileDimensionLabel } from "../../../lib/employeeFileDimensions"
 import type { EmployeeFileGroup } from "../../../lib/types";
 import EmptyState from "./EmptyState";
 import EmployeeFilesIssuesPage from "./EmployeeFilesIssuesPage";
-import EmployeeFilesPendingApprovalsPanel from "./EmployeeFilesPendingApprovalsPanel";
 import { EMPLOYEE_FILE_LIST_PAGE_SIZE } from "../../../lib/employeeFileListPageSize";
 import {
   DEFAULT_EMPLOYEE_FILES_BROWSE_FILTERS,
@@ -33,15 +27,17 @@ import {
   saveEmployeeFilesBrowsePreferences,
   type EmployeeFilesBrowseFilters,
 } from "../../../lib/employeeFilesBrowsePreferences";
+import type { DocDocument } from "../../../lib/types";
+import { documentPreviewUrl } from "../../../lib/documentPreviewUrls";
+import DocumentViewerDialog from "./DocumentViewerDialog";
 
 type HomeView = "groups" | "employees" | "documents";
-type WorkspaceTab = "browse" | "pending-approvals" | "issues" | "compliance";
+type WorkspaceTab = "browse" | "issues" | "compliance";
 
 const DOCUMENT_PAGE_SIZE = 25;
 
 function workspaceTabFromParam(value: string | null): WorkspaceTab {
   if (value === "issues") return "issues";
-  if (value === "pending-approvals" || value === "pending") return "pending-approvals";
   if (value === "compliance") return "compliance";
   return "browse";
 }
@@ -68,9 +64,6 @@ export default function EmployeeFilesHome() {
   const config = useEmployeeFilesConfig();
   const stats = useEmployeeFilesHomeStats();
   const documentTypes = useDocumentTypes();
-  const pendingUploads = usePendingEmployeeUploads(true);
-  const approvalInbox = useApprovalInbox(true);
-
   const [browsePrefs, setBrowsePrefs] = useState(() =>
     loadEmployeeFilesBrowsePreferences(),
   );
@@ -91,6 +84,7 @@ export default function EmployeeFilesHome() {
   });
   const [employeePage, setEmployeePage] = useState(1);
   const [documentPage, setDocumentPage] = useState(1);
+  const [viewingDocument, setViewingDocument] = useState<DocDocument | null>(null);
 
   const debouncedSearch = useDebouncedValue(search, 350);
 
@@ -154,18 +148,13 @@ export default function EmployeeFilesHome() {
   });
 
   const attention = stats.data?.needs_attention ?? 0;
-  const pendingApprovalCount = useMemo(() => {
-    const uploadItems = pendingUploads.data?.items ?? [];
-    const inboxItems = (approvalInbox.data?.items ?? []).filter(
-      (item) => item.folder_type !== "organizational",
-    );
-    const inboxDocumentIds = new Set(inboxItems.map((item) => item.document_id));
-    const rows = uploadItems.filter(
-      (item) =>
-        !inboxDocumentIds.has(item.id) || item.status !== "pending_review",
-    );
-    return rows.length + inboxItems.length;
-  }, [pendingUploads.data?.items, approvalInbox.data?.items]);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "pending-approvals" || tab === "pending") {
+      router.replace("/pages/approvals?kind=employee");
+    }
+  }, [searchParams, router]);
 
   const dimensionTabs = useMemo(() => {
     const keys = [...(config.data?.organizing_dimensions ?? [])];
@@ -261,11 +250,6 @@ export default function EmployeeFilesHome() {
         items={[
           { id: "browse", label: "Browse" },
           {
-            id: "pending-approvals",
-            label: "Pending approvals",
-            count: pendingApprovalCount || undefined,
-          },
-          {
             id: "issues",
             label: "Issues",
             count: attention > 0 ? attention : undefined,
@@ -280,10 +264,6 @@ export default function EmployeeFilesHome() {
 
       {workspaceTab === "issues" ? (
         <EmployeeFilesIssuesPage embedded />
-      ) : null}
-
-      {workspaceTab === "pending-approvals" ? (
-        <EmployeeFilesPendingApprovalsPanel />
       ) : null}
 
       {workspaceTab === "browse" ? (
@@ -469,10 +449,28 @@ export default function EmployeeFilesHome() {
                 sortKey={browsePrefs.documentSort}
                 onSortChange={(order) => persistPrefs({ documentSort: order })}
                 isLoading={documentSearch.isLoading}
+                onOpenDocument={setViewingDocument}
               />
             ) : null}
           </div>
         </>
+      ) : null}
+
+      {viewingDocument ? (
+        <DocumentViewerDialog
+          title={viewingDocument.name}
+          eyebrow="Employee files"
+          description={[
+            viewingDocument.document_type,
+            viewingDocument.employee_name,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          onClose={() => setViewingDocument(null)}
+          documentId={viewingDocument.id}
+          currentVersionNumber={viewingDocument.current_version_number}
+          previewUrl={documentPreviewUrl(viewingDocument.id)}
+        />
       ) : null}
     </div>
   );

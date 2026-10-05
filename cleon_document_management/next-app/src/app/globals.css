@@ -3909,6 +3909,181 @@ table.dms-table thead th.cursor-pointer:hover {
   }
 }
 
+/* ——— DMS role permissions (read-only module catalog) ——— */
+.dms-role-permissions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.dms-role-permissions__header {
+  padding-bottom: 4px;
+}
+
+.dms-role-permissions__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dms-role-permissions__lead {
+  margin: 6px 0 0;
+  max-width: 40rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.dms-role-permissions__lead strong {
+  font-weight: 600;
+  color: #475569;
+}
+
+.dms-role-permissions__tabs {
+  margin-top: 4px;
+}
+
+.dms-role-permissions__panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  padding: 16px 18px 8px;
+}
+
+.dms-role-permissions__panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.dms-role-permissions__panel-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dms-role-permissions__panel-desc {
+  margin: 4px 0 0;
+  max-width: 36rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.dms-role-permissions__panel-stat {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  line-height: 1.2;
+}
+
+.dms-role-permissions__panel-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.dms-role-permissions__panel-stat-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.dms-role-permissions__scope {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.dms-role-permissions__scope strong {
+  color: #0f172a;
+}
+
+.dms-role-permissions__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 12px;
+}
+
+.dms-role-permissions__group-title {
+  margin: 0 0 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.dms-role-permissions__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dms-role-permissions__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dms-role-permissions__row:last-child {
+  border-bottom: none;
+  padding-bottom: 8px;
+}
+
+.dms-role-permissions__row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dms-role-permissions__row-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.dms-role-permissions__row-desc {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+@media (max-width: 640px) {
+  .dms-role-permissions__row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .dms-role-permissions__panel-stat {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
 /* ——— Employee Files role category access matrix ——— */
 .ef-role-access {
   display: flex;
@@ -4752,4 +4927,52 @@ table.dms-table thead th.cursor-pointer:hover {
   html {
     @apply font-sans;
   }
+}
+
+.form-window-control {
+  @apply rounded-xl border border-slate-200 p-2 text-slate-500 transition hover:border-brand-pink hover:text-brand-pink;
+}
+
+.form-window-tray {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 200;
+  display: flex;
+  max-width: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.form-window-tray__item {
+  pointer-events: auto;
+  display: flex;
+  width: min(24rem, calc(100vw - 2rem));
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(226 232 240);
+  background: white;
+  box-shadow: 0 10px 30px rgb(15 23 42 / 0.12);
+}
+
+.form-window-tray__restore {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgb(15 23 42);
+}
+
+.form-window-tray__dismiss {
+  padding: 0.5rem;
+  color: rgb(100 116 139);
 }

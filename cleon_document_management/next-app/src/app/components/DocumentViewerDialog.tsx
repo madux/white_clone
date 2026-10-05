@@ -13,11 +13,13 @@ import ModalDialog from "./ModalDialog";
 import ComplianceRuleLink from "./ComplianceRuleLink";
 import DocumentShortcutNotice from "./DocumentShortcutNotice";
 
-type DocumentViewerDialogProps = {
+export type DocumentViewerDialogProps = {
   title: string;
   eyebrow?: string;
   description?: string;
   onClose: () => void;
+  /** Set when this viewer is rendered from the minimise tray (survives navigation). */
+  hostedTraySessionId?: string;
   previewUrl?: string;
   documentId?: number;
   currentVersionNumber?: number;
@@ -37,29 +39,31 @@ type DocumentViewerDialogProps = {
   shortcutOfFolderId?: number | false;
 };
 
-export default function DocumentViewerDialog({
-  title,
-  eyebrow = "Document viewer",
-  description,
-  onClose,
-  previewUrl,
-  documentId,
-  currentVersionNumber,
-  initialVersionId = null,
-  placeholder,
-  footer,
-  headerActions,
-  size = "2xl",
-  backdropClassName = "bg-slate-950/60",
-  iframeMinHeight = "min-h-[62vh]",
-  enableAiSummary = false,
-  linkedPolicyId,
-  linkedPolicyName,
-  isShortcut,
-  shortcutOfId,
-  shortcutOfName,
-  shortcutOfFolderId,
-}: DocumentViewerDialogProps) {
+export default function DocumentViewerDialog(props: DocumentViewerDialogProps) {
+  const {
+    title,
+    eyebrow = "Document viewer",
+    description,
+    onClose,
+    previewUrl,
+    documentId,
+    currentVersionNumber,
+    initialVersionId = null,
+    placeholder,
+    footer,
+    headerActions,
+    size = "2xl",
+    backdropClassName = "bg-slate-950/60",
+    iframeMinHeight = "min-h-[62vh]",
+    enableAiSummary = false,
+    linkedPolicyId,
+    linkedPolicyName,
+    isShortcut,
+    shortcutOfId,
+    shortcutOfName,
+    shortcutOfFolderId,
+    hostedTraySessionId,
+  } = props;
   const defaultPreview = useMemo(() => {
     if (previewUrl) return previewUrl;
     if (documentId != null && documentId > 0) {
@@ -112,6 +116,19 @@ export default function DocumentViewerDialog({
       titleClassName="text-lg"
       panelClassName="h-[min(92vh,calc(100dvh-2rem))]"
       bodyClassName="flex flex-col overflow-hidden"
+      hostedInTray={Boolean(hostedTraySessionId)}
+      traySessionId={hostedTraySessionId}
+      renderHostedOnMinimize={
+        hostedTraySessionId
+          ? undefined
+          : ({ sessionId, onClose: closeHosted }) => (
+              <DocumentViewerDialog
+                {...props}
+                hostedTraySessionId={sessionId}
+                onClose={closeHosted}
+              />
+            )
+      }
       footer={resolvedFooter}
       headerActions={
         <>

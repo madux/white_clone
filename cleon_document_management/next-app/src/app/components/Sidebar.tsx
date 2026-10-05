@@ -2,9 +2,10 @@
 import {
   Brain,
   Building2,
-  FileStack,
+  Inbox,
   LayoutDashboard,
   Menu,
+  ScrollText,
   Users,
   Settings,
   Briefcase,
@@ -13,8 +14,19 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
-import { canAccessEmployeeFilesAdmin } from "../../../lib/employeeFilesAccess";
-import { canAccessOrgLibrary } from "../../../lib/organizationalFilesAccess";
+import {
+  canAccessDmsSettings,
+  canViewTemplatesModule,
+  userIsSuperAdmin,
+} from "../../../lib/dmsAccess";
+import {
+  canAccessEmployeeFilesAdmin,
+  canApproveEmployeeDocuments,
+} from "../../../lib/employeeFilesAccess";
+import {
+  canAccessOrgLibrary,
+  canApproveOrgRequests,
+} from "../../../lib/organizationalFilesAccess";
 import { isWorkspacePath } from "../../../lib/workspaceRoutes";
 import { useCurrentUser } from "../../../hooks/useDocuments";
 
@@ -24,11 +36,16 @@ type NavGroup = { id: string; label: string; links: NavLink[] };
 export default function Sidebar() {
   const pathname = usePathname();
   const currentUser = useCurrentUser();
-  const isDocAdmin = currentUser.data?.is_document_admin === true;
+  const isSuperAdmin = userIsSuperAdmin(currentUser.data);
   const isAppAdmin =
-    isDocAdmin || currentUser.data?.is_admin === true;
+    isSuperAdmin || currentUser.data?.is_admin === true;
+  const canSettings = canAccessDmsSettings(currentUser.data);
+  const canTemplates = canViewTemplatesModule(currentUser.data);
   const canEmployeeFiles = canAccessEmployeeFilesAdmin(currentUser.data);
   const canOrgFiles = canAccessOrgLibrary(currentUser.data);
+  const canApprovalRequests =
+    canApproveOrgRequests(currentUser.data) ||
+    canApproveEmployeeDocuments(currentUser.data);
   const [mobileOpen, setMobileOpen] = useState(false);
   const routePath =
     pathname?.replace(/^\/document-management(?=\/|$)/, "") || "/";
@@ -47,6 +64,15 @@ export default function Sidebar() {
       ...(canEmployeeFiles
         ? [{ name: "Employee Files", link: "/pages/employee", icon: Users }]
         : []),
+      ...(canApprovalRequests
+        ? [
+            {
+              name: "Approval requests",
+              link: "/pages/approvals",
+              icon: Inbox,
+            },
+          ]
+        : []),
       ...(canOrgFiles
         ? [
             {
@@ -54,11 +80,15 @@ export default function Sidebar() {
               link: "/pages/organization",
               icon: Building2,
             },
-            {
-              name: "Templates & Forms",
-              link: "/pages/organization/templates-forms",
-              icon: FileStack,
-            },
+            ...(canTemplates
+              ? [
+                  {
+                    name: "Templates & Forms",
+                    link: "/pages/organization/templates-forms",
+                    icon: ScrollText,
+                  },
+                ]
+              : []),
           ]
         : []),
     ];
@@ -70,14 +100,21 @@ export default function Sidebar() {
     const primary: NavLink[] = isAppAdmin
       ? [...beforeIntelligence, myWorkspace, documentIntelligence]
       : [myWorkspace, ...beforeIntelligence, documentIntelligence];
-    const admin: NavLink[] = isDocAdmin
+    const admin: NavLink[] = canSettings
       ? [{ name: "Settings", link: "/pages/settings", icon: Settings }]
       : [];
     return [
       { id: "primary", label: "Workspace", links: primary },
       ...(admin.length ? [{ id: "admin", label: "Admin", links: admin }] : []),
     ];
-  }, [canEmployeeFiles, canOrgFiles, isAppAdmin, isDocAdmin]);
+  }, [
+    canEmployeeFiles,
+    canOrgFiles,
+    canApprovalRequests,
+    canTemplates,
+    canSettings,
+    isAppAdmin,
+  ]);
 
   const renderLink = (item: NavLink) => {
     const Icon = item.icon;
@@ -87,15 +124,19 @@ export default function Sidebar() {
           routePath.startsWith("/pages/activity")
         : item.name === "My Workspace"
           ? isWorkspacePath(routePath)
-        : item.name === "Employee Files"
-          ? routePath.startsWith("/pages/employee") ||
-            routePath.startsWith("/pages/compliance")
-          : item.name === "Organizational Files"
-            ? routePath.startsWith("/pages/organization") &&
-              !routePath.includes("/templates-forms")
-            : item.name === "Templates & Forms"
-              ? routePath.includes("/templates-forms")
-              : routePath.startsWith(item.link);
+          : item.name === "Employee Files"
+            ? routePath.startsWith("/pages/employee") ||
+              routePath.startsWith("/pages/compliance")
+            : item.name === "Approval requests"
+              ? routePath.startsWith("/pages/approvals") ||
+                routePath.startsWith("/pages/organization/approvals")
+              : item.name === "Organizational Files"
+                ? routePath.startsWith("/pages/organization") &&
+                  !routePath.includes("/templates-forms") &&
+                  !routePath.includes("/approvals")
+                : item.name === "Templates & Forms"
+                  ? routePath.includes("/templates-forms")
+                  : routePath.startsWith(item.link);
     return (
       <Link
         key={item.name}

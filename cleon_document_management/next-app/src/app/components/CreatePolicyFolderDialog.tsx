@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAppDialog } from "../../../hooks/useAppDialog";
 import type { DocFolder, OrganizationalPolicy } from "../../../lib/types";
 import ModalDialog from "./ModalDialog";
+import type { PolicyDocumentSource } from "./PolicyFolderDocumentOptions";
 import AppSelect from "./AppSelect";
 import type { PolicyCreateDraft } from "./PolicyAdoptSuggestedFilesDialog";
 import {
@@ -17,7 +18,16 @@ import DocumentUploadModal, {
   type DocumentUploadPayload,
 } from "./DocumentUploadModal";
 import { api } from "../../../lib/api";
-import { QUERY_KEYS, useDocumentTypes, useUploadDocument } from "../../../hooks/useDocuments";
+import {
+  QUERY_KEYS,
+  useDocumentTypes,
+  useUploadDocument,
+} from "../../../hooks/useDocuments";
+import { useToast } from "../../../hooks/useToast";
+import {
+  isPendingApprovalResponse,
+  notifyPendingApproval,
+} from "../../../lib/pendingApproval";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -27,7 +37,6 @@ const VISIBILITY_OPTIONS = [
 ];
 
 type WizardStep = "metadata" | "source";
-type PolicySource = "upload" | "select" | "custom";
 
 export default function CreatePolicyFolderDialog({
   parentFolder = null,
@@ -41,13 +50,16 @@ export default function CreatePolicyFolderDialog({
   const upload = useUploadDocument();
   const types = useDocumentTypes();
   const { showAlert, showConfirm } = useAppDialog();
+  const { showToast } = useToast();
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [visibility, setVisibility] = useState("employees");
   const [effectiveDate, setEffectiveDate] = useState("");
   const [description, setDescription] = useState("");
   const [step, setStep] = useState<WizardStep>("metadata");
-  const [, setSource] = useState<PolicySource | null>(null);
+  const [selectedSource, setSelectedSource] = useState<PolicyDocumentSource | null>(
+    null,
+  );
   const [showSelectExisting, setShowSelectExisting] = useState(false);
   const [showCreateCustom, setShowCreateCustom] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
@@ -138,22 +150,33 @@ export default function CreatePolicyFolderDialog({
     setStep("source");
   };
 
-  const pickSource = async (next: PolicySource) => {
-    setSource(next);
-    if (next === "select") {
+  const runPrimarySourceAction = async () => {
+    if (!selectedSource) {
+      await showAlert("Choose how to add the policy document.", {
+        title: "Add policy document",
+      });
+      return;
+    }
+    if (selectedSource === "select") {
       setShowSelectExisting(true);
       return;
     }
-    if (next === "custom") {
-      const folderId = await ensureEmptyPolicyFolder();
-      if (folderId) setShowCreateCustom(true);
+    const folderId = await ensureEmptyPolicyFolder();
+    if (!folderId) return;
+    if (selectedSource === "custom") {
+      setShowCreateCustom(true);
       return;
     }
-    if (next === "upload") {
-      const folderId = await ensureEmptyPolicyFolder();
-      if (folderId) setShowUpload(true);
-    }
+    setShowUpload(true);
   };
+
+  const primaryLabel =
+    selectedSource === "custom" ? "Open editor" : "Add policy";
+  const primaryEnabled =
+    Boolean(name.trim()) &&
+    Boolean(selectedSource) &&
+    !pendingCreate &&
+    !upload.isPending;
 
   const performUpload = async (payload: DocumentUploadPayload) => {
     const folderId = createdFolderId ?? (await ensureEmptyPolicyFolder());
@@ -164,7 +187,7 @@ export default function CreatePolicyFolderDialog({
       });
       return;
     }
-    await upload.mutateAsync({
+    const result = await upload.mutateAsync({
       files: payload.files,
       folder_id: folderId,
       document_type_ids: payload.documentTypeIds.map(Number),
@@ -172,6 +195,12 @@ export default function CreatePolicyFolderDialog({
       issue_dates: payload.issueDates,
       descriptions: payload.descriptions,
     });
+    if (isPendingApprovalResponse(result)) {
+      notifyPendingApproval(result, showToast);
+      setShowUpload(false);
+      onClose();
+      return;
+    }
     setShowUpload(false);
     await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documents(folderId) });
     finish(folderId);
@@ -189,7 +218,17 @@ export default function CreatePolicyFolderDialog({
               : "Add a policy at the library root, then choose how to add the policy document."
           }
           onClose={onClose}
-          size="md"
+          size="lg"
+          footer={
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button disabled={!name.trim()} onClick={() => void continueToSource()}>
+                Continue
+              </Button>
+            </div>
+          }
         >
           <label className="block space-y-1 text-sm">
             <span className="font-semibold">Policy name</span>
@@ -231,57 +270,62 @@ export default function CreatePolicyFolderDialog({
               placeholder="Optional"
             />
           </label>
-          <div className="mt-5 flex justify-end gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button disabled={!name.trim()} onClick={() => void continueToSource()}>
-              Continue
-            </Button>
-          </div>
         </ModalDialog>
       ) : (
         <ModalDialog
           title="Add policy document"
           eyebrow={draft().name}
-          description="Choose how to add the first policy document. You can add more files after the folder is created."
+          description="Choose a source, then use the primary action. Upload and Select Existing create or link the policy; Create Custom opens the editor."
+          size="lg"
           onClose={() => {
             if (createdFolderId) {
               finish(createdFolderId);
               return;
             }
             setStep("metadata");
-            setSource(null);
+            setSelectedSource(null);
           }}
-          size="lg"
+          footer={
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setStep("metadata");
+                  setSelectedSource(null);
+                }}
+              >
+                Back
+              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="ghost"
+                  disabled={pendingCreate}
+                  onClick={() => void (async () => {
+                    const folderId = await ensureEmptyPolicyFolder();
+                    if (folderId) finish(folderId);
+                  })()}
+                >
+                  Skip for now
+                </Button>
+                <Button
+                  disabled={!primaryEnabled}
+                  onClick={() => void runPrimarySourceAction()}
+                >
+                  {primaryLabel}
+                </Button>
+              </div>
+            </div>
+          }
         >
           <PolicyFolderChooserCards
             disabled={pendingCreate || upload.isPending}
-            onUpload={() => void pickSource("upload")}
-            onSelectExisting={() => void pickSource("select")}
-            onCreateCustom={() => void pickSource("custom")}
+            selectionMode
+            selectedSource={selectedSource}
+            onSelectSource={setSelectedSource}
+            onUpload={() => undefined}
+            onSelectExisting={() => undefined}
+            onCreateCustom={() => undefined}
           />
-          <div className="mt-4 flex flex-wrap justify-between gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setStep("metadata");
-                setSource(null);
-              }}
-            >
-              Back
-            </Button>
-            <Button
-              variant="ghost"
-              disabled={pendingCreate}
-              onClick={() => void (async () => {
-                const folderId = await ensureEmptyPolicyFolder();
-                if (folderId) finish(folderId);
-              })()}
-            >
-              Skip for now
-            </Button>
-          </div>
         </ModalDialog>
       )}
       {showSelectExisting ? (

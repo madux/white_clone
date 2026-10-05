@@ -22,6 +22,7 @@ import NewMenu, { type NewMenuGroup, type NewMenuItem } from "./NewMenu";
 import ScanDocumentDialog from "./ScanDocumentDialog";
 import { useDocumentTypes, useUploadDocument } from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
+import { isOrgUploadPendingApprovalError } from "../../../lib/orgDocumentUpload";
 import { offlineMessage, useOnlineStatus } from "../../../lib/useOnlineStatus";
 import { CLOUD_SOURCE_OPTIONS } from "./CloudSourceLogos";
 import CreatePolicyFolderDialog from "./CreatePolicyFolderDialog";
@@ -94,18 +95,29 @@ export default function OrganizationalNewMenu({
       });
       return;
     }
-    await upload.mutateAsync({
-      files: payload.files,
-      folder_id: folderId,
-      document_type_ids: payload.documentTypeIds.map(Number),
-      expiry_dates: payload.expiryDates,
-      issue_dates: payload.issueDates,
-      descriptions: payload.descriptions,
-      is_template: asTemplate,
-    });
-    setShowUpload(false);
-    setShowScan(false);
-    setCreatingTemplate(false);
+    try {
+      await upload.mutateAsync({
+        files: payload.files,
+        folder_id: folderId,
+        document_type_ids: payload.documentTypeIds.map(Number),
+        expiry_dates: payload.expiryDates,
+        issue_dates: payload.issueDates,
+        descriptions: payload.descriptions,
+        is_template: asTemplate,
+      });
+      setShowUpload(false);
+      setShowScan(false);
+      setCreatingTemplate(false);
+    } catch (error: unknown) {
+      if (isOrgUploadPendingApprovalError(error)) {
+        await showAlert(error.message, { title: "Pending approval" });
+        setShowUpload(false);
+        setShowScan(false);
+        setCreatingTemplate(false);
+        return;
+      }
+      throw error;
+    }
   };
 
   if (isPolicyFolder && parentFolder) {

@@ -16,3 +16,10 @@ def post_init_hook(env):
     if "doc.employee.files.role.service" in env:
         for company in env["res.company"].search([]):
             env["doc.employee.files.role.service"].with_company(company).migrate_legacy_document_managers()
+    if "doc.org.role.template.service" in env:
+        for company in env["res.company"].search([]):
+            env["doc.org.role.template.service"].with_company(
+                company
+            ).ensure_canonical_org_roles(company)
+    if "doc.employee.files.role.service" in env:
+        env["doc.employee.files.role.service"].ensure_odoo_admin_super_admin_bindings()

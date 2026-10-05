@@ -3,7 +3,6 @@
 import {
   AlertTriangle,
   Ellipsis,
-  KeyRound,
   LoaderCircle,
   Pencil,
   Plus,
@@ -16,19 +15,14 @@ import {
   X,
 } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+import DmsRolePermissionsOverview from "./DmsRolePermissionsOverview";
 import {
   useAssignEmployeeFilesRoles,
   useDeleteEmployeeFilesRole,
-  useEmployeeFilesRoleDocumentTypes,
   useEmployeeFilesRoleMembers,
   useEmployeeFilesRoles,
   useSaveEmployeeFilesRole,
 } from "../../../hooks/useEmployeeFilesRoles";
-import {
-  useAssignModuleRoles,
-  useModuleRoleDefinitions,
-  useModuleRoleMembers,
-} from "../../../hooks/useModuleRoles";
 import { useAppDialog } from "../../../hooks/useAppDialog";
 import { useToast } from "../../../hooks/useToast";
 import type {
@@ -68,6 +62,7 @@ import {
 import { EMPLOYEE_FILE_LIST_PAGE_SIZE } from "../../../lib/employeeFileListPageSize";
 import { useClientPagination } from "../../../lib/useClientPagination";
 import ListPagination from "./ListPagination";
+import ModalDialog from "./ModalDialog";
 
 const CATEGORY_GROUPS = [
   { value: "hr", label: "Human Resources" },
@@ -194,7 +189,6 @@ const SECTION_ITEMS = [
   { id: "ef-roles" as const, label: "Custom roles", icon: Shield },
   { id: "assign" as const, label: "Assign to users", icon: Users },
   { id: "assigned" as const, label: "Assigned users", icon: UserRound },
-  { id: "platform" as const, label: "Platform administrator", icon: KeyRound },
 ];
 
 type RolesSection = (typeof SECTION_ITEMS)[number]["id"];
@@ -241,11 +235,17 @@ function defaultRole(): EmployeeFilesRole {
     description: "",
     active: true,
     employee_scope: "own_team",
-    lines: [defaultLine()],
+    lines: [],
     assigned_user_ids: [],
     assigned_users: [],
-    organizational_actions: defaultOrganizationalActions(),
+    dms_permissions: {},
+    role_template_key: "custom",
+    is_system_template: false,
   };
+}
+
+function isStandardRole(role: EmployeeFilesRole): boolean {
+  return Boolean(role.is_system_template);
 }
 
 function assignedRoster(roles: EmployeeFilesRole[]): AssignedRosterRow[] {
@@ -590,8 +590,6 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
   const [assignedFilters, setAssignedFilters] = useState(INITIAL_ASSIGNED_FILTERS);
   const [revokingKey, setRevokingKey] = useState<string | null>(null);
   const [assignPage, setAssignPage] = useState(1);
-  const [platformPage, setPlatformPage] = useState(1);
-
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => window.clearTimeout(timer);
@@ -599,11 +597,9 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
 
   useEffect(() => {
     setAssignPage(1);
-    setPlatformPage(1);
   }, [debouncedSearch]);
 
   const rolesQuery = useEmployeeFilesRoles();
-  const docTypesQuery = useEmployeeFilesRoleDocumentTypes();
   const membersQuery = useEmployeeFilesRoleMembers(
     section === "assign" ? debouncedSearch : "",
     assignPage,
@@ -612,14 +608,6 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
   const saveRoleMutation = useSaveEmployeeFilesRole();
   const deleteRoleMutation = useDeleteEmployeeFilesRole();
   const assignEfMutation = useAssignEmployeeFilesRoles();
-
-  const platformDefsQuery = useModuleRoleDefinitions(section === "platform");
-  const platformMembersQuery = useModuleRoleMembers(
-    debouncedSearch,
-    platformPage,
-    section === "platform",
-  );
-  const assignPlatformMutation = useAssignModuleRoles();
 
   const roles = rolesQuery.data || [];
   const membersPayload = membersQuery.data;
@@ -698,35 +686,6 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
     `${filteredRoster.length}:${assignedFilters.search}:${assignedFilters.roleId}:${assignedFilters.department}`,
   );
 
-  const documentTypeOptions = useMemo(
-    () =>
-      (docTypesQuery.data || []).map((docType) => ({
-        value: String(docType.id),
-        label: docType.name,
-      })),
-    [docTypesQuery.data],
-  );
-
-  const platformAssignable = useMemo(
-    () =>
-      (platformDefsQuery.data || []).filter(
-        (role): role is ModuleRoleDefinition & { role_key: "admin" } =>
-          role.assignable && role.role_key === "admin",
-      ),
-    [platformDefsQuery.data],
-  );
-  const platformPayload = platformMembersQuery.data;
-  const platformMembersRaw = platformPayload?.members || [];
-  const platformTotal = platformPayload?.total ?? platformMembersRaw.length;
-  const platformServerPaged =
-    platformPayload?.page != null && platformPayload?.page_size != null;
-  const platformMembers = platformServerPaged
-    ? platformMembersRaw
-    : platformMembersRaw.slice(
-        (platformPage - 1) * EMPLOYEE_FILE_LIST_PAGE_SIZE,
-        platformPage * EMPLOYEE_FILE_LIST_PAGE_SIZE,
-      );
-
   function patchRole(patch: Partial<EmployeeFilesRole>) {
     if (!selectedRole) return;
     setRoleDraft({ ...selectedRole, ...patch });
@@ -737,20 +696,9 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
     setRoleDraft(null);
   }
 
-  function updateLine(index: number, patch: Partial<EmployeeFilesRoleLine>) {
-    if (!selectedRole) return;
-    const lines = [...selectedRole.lines];
-    const current = { ...lines[index], ...patch };
-    if (patch.actions) {
-      current.actions = { ...lines[index].actions, ...patch.actions };
-      if (!current.actions.view) {
-        for (const key of ACTION_KEYS) {
-          if (key !== "view") current.actions[key] = false;
-        }
-      }
-    }
-    lines[index] = current;
-    setRoleDraft({ ...selectedRole, lines });
+  function closeRoleEditor() {
+    setSelectedRoleId(null);
+    setRoleDraft(null);
   }
 
   async function handleSaveRole() {
@@ -852,28 +800,6 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
     }
   }
 
-  async function handleTogglePlatformAdmin(member: ModuleRoleMember, enabled: boolean) {
-    try {
-      await assignPlatformMutation.mutateAsync({
-        employee_id: member.employee_id,
-        assignments: platformAssignable.map((role) => ({
-          role_key: role.role_key,
-          enabled,
-        })),
-      });
-      showToast(
-        enabled
-          ? `${member.employee_name} is now a platform administrator.`
-          : `Platform administrator access removed from ${member.employee_name}.`,
-      );
-    } catch (error) {
-      showToast(
-        error instanceof Error ? error.message : "Platform role not updated.",
-        "error",
-      );
-    }
-  }
-
   const efAssignChanged =
     draftRoleIds !== null &&
     JSON.stringify(draftRoleIds) !==
@@ -893,7 +819,9 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
-              {roles.length} custom {roles.length === 1 ? "role" : "roles"}
+              Six standard roles plus {roles.filter((r) => !isStandardRole(r)).length} custom{" "}
+              {roles.filter((r) => !isStandardRole(r)).length === 1 ? "role" : "roles"}.
+              Odoo administrators are linked to Super Admin automatically.
             </p>
             <Button onClick={() => selectRole("new")}>
               <Plus data-icon="inline-start" />
@@ -902,7 +830,7 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
           </div>
           <div className="app-table-well">
             {rolesQuery.isLoading ? (
-              <p className="roles-admin-empty">Loading roles…</p>
+              <EmptyState title="Loading roles…" loading />
             ) : !roles.length && selectedRoleId !== "new" ? (
               <EmptyState
                 title="No custom roles yet"
@@ -919,6 +847,7 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
                 <TableHeader>
                   <TableRow>
                     <TableHead>Role</TableHead>
+                    <TableHead className="w-24">Type</TableHead>
                     <TableHead>Scope</TableHead>
                     <TableHead>Users</TableHead>
                     <TableHead>Status</TableHead>
@@ -948,6 +877,13 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
                             </p>
                           ) : null}
                         </TableCell>
+                        <TableCell>
+                          {!isStandardRole(role) ? (
+                            <StatusPill label="Custom" tone="neutral" />
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell>{scopeLabel(role.employee_scope)}</TableCell>
                         <TableCell>
                           {count === 1 ? "1 user" : `${count} users`}
@@ -976,13 +912,15 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
                                   <Pencil />
                                   Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  variant="destructive"
-                                  onClick={() => void handleDeleteRole(role)}
-                                >
-                                  <Trash2 />
-                                  Delete
-                                </DropdownMenuItem>
+                                {!isStandardRole(role) ? (
+                                  <DropdownMenuItem
+                                    variant="destructive"
+                                    onClick={() => void handleDeleteRole(role)}
+                                  >
+                                    <Trash2 />
+                                    Delete
+                                  </DropdownMenuItem>
+                                ) : null}
                               </DropdownMenuGroup>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1003,54 +941,56 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
             ) : null}
           </div>
           {selectedRole ? (
-            <div className="space-y-5 rounded-lg border border-border p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      {selectedRole.id ? "Edit role" : "New role"}
-                    </p>
-                    <h2 className="text-lg font-bold text-slate-900">
-                      {selectedRole.name || "Untitled role"}
-                    </h2>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
+            <ModalDialog
+              title={selectedRole.id ? selectedRole.name || "Edit role" : "New role"}
+              eyebrow={selectedRole.id ? "Edit role" : "Custom role"}
+              description={
+                isStandardRole(selectedRole)
+                  ? "Standard roles have fixed permissions. You can change employee scope and assignments."
+                  : "Set name, scope, and module permissions for this role."
+              }
+              onClose={closeRoleEditor}
+              size="5xl"
+              closeDisabled={saveRoleMutation.isPending}
+              footer={
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {selectedRole.id && !isStandardRole(selectedRole) ? (
                     <Button
-                      variant="ghost"
-                      onClick={() => {
-                        setSelectedRoleId(null);
-                        setRoleDraft(null);
-                      }}
+                      variant="destructive"
+                      onClick={() => void handleDeleteRole(selectedRole)}
+                      disabled={deleteRoleMutation.isPending || saveRoleMutation.isPending}
                     >
-                      Close
+                      <Trash2 data-icon="inline-start" />
+                      Delete
                     </Button>
-                    {selectedRole.id ? (
-                      <Button
-                        variant="destructive"
-                        onClick={() => void handleDeleteRole(selectedRole)}
-                        disabled={deleteRoleMutation.isPending}
-                      >
-                        <Trash2 data-icon="inline-start" />
-                        Delete
-                      </Button>
+                  ) : null}
+                  <Button
+                    variant="ghost"
+                    onClick={closeRoleEditor}
+                    disabled={saveRoleMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => void handleSaveRole()}
+                    disabled={saveRoleMutation.isPending || !selectedRole.name.trim()}
+                  >
+                    {saveRoleMutation.isPending ? (
+                      <LoaderCircle data-icon="inline-start" className="animate-spin" />
                     ) : null}
-                    <Button
-                      onClick={handleSaveRole}
-                      disabled={saveRoleMutation.isPending || !selectedRole.name.trim()}
-                    >
-                      {saveRoleMutation.isPending ? (
-                        <LoaderCircle data-icon="inline-start" className="animate-spin" />
-                      ) : null}
-                      Save role
-                    </Button>
-                  </div>
+                    Save role
+                  </Button>
                 </div>
-
+              }
+            >
+              <div className="space-y-5">
                 <div className="grid gap-4 lg:grid-cols-2">
                   <div>
                     <FieldLabel>Role name</FieldLabel>
                     <input
                       className="field"
                       value={selectedRole.name}
+                      readOnly={isStandardRole(selectedRole)}
                       onChange={(event) => patchRole({ name: event.target.value })}
                       placeholder="e.g. HR business partner"
                     />
@@ -1075,37 +1015,23 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
                   <textarea
                     className="field min-h-[4.5rem] resize-y"
                     rows={2}
+                    readOnly={isStandardRole(selectedRole)}
                     value={selectedRole.description || ""}
                     onChange={(event) => patchRole({ description: event.target.value })}
                     placeholder="Optional summary for administrators"
                   />
                 </div>
 
-                <CategoryAccessMatrix
-                  lines={selectedRole.lines}
-                  documentTypeOptions={documentTypeOptions}
-                  onAddLine={() =>
-                    patchRole({
-                      lines: [...selectedRole.lines, defaultLine()],
-                    })
-                  }
-                  onRemoveLine={(index) =>
-                    patchRole({
-                      lines: selectedRole.lines.filter((_, i) => i !== index),
-                    })
-                  }
-                  onUpdateLine={updateLine}
-                />
-                <OrganizationalAccessMatrix
-                  actions={
-                    selectedRole.organizational_actions ||
-                    defaultOrganizationalActions()
-                  }
-                  onChange={(organizational_actions) =>
-                    patchRole({ organizational_actions })
+                <DmsRolePermissionsOverview
+                  permissions={selectedRole.dms_permissions}
+                  employeeScope={selectedRole.employee_scope}
+                  readOnly={isStandardRole(selectedRole)}
+                  onPermissionsChange={(dms_permissions) =>
+                    patchRole({ dms_permissions })
                   }
                 />
-            </div>
+              </div>
+            </ModalDialog>
           ) : null}
         </div>
       )}
@@ -1125,7 +1051,7 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
           </InputGroup>
           <div className="app-table-well">
             {membersQuery.isLoading ? (
-              <p className="roles-admin-empty">Searching…</p>
+              <EmptyState title="Searching employees…" loading />
             ) : !assignTotal ? (
               <EmptyState
                 title="No employees found"
@@ -1334,16 +1260,17 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
 
           <div className="app-table-well">
             {rolesQuery.isLoading ? (
-              <p className="roles-admin-empty">Loading assigned users…</p>
+              <EmptyState title="Loading assigned users…" loading />
             ) : !roster.length ? (
-              <p className="roles-admin-empty">
-                No users are assigned to custom roles yet. Use Assign to users to grant
-                access.
-              </p>
+              <EmptyState
+                title="No assigned users yet"
+                description="No users are assigned to roles yet. Use Assign to users to grant access."
+              />
             ) : !filteredRoster.length ? (
-              <p className="roles-admin-empty">
-                No assigned users match the current filters.
-              </p>
+              <EmptyState
+                title="No matches"
+                description="No assigned users match the current filters. Try clearing filters or broadening your search."
+              />
             ) : (
               <Table>
                 <TableHeader>
@@ -1422,87 +1349,6 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
         </div>
       )}
 
-      {section === "platform" && (
-        <div className="space-y-4">
-          <InputGroup className="max-w-md">
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
-            <InputGroupInput
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search name, department, grade, location, or login"
-              aria-label="Search employees"
-            />
-          </InputGroup>
-          <div className="app-table-well">
-            {platformMembersQuery.isLoading ? (
-              <p className="roles-admin-empty">Searching…</p>
-            ) : !platformTotal ? (
-              <EmptyState
-                title="No employees found"
-                description="Try a name, department, grade, location, or other EMS group."
-              />
-            ) : (
-              <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Login</TableHead>
-                    <TableHead>Administrator</TableHead>
-                    <TableHead className="w-12">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {platformMembers.map((member) => {
-                    const isAdmin = Boolean(member.roles.admin);
-                    return (
-                      <TableRow key={member.employee_id}>
-                        <TableCell className="font-semibold">
-                          {member.employee_name}
-                        </TableCell>
-                        <TableCell>{member.department || "No department"}</TableCell>
-                        <TableCell>
-                          {member.has_login ? member.user_login || "Linked" : "No login"}
-                        </TableCell>
-                        <TableCell>
-                          <StatusPill
-                            label={isAdmin ? "Administrator" : "User"}
-                            tone={isAdmin ? "ok" : "neutral"}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant={isAdmin ? "outline" : "default"}
-                            size="sm"
-                            disabled={
-                              !member.has_login || assignPlatformMutation.isPending
-                            }
-                            onClick={() =>
-                              void handleTogglePlatformAdmin(member, !isAdmin)
-                            }
-                          >
-                            {isAdmin ? "Revoke" : "Grant"}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-              <ListPagination
-                page={platformPage}
-                pageSize={EMPLOYEE_FILE_LIST_PAGE_SIZE}
-                total={platformTotal}
-                onPageChange={setPlatformPage}
-              />
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </>
   );
 
@@ -1519,8 +1365,8 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
           </p>
           <h1 className="mt-1 text-2xl font-bold text-slate-900">Roles & access</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Custom roles for Employee Files and Organizational Files, user
-            assignment, and platform administrator access.
+            Six module roles with fixed permissions. Assign users on the Assign tab;
+            Super Admin holds platform settings access.
           </p>
         </div>
         <div className="p-5 sm:p-6">

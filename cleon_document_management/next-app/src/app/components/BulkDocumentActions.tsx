@@ -13,13 +13,14 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../../lib/api";
-import { useCurrentUser, useDocumentAction } from "../../../hooks/useDocuments";
+import { useCurrentUser, useDocumentsAction } from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
 import { canManageOrgDocuments } from "../../../lib/organizationalFilesAccess";
 import {
   expandDeleteDocumentIds,
   type EmployeeDocumentGroup,
 } from "../../../lib/groupEmployeeDocuments";
+import { documentInDraftPolicyFolder } from "../../../lib/draftPolicyFolder";
 
 export default function BulkDocumentActions({
   selected,
@@ -27,6 +28,7 @@ export default function BulkDocumentActions({
   documents,
   groups,
   organizational = false,
+  draftPolicyFolder = false,
   onMove,
 }: {
   selected: number[];
@@ -34,10 +36,11 @@ export default function BulkDocumentActions({
   documents?: any[];
   groups?: EmployeeDocumentGroup[];
   organizational?: boolean;
+  draftPolicyFolder?: boolean;
   onMove?: () => void;
 }) {
   const [running, setRunning] = useState(false);
-  const action = useDocumentAction();
+  const bulkAction = useDocumentsAction();
   const currentUser = useCurrentUser();
   const { showConfirm } = useAppDialog();
   const isDocumentManager =
@@ -48,12 +51,21 @@ export default function BulkDocumentActions({
     : isDocumentManager;
   if (!selected.length) return null;
 
+  const selectedDocuments = (documents ?? []).filter((document) =>
+    selected.includes(document.id),
+  );
+  const draftPolicy =
+    draftPolicyFolder ||
+    (organizational &&
+      selectedDocuments.length === selected.length &&
+      selectedDocuments.every((document) => documentInDraftPolicyFolder(document)));
+
   const deleteIds = groups ? expandDeleteDocumentIds(selected, groups) : selected;
   const includesGroupedHistory = deleteIds.length > selected.length;
 
   const run = async (name: "favorite" | "pin") => {
     setRunning(true);
-    for (const id of selected) await action.mutateAsync({ id, action: name });
+    await bulkAction.mutateAsync({ document_ids: selected, action: name });
     setRunning(false);
     onClear();
   };
@@ -63,9 +75,6 @@ export default function BulkDocumentActions({
     onClear();
   };
 
-  const selectedDocuments = (documents ?? []).filter((document) =>
-    selected.includes(document.id),
-  );
   const sameStatus =
     selectedDocuments.length === selected.length &&
     selectedDocuments.every(
@@ -77,7 +86,7 @@ export default function BulkDocumentActions({
     setRunning(true);
     const actionName =
       selectedDocuments[0].active === false ? "activate" : "deactivate";
-    for (const id of selected) await action.mutateAsync({ id, action: actionName });
+    await bulkAction.mutateAsync({ document_ids: selected, action: actionName });
     setRunning(false);
     onClear();
   };
@@ -100,9 +109,10 @@ export default function BulkDocumentActions({
     )
       return;
     setRunning(true);
-    for (const document of archivableSelected) {
-      await action.mutateAsync({ id: document.id, action: "archive" });
-    }
+    await bulkAction.mutateAsync({
+      document_ids: archivableSelected.map((document) => document.id),
+      action: "archive",
+    });
     setRunning(false);
     onClear();
   };
@@ -119,7 +129,7 @@ export default function BulkDocumentActions({
     )
       return;
     setRunning(true);
-    for (const id of deleteIds) await action.mutateAsync({ id, action: "delete" });
+    await bulkAction.mutateAsync({ document_ids: deleteIds, action: "delete" });
     setRunning(false);
     onClear();
   };
@@ -135,7 +145,7 @@ export default function BulkDocumentActions({
           Move
         </button>
       )}
-      {organizational && sameStatus && (
+      {!draftPolicy && organizational && sameStatus && (
         <button
           disabled={running}
           type="button"
@@ -164,7 +174,7 @@ export default function BulkDocumentActions({
         <Pin />
         Pin
       </button>
-      {canArchive && archivableSelected.length > 0 ? (
+      {!draftPolicy && canArchive && archivableSelected.length > 0 ? (
         <button
           disabled={running}
           type="button"
@@ -175,19 +185,23 @@ export default function BulkDocumentActions({
           Archive
         </button>
       ) : null}
-      <button disabled={running} type="button" onClick={download} className="bulk-button">
-        <Download />
-        Download
-      </button>
-      <button
-        disabled={running}
-        type="button"
-        onClick={remove}
-        className="bulk-button text-red-600 hover:bg-red-50 hover:text-red-700"
-      >
-        <Trash2 />
-        Delete
-      </button>
+      {!draftPolicy ? (
+        <button disabled={running} type="button" onClick={download} className="bulk-button">
+          <Download />
+          Download
+        </button>
+      ) : null}
+      {!draftPolicy ? (
+        <button
+          disabled={running}
+          type="button"
+          onClick={remove}
+          className="bulk-button text-red-600 hover:bg-red-50 hover:text-red-700"
+        >
+          <Trash2 />
+          Delete
+        </button>
+      ) : null}
       <button
         type="button"
         onClick={onClear}

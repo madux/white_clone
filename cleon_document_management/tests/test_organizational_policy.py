@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -200,11 +201,72 @@ class TestOrganizationalPolicy(TransactionCase):
         )
         self.assertTrue(doc.is_policy)
         self.assertEqual(policy.document_id, doc)
+        self.assertEqual(doc.state, "draft")
+        self.assertFalse(doc.active)
+        self.assertEqual(doc.distribution_status, "deactivated")
+
+    def test_policy_activation_required_before_document_activation(self):
+        policy_folder = self.env["doc.folder"].create(
+            {
+                "folder_name": "Safety policy",
+                "folder_type": "organizational",
+                "folder_kind": "policy",
+                "parent_id": self.library_folder.id,
+            }
+        )
+        policy = self.env["doc.organizational.policy"].create(
+            {
+                "name": "Safety policy",
+                "folder_id": policy_folder.id,
+                "lifecycle_status": "draft",
+            }
+        )
+        doc = self._document("Safety handbook.pdf", folder=policy_folder)
+        self.assertEqual(doc.state, "draft")
+        with self.assertRaises(UserError):
+            doc.action_restore()
+        policy.write({"lifecycle_status": "active"})
+        doc.action_restore()
+        doc.invalidate_recordset()
+        self.assertTrue(doc.active)
+        self.assertEqual(doc.distribution_status, "active")
+        doc.action_deactivate()
+        doc.invalidate_recordset()
+        self.assertFalse(doc.active)
+        policy.write({"lifecycle_status": "draft"})
+        doc.invalidate_recordset()
+        self.assertEqual(doc.state, "draft")
+        self.assertFalse(doc.active)
+
+    def test_draft_policy_blocks_operational_document_actions(self):
+        policy_folder = self.env["doc.folder"].create(
+            {
+                "folder_name": "Blocked policy",
+                "folder_type": "organizational",
+                "folder_kind": "policy",
+                "parent_id": self.library_folder.id,
+            }
+        )
+        self.env["doc.organizational.policy"].create(
+            {
+                "name": "Blocked policy",
+                "folder_id": policy_folder.id,
+                "lifecycle_status": "draft",
+            }
+        )
+        doc = self._document("Blocked handbook.pdf", folder=policy_folder)
+        with self.assertRaises(UserError):
+            doc.action_move_to_recycle_bin()
+        with self.assertRaises(UserError):
+            doc.action_archive()
+        doc.action_toggle_favorite()
+        doc.action_toggle_pin()
 
     def test_only_policy_documents_assignable_to_employees(self):
         library_doc = self._document("General handbook.pdf")
         policy_doc = self._document("Security policy.pdf")
         policy_doc.write({"is_policy": True})
+        policy_doc.action_restore()
         self.assertFalse(library_doc._assignable_as_employee_policy())
         self.assertTrue(policy_doc._assignable_as_employee_policy())
 

@@ -8,6 +8,7 @@ import {
   useDocumentLifecycle,
   useFolderAction,
   useFolderLifecycle,
+  useLifecycleBulkAction,
   useFolders,
 } from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
@@ -47,6 +48,7 @@ export default function DocumentLifecyclePage({
   const activeFolders = useFolders();
   const documentAction = useDocumentAction();
   const folderAction = useFolderAction();
+  const lifecycleBulk = useLifecycleBulkAction();
   const currentUser = useCurrentUser();
   const { showConfirm } = useAppDialog();
   const isManager = currentUser.data?.is_document_manager === true;
@@ -114,19 +116,17 @@ export default function DocumentLifecyclePage({
       )
         return;
     }
-    for (const record of selectedRecords) {
-      if (action === "permanent_delete" && record.record_type === "folder") {
-        const linked = linkedCount(record);
-        await perform(
-          record,
-          linked > 0 ? "force_permanent_delete" : "permanent_delete",
-        );
-        continue;
-      }
-      await perform(record, action);
+    const result = await lifecycleBulk.mutateAsync({
+      action,
+      records: selectedRecords.map((record) => ({
+        record_type: record.record_type,
+        id: record.id,
+      })),
+    });
+    if (result && result.success === false) {
+      setDialogMessage(result.message || "Action failed.");
     }
     setSelected([]);
-    await Promise.all([documents.refetch(), folders.refetch()]);
   };
 
   const linkedCount = (record: LifecycleRecord) =>

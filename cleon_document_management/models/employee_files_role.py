@@ -1,6 +1,30 @@
 # -*- coding: utf-8 -*-
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, tools
 from odoo.exceptions import ValidationError
+
+from .dms_permission_catalog import (
+    CANONICAL_ORG_ROLE_TEMPLATE_KEYS,
+    DMS_PERMISSION_KEYS,
+    DMS_ROLE_TEMPLATE_DEFAULTS,
+    ORG_PERMISSION_KEYS,
+    ROLE_TEMPLATE_KEYS,
+    dms_permissions_from_role_record,
+    permissions_from_legacy_booleans,
+    sync_legacy_fields_from_permissions,
+)
+
+_LEGACY_ORG_FIELDS = (
+    "org_access_library",
+    "org_create_folder",
+    "org_manage_folders",
+    "org_share_manage_access",
+    "org_folder_archive",
+    "org_folder_delete",
+    "org_upload",
+    "org_document_manage",
+    "org_document_manage_access",
+    "org_document_delete",
+)
 
 EF_ACTION_FIELDS = (
     "action_view",
@@ -176,6 +200,30 @@ class DocEmployeeFilesRole(models.Model):
         default=False,
     )
     org_document_delete = fields.Boolean(string="Delete org documents", default=False)
+    dms_permissions = fields.Json(
+        string="Module permissions (DMS)",
+        default=dict,
+    )
+    org_permissions = fields.Json(
+        string="Organizational permissions",
+        default=dict,
+    )
+    role_template_key = fields.Selection(
+        selection=[(key, key.replace("_", " ").title()) for key in ROLE_TEMPLATE_KEYS],
+        string="Role template",
+        default="custom",
+        required=True,
+    )
+    is_system_template = fields.Boolean(
+        string="Canonical organisational role",
+        default=False,
+        help="One of the six Section 4 organisational roles; permissions are fixed.",
+    )
+    is_readonly_template = fields.Boolean(
+        string="Fixed permissions",
+        default=False,
+        help="Organisational permission flags cannot be changed (canonical role).",
+    )
     user_ids = fields.Many2many(
         "res.users",
         "doc_employee_files_role_user_rel",
@@ -184,8 +232,19 @@ class DocEmployeeFilesRole(models.Model):
         string="Assigned users",
     )
 
+    def get_dms_permissions_dict(self):
+        self.ensure_one()
+        return dms_permissions_from_role_record(self)
+
+    def get_org_permissions_dict(self):
+        self.ensure_one()
+        dms = self.get_dms_permissions_dict()
+        return {key: bool(dms.get(key)) for key in ORG_PERMISSION_KEYS}
+
     def _has_organizational_capabilities(self):
         self.ensure_one()
+        if any(self.get_org_permissions_dict().values()):
+            return True
         return any(
             self[field_name]
             for field_name in (
@@ -202,13 +261,177 @@ class DocEmployeeFilesRole(models.Model):
             )
         )
 
-    @api.constrains("line_ids")
-    def _check_has_lines(self):
+    def _is_canonical_org_role_vals(self, vals):
+        return (
+            vals.get("is_system_template")
+            and vals.get("role_template_key") in CANONICAL_ORG_ROLE_TEMPLATE_KEYS
+        )
+
+    def _sync_permissions_from_catalog(self):
         for role in self:
+            if (
+                not role.is_system_template
+                or role.role_template_key not in DMS_ROLE_TEMPLATE_DEFAULTS
+            ):
+                continue
+            perms = dict(DMS_ROLE_TEMPLATE_DEFAULTS[role.role_template_key])
+            if dict(role.dms_permissions or {}) == perms:
+                continue
+            org_slice = {k: v for k, v in perms.items() if k in ORG_PERMISSION_KEYS}
+            stub = role.new({"org_permissions": org_slice})
+            sync_legacy_fields_from_permissions(stub, org_slice)
+            role.with_context(skip_canonical_permission_sync=True).write(
+                {
+                    "dms_permissions": perms,
+                    "org_permissions": org_slice,
+                    **{field: stub[field] for field in _LEGACY_ORG_FIELDS},
+                }
+            )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if (
+            not self.env.context.get("allow_employee_files_role_create")
+            and not tools.config.get("test_enable")
+        ):
+            for vals in vals_list:
+                if not self._is_canonical_org_role_vals(vals):
+                    raise ValidationError(
+                        _(
+                            "Only the six standard organisational roles are defined. "
+                            "Assign users to those roles instead of creating new ones."
+                        )
+                    )
+        cleaned = []
+        for vals in vals_list:
+            if vals.get("org_permissions"):
+                role_stub = self.new(vals)
+                sync_legacy_fields_from_permissions(
+                    role_stub, role_stub.get_org_permissions_dict()
+                )
+                for field_name in (
+                    "org_access_library",
+                    "org_create_folder",
+                    "org_manage_folders",
+                    "org_share_manage_access",
+                    "org_folder_archive",
+                    "org_folder_delete",
+                    "org_upload",
+                    "org_document_manage",
+                    "org_document_manage_access",
+                    "org_document_delete",
+                ):
+                    vals[field_name] = role_stub[field_name]
+            elif any(
+                vals.get(field)
+                for field in (
+                    "org_access_library",
+                    "org_create_folder",
+                    "org_manage_folders",
+                    "org_share_manage_access",
+                    "org_folder_archive",
+                    "org_folder_delete",
+                    "org_upload",
+                    "org_document_manage",
+                    "org_document_manage_access",
+                    "org_document_delete",
+                )
+            ):
+                stub = self.new(vals)
+                vals["org_permissions"] = permissions_from_legacy_booleans(stub)
+            cleaned.append(vals)
+        return super().create(cleaned)
+
+    def write(self, vals):
+        vals = dict(vals)
+        canonical = self.filtered(
+            lambda role: role.is_system_template
+            and role.role_template_key in CANONICAL_ORG_ROLE_TEMPLATE_KEYS
+        )
+        if canonical:
+            locked = {
+                "dms_permissions",
+                "org_permissions",
+                "name",
+                "role_template_key",
+                "is_system_template",
+                "is_readonly_template",
+                "active",
+                *_LEGACY_ORG_FIELDS,
+            }
+            for key in locked:
+                vals.pop(key, None)
+        legacy_fields = _LEGACY_ORG_FIELDS
+        if vals.get("org_permissions") is not None:
+            sample = self[:1]
+            stub = sample.new(dict(vals, id=sample.id if sample else False))
+            sync_legacy_fields_from_permissions(stub, stub.get_org_permissions_dict())
+            for field_name in legacy_fields:
+                vals[field_name] = stub[field_name]
+        result = super().write(vals)
+        if "org_permissions" not in vals and any(field in vals for field in legacy_fields):
+            for role in self:
+                if role in canonical:
+                    continue
+                role.with_context(skip_org_legacy_sync=True).write(
+                    {"org_permissions": permissions_from_legacy_booleans(role)}
+                )
+        if canonical and not self.env.context.get("skip_canonical_permission_sync"):
+            canonical._sync_permissions_from_catalog()
+        return result
+
+    def apply_template_defaults(self, template_key):
+        self.ensure_one()
+        if template_key not in DMS_ROLE_TEMPLATE_DEFAULTS:
+            raise ValidationError(_("Unknown organisational role template."))
+        perms = dict(DMS_ROLE_TEMPLATE_DEFAULTS[template_key])
+        org_slice = {k: v for k, v in perms.items() if k in ORG_PERMISSION_KEYS}
+        sync_legacy_fields_from_permissions(self, org_slice)
+        self.write(
+            {
+                "role_template_key": template_key,
+                "dms_permissions": perms,
+                "org_permissions": org_slice,
+                "org_access_library": self.org_access_library,
+                "org_create_folder": self.org_create_folder,
+                "org_manage_folders": self.org_manage_folders,
+                "org_share_manage_access": self.org_share_manage_access,
+                "org_folder_archive": self.org_folder_archive,
+                "org_folder_delete": self.org_folder_delete,
+                "org_upload": self.org_upload,
+                "org_document_manage": self.org_document_manage,
+                "org_document_manage_access": self.org_document_manage_access,
+                "org_document_delete": self.org_document_delete,
+            }
+        )
+
+    @api.constrains(
+        "line_ids",
+        "active",
+        "is_system_template",
+        "role_template_key",
+        "dms_permissions",
+        "org_permissions",
+        *_LEGACY_ORG_FIELDS,
+    )
+    def _check_active_role_has_capabilities(self):
+        for role in self:
+            if (
+                role.is_system_template
+                and role.role_template_key in CANONICAL_ORG_ROLE_TEMPLATE_KEYS
+            ):
+                continue
             if role.active and not role.line_ids and not role._has_organizational_capabilities():
+                has_ef = any(
+                    role.get_dms_permissions_dict().get(key)
+                    for key in DMS_PERMISSION_KEYS
+                    if key.startswith("ef_")
+                )
+                if has_ef:
+                    continue
                 raise ValidationError(
                     _(
-                        "Each active role needs Employee Files category rows or at least one Organizational Files capability."
+                        "Each active role needs Employee Files category rows or at least one module capability."
                     )
                 )
 
@@ -255,6 +478,11 @@ class DocEmployeeFilesRole(models.Model):
             "company_id": self.company_id.id,
             "employee_scope": self.employee_scope,
             "is_migration_seed": self.is_migration_seed,
+            "role_template_key": self.role_template_key,
+            "is_system_template": self.is_system_template,
+            "is_readonly_template": self.is_readonly_template,
+            "dms_permissions": self.get_dms_permissions_dict(),
+            "organizational_permissions": self.get_org_permissions_dict(),
             "lines": [line.serialize_for_api() for line in self.line_ids],
             "assigned_user_ids": [user["id"] for user in assigned_users],
             "assigned_users": assigned_users,

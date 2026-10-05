@@ -1,3 +1,72 @@
+export type OrganizationalPermissionKey =
+  | "view_org_files"
+  | "create_folder"
+  | "create_folder_without_approval"
+  | "create_collection"
+  | "upload_link_import_scan"
+  | "upload_without_approval"
+  | "edit_rename_description_colour"
+  | "edit_without_approval"
+  | "replace_version"
+  | "replace_version_without_approval"
+  | "move"
+  | "move_without_approval"
+  | "approve_reject_requests"
+  | "share_manage_access"
+  | "assign_document"
+  | "lock_unlock"
+  | "archive_restore"
+  | "delete"
+  | "delete_without_approval"
+  | "permanent_delete"
+  | "delete_protected_override"
+  | "place_release_legal_hold"
+  | "external_share_password_watermark"
+  | "add_policy"
+  | "activate_archive_policy"
+  | "assign_policy_ack_sign"
+  | "view_hr_only_policies"
+  | "acknowledge_sign_assigned_policy"
+  | "automate"
+  | "view_audit_activity"
+  | "is_super_admin";
+
+export type OrganizationalPermissionsMap = Record<OrganizationalPermissionKey, boolean>;
+
+export type DmsPermissionsMap = Partial<
+  Record<
+    | OrganizationalPermissionKey
+    | "access_dms_module"
+    | "view_employee_files"
+    | "view_compliance"
+    | "view_templates_forms"
+    | "view_workspace_activity"
+    | "ef_view"
+    | "ef_upload"
+    | "ef_approve"
+    | "ef_download"
+    | "ef_archive"
+    | "ef_delete"
+    | "ef_export"
+    | "ef_manage_ef_settings"
+    | "compliance_view"
+    | "compliance_manage_policies"
+    | "compliance_run_evaluations"
+    | "compliance_manage_exceptions"
+    | "compliance_export"
+    | "templates_view"
+    | "templates_create_edit"
+    | "templates_assign"
+    | "templates_export"
+    | "manage_document_types"
+    | "manage_retention_lifecycle"
+    | "manage_ef_tenant_config"
+    | "manage_org_tenant_config"
+    | "assign_dms_roles",
+    boolean
+  >
+>;
+
 export interface OrganizationalFilesPermissions {
   can_access_org_library: boolean;
   can_create_folder: boolean;
@@ -9,6 +78,15 @@ export interface OrganizationalFilesPermissions {
   can_document_manage: boolean;
   can_document_manage_access: boolean;
   can_document_delete: boolean;
+  is_org_super_admin?: boolean;
+  is_org_auditor_readonly?: boolean;
+  can_external_share?: boolean;
+  can_legal_hold?: boolean;
+  can_approve_org_requests?: boolean;
+  can_view_org_audit?: boolean;
+  can_manage_org_policy_lifecycle?: boolean;
+  can_view_hr_only_org_policy?: boolean;
+  org_permissions?: Partial<OrganizationalPermissionsMap>;
   actions?: Partial<
     Record<
       | "access_library"
@@ -73,6 +151,8 @@ export interface User {
   is_admin?: boolean;
   is_document_manager?: boolean;
   is_document_admin?: boolean;
+  is_super_admin?: boolean;
+  dms_permissions?: DmsPermissionsMap;
   employee_files_permissions?: EmployeeFilesPermissions;
   organizational_files_permissions?: OrganizationalFilesPermissions;
 }
@@ -122,6 +202,11 @@ export interface EmployeeFilesRole {
   assigned_user_ids?: number[];
   assigned_users?: EmployeeFilesAssignedUser[];
   organizational_actions?: OrganizationalRoleActions;
+  organizational_permissions?: Partial<OrganizationalPermissionsMap>;
+  role_template_key?: string;
+  is_system_template?: boolean;
+  is_readonly_template?: boolean;
+  dms_permissions?: DmsPermissionsMap;
 }
 
 export interface EmployeeFilesRoleMember {
@@ -134,6 +219,34 @@ export interface EmployeeFilesRoleMember {
   user_login: string;
   has_login: boolean;
   employee_files_role_ids: number[];
+}
+
+export interface OrganizationalApprovalRequest {
+  id: number;
+  name: string;
+  action_key: string;
+  state: string;
+  display_state?: string;
+  requested_by_id: number;
+  requested_by_name: string;
+  folder_id?: number | false;
+  document_id?: number | false;
+  approver_id?: number | false;
+  approver_name?: string;
+  delegated_from_id?: number | false;
+  delegated_from_name?: string;
+  due_at?: string;
+  escalated_at?: string;
+  create_date?: string;
+  decision_note?: string;
+  target_label?: string;
+  payload?: Record<string, unknown>;
+}
+
+export interface OrganizationalApprovalBulkResult {
+  approved?: OrganizationalApprovalRequest[];
+  rejected?: OrganizationalApprovalRequest[];
+  failed?: { id: number; message: string }[];
 }
 
 export interface EmployeeFilesRoleMembersPayload {
@@ -263,6 +376,12 @@ export interface DocDocument {
   linked_policy_name?: string;
   organizational_policy_id?: number | false;
   organizational_policy_name?: string;
+  folder_kind?: "folder" | "project" | "vendor" | "policy";
+  folder_access_scope?: string;
+  folder_department_ids?: number[];
+  folder_grade_ids?: number[];
+  folder_employee_ids?: number[];
+  organizational_policy_lifecycle_status?: "draft" | "active" | "archived" | false;
   linked_template_document_id?: number | false;
   linked_template_document_name?: string;
   policy_editor_document_id?: number | false;
@@ -361,6 +480,8 @@ export interface ApprovalInboxItem {
   employee_id?: number;
   document: string;
   document_type: string;
+  mime_type?: string;
+  source_url?: string;
   employee: string;
   folder_id: number;
   folder_type: "employee" | "organizational";
@@ -390,6 +511,8 @@ export interface PendingEmployeeUpload {
   id: number;
   name: string;
   document_type: string;
+  mime_type?: string;
+  source_url?: string;
   employee_id: number;
   employee_name: string;
   department: string;

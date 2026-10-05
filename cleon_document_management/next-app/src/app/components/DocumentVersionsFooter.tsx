@@ -12,12 +12,14 @@ export default function DocumentVersionsFooter({
   activeVersionId = null,
   onViewVersion,
   onViewCurrent,
+  readOnlyHistory = false,
 }: {
   documentId: number;
   currentVersionNumber?: number;
   activeVersionId?: number | null;
   onViewVersion?: (versionId: number) => void;
   onViewCurrent?: () => void;
+  readOnlyHistory?: boolean;
 }) {
   const versions = useDocumentVersions(documentId);
   const { showAlert, showConfirm } = useAppDialog();
@@ -124,30 +126,32 @@ export default function DocumentVersionsFooter({
                 >
                   Open tab
                 </a>
-                <button
-                  type="button"
-                  onClick={() =>
-                    void (async () => {
-                      const confirmed = await showConfirm(
-                        `Restore version ${version.version_number} as a new current version? The current file is kept in history.`,
-                        { title: "Restore version", confirmLabel: "Restore" },
-                      );
-                      if (!confirmed) return;
-                      const result = await api.restoreOrganizationalVersion(version.id);
-                      if (!result.success) {
-                        await showAlert(result.message || "Unable to restore this version.", {
-                          title: "Restore version",
-                        });
-                        return;
-                      }
-                      await versions.refetch();
-                      onViewCurrent?.();
-                    })()
-                  }
-                  className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:border-brand-pink hover:text-brand-pink"
-                >
-                  Restore
-                </button>
+                {!readOnlyHistory ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void (async () => {
+                        const confirmed = await showConfirm(
+                          `Restore version ${version.version_number} as a new current version? The current file is kept in history.`,
+                          { title: "Restore version", confirmLabel: "Restore" },
+                        );
+                        if (!confirmed) return;
+                        const result = await api.restoreOrganizationalVersion(version.id);
+                        if (!result.success) {
+                          await showAlert(result.message || "Unable to restore this version.", {
+                            title: "Restore version",
+                          });
+                          return;
+                        }
+                        await versions.refetch();
+                        onViewCurrent?.();
+                      })()
+                    }
+                    className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:border-brand-pink hover:text-brand-pink"
+                  >
+                    Restore
+                  </button>
+                ) : null}
               </div>
             </li>
           );

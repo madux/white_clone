@@ -555,6 +555,18 @@ export function useDeleteFolder() {
   });
 }
 
+export function useDeleteFolders() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteFolders,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+      queryClient.invalidateQueries({ queryKey: ["organizational-policies"] });
+      invalidateDocumentQueries(queryClient);
+    },
+  });
+}
+
 export function useUpdateFolder() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -672,11 +684,81 @@ export function useDeleteDocument() {
   });
 }
 
+function patchDocumentInFolderCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  documentId: number,
+  patch: Partial<import("../lib/types").DocDocument>,
+) {
+  queryClient.setQueriesData<import("../lib/types").DocDocument[]>(
+    { queryKey: ["documents"] },
+    (current) => {
+      if (!current?.length) return current;
+      const index = current.findIndex((item) => item.id === documentId);
+      if (index < 0) return current;
+      const next = [...current];
+      next[index] = { ...next[index], ...patch };
+      return next;
+    },
+  );
+}
+
+export function useDocumentsAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.documentsAction,
+    onSuccess: (_result, variables) => {
+      if (variables.action === "delete") {
+        const deletedIds = new Set(variables.document_ids);
+        queryClient.setQueriesData<import("../lib/types").DocDocument[]>(
+          { queryKey: ["documents"] },
+          (current) =>
+            current?.length
+              ? current.filter((item) => !deletedIds.has(item.id))
+              : current,
+        );
+      }
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "file-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-files", "document-search"] });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.lifecycleDocuments("archived"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["folders", "recycle_bin"] });
+      queryClient.invalidateQueries({ queryKey: ["documents", "recycle_bin"] });
+    },
+  });
+}
+
+export function useLifecycleBulkAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.lifecycleBulkAction,
+    onSuccess: () => {
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ["folders", "recycle_bin"] });
+      queryClient.invalidateQueries({ queryKey: ["documents", "recycle_bin"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.lifecycleDocuments("archived") });
+    },
+  });
+}
+
 export function useDocumentAction() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.documentAction,
-    onSuccess: () => {
+    onSuccess: (_result, variables) => {
+      if (variables.action === "deactivate") {
+        patchDocumentInFolderCaches(queryClient, variables.id, {
+          active: false,
+          distribution_status: "deactivated",
+          state: "draft",
+        });
+      } else if (variables.action === "activate") {
+        patchDocumentInFolderCaches(queryClient, variables.id, {
+          active: true,
+          distribution_status: "active",
+        });
+      }
       invalidateDocumentQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["employee-files", "file-documents"] });
       queryClient.invalidateQueries({ queryKey: ["employee-files", "document-search"] });

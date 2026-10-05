@@ -1,12 +1,14 @@
 "use client";
 
-import { Maximize2, Minimize2, X } from "lucide-react";
-import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { Maximize2, Minimize2, Minus, X } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   isTopModalLayer,
   registerModalLayer,
   unregisterModalLayer,
 } from "../../../lib/modalLayerStack";
+import { useFormWindowTray } from "./FormWindowProvider";
 
 type ModalSize = "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "5xl";
 
@@ -20,7 +22,7 @@ const SIZE_CLASSES: Record<ModalSize, string> = {
   "5xl": "max-w-6xl",
 };
 
-type ModalDialogProps = {
+export type ModalDialogProps = {
   title: string;
   eyebrow?: string;
   description?: string;
@@ -28,6 +30,8 @@ type ModalDialogProps = {
   children: ReactNode;
   size?: ModalSize;
   fullscreenable?: boolean;
+  /** When false, hide minimise (e.g. Document Intelligence). Default: on except /document-intelligence routes. */
+  minimizable?: boolean;
   zIndex?: number;
   footer?: ReactNode;
   headerActions?: ReactNode;
@@ -36,6 +40,14 @@ type ModalDialogProps = {
   bodyClassName?: string;
   panelClassName?: string;
   closeDisabled?: boolean;
+  /** Rendered from FormWindowProvider after minimise (survives route changes). */
+  hostedInTray?: boolean;
+  traySessionId?: string;
+  /** When set, minimise hosts this tree instead of cloning only this dialog (keeps parent state). */
+  renderHostedOnMinimize?: (args: {
+    sessionId: string;
+    onClose: () => void;
+  }) => ReactNode;
 };
 
 export default function ModalDialog({
@@ -46,6 +58,7 @@ export default function ModalDialog({
   children,
   size = "lg",
   fullscreenable = true,
+  minimizable,
   zIndex = 50,
   footer,
   headerActions,
@@ -54,20 +67,118 @@ export default function ModalDialog({
   bodyClassName,
   panelClassName = "",
   closeDisabled = false,
+  hostedInTray = false,
+  traySessionId,
+  renderHostedOnMinimize,
 }: ModalDialogProps) {
+  const pathname = usePathname();
+  const tray = useFormWindowTray();
+  const trayId = useId();
+  const sessionId = traySessionId ?? trayId;
+  const handedOffRef = useRef(false);
+  const unhostRef = useRef(tray?.unhostModal);
+  unhostRef.current = tray?.unhostModal;
+
+  const hostedEntry =
+    hostedInTray && tray ? tray.getHostedModal?.(sessionId) : undefined;
+
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [handedOff, setHandedOff] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const layerIdRef = useRef(-1);
+
+  const allowMinimize =
+    minimizable ??
+    !pathname?.includes("/pages/document-intelligence");
+
+  const isMinimized = hostedInTray
+    ? (hostedEntry?.minimized ?? false)
+    : handedOff;
 
   const handleClose = useCallback(() => {
     if (closeDisabled) return;
     setIsFullscreen(false);
+    unhostRef.current?.(sessionId);
     onClose();
-  }, [closeDisabled, onClose]);
+  }, [closeDisabled, onClose, sessionId]);
+
+  const handleMinimize = useCallback(() => {
+    if (!allowMinimize || !tray || closeDisabled) return;
+
+    if (hostedInTray) {
+      tray.setHostedMinimized(sessionId, true);
+      setIsFullscreen(false);
+      return;
+    }
+
+    const closeHandler = () => {
+      tray.unhostModal(sessionId);
+      onClose();
+    };
+
+    const hostedContent = renderHostedOnMinimize
+      ? renderHostedOnMinimize({ sessionId, onClose: closeHandler })
+      : (
+        <ModalDialog
+          hostedInTray
+          traySessionId={sessionId}
+          title={title}
+          eyebrow={eyebrow}
+          description={description}
+          onClose={closeHandler}
+          size={size}
+          fullscreenable={fullscreenable}
+          minimizable={minimizable}
+          zIndex={zIndex}
+          footer={footer}
+          headerActions={headerActions}
+          backdropClassName={backdropClassName}
+          titleClassName={titleClassName}
+          bodyClassName={bodyClassName}
+          panelClassName={panelClassName}
+          closeDisabled={closeDisabled}
+        >
+          {children}
+        </ModalDialog>
+      );
+
+    tray.hostModal({
+      id: sessionId,
+      title,
+      minimized: true,
+      onClose: closeHandler,
+      content: hostedContent,
+    });
+    handedOffRef.current = true;
+    setHandedOff(true);
+    setIsFullscreen(false);
+  }, [
+    allowMinimize,
+    tray,
+    closeDisabled,
+    hostedInTray,
+    sessionId,
+    title,
+    eyebrow,
+    description,
+    onClose,
+    size,
+    fullscreenable,
+    minimizable,
+    zIndex,
+    footer,
+    headerActions,
+    backdropClassName,
+    titleClassName,
+    bodyClassName,
+    panelClassName,
+    children,
+    renderHostedOnMinimize,
+  ]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (!dialog) return;
+    if (!dialog || isMinimized) return;
     const focusable = dialog.querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     );
@@ -88,17 +199,35 @@ export default function ModalDialog({
     };
     dialog.addEventListener("keydown", handleKeyDown);
     return () => dialog.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [isMinimized]);
 
   useEffect(() => {
+    if (isMinimized) {
+      if (layerIdRef.current >= 0) {
+        unregisterModalLayer(layerIdRef.current);
+        layerIdRef.current = -1;
+      }
+      return;
+    }
     const id = registerModalLayer(handleClose);
     layerIdRef.current = id;
     return () => unregisterModalLayer(id);
-  }, [handleClose]);
+  }, [handleClose, isMinimized]);
+
+  useEffect(() => {
+    return () => {
+      if (handedOffRef.current) return;
+      if (hostedInTray) return;
+      unhostRef.current?.(sessionId);
+    };
+  }, [hostedInTray, sessionId]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (isMinimized) {
+        return;
+      }
       if (!isTopModalLayer(layerIdRef.current)) return;
       if (isFullscreen) {
         event.preventDefault();
@@ -110,7 +239,15 @@ export default function ModalDialog({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleClose, isFullscreen]);
+  }, [handleClose, isFullscreen, isMinimized]);
+
+  if (!hostedInTray && handedOff) {
+    return null;
+  }
+
+  if (isMinimized) {
+    return null;
+  }
 
   return (
     <div
@@ -148,11 +285,23 @@ export default function ModalDialog({
           </div>
           <div className="flex items-center gap-2">
             {headerActions}
+            {allowMinimize && tray ? (
+              <button
+                type="button"
+                onClick={handleMinimize}
+                disabled={closeDisabled}
+                className="form-window-control disabled:opacity-40"
+                aria-label="Minimise dialog"
+                title="Minimise"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+            ) : null}
             {fullscreenable && (
               <button
                 type="button"
                 onClick={() => setIsFullscreen((current) => !current)}
-                className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:border-brand-pink hover:text-brand-pink"
+                className="form-window-control"
                 aria-label={isFullscreen ? "Exit full screen" : "Maximize full screen"}
                 title={isFullscreen ? "Exit full screen" : "Maximize full screen"}
               >

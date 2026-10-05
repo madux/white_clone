@@ -1,6 +1,18 @@
-from odoo import fields, http
+from odoo import _, fields, http
 from odoo.exceptions import AccessError, UserError
 from odoo.http import request
+
+
+def _coerce_int_ids(values):
+    return sorted({int(value) for value in (values or []) if str(value).isdigit()})
+
+
+def _draft_policy_guard(document, action):
+    try:
+        document._check_draft_policy_allows_action(action)
+    except UserError as error:
+        return {"success": False, "message": error.args[0]}
+    return None
 
 
 def _user_can_ef_approve(document):
@@ -237,6 +249,9 @@ class DocumentActions(http.Controller):
         document = request.env["doc.document"].browse(int(id or 0)).exists()
         if not document:
             return {"success": False, "message": "Document not found."}
+        blocked = _draft_policy_guard(document, "update")
+        if blocked:
+            return blocked
         is_manager = request.env.user.has_group(
             "cleon_document_management.group_document_manager"
         )
@@ -300,6 +315,20 @@ class DocumentActions(http.Controller):
                 "message": "Move employees from the employee folder view so their files move with them.",
             }
 
+        approval = request.env["doc.organizational.approval.service"]
+        gate = approval.submit_or_block(
+            request.env.user,
+            "move",
+            {
+                "document_ids": documents.ids,
+                "destination_folder_id": destination.id,
+                "folder_id": documents[:1].folder_id.id if documents else False,
+            },
+            name=_("Move %s document(s)") % len(documents),
+        )
+        if not gate.get("execute"):
+            return approval.pending_api_response(gate.get("request"))
+
         try:
             documents.write({"folder_id": destination.id})
         except Exception as error:
@@ -325,6 +354,9 @@ class DocumentActions(http.Controller):
             return {"success": False, "message": "Version not found."}
         document = version.document_id
         document.check_access_rule("read")
+        blocked = _draft_policy_guard(document, "delete")
+        if blocked:
+            return blocked
         document_id = document.id
         if not version._user_can_manage():
             return {
@@ -353,8 +385,119 @@ class DocumentActions(http.Controller):
         document = request.env["doc.document"].browse(int(id or 0)).exists()
         if not document:
             return {"success": False, "message": "Document not found."}
+        blocked = _draft_policy_guard(document, "delete")
+        if blocked:
+            return blocked
         document.action_move_to_recycle_bin()
         return {"success": True, "message": "Document moved to the recycle bin."}
+
+    @http.route(
+        "/api/documents-action", type="json", auth="user", methods=["POST"], csrf=False
+    )
+    def documents_action(self, document_ids=None, action=None, **kwargs):
+        """Apply the same document action to many documents in one request."""
+        ids = _coerce_int_ids(document_ids)
+        if not ids:
+            return {"success": False, "message": "Select at least one document."}
+        if not action:
+            return {"success": False, "message": "Action is required."}
+
+        documents = request.env["doc.document"].browse(ids).exists()
+        if len(documents) != len(set(ids)):
+            return {"success": False, "message": "One or more documents were not found."}
+
+        user = request.env.user
+        org_perm = request.env["doc.organizational.files.permission"]
+        org_documents = documents.filtered(
+            lambda doc: doc.folder_id.folder_type == "organizational"
+        )
+
+        for document in documents:
+            document.check_access_rule("read")
+
+        if action not in ("favorite", "pin"):
+            for document in documents:
+                blocked = _draft_policy_guard(document, action)
+                if blocked:
+                    return blocked
+
+        if action == "delete":
+            if org_documents and not org_perm.user_can_delete_org_document(user):
+                return {
+                    "success": False,
+                    "message": "You do not have permission to delete one or more documents.",
+                }
+            if org_documents:
+                approval = request.env["doc.organizational.approval.service"]
+                gate = approval.submit_or_block(
+                    user,
+                    "delete",
+                    {
+                        "document_ids": org_documents.ids,
+                        "folder_id": org_documents[:1].folder_id.id,
+                    },
+                    name=_("Delete %s document(s)") % len(org_documents),
+                )
+                if not gate.get("execute"):
+                    return approval.pending_api_response(gate.get("request"))
+            documents.action_move_to_recycle_bin()
+            return {
+                "success": True,
+                "message": _("Moved %s document(s) to the recycle bin.") % len(documents),
+                "data": {"document_ids": documents.ids, "action": action},
+            }
+
+        if action == "archive":
+            if org_documents and not org_perm.user_can_manage_org_document(user):
+                return {
+                    "success": False,
+                    "message": "You do not have permission to archive one or more documents.",
+                }
+            documents.action_archive()
+        elif action == "favorite":
+            for document in documents:
+                document.action_toggle_favorite()
+        elif action == "pin":
+            for document in documents:
+                document.action_toggle_pin()
+        elif action == "deactivate":
+            if org_documents and not (
+                org_perm.user_can_manage_org_document(user)
+                or org_perm.user_can_delete_org_document(user)
+                or org_perm.user_is_platform_admin(user)
+                or org_perm.user_has_legacy_manager(user)
+            ):
+                return {
+                    "success": False,
+                    "message": "You do not have permission to deactivate one or more documents.",
+                }
+            documents.action_deactivate()
+        elif action in ("restore", "activate"):
+            if not user.has_group(
+                "cleon_document_management.group_document_manager"
+            ) and any(not document._user_owns_document() for document in documents):
+                return {
+                    "success": False,
+                    "message": "You can only restore your own documents.",
+                }
+            documents.action_restore()
+        elif action == "permanent_delete":
+            if not user.has_group(
+                "cleon_document_management.group_document_manager"
+            ):
+                return {
+                    "success": False,
+                    "message": "Document manager access is required.",
+                }
+            documents.unlink()
+        else:
+            return {"success": False, "message": "Unsupported bulk document action."}
+
+        return {
+            "success": True,
+            "message": _("Updated %s document(s).") % len(documents),
+            "data": {"document_ids": documents.ids, "action": action},
+        }
 
     @http.route(
         "/api/document-action", type="json", auth="user", methods=["POST"], csrf=False
@@ -364,6 +507,10 @@ class DocumentActions(http.Controller):
         if not document:
             return {"success": False, "message": "Document not found."}
         document.check_access_rule("read")
+        if action not in ("favorite", "pin"):
+            blocked = _draft_policy_guard(document, action or "")
+            if blocked:
+                return blocked
         org_perm = request.env["doc.organizational.files.permission"]
         is_org = document.folder_id.folder_type == "organizational"
         if action == "favorite":
@@ -376,6 +523,19 @@ class DocumentActions(http.Controller):
                     "success": False,
                     "message": "You do not have permission to delete this document.",
                 }
+            if is_org:
+                approval = request.env["doc.organizational.approval.service"]
+                gate = approval.submit_or_block(
+                    request.env.user,
+                    "delete",
+                    {
+                        "document_id": document.id,
+                        "folder_id": document.folder_id.id,
+                    },
+                    name=_("Delete document: %s") % document.name,
+                )
+                if not gate.get("execute"):
+                    return approval.pending_api_response(gate.get("request"))
             document.action_move_to_recycle_bin()
             return {"success": True, "data": {"deleted": True}}
         elif action == "archive":
@@ -418,6 +578,16 @@ class DocumentActions(http.Controller):
                 },
             }
         elif action == "deactivate":
+            if is_org and not (
+                org_perm.user_can_manage_org_document(request.env.user)
+                or org_perm.user_can_delete_org_document(request.env.user)
+                or org_perm.user_is_platform_admin(request.env.user)
+                or org_perm.user_has_legacy_manager(request.env.user)
+            ):
+                return {
+                    "success": False,
+                    "message": "You do not have permission to deactivate this document.",
+                }
             document.action_deactivate()
         elif action == "restore":
             if not request.env.user.has_group(

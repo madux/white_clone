@@ -3,7 +3,7 @@
 import { Archive, Download, FolderHeart, FolderInput, Lock, Trash2, Unlock, X } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../../lib/api";
-import { useDeleteFolder, useFolderAction } from "../../../hooks/useDocuments";
+import { useDeleteFolders, useFolderAction } from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
 
 export default function BulkFolderActions({
@@ -19,7 +19,7 @@ export default function BulkFolderActions({
 }) {
   const [running, setRunning] = useState(false);
   const action = useFolderAction();
-  const remove = useDeleteFolder();
+  const remove = useDeleteFolders();
   const { showAlert, showConfirm } = useAppDialog();
   if (!selected.length) return null;
 
@@ -56,9 +56,7 @@ export default function BulkFolderActions({
       return;
     setRunning(true);
     try {
-      for (const id of selected) {
-        await remove.mutateAsync(id);
-      }
+      await remove.mutateAsync(selected);
     } finally {
       setRunning(false);
       onClear();
