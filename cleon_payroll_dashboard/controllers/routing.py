@@ -1,0 +1,129 @@
+# controllers/main.py
+
+from odoo import http
+from odoo.http import request
+
+
+class OpenPayrollController(http.Controller):
+
+    def redirect_to_page(self, action, view_type='list', view_mode='list'):
+        return request.redirect(
+            '/web#action=%s&model=%s&view_type=%s&view_mode=%s'
+            % (
+                action['id'],
+                action.get('res_model'),
+                view_type,
+                view_mode,
+            )
+        )
+   
+    @http.route('/app/payrolls', type='http', auth='user')
+    def open_payroll(self, **kwargs):
+        new_action = request.env.ref('cleon_payroll.action_cleon_payslip').sudo().read()[0]
+        action = new_action
+        return self.redirect_to_page(action, 'list', 'list')
+
+    @http.route('/app/payrolls/batch', type='http', auth='user')
+    def open_Batchpayroll(self, **kwargs):
+        new_action = request.env.ref('cleon_payroll.action_cleon_payslip_run').sudo().read()[0]
+        action = new_action
+        return self.redirect_to_page(action, 'list', 'list')
+
+    @http.route('/app/payrolls/cycle', type='http', auth='user')
+    def open_payroll_cycle(self, **kwargs):
+        new_action = request.env.ref('cleon_payroll.action_cleon_payroll_cycle').sudo().read()[0]
+        action = new_action
+        return self.redirect_to_page(action, 'list', 'list')
+        
+    # @http.route('/app/leave', type='http', auth='user')
+    # def open_leave(self, **kwargs):
+    #     action = False
+    #     # http://whiteclone.localhost:8072/web#action=1070
+    #     # try:
+    #     old_action = request.env.ref('hr_holidays.hr_leave_action_new_request').sudo().read()[0]
+    #     new_action = request.env.ref('hr_leave_dashboard.action_hr_leave_dashboard').sudo().read()[0]
+    
+    #     if new_action:
+    #         return request.redirect(
+    #             '/web#action=%s' % (new_action.get('id'))
+    #         )
+    #     else:
+    #         return self.redirect_to_page(old_action,'calendar', 'calendar')
+    #     # except Exception as e:
+    #     #     pass 
+
+    # @http.route('/app/calendar', type='http', auth='user')
+    # def open_calendar(self, **kwargs):
+    #     action = request.env.ref('calendar.action_calendar_event').sudo().read()[0]
+    #     return self.redirect_to_page(action,'kanban', 'kanban')
+
+    # @http.route('/app/recruitment', type='http', auth='user')
+    # def open_recruitment(self, **kwargs):
+    #     # The administration dashboard can be installed without the optional
+    #     # Cleon recruitment module.  In that case, open Odoo Community's
+    #     # recruitment application instead of failing on a missing XML ID.
+    #     action_record = request.env.ref(
+    #         'hr_cleon_recruitment.action_hr_applicant_recruitment',
+    #         raise_if_not_found=False,
+    #     )
+    #     if not action_record:
+    #         action_record = request.env.ref(
+    #             'hr_recruitment.crm_case_categ0_act_job',
+    #             raise_if_not_found=False,
+    #         )
+    #     if not action_record:
+    #         return request.redirect('/hr-employee-admin')
+
+    #     action = action_record.sudo().read()[0]
+    #     return self.redirect_to_page(action, 'kanban', 'kanban')
+    
+    # @http.route('/app/insurance', type='http', auth='user')
+    # def open_hmo_insurance_dashboard(self, **kwargs):
+    #     action = request.env['hr.insurance'].sudo().get_dashboard()
+    #     return request.redirect(
+    #         '/web#id=%s&model=%s&view_type=form'
+    #         % (
+    #             action['res_id'],
+    #             action['res_model']
+    #         )
+    #     )
+
+    # @http.route('/app/disciplinary', type='http', auth='user')
+    # def open_disciplinary_dashboard(self, **kwargs):
+    #     action = request.env.ref('hr_warning.action_hr_warning').sudo().read()[0]
+    #     return self.redirect_to_page(action,'tree', 'tree')
+
+    # @http.route('/app/maintenance', type='http', auth='user')
+    # def open_maintenance(self, **kwargs):
+    #     return request.redirect(
+    #         '/hr-employee-admin' 
+    #     )
+
+    # @http.route('/app/payslips', type='http', auth='user')
+    # def open_payslips(self, **kwargs):
+    #     return request.redirect(
+    #         '/hr-employee-admin' 
+    #     )
+
+    # @http.route('/app/settings', type='http', auth='user')
+    # def open_settings(self, **kwargs):
+    #     return request.redirect(
+    #         '/hr-employee-admin' 
+        # )
+
+    # @http.route('/app/settings', type='http', auth='user')
+    # def open_settings(self, **kwargs):
+    #     return request.redirect(
+    #         '/hr-employee-admin' 
+    #     )
+
+
+# class OpenActionController(http.Controller):
+
+#     @http.route('/open/record/<int:record_id>', type='http', auth='user')
+#     def open_record(self, record_id, **kwargs):
+
+#         return request.redirect(
+#             '/web#id=%s&model=my.model&view_type=form'
+#             % record_id
+#         )

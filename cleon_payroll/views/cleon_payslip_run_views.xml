@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cleon_payslip_run_form" model="ir.ui.view">
+        <field name="name">cleon.payslip.run.form</field>
+        <field name="model">cleon.payslip.run</field>
+        <field name="arch" type="xml">
+            <form string="Payroll Run" class="o_qms_form">
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </div>
+                        <span class="qms-card-title">Payroll Run</span>
+                    </div>
+                    <div class="pink-card-body">
+                        <group>
+                            <group col="4">
+                                <field name="name" class="pink-text" readonly="1"/>
+                                <field name="state" widget="badge"
+                                       decoration-danger="state == 'draft'"
+                                       decoration-warning="state == 'verify'"
+                                       decoration-success="state == 'close'"/>
+                            </group>
+                            <group>
+                                <field name="schedule_pay" readonly="state != 'draft'"/>
+                                <field name="company_id" options="{'no_open': true, 'no_create': true}"/>
+                            </group>
+                        </group>
+                    </div>
+                    <div class="ash-card-body text-sm">
+                        <span class="qms-card-title">Period</span>
+                        <group>
+                            <group>
+                                <field name="date_start" readonly="state != 'draft'"/>
+                                <field name="date_end" readonly="state != 'draft'"/>
+                            </group>
+                            <group>
+                                <field name="slip_count" readonly="1"/>
+                                <field name="clear_existing_payslip" readonly="0" widget="boolean_toggle"/>
+
+                            </group>
+                        </group>
+                    </div>
+                    <header>
+                        <button class="btn btn-success" name="action_generate_payslips" type="object"
+                                string="Generate Payslips" invisible="state != 'draft'"/>
+                        <button class="btn btn-success" name="action_confirm_payslips" type="object"
+                                string="Compute &amp; Confirm All" invisible="state != 'verify'"/>
+                        <button class="btn btn-secondary" name="action_view_payslips" type="object"
+                                string="View Payslips"/>
+                    </header>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_payslip_run_list" model="ir.ui.view">
+        <field name="name">cleon.payslip.run.list</field>
+        <field name="model">cleon.payslip.run</field>
+        <field name="arch" type="xml">
+            <tree string="Payroll Runs">
+                <field name="name"/>
+                <field name="schedule_pay"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="slip_count"/>
+                <field name="state" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_cleon_payslip_run_kanban" model="ir.ui.view">
+        <field name="name">cleon.payslip.run.kanban</field>
+        <field name="model">cleon.payslip.run</field>
+
+        <field name="arch" type="xml">
+
+            <kanban class="o_payroll_kanban"
+                    create="1"
+                    records_draggable="0" js_class="payroll_kanban_sidebar">
+
+                    <field name="name"/>
+                    <field name="schedule_pay"/>
+                    <field name="date_start"/>
+                    <field name="date_end"/>
+                    <field name="slip_count"/>
+                    <field name="state"/>
+                <!-- STATIC HEADER (unchanged) -->
+                <header>
+                    <div class="marketplace-header">
+                        <div class="topbar">
+                            <div>
+                                <h1>Rules</h1>
+                                <p>Click to setup or view</p>
+                            </div>
+                            <div class="top-actions">
+                                <button type="object" name="open_record" class="btn-hmo btn-primary-hmo">＋ Onboard Your HMO plans</button>
+                            </div>
+                        </div>
+                        <div class="toolbar">
+                            <div class="search-box">🔍</div>
+                            <div class="toolbar-actions">
+                                <button name="open_record" type="object" class="icon-btn active">▦</button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="payroll-card">
+                            <!-- Header -->
+                            <div class="payroll-card-header">
+                                <div class="payroll-avatar">
+                                    <t t-esc="record.name.value ? record.name.value.substring(0,2).toUpperCase() : ''"/>
+                                </div>
+
+                                <div class="payroll-title">
+                                    <h4>
+                                        <field name="name" readonly="1"/>
+                                    </h4>
+                                    <span class="payroll-status">
+                                        <field name="state" widget="badge" readonly="1"/>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Metrics -->
+                            <div class="payroll-metrics">
+
+                                <div class="metric-box">
+                                    <span class="metric-label">Frequency</span>
+                                    <span class="metric-value">
+                                        <t t-esc="record.schedule_pay.value"/>
+                                    </span>
+                                </div>
+
+                                <div class="metric-box">
+                                    <span class="metric-label">Payslips</span>
+                                    <span class="metric-value">
+                                        <field name="slip_count" readonly="1"/>
+                                    </span>
+                                </div>
+
+                            </div>
+
+                            <!-- Dates -->
+                            <div class="payroll-dates">
+
+                                <div>
+                                    <i class="fa fa-calendar pl-3"/>
+                                    <strong> Start </strong>
+                                    <field name="date_start" readonly="1"/>
+                                </div>
+
+                                <div>
+                                    <i class="fa fa-calendar-check-o pl-3"/>
+                                    <strong> End </strong>
+                                    <field name="date_end" readonly="1"/>
+                                </div>
+
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="payroll-footer">
+
+                                <button name="open_record"
+                                        type="object"
+                                        class="payroll-btn">
+                                    View Details
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </t>
+                </templates>
+            
+            </kanban>
+
+        </field>
+    </record> 
+
+
+    <record id="action_cleon_payslip_run" model="ir.actions.act_window">
+        <field name="name">Payroll Runs</field>
+        <field name="res_model">cleon.payslip.run</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
+
+</odoo>

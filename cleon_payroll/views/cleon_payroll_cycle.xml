@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_hr_payroll_cycle_form" model="ir.ui.view">
+        <field name="name">hr.payroll.cycle.form</field>
+        <field name="model">hr.payroll.cycle</field>
+        <field name="arch" type="xml">
+            <form string="Payroll cycle" class="o_qms_form">
+                <header>
+                    <button name="generate_payroll_run"
+                            type="object"
+                            string="Generate Payroll"
+                            class="btn btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="qms-card">
+                        <!-- Header -->
+                        <div class="qms-card-header">
+                            <div class="qms-card-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M4 4h16v16H4z"/>
+                                </svg>
+                            </div>
+                            <span class="qms-card-title">
+                                Payroll cycle Configuration
+                            </span>
+                        </div>
+
+                        <!-- Basic Details -->
+                        <div class="pink-card-body">
+
+                            <group>
+                                <group>
+                                    <field name="name"/>
+                                    <field name="payroll_setup_id"/>
+                                    <field name="frequency"/>
+                                    <field name="next_run_date"/>
+                                    <field name="last_run_date"/> 
+                                    <field name="structure_ids"
+                                        widget="many2many_tags"/>
+                                </group>
+
+                                <group>
+                                    <field name="clear_existing_payslip" widget="boolean_toggle"/> 
+                                    <field name="auto_compute" widget="boolean_toggle"/>
+                                    <field name="auto_confirm" widget="boolean_toggle"/>
+                                    <field name="company_id"/>
+                                </group>
+                            </group>
+
+                        </div>
+
+                        <div class="qms-card-header">
+                            <div class="qms-card-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M4 4h16v16H4z"/>
+                                </svg>
+                            </div>
+                            <span class="qms-card-title">
+                                More Options &amp; Configuration
+                            </span>
+                        </div> 
+
+                        <div class="qms-card-header"> 
+                            <group>
+                                <group>
+                                    <field name="generate_journal_entry" widget="boolean_toggle"/>
+                                    <field name="email_payslips" widget="boolean_toggle"/>
+                                    <field name="include_new_hires" widget="boolean_toggle"/>
+                                    <field name="include_terminated" widget="boolean_toggle"/>
+                                </group>
+                                <group>
+
+                                    <field name="run_count"/>
+                                    <field name="active"
+                                        widget="boolean_toggle"/>
+                                    <field name="last_run_id"/> 
+
+                                </group>
+                            </group>
+                        </div> 
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_payroll_cycle_list" model="ir.ui.view">
+        <field name="name">hr.payroll.cycle.list</field>
+        <field name="model">hr.payroll.cycle</field>
+        <field name="arch" type="xml">
+            <tree string="Payroll cycle">
+                <field name="name"/>
+                <field name="payroll_setup_id"/>
+                <field name="company_id"/>
+                <field name="frequency"/>
+                <field name="next_run_date"/>
+                <field name="last_run_date"/> 
+                <field name="structure_ids"
+                    widget="many2many_tags"/>
+                <field name="auto_compute" widget="boolean_toggle"/>
+                <field name="auto_confirm" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_payroll_cycle_kanban_pink" model="ir.ui.view">
+        <field name="name">hr.payroll.cycle.kanban.pink</field>
+        <field name="model">hr.payroll.cycle</field>
+        <field name="arch" type="xml">
+        <kanban class="o_kanban_small_column" js_class="payroll_kanban_sidebar">
+                <field name="name"/>
+                <field name="payroll_setup_id"/>
+                <field name="company_id"/>
+                <field name="frequency"/>
+                <field name="next_run_date"/>
+                <field name="last_run_date"/> 
+                <field name="payroll_setup_id"/> 
+                <field name="structure_ids"/>
+                <field name="create_date"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click p-0 border-0 rounded-3 shadow-sm overflow-hidden position-relative" 
+                            style="background: linear-gradient(135deg, #FFF5F7 0%, #FCE4EC 50%, #F8BBD0 100%); max-width: 380px; font-family: 'Inter', sans-serif;">
+                            
+                            <!-- Background Accent Pattern -->
+                            <div style="position: absolute; right: -20px; top: -20px; width: 100px; height: 100px; background: rgba(233, 30, 99, 0.05); border-radius: 50%; pointer-events: none;"/>
+                            
+                            <!-- Top Header Section -->
+                            <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="fw-bold fs-6 text-uppercase" style="color: #AD1457; letter-spacing: 0.5px;">
+                                        <i class="fa fa-building me-1"/> <t t-esc="record.name.value || 'Cleon Cycle'"/>
+                                    </span>
+                                </div>
+                                <i class="fa fa-circle text-success fs-6" title="Active Status"/>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="row g-0 px-3 py-2 align-items-center">
+                                <!-- Left: Employee Avatar -->
+                                <div class="col-4 text-center">
+                                    <div class="position-relative d-inline-block">
+                                        <img t-att-src="kanban_image('hr.employee', 'avatar_128', record.id.raw_value)" 
+                                            class="rounded-3 img-fluid border border-2 shadow-sm" 
+                                            style="border-color: #F48FB1 !important; width: 90px; height: 100px; object-fit: cover;" 
+                                            alt="Employee Photo"/>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Employee Details -->
+                                <div class="col-8 ps-3">
+                                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem;">
+                                        <field name="name"/>
+                                    </h5>
+                                    <p class="text-muted mb-2 fw-semibold" style="font-size: 0.85rem; color: #880E4F !important;">
+                                        <field name="payroll_setup_id"/>
+                                    </p>
+                                    
+                                    <div class="lh-sm" style="font-size: 0.78rem; color: #4A148C;">
+                                        <div class="mb-1">
+                                            <span class="fw-bold">ID:</span> 
+                                            <span class="color-darkred"><t t-esc="record.employee_number"/></span>
+                                        </div>
+                                        <div class="mb-1 text-truncate">
+                                            <span class="fw-bold">Company:</span> 
+                                            <span class="color-darkred"><field name="company_id"/></span>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <span class="fw-bold">Last Computed Date:</span> 
+                                            <span class="color-darkred"><field name="last_run_date"/></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Footer Badge -->
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 mt-1" 
+                                style="background: rgba(255, 255, 255, 0.6); border-top: 1px solid rgba(244, 143, 177, 0.3);">
+                                <span class="badge rounded-pill px-2 py-1" style="background-color: #F8BBD0; color: #880E4F; font-weight: 500;">
+                                    <i class="fa fa-check-circle me-1"/> ---
+                                </span>
+                                <small style="color: #AD1457; font-weight: 500; font-size: 0.75rem;">
+                                    Next date: <t t-esc="record.next_run_date.value || ''"/>
+                                </small>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+             
+        </field>
+    </record>
+
+    <record id="action_cleon_payroll_cycle" model="ir.actions.act_window">
+        <field name="name">Payroll cycle</field>
+        <field name="res_model">hr.payroll.cycle</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+</odoo>

@@ -34,7 +34,7 @@
         <field name="arch" type="xml">
             <form string="Incident" class="o_warning_form">
                  
-                <!-- <sheet> -->
+                <sheet>
                     <!-- Smart buttons -->
                     <div class="oe_button_box" name="button_box">
                         <button name="action_email_employee"
@@ -221,7 +221,7 @@
                                             <div class="o_warning_status_main">
                                                 DC members
                                                 <field name="disciplinary_committee_ids"
-                                                       readonly="state not in ['draft', 'closed']"
+                                                       readonly="state not in ['draft', 'under_investigation', 'hearing', 'appeal', 'closed']"
                                                        nolabel="1" 
                                                        class="o_inline_field" widget="many2many_tags" options="{'no_open': true, 'no_create': true}"/>
                                             </div> 
@@ -232,7 +232,7 @@
                                     <div class="o_warning_status_main-white">
                                         <strong>Interim Measures</strong>
                                         <field name="interim_measure_ids"
-                                                readonly="state not in ['draft', 'closed']"
+                                                readonly="state not in ['draft', 'under_investigation', 'hearing', 'appeal', 'closed']"
                                                 nolabel="1"
                                                 class="o_inline_field" context="{'default_employee_id': employee_id, 'default_warning_id': id}"/>
                                     </div>
@@ -244,7 +244,7 @@
                                             <div class="o_warning_status_sub">
                                             
                                                 <field name="investigation_note"
-                                                        readonly="state not in ['draft', 'closed']"
+                                                        readonly="state not in ['draft', 'under_investigation', 'hearing', 'appeal', 'closed']"
                                                        nolabel="1" colspan="3"
                                                        class="o_inline_field" placeholder="Enter Investigation Report"/>
                                             </div>
@@ -387,7 +387,7 @@
                         </div>
                         <!-- end sidebar -->
                     </div>
-                <!-- </sheet> -->
+                </sheet>
 
                 <!-- <div class="oe_chatter">
                     <field name="message_follower_ids" widget="mail_followers"/>

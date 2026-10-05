@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_hr_payroll_setup_form" model="ir.ui.view">
+        <field name="name">hr.payroll.setup.form</field>
+        <field name="model">hr.payroll.setup</field>
+        <field name="arch" type="xml">
+            <form string="Payroll setup" class="o_qms_form">
+                <header>
+
+                    <!-- <button name="generate_payroll_run"
+                            type="object"
+                            string="Generate Payroll"
+                            class="btn btn-primary"/> -->
+
+                </header>
+                <sheet>
+                    <div class="qms-card">
+                        <!-- Header -->
+                        <div class="qms-card-header">
+                            <div class="qms-card-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M4 4h16v16H4z"/>
+                                </svg>
+                            </div>
+                            <span class="qms-card-title">
+                                Payroll setup Configuration
+                            </span>
+                        </div>
+
+                        <!-- Basic Details -->
+                        <div class="pink-card-body">
+
+                            <group>
+                                <group>
+                                    <field name="name"/>
+                                    <field name="company_id" readonly="0"/>
+                                    <field name="employee_count" readonly="1"/>
+                                    <field name="auto_generate_payroll" readonly="0"/>
+                                    
+                                    <field name="payroll_cycle_ids" invisible="1"/>
+                                </group>
+
+                                <group>
+                                    <field name="overtime_enabled"/>
+                                    <field name="use_attendance_capture"/>
+                                    <field name="active" readonly="1"
+                                        widget="boolean_toggle"/>
+                                </group>
+                            </group>
+
+                        </div>
+                        <div class="qms-card-header">
+                            <div class="qms-card-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M4 4h16v16H4z"/>
+                                </svg>
+                            </div>
+                            <span class="qms-card-title">
+                                Overtime setup Configuration
+                            </span>
+                        </div> 
+
+                        <div class="qms-card-header">
+                            <group>
+                                <group>
+                                    <field name="overtime_type" required="overtime_enabled == True"/>
+                                    <field name="overtime_percentage" required="overtime_fixed_rate == 'percentage'" invisible="overtime_type != 'percentage'"/>
+                                    <field name="overtime_fixed_rate" required="overtime_percentage == 'fixed_rate'" invisible="overtime_type != 'fixed_rate'"/>
+                                    
+                                </group>
+
+                                <group>
+                                    <field name="overtime_after_hours"/>
+                                    <field name="max_overtime_hours" required="overtime_enabled == True"/>
+                                </group>
+                                <div class="qms-card-header" style="background:#ecf4ef">
+                                    <div>
+                                        🔔 Computation Tips
+                                    </div><p></p>
+                                    <div>
+                                        <span class="qms-card-title"><field name ="compute_msg_text" readonly="1" nolable="1"/></span>
+                                    </div>
+                                </div>
+                            </group>
+                            
+                        </div> 
+                    </div>
+                    <notebook> 
+                        <page string="📋 Applicable Employee" name="applicable_employee">
+                            <div class="qms-card" style="margin-bottom:0;">
+                                <div class="qms-card-header">
+                                    <div class="qms-card-icon" style="background:#DC3545;">
+                                        <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    </div>
+                                    <span class="qms-card-title">Employees</span>
+                                </div>
+                                <div class="qms-card-body" style="padding:0;">
+                                    <field name="applicable_employee_ids">
+                                        <tree>
+                                            <field name="name" readonly="0"/>
+                                            <field name="employee_number" readonly="0"/>
+                                            <field name="work_email" readonly="0"/>
+                                        </tree>
+                                    </field>
+                                </div>
+                            </div>
+                        </page>
+                        <page string="⭐ Applicable Grade" name="applicable_Grade">
+                            <div class="qms-card" style="margin-bottom:0;">
+                                <div class="qms-card-header">
+                                    <div class="qms-card-icon" style="background:#DC3545;">
+                                        <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    </div>
+                                    <span class="qms-card-title">Grade</span>
+                                </div>
+                                <div class="qms-card-body" style="padding:0;">
+                                    <field name="applicable_grade_ids">
+                                        <tree>
+                                            <field name="name" readonly="0"/>  
+                                        </tree>
+                                    </field>
+                                </div>
+                            </div>
+                        </page>
+                        <page string="🔖 Applicable Level" name="applicable_Level">
+                            <div class="qms-card" style="margin-bottom:0;">
+                                <div class="qms-card-header">
+                                    <div class="qms-card-icon" style="background:#DC3545;">
+                                        <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    </div>
+                                    <span class="qms-card-title">Level</span>
+                                </div>
+                                <div class="qms-card-body" style="padding:0;">
+                                    <field name="applicable_level_ids">
+                                        <tree>
+                                            <field name="name" readonly="0"/>  
+                                        </tree>
+                                    </field>
+                                </div>
+                            </div>
+                        </page>
+
+                        <page string="🌍 Specific / More Rules" name="applicable_rules">
+                            <div class="qms-card" style="margin-bottom:0;">
+                                <div class="qms-card-header">
+                                    <div class="qms-card-icon" style="background:#DC3545;">
+                                        <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    </div>
+                                    <span class="qms-card-title">More Rules</span>
+                                </div>
+                                <div class="qms-card-body" style="padding:0;">
+                                    
+                                    <field name="more_overtime_rules" required="overtime_enabled == True">
+                                        <tree editable="bottom" context="{'default_payroll_setup_id': id}">
+                                            <field name="name" readonly="0" required="1"/>  
+                                            <field name="payroll_setup_id" column_invisible="1"/>  
+                                            <field name="overtime_type" readonly="0" required="1"/>  
+                                            <field name="hour_from" readonly="0" required="1"/>  
+                                            <field name="hour_to" readonly="0" required="1"/>  
+                                            <field name="overtime_fixed_rate" readonly="0" required="1"/>  
+                                            <field name="today_allocated_hour_per_month" readonly="0"/>  
+                                            <field name="applicable_employee_ids" required="1" readonly="0" widget="many2many_tags"/>  
+                                            <field name="applicable_grade_ids" readonly="0" widget="many2many_tags"/>  
+                                            <field name="applicable_level_ids" readonly="0" widget="many2many_tags"/>  
+                                            <field name="applicable_employee_ids" readonly="0" widget="many2many_tags"/>  
+                                             
+                                        </tree>
+                                    </field>
+                                </div>
+                            </div>
+                        </page>
+                        <page string="🏛️ Applicable Location" name="applicable_location">
+                            <div class="qms-card" style="margin-bottom:0;">
+                                <div class="qms-card-header">
+                                    <div class="qms-card-icon" style="background:#DC3545;">
+                                        <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    </div>
+                                    <span class="qms-card-title">location</span>
+                                </div>
+                                <div class="qms-card-body" style="padding:0;">
+                                    
+                                    <field name="applicable_location_ids" required="overtime_enabled == True">
+                                        <tree>
+                                            <field name="name" readonly="0"/>  
+                                        </tree>
+                                    </field>
+                                </div>
+                            </div>
+                        </page>
+                    </notebook> 
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_payroll_setup_list" model="ir.ui.view">
+        <field name="name">hr.payroll.setup.list</field>
+        <field name="model">hr.payroll.setup</field>
+        <field name="arch" type="xml">
+            <tree string="Payroll setup">
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="employee_count"/>
+                <field name="overtime_enabled"/>
+                <field name="use_attendance_capture"/>
+                <field name="auto_generate_payroll"/>
+                <field name="overtime_type" required="overtime_enabled == True"/>
+                <field name="overtime_percentage" required="overtime_fixed_rate == False"/>
+                <field name="overtime_fixed_rate" required="overtime_percentage == False"/>
+                <field name="max_overtime_hours" required="overtime_enabled == True"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_cleon_payroll_setup" model="ir.actions.act_window">
+        <field name="name">Payroll setup</field>
+        <field name="res_model">hr.payroll.setup</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

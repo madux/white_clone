@@ -24,7 +24,8 @@
         'hr_contract', 
         'hr_attendance',
         'hr_recruitment',
-        'hr_warning'
+        'hr_warning',
+        'calendar_field_widget'
         ],
     'data': [
         'security/security.xml',
@@ -75,7 +76,8 @@
             'hr_employee/static/src/component/kanban_view_template.js',
             'hr_employee/static/src/component/organisation_template.xml',
             'hr_employee/static/src/component/organisation_template.js',
-
+            'hr_employee/static/src/component/attendance_clock_widget.xml',
+            'hr_employee/static/src/component/attendance_clock_widget.js',
             # 'hr_warning/static/src/component/overwrite_template.xml',
         ],
     },

@@ -16,6 +16,9 @@ class Hr_announcement(models.Model):
         ('info', 'Info'),
         ('alert', 'Alert'), 
         ('maintenance', 'Maintenance'),
+        ('warning', 'Warning'),
+        ('celebrations', 'celebrations'),
+        ('recognition', 'recognition'),
         ('event', 'Event')],
         string="Announcement type", copy=False)
 

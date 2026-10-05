@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Cleon Payroll Dashboard</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<link rel="stylesheet" href="/cleon_payroll_dashboard/static/src/css/payroll_dashboard.css"/>
+<link rel="icon" href="https://www.google.com/s2/favicons?domain=example.com">
+</head>
+<body>
+
+<div class="cpd-app">
+
+    <!-- ===== Offcanvas backdrop (mobile) ===== -->
+    <div class="cpd-backdrop" id="cpdBackdrop"></div>
+
+    <!-- ===== Sidebar ===== -->
+    <aside class="cpd-sidebar" id="cpdSidebar">
+        <div class="cpd-sidebar-brand">
+            <span class="cpd-brand-text" id="cpdApps"><i class="fa-solid fa-chart-pie"></i>
+            </span>
+            <a href="/app/payrolls">
+                <span class="cpd-logo-dot"></span>
+                <span class="cpd-brand-text">Cleon <b>Payroll</b>
+                </span>
+            </a>
+            <button class="cpd-sidebar-close d-lg-none" id="cpdSidebarClose"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <nav class="cpd-nav" id="cpdNav">
+            <div class="cpd-nav-section">Overview</div>
+            <a href="#" class="cpd-nav-link active" data-panel="panel-overview">
+                <i class="fa-solid fa-chart-pie"></i><span>Overview</span>
+            </a>
+            <a href="/app/payrolls" class="cpd-nav-link" data-panel="panel-overview2">
+                <i class="fa-solid fa-chart-pie"></i><span>Payslips</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-trend">
+                <i class="fa-solid fa-chart-line"></i><span>Payroll Trend</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-department">
+                <i class="fa-solid fa-sitemap"></i><span>Department Distribution</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-upcoming">
+                <i class="fa-solid fa-calendar-check"></i><span>Upcoming Payments</span>
+            </a>
+
+            <div class="cpd-nav-section">Payroll</div>
+            
+            <a href="/app/payrolls/batch" class="cpd-nav-link" id="payroll_run_menu" data-panel="panel-trend2">
+                <i class="fa-solid fa-chart-line"></i><span>Batch Payroll</span>
+            </a>
+            <a href="/app/payrolls/cycle" class="cpd-nav-link" data-panel="panel-department2">
+                <i class="fa-solid fa-sitemap"></i><span>Pay Cycle</span>
+            </a> 
+            <div class="cpd-nav-section">Compensation</div>
+            <a href="#" class="cpd-nav-link" data-panel="panel-compensation">
+                <i class="fa-solid fa-layer-group"></i><span>Compensation Breakdown</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-benefits">
+                <i class="fa-solid fa-hand-holding-heart"></i><span>Benefits Cost Analysis</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-overtime">
+                <i class="fa-solid fa-business-time"></i><span>Overtime Expenses</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-bands">
+                <i class="fa-solid fa-layer-group"></i><span>Salary Band Distribution</span>
+            </a>
+
+            <div class="cpd-nav-section">Compliance</div>
+            <a href="#" class="cpd-nav-link" data-panel="panel-tax">
+                <i class="fa-solid fa-file-invoice-dollar"></i><span>Tax Deductions Summary</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-pension">
+                <i class="fa-solid fa-piggy-bank"></i><span>Pension Contributions</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-compliance">
+                <i class="fa-solid fa-shield-halved"></i><span>Payroll Compliance</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-exceptions">
+                <i class="fa-solid fa-triangle-exclamation"></i><span>Payroll Exceptions</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-audit">
+                <i class="fa-solid fa-clipboard-check"></i><span>Audit &amp; Compliance</span>
+            </a>
+
+            <div class="cpd-nav-section">Workflow</div>
+            <a href="#" class="cpd-nav-link" data-panel="panel-approvals">
+                <i class="fa-solid fa-inbox"></i><span>Pending Approvals</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-tracker">
+                <i class="fa-solid fa-list-check"></i><span>Approval Workflow Tracker</span>
+            </a>
+            <a href="#" class="cpd-nav-link" data-panel="panel-processing">
+                <i class="fa-solid fa-timeline"></i><span>Processing Status</span>
+            </a>
+
+            <div class="cpd-nav-section">People</div>
+            <a href="#" class="cpd-nav-link" data-panel="panel-turnover">
+                <i class="fa-solid fa-people-arrows"></i><span>Employee Turnover</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- ===== Main ===== -->
+    <div class="cpd-main">
+
+        <!-- Topbar -->
+        <header class="cpd-topbar">
+            <!-- <button class="cpd-icon-btn d-lg-none" id="cpdSidebarOpen"><i class="fa-solid fa-bars"></i></button> -->
+            <button class="cpd-icon-btn d-lg-none" id="cpdSidebarOpen"><i class="fa-solid fa-bars"></i></button>
+            <div class="cpd-topbar-title" id="cpdPanelTitle">Overview</div>
+            <div class="cpd-topbar-actions">
+                <button class="cpd-icon-btn" id="cpdFilterToggle"><i class="fa-solid fa-sliders"></i><span class="cpd-btn-label">Filters</span></button>
+                <button class="cpd-icon-btn" id="cpdRefreshBtn"><i class="fa-solid fa-rotate"></i></button>
+                <div class="cpd-user">
+                    <div class="cpd-user-avatar" id="cpdUserAvatar">U</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Accordion Filters -->
+        <div class="cpd-filters" id="cpdFilters">
+            <div class="cpd-filters-grid">
+                <div class="cpd-filter-item">
+                    <label>Location</label>
+                    <select id="fLocation"><option value="">All Locations</option></select>
+                </div>
+                <div class="cpd-filter-item">
+                    <label>Department</label>
+                    <select id="fDepartment"><option value="">All Departments</option></select>
+                </div>
+                <div class="cpd-filter-item">
+                    <label>Deduction Type</label>
+                    <select id="fDeduction"><option value="">All Deductions</option></select>
+                </div>
+                <div class="cpd-filter-item">
+                    <label>Payroll Structure</label>
+                    <select id="fStructure"><option value="">All Structures</option></select>
+                </div>
+                <div class="cpd-filter-item">
+                    <label>From</label>
+                    <input type="date" id="fDateFrom"/>
+                </div>
+                <div class="cpd-filter-item">
+                    <label>To</label>
+                    <input type="date" id="fDateTo"/>
+                </div>
+                <div class="cpd-filter-actions">
+                    <button class="cpd-btn cpd-btn-primary" id="fApply">Apply</button>
+                    <button class="cpd-btn cpd-btn-ghost" id="fReset">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="cpd-content" id="cpdContent">
+
+            <!-- ============ OVERVIEW ============ -->
+            <section class="cpd-panel active" id="panel-overview">
+                <div class="cpd-kpi-grid">
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon pink"><i class="fa-solid fa-sack-dollar"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Total Payroll Cost</span>
+                            <span class="cpd-kpi-value" id="kpiTotalCost">--</span>
+                        </div>
+                    </div>
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon purple"><i class="fa-solid fa-users"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Employee Count</span>
+                            <span class="cpd-kpi-value" id="kpiEmployeeCount">--</span>
+                        </div>
+                    </div>
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon rose"><i class="fa-solid fa-coins"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Total Gross</span>
+                            <span class="cpd-kpi-value" id="kpiGross">--</span>
+                        </div>
+                    </div>
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon fuchsia"><i class="fa-solid fa-wallet"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Avg. Net Pay</span>
+                            <span class="cpd-kpi-value" id="kpiAvgNet">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cpd-grid-2">
+                    <div class="cpd-card">
+                        <div class="cpd-card-header"><h3>Net Pay vs Gross Pay</h3></div>
+                        <div class="cpd-card-body"><div class="cpd-chart-wrap"><canvas id="chartNetGross"></canvas></div></div>
+                    </div>
+                    <div class="cpd-card">
+                        <div class="cpd-card-header"><h3>Payroll Processing Status</h3></div>
+                        <div class="cpd-card-body"><div class="cpd-chart-wrap"><canvas id="chartCompliance"></canvas></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ TREND ============ -->
+            <section class="cpd-panel" id="panel-trend">
+                <div class="cpd-card">
+                    <div class="cpd-card-header"><h3>Monthly Payroll Trend</h3></div>
+                    <div class="cpd-card-body"><div class="cpd-chart-wrap"><canvas id="chartTrend"></canvas></div></div>
+                </div>
+            </section>
+
+            <!-- ============ DEPARTMENT ============ -->
+            <section class="cpd-panel" id="panel-department">
+                <div class="cpd-grid-2">
+                    <div class="cpd-card">
+                        <div class="cpd-card-header"><h3>Department Payroll Distribution</h3></div>
+                        <div class="cpd-card-body"><div class="cpd-chart-wrap"><canvas id="chartDepartment"></canvas></div></div>
+                    </div>
+                    <div class="cpd-card">
+                        <div class="cpd-card-header"><h3>Breakdown</h3></div>
+                        <div class="cpd-card-body">
+                            <div class="cpd-table-wrap">
+                                <table class="cpd-table" id="tblDepartment">
+                                    <thead><tr><th>Department</th><th class="text-end">Net Payroll</th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ UPCOMING ============ -->
+            <section class="cpd-panel" id="panel-upcoming">
+                <div class="cpd-card">
+                    <div class="cpd-card-header"><h3>Upcoming Salary Payments</h3></div>
+                    <div class="cpd-card-body">
+                        <div class="cpd-table-wrap">
+                            <table class="cpd-table" id="tblUpcoming">
+                                <thead><tr><th>Employee</th><th>Pay Date</th><th>Status</th><th class="text-end">Net Pay</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ COMPENSATION ============ -->
+            <section class="cpd-panel" id="panel-compensation">
+                <div class="cpd-grid-2">
+                    <div class="cpd-card">
+                        <div class="cpd-card-header"><h3>Compensation Breakdown</h3></div>
+                        <div class="cpd-card-body"><div class="cpd-chart-wrap"><canvas id="chartCompensation"></canvas></div></div>
+                    </div>
+                    <div class="cpd-card">
+                        <div class="cpd-card-header"><h3>By Category</h3></div>
+                        <div class="cpd-card-body">
+                            <div class="cpd-table-wrap">
+                                <table class="cpd-table" id="tblCompensation">
+                                    <thead><tr><th>Category</th><th class="text-end">Amount</th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ BENEFITS ============ -->
+            <section class="cpd-panel" id="panel-benefits">
+                <div class="cpd-card">
+                    <div class="cpd-card-header"><h3>Benefits Cost Analysis</h3></div>
+                    <div class="cpd-card-body"><div class="cpd-chart-wrap"><canvas id="chartBenefits"></canvas></div></div>
+                </div>
+            </section>
+
+            <!-- ============ OVERTIME ============ -->
+            <section class="cpd-panel" id="panel-overtime">
+                <div class="cpd-kpi-grid cpd-kpi-grid-1">
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon pink"><i class="fa-solid fa-clock"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Total Overtime Expense</span>
+                            <span class="cpd-kpi-value" id="kpiOvertime">--</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="cpd-card">
+                    <div class="cpd-card-header"><h3>Overtime Trend</h3></div>
+                    <div class="cpd-card-body"><div class="cpd-chart-wrap"><canvas id="chartOvertime"></canvas></div></div>
+                </div>
+            </section>
+
+            <!-- ============ SALARY BANDS ============ -->
+            <section class="cpd-panel" id="panel-bands">
+                <div class="cpd-card">
+                    <div class="cpd-card-header"><h3>Salary Band Distribution</h3></div>
+                    <div class="cpd-card-body"><div class="cpd-chart-wrap"><canvas id="chartBands"></canvas></div></div>
+                </div>
+            </section>
+
+            <!-- ============ TAX ============ -->
+            <section class="cpd-panel" id="panel-tax">
+                <div class="cpd-card">
+                    <div class="cpd-card-header"><h3>Tax Deductions Summary</h3></div>
+                    <div class="cpd-card-body">
+                        <div class="cpd-table-wrap">
+                            <table class="cpd-table" id="tblTax">
+                                <thead><tr><th>Deduction</th><th class="text-end">Amount</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ PENSION ============ -->
+            <section class="cpd-panel" id="panel-pension">
+                <div class="cpd-kpi-grid cpd-kpi-grid-1">
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon purple"><i class="fa-solid fa-piggy-bank"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Total Pension Contributions</span>
+                            <span class="cpd-kpi-value" id="kpiPension">--</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ COMPLIANCE ============ -->
+            <section class="cpd-panel" id="panel-compliance">
+                <div class="cpd-kpi-grid">
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon pink"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Compliance Rate</span>
+                            <span class="cpd-kpi-value" id="kpiCompliancePct">--</span>
+                        </div>
+                    </div>
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon rose"><i class="fa-solid fa-hourglass-half"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Draft / Pending</span>
+                            <span class="cpd-kpi-value" id="kpiCompliancePending">--</span>
+                        </div>
+                    </div>
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon fuchsia"><i class="fa-solid fa-circle-check"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Paid</span>
+                            <span class="cpd-kpi-value" id="kpiCompliancePaid">--</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ EXCEPTIONS ============ -->
+            <section class="cpd-panel" id="panel-exceptions">
+                <div class="cpd-card">
+                    <div class="cpd-card-header"><h3>Payroll Exceptions</h3></div>
+                    <div class="cpd-card-body">
+                        <div class="cpd-table-wrap">
+                            <table class="cpd-table" id="tblExceptions">
+                                <thead><tr><th>Payslip</th><th>Employee</th><th>Issue</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ AUDIT ============ -->
+            <section class="cpd-panel" id="panel-audit">
+                <div class="cpd-card">
+                    <div class="cpd-card-header"><h3>Audit &amp; Compliance Reports</h3></div>
+                    <div class="cpd-card-body">
+                        <p class="cpd-muted">
+                            Summary snapshot for the selected period. For full audit trails
+                            (field-level change history), open a payslip in the backend and
+                            use the chatter / Log Note history, which is enabled on this model.
+                        </p>
+                        <div class="cpd-table-wrap">
+                            <table class="cpd-table" id="tblAudit">
+                                <thead><tr><th>Metric</th><th class="text-end">Value</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ APPROVALS ============ -->
+            <section class="cpd-panel" id="panel-approvals">
+                <div class="cpd-card">
+                    <div class="cpd-card-header"><h3>Pending Approvals</h3></div>
+                    <div class="cpd-card-body">
+                        <div class="cpd-table-wrap">
+                            <table class="cpd-table" id="tblApprovals">
+                                <thead><tr><th>Employee</th><th>Period End</th><th class="text-end">Net Pay</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ TRACKER ============ -->
+            <section class="cpd-panel" id="panel-tracker">
+                <div class="cpd-card">
+                    <div class="cpd-card-header"><h3>Approval Workflow Tracker</h3></div>
+                    <div class="cpd-card-body">
+                        <div class="cpd-stepper" id="approvalStepper"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ PROCESSING ============ -->
+            <section class="cpd-panel" id="panel-processing">
+                <div class="cpd-card">
+                    <div class="cpd-card-header"><h3>Payroll Processing Status (Recent Runs)</h3></div>
+                    <div class="cpd-card-body">
+                        <div class="cpd-timeline" id="processingTimeline"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ TURNOVER ============ -->
+            <section class="cpd-panel" id="panel-turnover">
+                <div class="cpd-kpi-grid">
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon pink"><i class="fa-solid fa-user-check"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Active Employees</span>
+                            <span class="cpd-kpi-value" id="kpiActiveEmp">--</span>
+                        </div>
+                    </div>
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon purple"><i class="fa-solid fa-user-minus"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Departed (period)</span>
+                            <span class="cpd-kpi-value" id="kpiDepartedEmp">--</span>
+                        </div>
+                    </div>
+                    <div class="cpd-kpi-card">
+                        <div class="cpd-kpi-icon rose"><i class="fa-solid fa-arrows-rotate"></i></div>
+                        <div class="cpd-kpi-body">
+                            <span class="cpd-kpi-label">Turnover Rate</span>
+                            <span class="cpd-kpi-value" id="kpiTurnoverRate">--</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+</div>
+
+<div class="cpd-loading" id="cpdLoading"><div class="cpd-spinner"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="/cleon_home_menu/static/src/js/home_menu_overlay.js"></script>
+
+<script>
+  // Defensive check: if either library failed to load (blocked CDN,
+  // offline server, corporate firewall, etc.) show a clear banner
+  // instead of a silent console error with no explanation.
+  window.addEventListener('load', function () {
+    var missing = [];
+    if (typeof jQuery === 'undefined') missing.push('jQuery');
+    if (typeof Chart === 'undefined') missing.push('Chart.js');
+    if (missing.length) {
+      var el = document.createElement('div');
+      el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;' +
+        'background:#fee2e2;color:#991b1b;padding:12px 20px;font:13px sans-serif;' +
+        'border-bottom:2px solid #fca5a5;';
+      el.textContent = missing.join(' and ') + ' failed to load from the CDN ' +
+        '(cdnjs.cloudflare.com may be blocked on this network). Vendor the ' +
+        'libraries locally under static/src/js/vendor/ and update the <script> ' +
+        'tags in payroll.html, or check your network/firewall settings.';
+      document.body.prepend(el);
+    }
+  });
+</script>
+<script src="/cleon_payroll_dashboard/static/src/js/payroll_dashboard.js"></script>
+</body>
+</html>

@@ -1,94 +1,175 @@
 const MODULES = [
         {
+          id: 'hradmin', title: 'HR Admin', color: 'c-cyan',
+          desc: 'R management, Leave management and absence tracking',
+          features: ['Leave requests', 'Absence tracking', 'Leave policies'],
+          more: '+ 18 more feature',
+          technical_name: 'hr_administration',
+          action: 'hr_administration.action_dashboard',
+        },
+        {
           id: 'recruitment', title: 'Recruitment', color: 'c-blue',
           desc: 'End-to-end recruitment and applicant tracking system',
           features: ['Job posting', 'Candidate pipeline', 'Interview scheduling'],
-          more: '+ 1 more feature'
+          more: '+ 14 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'hr_cleon_recruitment.action_hr_job_recruitment',
         },
         {
-          id: 'employee-experience', title: 'Employee Experience', color: 'c-purple',
-          desc: 'Core HR management and employee lifecycle',
-          features: ['Employee records', 'Onboarding', 'Document management'],
-          more: '+ 1 more feature'
+          id: 'hr-core', title: 'HR Employee', color: 'c-purple',
+          desc: 'Core HR management system',
+          features: ['Employee records', 'Onboarding', 'Preonboarding'],
+          more: '+ 53 more feature',
+          technical_name: 'hr_employee',
+          action: 'hr_employee.action_profile_dashboard_server',
+
+        },
+        {
+          id: 'hr-calendar', title: 'Company Calendar', color: 'c-purple',
+          desc: 'Company calendar: Event managements',
+          features: ['Events', 'Announcements', 'Incident reports', 'Anniversary'],
+          more: '+ 6 more feature',
+          technical_name: 'hr_company_calendar',
+          action: 'calendar.action_calendar_event',
+        },
+        {
+          id: 'hr-warning', title: 'HR Displinary', color: 'c-purple',
+          desc: 'Displinary managements',
+          features: ['Warnings', 'Displinary Actions', 'Termination Workflow'],
+          more: '+ 14 more feature',
+          technical_name: 'hr_warning',
+          action: 'hr_warning.action_hr_warning',
+
         },
         {
           id: 'payroll', title: 'Payroll & Remittance', color: 'c-green',
           desc: 'Automated payroll processing and tax remittance',
-          features: ['Salary calculation', 'Tax automation', 'Bank integration'],
-          more: '+ 3 more features'
+          features: ['Salary calculation', 'Tax automation', 'Rmeittance'],
+          more: '+ 31 more features',
+          technical_name: 'cleon_payroll',
+          action: 'cleon_payroll.action_open_cleon_payroll_dashboard',
         },
+        
         {
-          id: 'finance', title: 'Finance', color: 'c-green',
-          desc: 'Financial management and accounting integration',
+          id: 'expense-mgt', title: 'Expense Management', color: 'c-green',
+          desc: 'Employee management integration',
           features: ['Budgeting', 'Expense tracking', 'Financial reports'],
-          more: '+ 1 more feature'
+          more: '+ 21 more feature',
+          technical_name: 'hr_expense_management',
+          action: 'hr_expense_management.action_hr_claim_dashboard',
+
         },
         {
           id: 'cleon-time', title: 'Cleon Time', color: 'c-orange',
           desc: 'Comprehensive time and attendance management',
           features: ['Time tracking', 'Overtime', 'Timesheets'],
-          more: '+ 1 more feature'
+          more: '+ 12 more feature',
+          technical_name: 'hr_employee',
+          action: 'hr_employee.action_hr_core_time_attendance',
         },
         {
           id: 'leave', title: 'Leave & Absence', color: 'c-cyan',
           desc: 'Leave management and absence tracking',
           features: ['Leave requests', 'Absence tracking', 'Leave policies'],
-          more: '+ 1 more feature'
+          more: '+ 1 more feature',
+          technical_name: 'hr_leave_dashboard',
+          action: 'hr_leave_dashboard.action_hr_leave_dashboard',
         },
+        
         {
-          id: 'performance', title: 'Performance Appraisal', color: 'c-blue',
-          desc: 'Goal setting, appraisals, and performance tracking',
-          features: ['Goal setting', 'Performance reviews', '360° feedback'],
-          more: '+ 1 more feature'
+          id: 'document-mgt', title: 'Document Management', color: 'c-orange',
+          desc: 'Document Management',
+          features: ['Document intelligence', 'Social Gallery', 'Department folders'],
+          more: '+ 23 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'hr_leave_dashboard.action_hr_leave_dashboard',
         },
-        {
-          id: 'kyc', title: 'Verification & KYC', color: 'c-teal',
-          desc: 'Employee verification and KYC compliance',
-          features: ['Background checks', 'Document verification', 'Compliance tracking'],
-          more: '+ 2 more features'
-        },
-        {
-          id: 'internal-control', title: 'Internal Control', color: 'c-gray',
-          desc: 'Risk management and internal controls',
-          features: ['Risk assessment', 'Control monitoring', 'Policy enforcement'],
-          more: '+ 1 more feature'
-        },
-        {
-          id: 'marketplace', title: 'Cleon Market Place', color: 'c-violet',
-          desc: 'Internal marketplace for HR services and benefits',
-          features: ['Service catalog', 'Benefits marketplace', 'Vendor management'],
-          more: '+ 1 more feature'
-        },
+
+        
+        
         {
           id: 'hmo', title: 'Health & HMO', color: 'c-pink',
           desc: 'Comprehensive health insurance and HMO management',
           features: ['HMO enrollment', 'Hospital listings', 'Claims management'],
-          more: '+ 1 more feature'
+          more: '+ 10 more feature',
+          technical_name: 'hr_insurance',
+          action: 'hr_insurance.action_dashboard_server',
         },
         {
           id: 'attendance', title: 'Attendance & Shift Management', color: 'c-orange',
           desc: 'Attendance tracking and shift scheduling',
           features: ['Attendance tracking', 'Shift scheduling', 'Shift swaps'],
-          more: '+ 3 more features'
+          more: '+ 15 more features',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'hr_employee.action_hr_core_time_attendance',
+        },
+        {
+          id: 'staff_directory', title: 'Staff Directory', color: 'c-orange',
+          desc: 'Staff Directory',
+          features: ['Staff details', 'Hierachy Mgt', 'Positions'],
+          more: '+ 10 more features',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'hr_staff_directory.action_staff_directory_dashboard',
+        },
+        {
+          id: 'marketplace', title: 'Cleon Market Place', color: 'c-violet',
+          desc: 'Internal marketplace for HR services and benefits',
+          features: ['Service catalog', 'Benefits marketplace', 'Vendor management'],
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
         },
         {
           id: 'elearning', title: 'e-Learning', color: 'c-purple',
           desc: 'Learning management and training platform',
           features: ['Course library', 'Training programs', 'Certifications'],
-          more: '+ 1 more feature'
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
         },
         {
           id: 'hr-advisory', title: 'HR Advisory', color: 'c-red',
           desc: 'HR consulting and advisory services',
           features: ['Expert consultation', 'HR policies', 'Best practices'],
-          more: '+ 1 more feature'
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
         },
         {
           id: 'contracts', title: 'Client & Contract Management', color: 'c-blue-l',
           desc: 'Manage client relationships and contracts',
           features: ['Client portal', 'Contract lifecycle', 'SLA tracking'],
-          more: '+ 1 more feature'
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
         },
+        {
+          id: 'kyc', title: 'Verification & KYC', color: 'c-teal',
+          desc: 'Employee verification and KYC compliance',
+          features: ['Background checks', 'Document verification', 'Compliance tracking'],
+          more: '+ 2 more features',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
+
+        },
+        {
+          id: 'internal-control', title: 'Internal Control', color: 'c-gray',
+          desc: 'Risk management and internal controls',
+          features: ['Risk assessment', 'Control monitoring', 'Policy enforcement'],
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
+        },
+        {
+          id: 'performance', title: 'Performance Appraisal', color: 'c-blue',
+          desc: 'Goal setting, appraisals, and performance tracking',
+          features: ['Goal setting', 'Performance reviews', '360° feedback'],
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
+        },
+        
+        
       ];
 
       const ICONS = {
@@ -120,56 +201,187 @@ const MODULES = [
         setTimeout(() => t.classList.remove('show'), 2500);
       }
 
-      function renderModules() {
-        const grid = document.getElementById('modules-grid');
-        grid.innerHTML = '';
-        MODULES.forEach(m => {
-          const isInstalled = installed.has(m.id);
-          const card = document.createElement('div');
-          card.className = 'module-card';
-          card.innerHTML = `
-      <div class="card-icon ${m.color}">${ICONS[m.color] || ICONS['c-blue']}</div>
-      <div class="card-title">${m.title}</div>
-      <div class="card-desc">${m.desc}</div>
-      <ul class="card-features">
-        ${m.features.map(f => `<li>${f}</li>`).join('')}
-        <li class="more">${m.more}</li>
-      </ul>
-      <button class="btn-install ${m.color} ${isInstalled ? 'installed' : ''}" data-id="${m.id}">
-        ${isInstalled
-              ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Installed`
-              : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Install Module`
-            }
-      </button>
-    `;
-          card.querySelector('.btn-install').addEventListener('click', (e) => {
-            const id = e.currentTarget.dataset.id;
-            const mod = MODULES.find(x => x.id === id);
-            if (installed.has(id)) {
-              installed.delete(id);
-              showToast(`${mod.title} uninstalled`);
-            } else {
-              installed.add(id);
-              showToast(`${mod.title} installed successfully`);
-            }
-            updateCount();
-            renderModules();
-          });
-          grid.appendChild(card);
-        });
+      // function renderModules() {
+      //   const grid = document.getElementById('modules-grid');
+      //   grid.innerHTML = '';
+      //   MODULES.forEach(m => {
+      //     const isInstalled = installed.has(m.id);
+      //     const card = document.createElement('div');
+      //     card.className = 'module-card';
+      //     card.innerHTML = `
+      //       <div class="card-icon ${m.color}">${ICONS[m.color] || ICONS['c-blue']}</div>
+      //       <div class="card-title">${m.title}</div>
+      //       <div class="card-desc">${m.desc}</div>
+      //       <ul class="card-features">
+      //         ${m.features.map(f => `<li>${f}</li>`).join('')}
+      //         <li class="more">${m.more}</li>
+      //       </ul>
+      //       <button class="btn-install ${m.color} ${isInstalled ? 'installed' : ''}" data-id="${m.id}">
+      //         ${isInstalled
+      //               ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Installed`
+      //               : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Install Module`
+      //             }
+      //       </button>
+      //     `;
+      //     card.querySelector('.btn-install').addEventListener('click', (e) => {
+      //       const id = e.currentTarget.dataset.id;
+      //       const mod = MODULES.find(x => x.id === id);
+      //       if (installed.has(id)) {
+      //         installed.delete(id);
+      //         showToast(`${mod.title} uninstalled`);
+      //       } else {
+      //         installed.add(id);
+      //         showToast(`${mod.title} installed successfully`);
+      //       }
+      //       updateCount();
+      //       renderModules();
+      //     });
+      //     grid.appendChild(card);
+      //   });
+      // }
+
+      // document.getElementById('install-all-btn').addEventListener('click', () => {
+      //   if (installed.size === 15) {
+      //     installed.clear();
+      //     showToast('All modules uninstalled');
+      //   } else {
+      //     MODULES.forEach(m => installed.add(m.id));
+      //     showToast('All 15 modules installed');
+      //   }
+      //   updateCount();
+      //   renderModules();
+      // });
+
+    async function callKw(route, params) {
+      const res = await fetch(route, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'call',
+          params,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error.data?.message || data.error.message || 'Request failed');
+      }
+      return data.result;
+    }
+
+    // ── Hydrate MODULES with live install state + action urls ──
+    async function hydrateModuleStates() {
+      const payload = MODULES.map(m => ({
+        id: m.id,
+        technical_name: m.technical_name,
+        action: m.action,
+      }));
+
+      const statusMap = await callKw('/landing/modules/init', { modules: payload });
+
+      MODULES.forEach(m => {
+        const info = statusMap[m.id];
+        if (!info) return;
+        m.isInstalled = info.installed;
+        m.state = info.state;
+        m.actionUrl = info.action_url;
+        if (info.installed) installed.add(m.id);
+      });
+    }
+
+    // ── Card click handling ──────────────────────────────────────
+    async function handleModuleButtonClick(mod, btnEl) {
+      if (mod.isInstalled) {
+        if (mod.actionUrl) {
+          window.location.href = mod.actionUrl;
+        } else {
+          showToast(`${mod.title} is installed, but no action is configured for it.`);
+        }
+        return;
       }
 
-      document.getElementById('install-all-btn').addEventListener('click', () => {
-        if (installed.size === 15) {
-          installed.clear();
-          showToast('All modules uninstalled');
-        } else {
-          MODULES.forEach(m => installed.add(m.id));
-          showToast('All 15 modules installed');
+      // Not installed yet → install, with spinner state
+      const originalHtml = btnEl.innerHTML;
+      btnEl.disabled = true;
+      btnEl.classList.add('installing');
+      btnEl.innerHTML = `<span class="spinner"></span> Installing… please hold`;
+
+      try {
+        const result = await callKw('/landing/module/install', {
+          technical_name: mod.technical_name,
+          action_xmlid: mod.action,
+        });
+
+        if (!result.success) {
+          showToast(result.error || `Failed to install ${mod.title}`);
+          btnEl.disabled = false;
+          btnEl.classList.remove('installing');
+          btnEl.innerHTML = originalHtml;
+          return;
         }
+
+        // Mark every card sharing this technical_name as installed
+        MODULES.forEach(m => {
+          if (m.technical_name === mod.technical_name) {
+            m.isInstalled = true;
+            m.state = result.state || 'installed';
+            installed.add(m.id);
+          }
+        });
+        mod.actionUrl = result.action_url;
+
+        showToast(`${mod.title} installed successfully`);
         updateCount();
         renderModules();
-      });
 
-      renderModules();
-      updateCount();
+        if (result.action_url) {
+          btnEl.innerHTML = `<span class="spinner"></span> Opening module…`;
+          window.location.href = result.action_url;
+        }
+      } catch (err) {
+        showToast(err.message || `Failed to install ${mod.title}`);
+        btnEl.disabled = false;
+        btnEl.classList.remove('installing');
+        btnEl.innerHTML = originalHtml;
+      }
+    }
+
+    // ── Updated renderModules() ──────────────────────────────────
+    function renderModules() {
+      const grid = document.getElementById('modules-grid');
+      grid.innerHTML = '';
+      MODULES.forEach(m => {
+        const isInstalled = !!m.isInstalled;
+        const card = document.createElement('div');
+        card.className = 'module-card';
+        card.innerHTML = `
+          <div class="card-icon ${m.color}">${ICONS[m.color] || ICONS['c-blue']}</div>
+          <div class="card-title">${m.title}</div>
+          <div class="card-desc">${m.desc}</div>
+          <ul class="card-features">
+            ${m.features.map(f => `<li>${f}</li>`).join('')}
+            <li class="more">${m.more}</li>
+          </ul>
+          <button class="btn-install ${m.color} ${isInstalled ? 'installed' : ''}" data-id="${m.id}">
+            ${isInstalled
+              ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Open Module`
+              : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Install Module`
+            }
+          </button>
+        `;
+        card.querySelector('.btn-install').addEventListener('click', (e) => {
+          handleModuleButtonClick(m, e.currentTarget);
+        });
+        grid.appendChild(card);
+      });
+    }
+
+// ── Boot sequence ────────────────────────────────────────────
+(async function init() {
+  await hydrateModuleStates();
+  renderModules();
+  updateCount();
+})();
+
+      // renderModules();
+      // updateCount();

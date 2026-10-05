@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cleon_payroll_structure_form" model="ir.ui.view">
+        <field name="name">cleon.payroll.structure.form</field>
+        <field name="model">cleon.payroll.structure</field>
+        <field name="arch" type="xml">
+            <form string="Payroll Structure" class="o_qms_form">
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+                        </div>
+                        <span class="qms-card-title">Structure Details</span>
+                    </div>
+                    <div class="pink-card-body">
+                        <group>
+                            <group col="4">
+                                <field name="name" class="pink-text" placeholder="Monthly Staff Structure"/>
+                                <field name="code" placeholder="MONTHLY_STAFF"/>
+                            </group>
+                            <group>
+                                <field name="schedule_pay"/>
+                                <field name="parent_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="company_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="active" widget="boolean_toggle"/>
+                            </group>
+                        </group>
+                    </div>
+                    <div class="ash-card-body">
+                        <span class="qms-card-title">Payroll Rules (computed top to bottom)</span>
+                        <field name="rule_ids" widget="many2many">
+                            <tree>
+                                <field name="sequence"/>
+                                <field name="code"/>
+                                <field name="name"/>
+                                <field name="category_id"/>
+                                <field name="rule_type"/>
+                                <field name="amount_select"/>
+                            </tree>
+                        </field>
+                    </div>
+                    <div class="ash-card-body text-sm">
+                        <field name="note" nolabel="1" placeholder="Internal notes about this structure..."/>
+                    </div>
+                </div>
+                <notebook> 
+                    <page string="📅 Employee contract" name="contract_employee">
+                        <div class="qms-card" style="margin-bottom:0;">
+                            <div class="qms-card-header">
+                                <div class="qms-card-icon" style="background:#DC3545;">
+                                    <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                </div>
+                                <span class="qms-card-title">Employee Contracts </span>
+                            </div>
+                            <div class="qms-card-body" style="padding:0;">
+                                <field name="contract_ids" context="{'default_cleon_structure_id': id}">
+                                    <tree editable="bottom">
+                                        <field name="name" readonly="0"/>
+                                <field name="company_id" options="{'no_open': true, 'no_create': true}" readonly="1"/>
+                                        <field name="employee_id" readonly="0" options="{'no_open': true, 'no_create': true}"/>
+                                        <field name="employee_number" readonly="0"/>
+                                        <field name="cleon_structure_id" readonly="1"/>
+                                    </tree>
+                                </field>
+                            </div>
+                        </div>
+                    </page>
+                    <page string="📋 Applicable Salary Rules" name="applicable_rules">
+                        <div class="qms-card" style="margin-bottom:0;">
+                            <div class="qms-card-header">
+                                <div class="qms-card-icon" style="background:#DC3545;">
+                                    <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                </div>
+                                <span class="qms-card-title">Rule</span>
+                            </div>
+                            <div class="qms-card-body" style="padding:0;">
+                                <field name="rule_ids" readonly="0">
+                                    <tree>
+                                        <field name="sequence" readonly="0"/>  
+                                        <field name="name" readonly="0"/>  
+                                        <field name="rule_type" readonly="0" options="{'no_open': true, 'no_create': true}"/>  
+                                        <field name="category_id" readonly="0" options="{'no_open': true, 'no_create': true}"/>  
+                                    </tree>
+                                </field>
+                            </div>
+                        </div>
+                    </page>
+                </notebook>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_payroll_structure_list" model="ir.ui.view">
+        <field name="name">cleon.payroll.structure.list</field>
+        <field name="model">cleon.payroll.structure</field>
+        <field name="arch" type="xml">
+            <tree string="Payroll Structures">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="schedule_pay"/>
+                <field name="parent_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_payroll_structure_kanban_pink" model="ir.ui.view">
+        <field name="name">cleon.payroll.structure.kanban.pink</field>
+        <field name="model">cleon.payroll.structure</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column o_employee_directory_kanban" js_class="payroll_kanban_sidebar">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="schedule_pay"/>
+                <field name="rule_count"/>
+                <field name="contract_count"/>
+
+                <field name="parent_id" options="{'no_open': true, 'no_create': true}"/>
+                <field name="company_id" options="{'no_open': true, 'no_create': true}"/>
+                <field name="active" widget="boolean_toggle"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click p-0 border-0 rounded-3 shadow-sm overflow-hidden position-relative" 
+                            style="background: linear-gradient(135deg, #FFF5F7 0%, #FCE4EC 50%, #F8BBD0 100%); max-width: 380px; font-family: 'Inter', sans-serif;">
+                            
+                            <!-- Background Accent Pattern -->
+                            <div style="position: absolute; right: -20px; top: -20px; width: 100px; height: 100px; background: rgba(233, 30, 99, 0.05); border-radius: 50%; pointer-events: none;"/>
+                            
+                            <!-- Top Header Section -->
+                            <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="fw-bold fs-6 text-uppercase" style="color: #AD1457; letter-spacing: 0.5px;">
+                                        <i class="fa fa-building me-1"/> <t t-esc="record.name.value || 'Cleon'"/>
+                                    </span>
+                                </div>
+                                <i class="fa fa-circle text-success fs-6" title="Active Status"/>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="row g-0 px-3 py-2 align-items-center">
+                                <!-- Left: Employee Avatar -->
+                                <div class="col-4 text-center">
+                                    <div class="position-relative d-inline-block">
+                                        <!-- <img t-att-src="kanban_image('hr.employee', 'avatar_128', record.id.raw_value)" 
+                                            class="rounded-3 img-fluid border border-2 shadow-sm" 
+                                            style="border-color: #F48FB1 !important; width: 90px; height: 100px; object-fit: cover;" 
+                                            alt="Employee Photo"/> -->
+                                        <div class="payroll-avatar">
+                                            <t t-esc="record.name.value ? record.name.value.substring(0,2).toUpperCase() : ''"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Employee Details -->
+                                <div class="col-8 ps-3">
+                                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem;">
+                                        <field name="schedule_pay"/>
+                                    </h5>
+                                    <p class="text-muted mb-2 fw-semibold" style="font-size: 0.85rem; color: #880E4F !important;">
+                                        <field name="parent_id"/>
+                                    </p>
+                                    
+                                    <div class="lh-sm" style="font-size: 0.78rem; color: #1b191e;">
+                                        <div class="mb-1">
+                                            <span class="fw-bold">Schedule: </span> 
+                                            <!-- <span class="color-darkred"><t t-esc="record.schedule_pay.value"/></span> -->
+                                        </div>
+                                        <div class="mb-1 text-truncate">
+                                            <span class="fw-bold">Active: </span> 
+                                            <span class="color-darkred"><field name="active"/></span>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <span class="fw-bold">Contracts: </span> 
+                                            <span class="color-darkred"><field name="contract_count"/></span>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <span class="fw-bold">Components (Rules): </span> 
+                                            <span class="color-darkred"><field name="rule_count"/></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Footer Badge -->
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 mt-1" 
+                                style="background: rgba(255, 255, 255, 0.6); border-top: 1px solid rgba(244, 143, 177, 0.3);">
+                                <span class="badge rounded-pill px-2 py-1" style="background-color: #F8BBD0; color: #880E4F; font-weight: 500;">
+                                    <i class="fa fa-check-circle me-1"/> Active
+                                </span>
+                                <small style="color: #AD1457; font-weight: 500; font-size: 0.75rem;">
+                                    <!-- Since: <t t-esc="record.create_date.value || '2026'"/> -->
+                                </small>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_cleon_payroll_structure" model="ir.actions.act_window">
+        <field name="name">Payroll Structures</field>
+        <field name="res_model">cleon.payroll.structure</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,157 @@
+| Preview | Font Awesome Class  | Good For                     |
+| ------- | ------------------- | ---------------------------- |
+| 📊      | `fa-dashboard`      | Dashboard                    |
+| 👥      | `fa-users`          | Employees, Teams             |
+| 💬      | `fa-comments`       | Messages, Feedback           |
+| ✉️      | `fa-envelope`       | Communication                |
+| 📩      | `fa-envelope-open`  | Announcements                |
+| 🎁      | `fa-gift`           | Celebrations, Rewards        |
+| 📚      | `fa-book`           | Knowledge Base               |
+| ⚡       | `fa-bolt`           | Moment Engine, Quick Actions |
+| 🌍      | `fa-globe`          | Culture, Global Programs     |
+| 🤝      | `fa-handshake-o`    | Buddy System, Mentoring      |
+| 📈      | `fa-line-chart`     | Engagement                   |
+| 📊      | `fa-bar-chart`      | Analytics                    |
+| 📉      | `fa-area-chart`     | Trends                       |
+| ❤️      | `fa-heart`          | Employee Experience          |
+| ⭐       | `fa-star`           | Recognition                  |
+| ☆       | `fa-star-o`         | Experience Section           |
+| 🏆      | `fa-trophy`         | Achievements                 |
+| 🎯      | `fa-bullseye`       | Goals                        |
+| 🚀      | `fa-rocket`         | Growth, Development          |
+| 💡      | `fa-lightbulb-o`    | Ideas, Innovation            |
+| 🎓      | `fa-graduation-cap` | Learning                     |
+| 📅      | `fa-calendar`       | Events                       |
+| 🕒      | `fa-clock-o`        | Schedule                     |
+| 🔔      | `fa-bell`           | Notifications                |
+| 🔍      | `fa-search`         | Search                       |
+| 📝      | `fa-pencil`         | Edit                         |
+| ➕       | `fa-plus-circle`    | Create                       |
+| ⚙️      | `fa-cog`            | Settings                     |
+| ⚙️⚙️    | `fa-cogs`           | Configuration                |
+| 🔒      | `fa-lock`           | Security                     |
+| 🏢      | `fa-building`       | Organization                 |
+| 🌳      | `fa-sitemap`        | Org Chart                    |
+| 👤      | `fa-user`           | Profile                      |
+| 👔      | `fa-briefcase`      | Career                       |
+| 📋      | `fa-list-alt`       | Tasks                        |
+| 📌      | `fa-thumb-tack`     | Important Items              |
+| 📂      | `fa-folder-open`    | Documents                    |
+| 📄      | `fa-file-text-o`    | Reports                      |
+| 📹      | `fa-video-camera`   | Videos                       |
+| 🎤      | `fa-microphone`     | Podcasts                     |
+| 📢      | `fa-bullhorn`       | Announcements                |
+| 💰      | `fa-money`          | Rewards                      |
+| 🏅      | `fa-certificate`    | Recognition                  |
+| 🔥      | `fa-fire`           | Trending                     |
+| 🌟      | `fa-magic`          | Employee Moments             |
+
+| Icon  | Class                 | Best Use            |
+| ----- | --------------------- | ------------------- |
+| 📊    | `fa-dashboard`        | Dashboard           |
+| 👤    | `fa-user`             | Employee Profile    |
+| 👥    | `fa-users`            | Employees           |
+| ➕👤   | `fa-user-plus`        | Recruitment         |
+| 🪪    | `fa-id-badge`         | Employee ID         |
+| 💬    | `fa-comments`         | Discussions         |
+| 🗨️   | `fa-comment`          | Feedback            |
+| ✉️    | `fa-envelope`         | Messages            |
+| 📩    | `fa-envelope-open`    | Announcements       |
+| 📢    | `fa-bullhorn`         | Company News        |
+| 📚    | `fa-book`             | Knowledge Base      |
+| 🔖    | `fa-bookmark`         | Saved Content       |
+| 🎓    | `fa-graduation-cap`   | Learning            |
+| 💡    | `fa-lightbulb-o`      | Ideas               |
+| 🏛️   | `fa-university`       | Training Academy    |
+| 📝    | `fa-pencil-square-o`  | Articles            |
+| 📈    | `fa-line-chart`       | Engagement          |
+| 📊    | `fa-bar-chart`        | Reports             |
+| 🥧    | `fa-pie-chart`        | Analytics           |
+| 📉    | `fa-area-chart`       | Trends              |
+| 🏆    | `fa-trophy`           | Recognition         |
+| 🎯    | `fa-bullseye`         | Goals               |
+| 🚀    | `fa-rocket`           | Career Growth       |
+| 🏁    | `fa-flag-checkered`   | Milestones          |
+| ❤️    | `fa-heart`            | Employee Experience |
+| 🤍    | `fa-heart-o`          | Wellness            |
+| 😊    | `fa-smile-o`          | Happiness           |
+| ⭐     | `fa-star`             | Recognition         |
+| ☆     | `fa-star-o`           | Featured            |
+| ✨     | `fa-magic`            | Employee Moments    |
+| 🔥    | `fa-fire`             | Trending            |
+| 🌍    | `fa-globe`            | Culture             |
+| 🎁    | `fa-gift`             | Celebrations        |
+| 📜    | `fa-certificate`      | Awards              |
+| 💎    | `fa-diamond`          | Excellence          |
+| 👍    | `fa-thumbs-up`        | Appreciation        |
+| 🤝    | `fa-handshake-o`      | Buddy System        |
+| 🌳    | `fa-sitemap`          | Organization Chart  |
+| 🔗    | `fa-link`             | Connections         |
+| 🔀    | `fa-random`           | Collaboration       |
+| 📄    | `fa-file-text-o`      | Documents           |
+| 📁    | `fa-folder-open`      | Resources           |
+| 🗄️   | `fa-archive`          | Archive             |
+| 📋    | `fa-list-alt`         | Tasks               |
+| 📌    | `fa-thumb-tack`       | Important           |
+| 📅    | `fa-calendar`         | Events              |
+| ☑️📅  | `fa-calendar-check-o` | Scheduled Events    |
+| ⏰     | `fa-clock-o`          | Time Tracking       |
+| ⌛     | `fa-hourglass`        | Waiting             |
+| 🔔    | `fa-bell`             | Notifications       |
+| 🚩    | `fa-flag`             | Action Items        |
+| 🎥    | `fa-video-camera`     | Video Content       |
+| 📷    | `fa-camera`           | Photos              |
+| ▶️    | `fa-play-circle`      | Media               |
+| 🎧    | `fa-headphones`       | Podcasts            |
+| 🎤    | `fa-microphone`       | Voice Content       |
+| ⚙️    | `fa-cog`              | Settings            |
+| ⚙️⚙️  | `fa-cogs`             | Administration      |
+| 🎚️   | `fa-sliders`          | Preferences         |
+| 🔧    | `fa-wrench`           | Configuration       |
+| 🔒    | `fa-lock`             | Security            |
+| 🔓    | `fa-unlock`           | Access              |
+| 🏢    | `fa-building`         | Company             |
+| 🏠    | `fa-home`             | Portal Home         |
+| 🌐    | `fa-globe`            | Global Programs     |
+| 🧭    | `fa-compass`          | Navigation          |
+| 🔍    | `fa-search`           | Search              |
+| 🛎️   | `fa-bell-o`           | Alerts              |
+| 📞    | `fa-phone`            | Contact             |
+| 📱    | `fa-mobile`           | Mobile              |
+| 💼    | `fa-briefcase`        | Career              |
+| 🧳    | `fa-suitcase`         | Assignments         |
+| 💰    | `fa-money`            | Rewards             |
+| 💳    | `fa-credit-card`      | Benefits            |
+| 🏦    | `fa-bank`             | Payroll             |
+| 🏥    | `fa-hospital-o`       | Health              |
+| 🩺    | `fa-medkit`           | Wellness            |
+| 🍽️   | `fa-cutlery`          | Cafeteria           |
+| ✈️    | `fa-plane`            | Travel              |
+| 🚗    | `fa-car`              | Transportation      |
+| 🏃    | `fa-futbol-o`         | Sports & Recreation |
+| ☕     | `fa-coffee`           | Break Room          |
+| 🎉    | `fa-glass`            | Social Events       |
+| 🌱    | `fa-leaf`             | Sustainability      |
+| ☀️    | `fa-sun-o`            | Wellbeing           |
+| 🌙    | `fa-moon-o`           | Work-Life Balance   |
+| 🛡️   | `fa-shield`           | Compliance          |
+| ⚖️    | `fa-balance-scale`    | Ethics              |
+| 📍    | `fa-map-marker`       | Locations           |
+| 🗺️   | `fa-map`              | Offices             |
+| 📡    | `fa-rss`              | News Feed           |
+| ☁️    | `fa-cloud`            | Cloud Resources     |
+| 💻    | `fa-laptop`           | Digital Workplace   |
+| 🖥️   | `fa-desktop`          | Workspace           |
+| 📊🗄️ | `fa-database`         | Data Hub            |
+| 🔬    | `fa-flask`            | Innovation          |
+| ⚡     | `fa-bolt`             | Moment Engine       |
+| 🎨    | `fa-paint-brush`      | Creative Hub        |
+| 🎭    | `fa-puzzle-piece`     | Team Building       |
+| 🧠    | `fa-lightbulb-o`      | Ideas Hub           |
+| 🏅    | `fa-trophy`           | Hall of Fame        |
+| 👑    | `fa-diamond`          | Leadership          |
+| 🌟    | `fa-star`             | Employee Spotlight  |
+| 🏆    | `fa-trophy`           | Achievements        |
+| 🚀    | `fa-rocket`           | Growth Journey      |
+| 🎯    | `fa-bullseye`         | Objectives          |
+| 📈    | `fa-line-chart`       | Success Metrics     |

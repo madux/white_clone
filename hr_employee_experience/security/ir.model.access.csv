@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_experience_dashboard,hr.experience.dashboard,model_hr_experience_dashboard,base.group_user,1,1,1,1
+access_hr_experience_message,hr.experience.message,model_hr_experience_message,base.group_user,1,1,1,1
+access_hr_experience_recognition,hr.experience.recognition,model_hr_experience_recognition,base.group_user,1,1,1,1
+access_hr_experience_knowledge,hr.experience.knowledge,model_hr_experience_knowledge,base.group_user,1,1,1,1
+access_hr_experience_video,hr.experience.video,model_hr_experience_video,base.group_user,1,1,1,1
+access_hr_experience_video_watch,hr.experience.video.watch,model_hr_experience_video_watch,base.group_user,1,1,1,1

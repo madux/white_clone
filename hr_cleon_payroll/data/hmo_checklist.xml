@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="hmo_checklist_1" model="hmo.checklist">
+            <field name="name">📝 Browse HMO Marketplace</field>
+            <field name="description">Explore available HMO providers and compare plans</field>
+            <field name="sequence">1</field>
+            <field name="view_type">tree</field>
+            <field name="model_id" ref="hr_insurance.model_hmo_marketplace"/>
+
+        </record>
+        <record id="hmo_checklist_2" model="hmo.checklist">
+            <field name="name">📝 Register with HMO Provider</field>
+            <field name="description">Complete registration with your chosen provider</field>
+            <field name="sequence">2</field>
+            <field name="view_type">tree</field>
+            <field name="model_id" ref="hr_insurance.model_hmo_marketplace"/>
+
+        </record>
+        <record id="hmo_checklist_3" model="hmo.checklist">
+            <field name="name">📝 Create Hospitals</field>
+            <field name="description">Create Hospitals linked to HMO</field>
+            <field name="sequence">3</field>
+            <field name="view_type">tree</field>
+            <field name="model_id" ref="hr_insurance.model_hmo_hospital"/>
+        </record>
+        <record id="hmo_checklist_4" model="hmo.checklist">
+            <field name="name">📝 Configure Eligibility Rules</field>
+            <field name="description">Set up eligibility criteria and plan assignments</field>
+            <field name="sequence">4</field>
+            <field name="view_type">tree</field>
+            <field name="model_id" ref="hr_insurance.model_hmo_setting"/>
+        </record>
+
+        <record id="hmo_checklist_5" model="hmo.checklist">
+            <field name="name">📝 Setup Roles to Manage HMO</field>
+            <field name="description">Set up Role Responsible to manager HMO</field>
+            <field name="sequence">5</field>
+            <field name="view_type">tree</field>
+            <field name="model_id" ref="cleon_settings.model_cleon_setting"/>
+        </record>
+    </data>
+</odoo>

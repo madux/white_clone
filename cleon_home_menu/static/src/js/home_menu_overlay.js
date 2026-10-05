@@ -10,6 +10,7 @@
  * Also self-injects the landing stylesheet, since this overlay can be
  * opened from arbitrary Odoo backend pages that never load it.
  */
+// var HMO = {}
 (function ($) {
   "use strict";
 
@@ -119,8 +120,8 @@
         '        <i class="fa fa-arrow-left"></i> Menus',
         "      </a>",
         '      <div class="hc-page-title-row">',
-        '        <span class="hc-page-icon"><i class="fa fa-magic"></i></span>',
-        '        <h1 class="hc-page-title">Explore Modules</h1>',
+        '        <span class="hc-page-icon"><a href="/fa fa-magic"><i class="fa fa-magic"></i></a></span>',
+        '        <h1 class="hc-page-title"><a href="/landing"> Explore Modules</a></h1>',
         "      </div>",
         '      <p class="hc-page-subtitle">',
         "        Discover and explore all the powerful modules in your CleonHR platform.",
@@ -255,7 +256,7 @@
 
     /* ---------- render category sections + stat cards ---------- */
     _render: function () {
-      $("#hmoLoading").remove();
+      $("#hmoLoading").remove(); // TODO add to js
       var $sections = $("#hc-app-sections");
       $sections.find(".hc-category-section").remove();
 
@@ -466,5 +467,6 @@
     }, 1500);
   });
 
-  window.HomeMenuOverlay = HMO;
+  // window.HomeMenuOverlay = HMO;
 })(jQuery);
+// window.HomeMenuOverlay = HMO;

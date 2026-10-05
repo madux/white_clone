@@ -27,6 +27,7 @@
     'assets': {
         'web.assets_frontend': [
             'cleon_settings/static/src/css/cleon_login.css',
+
         ],
         'web.assets_backend': [
             'cleon_settings/static/src/js/override_title.js',
@@ -34,6 +35,8 @@
             'cleon_settings/static/src/css/status_widget.scss',
             'cleon_settings/static/src/js/status_widget.js',
             'cleon_settings/static/src/js/system_override.js',
+            'cleon_settings/static/src/js/user_menu_override.js',
+            'cleon_settings/static/src/css/general_form_css.css',
             # 'hr_insurance/static/src/css/hr_insurance.css',
             # 'hr_insurance/static/src/css/hmo_market_place.css',
             # 'hr_insurance/static/src/css/qms_css.css',

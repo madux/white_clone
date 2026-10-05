@@ -1,0 +1,46 @@
+Create a profile setup
+- Address, company setup 
+- Bank and payments setup -> 
+Organisation bank account, bank journals, link to accounts 
+
+Payroll rules and configurations 
+-Add rules for payment - 
+new form views that user cna
+setup rules 
+- Setup pay frequency defaults 
+Proration rules - 
+
+Payroll structure
+Setup Saleary templates 
+Link Grands and brand by default
+Approval flow and auto generation
+Create employee
+- Employee profile
+- Tax Profile-
+- Bank Details
+- Contract 
+- Portal access control for payslip download 
+Loan request and linking it to Payroll deductions 
+
+
+
+HOW TO USE:
+1. Go to employee and set up wage and payroll information
+2. Create a contract and link the employee the contract - note employee should not have more than one contract
+3. Optional -- Go to attendance, checkin and checkout to ensure working days is generated, 
+4. Go to payroll structure and setup structures and rules
+4. Go to payslip and set the date range you want to run payroll for the employee -- system computes the worked days of the employee and give the actual pay 
+5. 
+
+
+CLEON PAYROLL CYCLE
+On 31 Aug 2026 cron automatically:
+
+Creates a cleon.payslip.run
+Creates draft payslips for all active employees in the selected structures
+Optionally computes them
+Updates next run date to 30 Sep 2026
+
+Every 7 days a new payroll batch is created automatically.
+
+This design is scalable because HR can create multiple cycles (Monthly Staff, Weekly Casuals, Biweekly Consultants, etc.) without changing code.

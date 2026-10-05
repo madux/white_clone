@@ -24,6 +24,15 @@ class OpenActionController(http.Controller):
         action = new_action or main_action
         return self.redirect_to_page(action, 'kanban', 'kanban')
 
+    @http.route('/app/my-profile', type='http', auth='user')
+    def my_profile(self, **kwargs):
+        try:
+            action = request.env.ref('hr_employee.action_profile_dashboard_server').sudo().read()[0]
+            return self.redirect_to_page(action, 'kanban', 'kanban')
+        except Exception as e:
+            action = '/hr-employee-admin'
+            return request.redirect(action)
+
     @http.route('/app/leave', type='http', auth='user')
     def open_leave(self, **kwargs):
         action = False
