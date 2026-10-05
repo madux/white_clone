@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useState, onMounted, onPatched, onWillUnmount, useRef } from "@odoo/owl";
+import { Component, useState, onMounted, onPatched, onWillUnmount, onWillUpdateProps, useRef } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import {
     funnelFiltersToConditions,
@@ -11,6 +11,10 @@ import {
     personScore,
     performanceBucket,
 } from "../../js/people_query";
+import {
+    applyPeopleSettingsToListState,
+    settingsEqual,
+} from "../settings/settings";
 
 export class StaffDirectoryPeopleList extends Component {
     static template = "hr_staff_directory.PeopleList";
@@ -60,7 +64,7 @@ export class StaffDirectoryPeopleList extends Component {
         deptKey: { type: Function },
         lifecycleLabel: { type: Function },
         getLifecycleDotClass: { type: Function },
-
+        directorySettings: { type: Object, optional: true },
     };
 
 
@@ -94,7 +98,7 @@ export class StaffDirectoryPeopleList extends Component {
             sortBy: 'name',
             sortDesc: false,
             currentOffset: 0,
-            pageSize: 12,
+            pageSize: 25,
             activeColumns: initialCols,
             showColumnsModal: false,
             showMoreColumns: false,
@@ -136,6 +140,19 @@ export class StaffDirectoryPeopleList extends Component {
                 conditions: [{field: '', operator: 'is', value: ''}],
                 audienceSize: 0,
                 loadingPreview: false
+            }
+        });
+
+        if (this.props.directorySettings) {
+            applyPeopleSettingsToListState(this.state, this.props.directorySettings);
+        }
+
+        onWillUpdateProps((nextProps) => {
+            if (
+                nextProps.directorySettings &&
+                !settingsEqual(nextProps.directorySettings, this.props.directorySettings || {})
+            ) {
+                applyPeopleSettingsToListState(this.state, nextProps.directorySettings);
             }
         });
 
@@ -311,6 +328,9 @@ export class StaffDirectoryPeopleList extends Component {
             'manager': 'manager_name',
             'location': 'work_location',
             'performance': 'performance_score',
+            'department': 'department',
+            'start_date': 'start_date',
+            'grade': 'grade',
         };
 
         people.sort((a, b) => {

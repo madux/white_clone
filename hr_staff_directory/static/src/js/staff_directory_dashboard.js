@@ -14,6 +14,17 @@ import { StaffDirectoryRelationshipGraph } from "./../components/relationship_gr
 import { StaffDirectoryFullProfile } from "./../components/full_profile/full_profile";
 import { StaffDirectoryOrgAnalysis } from "./../components/org_analysis/org_analysis";
 import {
+    StaffDirectorySettings,
+    loadCachedDirectorySettings,
+    cacheDirectorySettings,
+    normalizeDirectorySettings,
+    isDefaultDirectorySettings,
+    settingsEqual,
+    SDIR_DEFAULT_SETTINGS,
+    SDIR_LANDING_TO_TAB,
+    SDIR_SETTINGS_MIGRATED_KEY,
+} from "./../components/settings/settings";
+import {
     applySegmentConditions as applySegmentEngine,
     matchFunnelFilters,
     asList,
@@ -48,7 +59,7 @@ let activeSdirHandler = null;
 export class StaffDirectoryDashboard extends Component {
     static template = "hr_staff_directory.StaffDirectoryDashboard";
     static props = ["*"];
-    static components = { StaffDirectoryFullProfile, StaffDirectoryProfilePanel, StaffDirectoryPeopleList, StaffDirectoryHeatmap, StaffDirectoryBarChart, StaffDirectoryOrgChart, StaffDirectoryGeographicMap, StaffDirectoryRelationshipGraph, StaffDirectoryOrgAnalysis };
+    static components = { StaffDirectoryFullProfile, StaffDirectoryProfilePanel, StaffDirectoryPeopleList, StaffDirectoryHeatmap, StaffDirectoryBarChart, StaffDirectoryOrgChart, StaffDirectoryGeographicMap, StaffDirectoryRelationshipGraph, StaffDirectoryOrgAnalysis, StaffDirectorySettings };
 
     setup() {
         this.rpc = useService("rpc");
@@ -151,10 +162,16 @@ export class StaffDirectoryDashboard extends Component {
         const savedRecent = localStorage.getItem('sdir_recent_profiles');
         const initialRecent = savedRecent ? JSON.parse(savedRecent) : [];
 
+        // Local cache for first paint; server preferences overwrite in onWillStart.
+        const initialSettings = loadCachedDirectorySettings();
+        const initialLandingTab = SDIR_LANDING_TO_TAB[initialSettings.landingTab] || 'people';
+
         this.state = useState({
             loading:     true,
             selectedPeople: [],
-            activeTab:   'people',   // 'people' | 'org' | 'network'
+            settings: { ...initialSettings },
+            showSettings: false,
+            activeTab:   initialLandingTab,   // 'people' | 'org' | 'network' | 'workforce'
             adminMode:   true,       // true = Admin (all cols), false = ESS (Manager + Actions hidden)
             searchQuery: '',
             
@@ -167,7 +184,7 @@ export class StaffDirectoryDashboard extends Component {
             // Next: these drive a dedicated main-view replacement.
             smartSearchSelected: {},
             smartSearchPinnedIds: [],
-            smartSearchTab: 'analytics', // overview | teams | calendar | analytics
+            smartSearchTab: initialSettings.orgSubTab || 'overview', // overview | teams | calendar | analytics
             smartSearchView: 'org', // org | bar | heatmap | geo | graph
             teamsSearchQuery: '',
             teamsDeptFilter: '',
@@ -288,6 +305,7 @@ export class StaffDirectoryDashboard extends Component {
         });
 
         onWillStart(async () => {
+            await this._syncDirectorySettingsFromServer();
             await this._loadData();
             // Connect to bus for real-time updates
             this.busService.addChannel(SDIR_CHANNEL);
@@ -658,7 +676,90 @@ export class StaffDirectoryDashboard extends Component {
     }
 
     onTabBarSettings() {
-        this.toggleAdminMode(!this.state.adminMode);
+        this.state.showSettings = true;
+    }
+
+    closeSettings() {
+        this.state.showSettings = false;
+    }
+
+    doneSettings() {
+        this.state.showSettings = false;
+        this.toast.show('success', 'Settings applied');
+    }
+
+    _applyDirectorySettings(settings, { applyLandingTab = false } = {}) {
+        const prevOrgSubTab = this.state.settings?.orgSubTab;
+        const next = normalizeDirectorySettings(settings);
+        this.state.settings = next;
+        cacheDirectorySettings(next);
+        if (applyLandingTab || prevOrgSubTab !== next.orgSubTab) {
+            this.state.smartSearchTab = next.orgSubTab || 'overview';
+        }
+        if (applyLandingTab) {
+            this.state.activeTab = SDIR_LANDING_TO_TAB[next.landingTab] || 'people';
+        }
+        return next;
+    }
+
+    async _rpcDirectorySettings(method, args = []) {
+        return this.rpc(`/web/dataset/call_kw/hr.staff.directory.settings/${method}`, {
+            model: 'hr.staff.directory.settings',
+            method,
+            args,
+            kwargs: {},
+        });
+    }
+
+    async _syncDirectorySettingsFromServer() {
+        try {
+            let server = normalizeDirectorySettings(await this._rpcDirectorySettings('get_my_settings'));
+            const cached = loadCachedDirectorySettings();
+            const migrated = localStorage.getItem(SDIR_SETTINGS_MIGRATED_KEY) === '1';
+
+            // One-time: push prior localStorage prefs to the server if the DB row is still defaults.
+            if (!migrated && isDefaultDirectorySettings(server) && !isDefaultDirectorySettings(cached)) {
+                server = normalizeDirectorySettings(
+                    await this._rpcDirectorySettings('update_my_settings', [cached])
+                );
+            }
+            try {
+                localStorage.setItem(SDIR_SETTINGS_MIGRATED_KEY, '1');
+            } catch {
+                // ignore
+            }
+
+            this._applyDirectorySettings(server, { applyLandingTab: true });
+        } catch (e) {
+            console.warn('Staff Directory settings sync skipped; using local cache', e);
+            this._applyDirectorySettings(loadCachedDirectorySettings(), { applyLandingTab: true });
+        }
+    }
+
+    async updateDirectorySettings(partial) {
+        const optimistic = normalizeDirectorySettings({ ...this.state.settings, ...partial });
+        this._applyDirectorySettings(optimistic);
+        try {
+            const saved = await this._rpcDirectorySettings('update_my_settings', [optimistic]);
+            if (!settingsEqual(saved, this.state.settings)) {
+                this._applyDirectorySettings(saved);
+            }
+        } catch (e) {
+            console.error('Failed to save Staff Directory settings', e);
+            this.toast.show('error', 'Could not save settings to the server');
+        }
+    }
+
+    async resetDirectorySettings() {
+        this._applyDirectorySettings(SDIR_DEFAULT_SETTINGS);
+        try {
+            const saved = await this._rpcDirectorySettings('reset_my_settings');
+            this._applyDirectorySettings(saved);
+            this.toast.show('success', 'Settings reset to defaults');
+        } catch (e) {
+            console.error('Failed to reset Staff Directory settings', e);
+            this.toast.show('error', 'Could not reset settings on the server');
+        }
     }
 
     onTabBarSmartSearch() {
@@ -2594,6 +2695,9 @@ export class StaffDirectoryDashboard extends Component {
 
     toggleTab(tab) {
         this.state.activeTab = tab;
+        if (tab === 'org') {
+            this.state.smartSearchTab = this.state.settings.orgSubTab || 'overview';
+        }
     }
 
 

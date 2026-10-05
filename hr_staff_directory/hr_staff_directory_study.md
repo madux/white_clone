@@ -1,6 +1,6 @@
 # hr_staff_directory Module Study Notes
 
-Verified against the live module (v17.0.1.0.4). Earlier drafts of this note were stale in several places; those are corrected here.
+Verified against the live module (v17.0.1.0.7). Earlier drafts of this note were stale in several places; those are corrected here.
 
 **Design rule:** the frontend should render; the backend is the single source of truth (SSOT). That is only partly true today. Several charts and team/project surfaces still fabricate or fall back to mock data.
 
@@ -13,7 +13,7 @@ Verified against the live module (v17.0.1.0.4). Earlier drafts of this note were
 | | |
 |---|---|
 | Name | CLEONHR Staff Directory |
-| Version | 17.0.1.0.4 |
+| Version | 17.0.1.0.7 |
 | Client action tag | `hr_staff_directory.dashboard` |
 | Menu | Overrides `hr_administration.hr_admin_staff_directory` |
 | Depends | `base`, `hr`, `hr_holidays`, `hr_contract`, `hr_skills`, `mail`, `web`, `hr_administration` |
@@ -45,11 +45,12 @@ hr_staff_directory/
 │   ├── hr_employee.py                 # SSOT fields + all dashboard / HR APIs
 │   ├── staff_directory_sync.py        # bus broadcast mixin on 8 models
 │   ├── hr_staff_directory_segment.py  # saved people segments + smart-search filters
+│   ├── hr_staff_directory_settings.py # per-user UI preferences (landing, density, People, Org)
 │   ├── sdir_employee_event.py         # activity / performance ledger
 │   └── hr_work_location.py            # lat/lng + Nominatim geocode
 ├── controllers/main.py                # /data, /people, /toggle_pin  (all sudo)
 ├── views/                             # client action, menu, DM Sans font, mail branding
-├── security/                          # segment ACL + personal ir.rule
+├── security/                          # segment + settings ACL + personal ir.rules
 ├── data/hr_work_location_cron.xml     # daily geocode cron
 └── static/src/
     ├── js/staff_directory_dashboard.js       # orchestrator
@@ -58,7 +59,7 @@ hr_staff_directory/
     └── components/
         people_list, profile_panel, full_profile
         org_chart, org_analysis, geographic_map, relationship_graph
-        heatmap, bar_chart
+        heatmap, bar_chart, settings
         toast, message, mail_modal
         chat_window + composer patches
 ```
@@ -76,7 +77,7 @@ hr_staff_directory/
 | **Workforce Intelligence** | `workforce` | Placeholder: “Coming Soon”. |
 | **Organizational Intelligence** | `network` | Placeholder: “Coming Soon”. |
 
-Default tab is `people`. Smart Search lives on the **org** tab sidebar, not the people tab.
+Default landing tab comes from per-user Settings (`landingTab`, default `people`). Smart Search lives on the **org** tab sidebar, not the people tab. See §12.
 
 ---
 
@@ -155,7 +156,8 @@ The dashboard is the orchestrator. Child components receive the same `people` pa
 | `org_analysis` | Chart.js overlay: headcount, teams, span of control |
 | `geographic_map` | Nominatim coords on SVG world background (`map_bg.svg`) |
 | `relationship_graph` | D3 force layout (loaded from `https://d3js.org/d3.v7.min.js`) |
-| `heatmap` / `bar_chart` | Skills × location |
+| `heatmap` / `bar_chart` | Department × location |
+| `settings` | Full-screen Staff Directory Settings overlay (General / People / Org Structure) |
 | `toast` / `message` / `mail_modal` | Global services via `main_components` |
 | chat/composer patches | Visual restyle of native Discuss |
 
@@ -206,7 +208,7 @@ Also present but unused by the live people table: mock `grade` Selection (`L1 ·
 
 **Job title (`job_title`) vs job position (`job_id`).** `job_id` is a structural recruitment/headcount field and is often empty or generic. The free-text `job_title` is the “business card” title the directory displays and promote updates.
 
-**Lifecycle (`sdir_lifecycle_status`).** Values: `active`, `probation`, `onleave`, `suspended`, `terminated`, `exiting`, `alumni`. We do not derive this from contracts or time-off, so an HR admin can badge someone without fabricating legal records. Terminated/Alumni also set native `active=False`. Native archive on the employee form does **not** write back to this field (see §19).
+**Lifecycle (`sdir_lifecycle_status`).** Values: `active`, `probation`, `onleave`, `suspended`, `terminated`, `exiting`, `alumni`. We do not derive this from contracts or time-off, so an HR admin can badge someone without fabricating legal records. Terminated/Alumni also set native `active=False`. Native archive on the employee form does **not** write back to this field (see §20).
 
 **Photo (`image_1920`).** Native `image.mixin` already generates `image_128` / `avatar_128` / etc. The photo modal writes base64 to `image_1920` so the image propagates across Odoo.
 
@@ -214,13 +216,14 @@ Also present but unused by the live people table: mock `grade` Selection (`L1 ·
 
 **Transfer.** Native `department_id` + `work_location_id`. Metadata: `sdir_transfer_date`, `sdir_transfer_reason`. Also reassigns `parent_id` to the new department’s manager. Optional chatter pings to old/new managers.
 
-**Promote.** Updates `job_title` + `sdir_grade` / `sdir_salary_adjustment` / dates / reason. Does **not** write `hr.contract`. Optional “announce to team” tags the dept manager and coworkers. Does **not** create an `sdir.employee.event` (see §12).
+**Promote.** Updates `job_title` + `sdir_grade` / `sdir_salary_adjustment` / dates / reason. Does **not** write `hr.contract`. Optional “announce to team” tags the dept manager and coworkers. Does **not** create an `sdir.employee.event` (see §13).
 
 ### 8.4 Other models
 
 | Model | Role |
 |---|---|
 | `hr.staff.directory.segment` | Personal saved filters. `kind`: `people` or `smart_search`. `conditions` is JSON. `member_ids` is a materialized cache refreshed on open/email (`sdir_no_notify`). Record rule: `user_id = user.id`. |
+| `hr.staff.directory.settings` | One row per user for Staff Directory UI preferences. See §12. Record rule: `user_id = user.id`. Does **not** use the sync mixin (settings writes must not reload every open dashboard). |
 | `sdir.employee.event` | Milestone / performance ledger. Types: hire, promotion, transfer, performance_review, anniversary, other. |
 | `hr.work.location` inherit | `latitude`, `longitude`. Geocode via Nominatim on create / name / address change, daily cron, and post-init. |
 
@@ -337,20 +340,20 @@ Same people payload, filtered client-side.
 **Views**
 
 - **Org chart** — tree from `manager_id` / `direct_report_ids`; pan/zoom; depth > 2 collapsed by default
-- **Bar chart** — skills × location
-- **Heatmap** — skills × location intensity
+- **Bar chart** — department × location
+- **Heatmap** — department × location intensity
 - **Geographic map** — Nominatim coords on an SVG world background
 - **Relationship graph** — D3 force layout
 - **Org analysis** — Chart.js overlay
 
-**Smart Search** is a second filter engine (OR within a category, AND across). Saved as `hr.staff.directory.segment` with `kind='smart_search'`. Sidebar tabs: Overview / Teams / Calendar / Analytics. Teams comparison and “current projects” still invent names like “Platform v3 Rebuild” when project data is missing. CleonAI chat chrome is in the template; it is UI, not a backend.
+**Smart Search** is a second filter engine (OR within a category, AND across). Saved as `hr.staff.directory.segment` with `kind='smart_search'`. Sidebar tabs: Overview / Teams / Calendar / Analytics. The default Smart Search results tab is driven by Settings `orgSubTab` (see §12). Teams comparison and “current projects” still invent names like “Platform v3 Rebuild” when project data is missing. CleonAI chat chrome is in the template; it is UI, not a backend.
 
 ### Relationship graph physics
 
 `relationship_graph.js` uses d3-force.
 
 - **Reporting lines:** employee → manager (`manager_id`). Standard tension edges.
-- **Peer / team lines (chain optimization):** peers who share a manager are linked in a single chain (A → B → C), **O(N)** not a clique **O(N²)**. Change that in `buildGraphData()` if “peer” should mean same department instead.
+- **Peer / team lines (chain optimization):** peers who share the same **grade level** are linked in a single chain (A → B → C), **O(N)** not a clique **O(N²)**. People without a grade get no peer edges. Detail-card copy for Peer / All Connections modes is built in `relationship_graph.js`.
 
 D3 is loaded from `https://d3js.org/d3.v7.min.js`. The graph needs that CDN.
 
@@ -362,7 +365,89 @@ D3 is loaded from `https://d3js.org/d3.v7.min.js`. The graph needs that CDN.
 
 ---
 
-## 12. Employee event history (`sdir.employee.event`)
+## 12. Staff Directory Settings
+
+Full-screen preferences overlay opened from the gear button in the tab bar (before Smart Search). Figma-aligned UI under `static/src/components/settings/`.
+
+### Entry and shell
+
+| Piece | Detail |
+|---|---|
+| Open | Tab-bar `.sdir-tab-settings-btn` → `onTabBarSettings()` → `state.showSettings = true` |
+| Component | `StaffDirectorySettings` (`settings.js` / `.xml` / `.css`) |
+| Mount | Absolute overlay inside `.sdir-app` (`z-index: 500`) |
+| Close | Header **X** → `closeSettings()` (no toast). Footer **Done** → `doneSettings()` + success toast `Settings applied` |
+| Reset | Footer **Reset to defaults** → `reset_my_settings` + success toast `Settings reset to defaults` |
+| Instant apply | Sidebar note: changes write immediately; no separate Save |
+
+Sidebar nav items: **General**, **People**, **Org Structure**, plus placeholders for Workforce Intel. / Cleo & Cleon AI / Data Sources (UI only — those module areas are not implemented, so their settings panels stay “coming soon”).
+
+### Persistence — server is SSOT
+
+Preferences must follow the Odoo login across devices. **Do not rely on `localStorage` alone.**
+
+| Layer | Role |
+|---|---|
+| `hr.staff.directory.settings` | One row per `user_id` (SQL unique). Personal `ir.rule`. |
+| RPC | `get_my_settings` / `update_my_settings(values)` / `reset_my_settings` via `call_kw` |
+| `localStorage` (`sdir_directory_settings`) | Cache for first paint + offline fallback only |
+| Migration flag (`sdir_directory_settings_migrated`) | One-time: if the DB row is still defaults and the cache has custom prefs, push cache → server |
+
+Dashboard `onWillStart` runs `_syncDirectorySettingsFromServer()` before `_loadData()`. Optimistic UI updates call `_applyDirectorySettings` then RPC; failures toast an error.
+
+### Preference keys (frontend camelCase ↔ model)
+
+| Frontend key | Model field | Default | Applied to |
+|---|---|---|---|
+| `landingTab` | `landing_tab` | `people` | `activeTab` on load (`people` / `teams`→`org` / `relationship`→`network`) |
+| `density` | `density` | `comfortable` | `.sdir-app.sdir-density-compact` when `compact` |
+| `peopleView` | `people_view` | `table` | People list `activeView` (`table`→`list`, `cards`→`grid`) |
+| `peoplePageSize` | `people_page_size` | `25` | People list `pageSize` (`10` / `12` / `25` / `50`) |
+| `peopleSortField` | `people_sort_field` | `name` | People list `sortBy` (mapped: `dept`→`department`, `startDate`→`start_date`, `gradeLevel`→`grade`, …) |
+| `peopleSortDir` | `people_sort_dir` | `asc` | People list `sortDesc` (`desc` → true) |
+| `orgSubTab` | `org_sub_tab` | `overview` | `smartSearchTab` (`overview` / `teams` / `calendar` / `analytics`) |
+
+Helpers live in `settings.js`: `normalizeDirectorySettings`, `SDIR_LANDING_TO_TAB`, `applyPeopleSettingsToListState`, `settingsEqual`.
+
+### How prefs are applied
+
+1. **General — landing tab.** Set once when settings sync with `applyLandingTab: true`. Changing the dropdown later does **not** force-switch the current tab (it is “when Staff Directory opens”).
+2. **General — density.** Class on `.sdir-app` updates immediately with `state.settings`.
+3. **People.** `people_list` receives `directorySettings="state.settings"`. Applied on mount and whenever settings change (`onWillUpdateProps` + `settingsEqual`). Does not yank the user out of the Segments sub-view (`activeView === 'segments'`).
+4. **Org Structure — default sub-tab.** Written to `smartSearchTab` when `orgSubTab` changes, on initial sync, and whenever the user selects the Organizational Structure tab (`toggleTab('org')`). Unrelated setting writes do not reset the current Smart Search tab.
+
+### Implemented settings panels
+
+**General**
+
+- Default landing tab select
+- Density segment: Comfortable / Compact
+
+**People**
+
+- Default view: Table / Cards
+- Rows per page select
+- Default sort field select
+- Sort direction: A → Z / Z → A
+
+**Org Structure**
+
+- Default sub-tab select (Overview / Teams / Calendar / Analytics)
+
+### Not implemented (by design for now)
+
+Workforce Intelligence, Cleo & Cleon AI, and Data Sources sidebar entries remain placeholders until those product areas exist in the module.
+
+### Traps
+
+1. Settings model must stay off `staff_directory.sync.mixin` — preference writes must not broadcast directory reloads.
+2. Native `<select>` arrows must stay hidden (`appearance: none` + `::-ms-expand`) so only the custom chevron shows.
+3. Gear used to toggle `adminMode`; that binding was replaced by the settings overlay. Admin mode is no longer driven from that button.
+4. Upgrade the module when new preference columns are added (`17.0.1.0.5` introduced the model; `17.0.1.0.6` People fields; `17.0.1.0.7` `org_sub_tab`).
+
+---
+
+## 13. Employee event history (`sdir.employee.event`)
 
 Lightweight ledger for hire, promotion, transfer, performance_review, anniversary, other.
 
@@ -377,7 +462,7 @@ Promote and transfer do **not** create `sdir.employee.event` rows. They only pos
 
 ---
 
-## 13. Work anniversary calculation
+## 14. Work anniversary calculation
 
 Handled in `_sd_people_list` (and similarly in leftover `_sd_upcoming_anniversaries`).
 
@@ -390,7 +475,7 @@ Tenure label uses the same hire date: `2y 3m`, `2y`, `3m`, or `< 1m`.
 
 ---
 
-## 14. Geocoding
+## 15. Geocoding
 
 `hr.work.location`: `latitude` / `longitude`.
 
@@ -401,7 +486,7 @@ Tenure label uses the same hire date: `2y 3m`, `2y`, `3m`, or `< 1m`.
 
 ---
 
-## 15. Reusable toast (`hr_staff_directory.toast`)
+## 16. Reusable toast (`hr_staff_directory.toast`)
 
 Service-driven, no prop-drilling. Modeled on core `notification_service`: reactive state in a service + container in `main_components`.
 
@@ -444,7 +529,7 @@ An earlier revision mounted the toast inside the dashboard template. That dies w
 
 ---
 
-## 16. Global toast override (notification service patch)
+## 17. Global toast override (notification service patch)
 
 `static/src/components/toast/notification_patch.js` patches core `notificationService.start()` and intercepts `add()`.
 
@@ -487,7 +572,7 @@ patch(notificationService, {
 
 ---
 
-## 17. Message and mail services
+## 18. Message and mail services
 
 Both are global (`main_components`). Sending is implemented (not “planned”).
 
@@ -514,7 +599,7 @@ Slide-up email composer. `show(profile)` pre-fills the recipient. Sends via `hr.
 
 ---
 
-## 18. Chat window redesign
+## 19. Chat window redesign
 
 We restyle native `mail.ChatWindow`; we do not rewrite Discuss.
 
@@ -524,7 +609,7 @@ We restyle native `mail.ChatWindow`; we do not rewrite Discuss.
 
 ---
 
-## 19. Permissions, password, lifecycle sync
+## 20. Permissions, password, lifecycle sync
 
 Permissions map to native `res.groups`, not custom SSOT fields, because access lives on `res.users`.
 
@@ -556,9 +641,9 @@ Payroll / Expenses / Projects / HR Reports toggles are greyed out when there is 
 
 ---
 
-## 20. What is real vs still fake
+## 21. What is real vs still fake
 
-**Real (Odoo records):** people, org tree, leave balances/history, pins, lifecycle/contact/transfer/promote/suspend/rehire, segments, geocode, Discuss/email, permission groups.
+**Real (Odoo records):** people, org tree, leave balances/history, pins, lifecycle/contact/transfer/promote/suspend/rehire, segments, per-user settings, geocode, Discuss/email, permission groups.
 
 **Fake or approximated**
 
@@ -572,7 +657,7 @@ Payroll / Expenses / Projects / HR Reports toggles are greyed out when there is 
 
 ---
 
-## 21. Known issues and traps
+## 22. Known issues and traps
 
 1. Promote/transfer do **not** write `sdir.employee.event` (older notes claimed they did).
 2. `performance_score` and `sdir_grade` are not what the people table shows. Table uses event reviews and `grade_id`.
@@ -586,10 +671,11 @@ Payroll / Expenses / Projects / HR Reports toggles are greyed out when there is 
 10. Relationship graph depends on the d3js.org CDN.
 11. Employment-type mix in leftover `_sd_employment_gender()` still counts native `employee_type` (`employee` / `student` / `freelance`), not `sdir_employment_type`.
 12. Funnel and people-segment matching share `people_query.js` / `_apply_segment_conditions`. Do not reintroduce checkbox translation on apply, and do not put `kind='smart_search'` rows in the People Saved Segments dropdown.
+13. Staff Directory Settings are user-scoped server rows (`hr.staff.directory.settings`). `localStorage` is cache only. Do not reintroduce localStorage-only prefs for anything that should follow the login.
 
 ---
 
-## 22. Local development
+## 23. Local development
 
 ### Seed data
 

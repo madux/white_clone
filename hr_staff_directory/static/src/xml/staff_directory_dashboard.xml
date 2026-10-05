@@ -2,7 +2,18 @@
 <templates xml:space="preserve">
 
     <t t-name="hr_staff_directory.StaffDirectoryDashboard">
-        <div class="sdir-app" t-ref="root">
+        <div t-att-class="'sdir-app' + (state.settings.density === 'compact' ? ' sdir-density-compact' : '')" t-ref="root">
+
+            <!-- ═══ SETTINGS OVERLAY ═══════════════════════════════════════ -->
+            <t t-if="state.showSettings">
+                <StaffDirectorySettings
+                    settings="state.settings"
+                    onUpdate="this.updateDirectorySettings.bind(this)"
+                    onReset="this.resetDirectorySettings.bind(this)"
+                    onClose="this.closeSettings.bind(this)"
+                    onDone="this.doneSettings.bind(this)"
+                />
+            </t>
 
             <!-- ═══ TAB BAR ═════════════════════════════════════════════════ -->
             <div class="sdir-tab-bar">
@@ -84,11 +95,12 @@
             <!-- ═══ MAIN CONTENT (People Tab) ════════════════════════════════ -->
             <div class="sdir-people-content" t-if="state.activeTab === 'people'">
 
-            <StaffDirectoryPeopleList 
-                people="this.filteredPeople()" 
-                stats="state.stats" 
+            <StaffDirectoryPeopleList
+                people="this.filteredPeople()"
+                stats="state.stats"
                 segments="state.segments"
-                adminMode="state.adminMode" 
+                directorySettings="state.settings"
+                adminMode="state.adminMode"
                 toggleAdminMode="this.toggleAdminMode.bind(this)" 
                 searchQuery="state.searchQuery" 
                 onSearch="this.onSearch.bind(this)" 

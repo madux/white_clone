@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_staff_directory.Settings" owl="1">
+        <div class="sdir-settings">
+            <!-- Header -->
+            <div class="sdir-settings-header">
+                <div class="sdir-settings-header-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                </div>
+                <div class="sdir-settings-header-text">
+                    <div class="sdir-settings-title">Staff Directory Settings</div>
+                    <div class="sdir-settings-subtitle">Configure every aspect of the Staff Directory experience</div>
+                </div>
+                <button type="button" class="sdir-settings-close" t-on-click="props.onClose" title="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="sdir-settings-body">
+                <!-- Sidebar -->
+                <div class="sdir-settings-sidebar">
+                    <div class="sdir-settings-nav-label">Configuration</div>
+                    <div class="sdir-settings-nav">
+                        <t t-foreach="navItems" t-as="item" t-key="item.id">
+                            <button type="button"
+                                    t-att-class="'sdir-settings-nav-item' + (state.activeSection === item.id ? ' active' : '')"
+                                    t-on-click="() => this.selectSection(item.id)">
+                                <div class="sdir-settings-nav-icon">
+                                    <t t-if="item.icon === 'settings'">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </t>
+                                    <t t-elif="item.icon === 'users'">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                        </svg>
+                                    </t>
+                                    <t t-elif="item.icon === 'layers'">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>
+                                        </svg>
+                                    </t>
+                                    <t t-elif="item.icon === 'chart'">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+                                        </svg>
+                                    </t>
+                                    <t t-elif="item.icon === 'sparkles'">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>
+                                        </svg>
+                                    </t>
+                                    <t t-elif="item.icon === 'database'">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>
+                                        </svg>
+                                    </t>
+                                </div>
+                                <div class="sdir-settings-nav-text">
+                                    <div class="sdir-settings-nav-title" t-esc="item.label"/>
+                                    <div class="sdir-settings-nav-desc" t-esc="item.desc"/>
+                                </div>
+                                <div t-if="state.activeSection === item.id" class="sdir-settings-nav-dot"/>
+                            </button>
+                        </t>
+                    </div>
+                    <div class="sdir-settings-sidebar-note">
+                        <div class="sdir-settings-note-box">
+                            <div class="sdir-settings-note-dot"/>
+                            <span>Changes apply instantly — no separate save step needed</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main panel -->
+                <div class="sdir-settings-main">
+                    <div class="sdir-settings-main-inner">
+                        <t t-if="state.activeSection === 'general'">
+                            <div class="sdir-settings-section-head">
+                                <h2>General</h2>
+                                <p>Configure default behaviour and display density across all Staff Directory tabs.</p>
+                            </div>
+
+                            <!-- Navigation card -->
+                            <div class="sdir-settings-card">
+                                <div class="sdir-settings-card-header">
+                                    <span>Navigation</span>
+                                </div>
+                                <div class="sdir-settings-card-body">
+                                    <div class="sdir-settings-row">
+                                        <div class="sdir-settings-row-text">
+                                            <div class="sdir-settings-row-title">Default landing tab</div>
+                                            <div class="sdir-settings-row-desc">Which tab is active when Staff Directory opens</div>
+                                        </div>
+                                        <div class="sdir-settings-select-wrap">
+                                            <select class="sdir-settings-select"
+                                                    t-att-value="props.settings.landingTab"
+                                                    t-on-change="onLandingTabChange">
+                                                <option value="people">People</option>
+                                                <option value="teams">Organizational Structure</option>
+                                                <option value="relationship">Organizational Intelligence</option>
+                                            </select>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-settings-select-chevron">
+                                                <path d="m6 9 6 6 6-6"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Display card -->
+                            <div class="sdir-settings-card">
+                                <div class="sdir-settings-card-header">
+                                    <span>Display</span>
+                                </div>
+                                <div class="sdir-settings-card-body">
+                                    <div class="sdir-settings-row">
+                                        <div class="sdir-settings-row-text">
+                                            <div class="sdir-settings-row-title">Density</div>
+                                            <div class="sdir-settings-row-desc">Row height and card padding across People table and all Organizational Intelligence cards</div>
+                                        </div>
+                                        <div class="sdir-settings-segment">
+                                            <button type="button"
+                                                    t-att-class="'sdir-settings-segment-btn' + (props.settings.density === 'comfortable' ? ' active' : '')"
+                                                    t-on-click="() => this.setDensity('comfortable')">
+                                                Comfortable
+                                            </button>
+                                            <button type="button"
+                                                    t-att-class="'sdir-settings-segment-btn' + (props.settings.density === 'compact' ? ' active' : '')"
+                                                    t-on-click="() => this.setDensity('compact')">
+                                                Compact
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+
+                        <t t-elif="state.activeSection === 'people'">
+                            <div class="sdir-settings-section-head">
+                                <h2>People</h2>
+                                <p>Set defaults for the People tab — layout, pagination, and initial sort order.</p>
+                            </div>
+
+                            <div class="sdir-settings-card">
+                                <div class="sdir-settings-card-header">
+                                    <span>Layout &amp; Pagination</span>
+                                </div>
+                                <div class="sdir-settings-card-body">
+                                    <div class="sdir-settings-row sdir-settings-row-divided">
+                                        <div class="sdir-settings-row-text">
+                                            <div class="sdir-settings-row-title">Default view</div>
+                                            <div class="sdir-settings-row-desc">How employee records appear on first load</div>
+                                        </div>
+                                        <div class="sdir-settings-segment">
+                                            <button type="button"
+                                                    t-att-class="'sdir-settings-segment-btn' + (props.settings.peopleView === 'table' ? ' active' : '')"
+                                                    t-on-click="() => this.setPeopleView('table')">
+                                                Table
+                                            </button>
+                                            <button type="button"
+                                                    t-att-class="'sdir-settings-segment-btn' + (props.settings.peopleView === 'cards' ? ' active' : '')"
+                                                    t-on-click="() => this.setPeopleView('cards')">
+                                                Cards
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="sdir-settings-row">
+                                        <div class="sdir-settings-row-text">
+                                            <div class="sdir-settings-row-title">Rows per page</div>
+                                            <div class="sdir-settings-row-desc">Number of records shown before pagination</div>
+                                        </div>
+                                        <div class="sdir-settings-select-wrap sdir-settings-select-sm">
+                                            <select class="sdir-settings-select"
+                                                    t-att-value="props.settings.peoplePageSize"
+                                                    t-on-change="onPeoplePageSizeChange">
+                                                <option value="10">10</option>
+                                                <option value="12">12</option>
+                                                <option value="25">25</option>
+                                                <option value="50">50</option>
+                                            </select>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-settings-select-chevron">
+                                                <path d="m6 9 6 6 6-6"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="sdir-settings-card">
+                                <div class="sdir-settings-card-header">
+                                    <span>Sorting</span>
+                                </div>
+                                <div class="sdir-settings-card-body">
+                                    <div class="sdir-settings-row sdir-settings-row-divided">
+                                        <div class="sdir-settings-row-text">
+                                            <div class="sdir-settings-row-title">Default sort field</div>
+                                            <div class="sdir-settings-row-desc">Initial column sort when the table loads</div>
+                                        </div>
+                                        <div class="sdir-settings-select-wrap sdir-settings-select-md">
+                                            <select class="sdir-settings-select"
+                                                    t-att-value="props.settings.peopleSortField"
+                                                    t-on-change="onPeopleSortFieldChange">
+                                                <option value="name">Name</option>
+                                                <option value="dept">Department</option>
+                                                <option value="role">Role</option>
+                                                <option value="startDate">Start date</option>
+                                                <option value="gradeLevel">Grade</option>
+                                                <option value="location">Location</option>
+                                            </select>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-settings-select-chevron">
+                                                <path d="m6 9 6 6 6-6"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="sdir-settings-row">
+                                        <div class="sdir-settings-row-text">
+                                            <div class="sdir-settings-row-title">Sort direction</div>
+                                            <div class="sdir-settings-row-desc">Ascending or descending by default</div>
+                                        </div>
+                                        <div class="sdir-settings-segment">
+                                            <button type="button"
+                                                    t-att-class="'sdir-settings-segment-btn' + (props.settings.peopleSortDir === 'asc' ? ' active' : '')"
+                                                    t-on-click="() => this.setPeopleSortDir('asc')">
+                                                A → Z
+                                            </button>
+                                            <button type="button"
+                                                    t-att-class="'sdir-settings-segment-btn' + (props.settings.peopleSortDir === 'desc' ? ' active' : '')"
+                                                    t-on-click="() => this.setPeopleSortDir('desc')">
+                                                Z → A
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+
+                        <t t-elif="state.activeSection === 'org'">
+                            <div class="sdir-settings-section-head">
+                                <h2>Organizational Structure</h2>
+                                <p>Configure the default starting view inside the Org Structure tab.</p>
+                            </div>
+
+                            <div class="sdir-settings-card">
+                                <div class="sdir-settings-card-header">
+                                    <span>Default view</span>
+                                </div>
+                                <div class="sdir-settings-card-body">
+                                    <div class="sdir-settings-row">
+                                        <div class="sdir-settings-row-text">
+                                            <div class="sdir-settings-row-title">Default sub-tab</div>
+                                            <div class="sdir-settings-row-desc">Which internal view opens first when Org Structure is selected</div>
+                                        </div>
+                                        <div class="sdir-settings-select-wrap sdir-settings-select-org">
+                                            <select class="sdir-settings-select"
+                                                    t-att-value="props.settings.orgSubTab"
+                                                    t-on-change="onOrgSubTabChange">
+                                                <option value="overview">Overview</option>
+                                                <option value="teams">Teams</option>
+                                                <option value="calendar">Calendar</option>
+                                                <option value="analytics">Analytics</option>
+                                            </select>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-settings-select-chevron">
+                                                <path d="m6 9 6 6 6-6"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+
+                        <t t-else="">
+                            <div class="sdir-settings-section-head">
+                                <h2 t-esc="activeSectionLabel"/>
+                                <p>This settings section is coming soon.</p>
+                            </div>
+                            <div class="sdir-settings-card">
+                                <div class="sdir-settings-placeholder">
+                                    Configuration options for this area will appear here in a future update.
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="sdir-settings-footer">
+                <button type="button" class="sdir-settings-reset" t-on-click="props.onReset">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+                    </svg>
+                    Reset to defaults
+                </button>
+                <button type="button" class="sdir-settings-done" t-on-click="props.onDone">Done</button>
+            </div>
+        </div>
+    </t>
+</templates>
