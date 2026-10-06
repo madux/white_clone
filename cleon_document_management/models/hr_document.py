@@ -334,6 +334,11 @@ class Document(models.Model):
     )
     legal_hold_active = fields.Boolean(compute="_compute_legal_hold_active")
     retention_review_due = fields.Boolean(default=False, index=True)
+    backup_confirmed_at = fields.Datetime(
+        string="Retention backup confirmed",
+        copy=False,
+        help="Set when backup is confirmed so compliance retention can archive or delete.",
+    )
 
     approval_ids = fields.One2many(
         "doc.document.approval",
@@ -540,22 +545,35 @@ class Document(models.Model):
                 {"ask_index_stamp": False, "ask_index_state": "waiting"}
             )
         if "state" in vals and vals["state"] in ("approved", "signed"):
-            self.env["doc.compliance.policy"]._evaluate_documents(self)
+            Recheck = self.env["doc.compliance.recheck.job"].sudo()
+            for document in self:
+                if document.employee_id:
+                    Recheck.schedule_employee(
+                        document.employee_id,
+                        reason="document_state_change",
+                    )
         if not self.env.context.get("skip_ef_document_reconcile"):
             reconcile_fields = {"employee_id", "employee_file_id", "folder_id", "active"}
             if reconcile_fields.intersection(vals):
                 service = self.env["doc.employee.files.service"].sudo()
                 for document in self:
                     service.reconcile_document_employee_file(document)
-        Automation = self.env["doc.document.automation"]
-        if "attachment_id" in vals:
-            Automation.search([("document_id", "in", self.ids)]).execute("new_version")
-        if "approval_state" in vals and vals["approval_state"] == "approved":
-            Automation.search([("document_id", "in", self.ids)]).execute("document_approved")
-        if "approval_state" in vals and vals["approval_state"] == "rejected":
-            Automation.search([("document_id", "in", self.ids)]).execute("document_rejected")
-        if {"name", "description", "folder_id"}.intersection(vals):
-            Automation.search([("document_id", "in", self.ids)]).execute("document_updated")
+        if not self.env.context.get("skip_document_automation"):
+            Automation = self.env["doc.document.automation"]
+            if "attachment_id" in vals:
+                Automation.search([("document_id", "in", self.ids)]).execute("new_version")
+            if "approval_state" in vals and vals["approval_state"] == "approved":
+                Automation.search([("document_id", "in", self.ids)]).execute(
+                    "document_approved"
+                )
+            if "approval_state" in vals and vals["approval_state"] == "rejected":
+                Automation.search([("document_id", "in", self.ids)]).execute(
+                    "document_rejected"
+                )
+            if {"name", "description", "folder_id"}.intersection(vals):
+                Automation.search([("document_id", "in", self.ids)]).execute(
+                    "document_updated"
+                )
         if "folder_id" in vals:
             self.filtered(lambda document: document._in_policy_folder())._demote_to_policy_folder_draft()
         return result
@@ -570,6 +588,33 @@ class Document(models.Model):
         self.env["doc.organizational.policy"].clear_primary_document_references(self)
         self.env["doc.quarantine.file"].cleanup_for_documents(self)
         return super().unlink()
+
+    def _retention_clock_start_date(self, clock_start, document_version=None):
+        self.ensure_one()
+        if clock_start == "document_expiry" and self.expiry_date:
+            return self.expiry_date
+        if clock_start == "employment_end":
+            employee = self.employee_id
+            if employee:
+                departure = getattr(employee, "departure_date", False)
+                if departure:
+                    return fields.Date.to_date(departure)
+                if not employee.active:
+                    write_date = employee.write_date or fields.Datetime.now()
+                    return fields.Date.to_date(write_date)
+        if document_version and document_version.upload_date:
+            return fields.Date.to_date(document_version.upload_date)
+        if self.create_date:
+            return fields.Date.to_date(self.create_date)
+        return fields.Date.context_today(self)
+
+    def action_confirm_retention_backup(self):
+        for document in self:
+            if not document._can_ef_manage_document("action_archive"):
+                raise AccessError(
+                    _("You do not have permission to confirm backup for this document.")
+                )
+        self.write({"backup_confirmed_at": fields.Datetime.now()})
 
     def action_archive(self):
         for document in self:
@@ -598,7 +643,18 @@ class Document(models.Model):
                         "Activate the policy folder before activating documents inside it."
                     )
                 )
-        self.write({"active": True, "distribution_status": "active", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
+        for document in self:
+            vals = {
+                "active": True,
+                "distribution_status": "active",
+                "deleted_at": False,
+                "deleted_by": False,
+                "recycle_bin_until": False,
+            }
+            if document._in_policy_folder():
+                vals["state"] = "approved"
+                vals["approval_state"] = "not_required"
+            document.write(vals)
 
     def action_deactivate(self):
         org_perm = self.env["doc.organizational.files.permission"]
@@ -1140,6 +1196,8 @@ class Document(models.Model):
                     {"res_model": self._name, "res_id": document.id}
                 )
             document._apply_upload_approval_workflow()
+            if document._in_draft_policy_folder():
+                document._demote_to_policy_folder_draft()
             if (not self.env.user.has_group("cleon_document_management.group_document_manager")
                     and document.approval_state == "pending"):
                 admins = self.env.ref("cleon_document_management.group_document_admin").users
@@ -1202,12 +1260,13 @@ class Document(models.Model):
             if folder.is_pending_uploads:
                 self._assign_folder_after_approval()
             elif folder.folder_type == "organizational":
-                self.sudo().write(
-                    {
-                        "state": "approved",
-                        "approval_state": "not_required",
-                    }
-                )
+                if not self._in_draft_policy_folder():
+                    self.sudo().write(
+                        {
+                            "state": "approved",
+                            "approval_state": "not_required",
+                        }
+                    )
             return
 
         self._start_upload_approval(approvers, approval_flow)
@@ -1582,10 +1641,39 @@ class Document(models.Model):
         ):
             raise AccessError(_("You do not have access to this document."))
 
+    def _automation_notify_candidate_users(self):
+        self.ensure_one()
+        folder = self.folder_id
+        if folder.folder_type == "organizational":
+            employees = folder._get_scope_employees()
+            users = employees.mapped("user_id").filtered(lambda user: user and user.active)
+            users = users.filtered(lambda user: self._organizational_user_can_access(user))
+            if self.owner_id and self.owner_id.active:
+                if self._organizational_user_can_access(self.owner_id):
+                    users |= self.owner_id
+            return users
+        if folder.folder_type == "employee":
+            perm = self.env["doc.employee.files.permission"]
+            users = self.env["res.users"].search(
+                [
+                    ("active", "=", True),
+                    ("employee_files_role_ids", "!=", False),
+                ]
+            )
+            if self.employee_id and self.employee_id.user_id:
+                users |= self.employee_id.user_id
+            return users.filtered(
+                lambda user: perm.user_can_on_document(user, self, "action_view")
+            )
+        return self.env["res.users"]
+
     def _organizational_user_can_access(self, user=None):
         self.ensure_one()
         user = user or self.env.user
-        folder = self.folder_id
+        # Use sudo for folder/policy reads so callers can evaluate access without
+        # tripping document record rules (e.g. inactive draft-policy documents).
+        document = self.sudo()
+        folder = document.folder_id
         if folder.folder_type != "organizational":
             return True
         if not folder._user_can_access(user):
@@ -1602,21 +1690,21 @@ class Document(models.Model):
                     pass
                 elif perm.user_is_platform_admin(user):
                     pass
-                elif self.create_uid == user or self.owner_id == user:
+                elif document.create_uid == user or document.owner_id == user:
                     pass
                 else:
                     return False
-        visibility = self.policy_visibility or "employees"
-        if self._in_policy_folder():
+        visibility = document.policy_visibility or "employees"
+        if document._in_policy_folder():
             policy = self.env["doc.organizational.policy"].for_folder(folder)
             if policy:
                 visibility = policy.policy_visibility or visibility
         if visibility == "hr_only" and not perm.user_can_view_hr_only_org_policy(user):
             return False
-        if self.org_use_folder_access or not self.org_access_scope:
+        if document.org_use_folder_access or not document.org_access_scope:
             return True
         employee = user.employee_id
-        scope = self.org_access_scope
+        scope = document.org_access_scope
         perm = self.env["doc.organizational.files.permission"]
         if perm.user_is_platform_admin(user) or perm.user_has_legacy_manager(user):
             return True
@@ -1625,11 +1713,11 @@ class Document(models.Model):
         if not employee:
             return False
         if scope == "department":
-            return employee.department_id in self.org_department_ids
+            return employee.department_id in document.org_department_ids
         if scope == "grade":
-            return employee.grade_id in self.org_grade_ids
+            return employee.grade_id in document.org_grade_ids
         if scope == "individual":
-            return employee in self.org_employee_ids
+            return employee in document.org_employee_ids
         if scope == "admin_only":
             return (
                 user.has_group("cleon_document_management.group_document_admin")
@@ -1637,7 +1725,7 @@ class Document(models.Model):
                 or perm.user_has_legacy_manager(user)
             )
         if scope == "private":
-            if user == self.create_uid or user == self.owner_id:
+            if user == document.create_uid or user == document.owner_id:
                 return True
             return (
                 user.has_group("cleon_document_management.group_document_admin")
@@ -1648,8 +1736,10 @@ class Document(models.Model):
             config = self.env["doc.employee.files.config"].get_for_company(
                 folder.company_id
             )
-            uploader = self.create_uid or self.owner_id
+            uploader = document.create_uid or document.owner_id
             return config.user_can_access_company_owned(user, uploader)
+        if document._compliance_assignment_grants_access(user):
+            return True
         return False
 
     @api.model
@@ -1826,6 +1916,7 @@ class Document(models.Model):
             "name": self.name,
             "description": self.description or "",
             "folder_id": self.folder_id.id,
+            "folder_type": self.folder_id.folder_type,
             "folder_name": self.folder_id.folder_name,
             "folder_color_hex": self.folder_id.color_hex or "",
             "employee_id": self.employee_id.id or False,
@@ -1851,6 +1942,7 @@ class Document(models.Model):
             "processing_status": self.processing_status,
             "legal_hold_active": bool(self.legal_hold_active),
             "retention_review_due": bool(self.retention_review_due),
+            "backup_confirmed_at": str(self.backup_confirmed_at or ""),
             "has_expiry": self.has_expiry,
             "expiry_date": self.expiry_date,
             "issue_date": self.issue_date,

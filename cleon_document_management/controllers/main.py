@@ -2317,11 +2317,53 @@ class DocumentUICreation(http.Controller):
                     "allow_waiver": evaluation.policy_id.allow_waiver,
                     "score": evaluation.score,
                     "status": evaluation.status,
+                    "compliance_status": evaluation.compliance_status,
+                    "reason_message": evaluation.reason_message or "",
                     "complete_count": evaluation.complete_count,
                     "missing_count": evaluation.missing_count,
                     "grace_count": evaluation.grace_count,
                     "evaluated_at": str(evaluation.evaluated_at or ""),
                     "lines": lines,
+                }
+            )
+        inbox = {
+            "todo": [],
+            "waiting": [],
+            "done": [],
+            "coming_up": [],
+            "exceptions": [],
+        }
+        for evaluation in evaluations:
+            for line in evaluation.line_ids:
+                item = {
+                    "policy": evaluation.policy_id.name,
+                    "document_type": line.document_type_id.name,
+                    "compliance_status": line.compliance_status or line.status,
+                    "reason_message": line.reason_message or "",
+                    "due_date": str(line.due_date or ""),
+                }
+                status = item["compliance_status"]
+                if status in ("non_compliant", "at_risk") and line.status != "pending":
+                    inbox["todo"].append(item)
+                elif status == "pending":
+                    inbox["waiting"].append(item)
+                elif status in ("compliant", "exempt"):
+                    inbox["done"].append(item)
+                else:
+                    inbox["coming_up"].append(item)
+        exceptions = request.env["doc.compliance.exception"].search(
+            [
+                ("employee_id", "=", employee.id),
+                ("status", "in", ("draft", "approved")),
+                ("active", "=", True),
+            ]
+        )
+        for exc in exceptions:
+            inbox["exceptions"].append(
+                {
+                    "policy": exc.policy_id.name,
+                    "status": exc.status,
+                    "valid_until": str(exc.valid_until or ""),
                 }
             )
         summary = {
@@ -2336,13 +2378,24 @@ class DocumentUICreation(http.Controller):
             ),
             "outstanding_count": len(outstanding),
         }
+        open_tasks = request.env["doc.compliance.task"].search(
+            [
+                ("employee_id", "=", employee.id),
+                ("cycle_id.state", "=", "open"),
+                ("status", "in", ("todo", "waiting", "reopened")),
+            ],
+            order="due_date asc, id asc",
+            limit=200,
+        )
         return {
             "success": True,
             "data": {
                 "employee_id": employee.id,
                 "evaluations": evaluation_data,
                 "outstanding": outstanding,
+                "inbox": inbox,
                 "summary": summary,
+                "tasks": [task.to_api_dict() for task in open_tasks],
             },
         }
 

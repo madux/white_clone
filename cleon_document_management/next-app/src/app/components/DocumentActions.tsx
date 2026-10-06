@@ -21,6 +21,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../../../lib/api";
 import {
   canArchiveEmployeeDocuments,
+  canAutomateEmployeeDocuments,
   canDeleteEmployeeDocuments,
 } from "../../../lib/employeeFilesAccess";
 import {
@@ -35,7 +36,7 @@ import { offlineMessage, useOnlineStatus } from "../../../lib/useOnlineStatus";
 import ManageAccessDocumentModal from "./ManageAccessDocumentModal";
 import FolderPickerDialog from "./FolderPickerDialog";
 import ModalDialog from "./ModalDialog";
-import ThemedSelect from "./ThemedSelect";
+import DocumentAutomateDialog from "./DocumentAutomateDialog";
 import EmployeeMetricPicker from "./EmployeeMetricPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ import {
 } from "../../../lib/organizationalDocumentAccess";
 import { useComplianceTargets } from "../../../hooks/useDocuments";
 import ActionMenuCategory from "./ActionMenuCategory";
+import { ORG_ACTION_MENU_CATEGORIES } from "../../../lib/orgActionCatalog";
 
 export default function DocumentActions({
   documentId,
@@ -133,14 +135,12 @@ export default function DocumentActions({
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignEmployeeIds, setAssignEmployeeIds] = useState<number[]>([]);
   const [automateOpen, setAutomateOpen] = useState(false);
-  const [autoName, setAutoName] = useState("");
-  const [autoTrigger, setAutoTrigger] = useState("document_updated");
-  const [autoAction, setAutoAction] = useState("notify_owner");
-  const [autoCondition, setAutoCondition] = useState("");
-  const [autoItems, setAutoItems] = useState<any[]>([]);
   const [position, setPosition] = useState({ top: 0, right: 0 });
   const canManage = canManageOrgDocuments(currentUser.data);
   const canManageAccess = canManageOrgDocumentAccess(currentUser.data);
+  const canAutomate = organizational
+    ? canManage
+    : canAutomateEmployeeDocuments(currentUser.data);
 
   useClickOutside(rootRef, () => setOpen(false));
   useEffect(() => {
@@ -224,12 +224,12 @@ export default function DocumentActions({
           className="org-action-sheet fixed z-[100] w-56 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-2xl"
           style={{ top: position.top, right: position.right, maxHeight: "70vh" }}
         >
-          <ActionMenuCategory label="Information" />
+          <ActionMenuCategory label={ORG_ACTION_MENU_CATEGORIES.information} />
           <button type="button" onClick={() => { setDetailsOpen(true); setOpen(false); }} className="menu-item">
             <Info />
             Details
           </button>
-          <ActionMenuCategory label="Organise" />
+          <ActionMenuCategory label={ORG_ACTION_MENU_CATEGORIES.organise} />
           <button type="button" onClick={() => run("favorite")} className="menu-item">
             <FileHeart />
             Favorite
@@ -275,7 +275,7 @@ export default function DocumentActions({
             </button>
           )}
           {!draftPolicy && organizational && (
-            <ActionMenuCategory label="Access" />
+            <ActionMenuCategory label={ORG_ACTION_MENU_CATEGORIES.access} />
           )}
           {!draftPolicy && organizational && canManageAccess && !folderLocked && (
             <button
@@ -318,29 +318,22 @@ export default function DocumentActions({
               Grant individual access
             </button>
           )}
-          {!draftPolicy && organizational && canManage && (
-            <button
-              type="button"
-              className="menu-item"
-              onClick={() =>
-                void (async () => {
-                  const result = await api.organizationalAutomations({
-                    document_id: documentId,
-                    op: "list",
-                  });
-                  setAutoItems(result.data?.items ?? []);
-                  setAutomateOpen(true);
-                  setOpen(false);
-                })()
-              }
-            >
-              <Workflow />
-              Automate
-            </button>
-          )}
           {!draftPolicy ? (
             <>
-              <ActionMenuCategory label="Lifecycle" />
+              <ActionMenuCategory label={ORG_ACTION_MENU_CATEGORIES.lifecycle} />
+              {!draftPolicy && canAutomate && (
+                <button
+                  type="button"
+                  className="menu-item"
+                  onClick={() => {
+                    setAutomateOpen(true);
+                    setOpen(false);
+                  }}
+                >
+                  <Workflow />
+                  Automate
+                </button>
+              )}
               {canArchive ? (
                 <button type="button" onClick={() => run("archive")} className="menu-item">
                   <Archive />
@@ -578,103 +571,12 @@ export default function DocumentActions({
         </ModalDialog>
       ) : null}
       {automateOpen ? (
-        <ModalDialog title="Automate" onClose={() => setAutomateOpen(false)} size="lg">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block space-y-1 text-sm">
-              <span className="font-semibold">Name</span>
-              <Input value={autoName} onChange={(event) => setAutoName(event.target.value)} />
-            </label>
-            <label className="block space-y-1 text-sm">
-              <span className="font-semibold">Trigger</span>
-              <ThemedSelect
-                value={autoTrigger}
-                onChange={setAutoTrigger}
-                options={[
-                  "document_updated",
-                  "new_version",
-                  "document_approved",
-                  "document_rejected",
-                  "document_signed",
-                  "approaching_expiry",
-                  "expired",
-                ].map((value) => ({ value, label: value.replaceAll("_", " ") }))}
-              />
-            </label>
-            <label className="block space-y-1 text-sm">
-              <span className="font-semibold">Action</span>
-              <ThemedSelect
-                value={autoAction}
-                onChange={setAutoAction}
-                options={[
-                  { value: "notify_owner", label: "Notify owner" },
-                  { value: "notify_audience", label: "Notify audience" },
-                  { value: "archive", label: "Archive document" },
-                ]}
-              />
-            </label>
-            <label className="block space-y-1 text-sm">
-              <span className="font-semibold">Condition (optional)</span>
-              <Input
-                value={autoCondition}
-                onChange={(event) => setAutoCondition(event.target.value)}
-                placeholder="approved / expired"
-              />
-            </label>
-          </div>
-          <div className="mt-4 flex justify-end">
-            <Button
-              onClick={() =>
-                void api
-                  .organizationalAutomations({
-                    document_id: documentId,
-                    op: "create",
-                    name: autoName,
-                    trigger: autoTrigger,
-                    action: autoAction,
-                    condition: autoCondition,
-                  })
-                  .then((result) => {
-                    setAutoItems((current) => [result.data, ...current]);
-                    setAutoName("");
-                  })
-              }
-            >
-              Save Automation
-            </Button>
-          </div>
-          <ul className="mt-4 space-y-2 text-sm">
-            {autoItems.map((item) => (
-              <li key={item.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
-                <span>
-                  {item.name} · {item.trigger} · {item.status}
-                </span>
-                <Button
-                  variant="ghost"
-                  onClick={() =>
-                    void api
-                      .organizationalAutomations({
-                        document_id: documentId,
-                        op: "update",
-                        id: item.id,
-                        status: item.status === "active" ? "disabled" : "active",
-                      })
-                      .then(() =>
-                        setAutoItems((current) =>
-                          current.map((row) =>
-                            row.id === item.id
-                              ? { ...row, status: row.status === "active" ? "disabled" : "active" }
-                              : row,
-                          ),
-                        ),
-                      )
-                  }
-                >
-                  {item.status === "active" ? "Disable" : "Enable"}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </ModalDialog>
+        <DocumentAutomateDialog
+          library={organizational ? "organizational" : "employee"}
+          documentId={documentId}
+          documentName={documentName}
+          onClose={() => setAutomateOpen(false)}
+        />
       ) : null}
     </div>
   );

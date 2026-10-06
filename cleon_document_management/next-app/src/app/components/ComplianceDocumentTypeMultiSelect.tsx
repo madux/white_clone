@@ -12,6 +12,8 @@ type ComplianceDocumentTypeMultiSelectProps = {
   onChange: (ids: number[]) => void;
   error?: string;
   placeholder?: string;
+  /** Renewable document rules: only expiry-enabled types; inline create defaults expiry on. */
+  expiryTypesOnly?: boolean;
 };
 
 function typeId(value: number | string) {
@@ -24,6 +26,7 @@ export default function ComplianceDocumentTypeMultiSelect({
   onChange,
   error,
   placeholder = "Select document types",
+  expiryTypesOnly = false,
 }: ComplianceDocumentTypeMultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -130,7 +133,14 @@ export default function ComplianceDocumentTypeMultiSelect({
           </div>
           <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-2 py-1.5">
             <InlineDocumentTypeCreator
+              defaultExpiryApplicable={expiryTypesOnly}
               onCreated={(item) => {
+                if (
+                  expiryTypesOnly &&
+                  item.expiry_applicable !== true
+                ) {
+                  return;
+                }
                 if (!selected.some((id) => typeId(id) === typeId(item.id))) {
                   onChange([...selected, item.id]);
                 }

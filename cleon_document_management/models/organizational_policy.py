@@ -281,3 +281,23 @@ class DocOrganizationalPolicy(models.Model):
             "document_name": document.name if document else "",
             "updated_at": fields.Datetime.to_string(self.write_date),
         }
+
+
+class DocOrganizationalPolicyComplianceReopen(models.Model):
+    _inherit = "doc.organizational.policy"
+
+    def write(self, vals):
+        res = super().write(vals)
+        if not {"document_id", "lifecycle_status", "active"} & set(vals.keys()):
+            return res
+        policies = self.env["doc.compliance.policy"].search(
+            [
+                ("policy_type_id.code", "=", "compliance_request"),
+                ("reopen_on_content_change", "=", True),
+                ("active", "=", True),
+            ]
+        )
+        for org_policy in self:
+            for compliance_policy in policies:
+                compliance_policy.reopen_tasks_for_content(org_policy=org_policy)
+        return res

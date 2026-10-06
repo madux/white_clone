@@ -41,12 +41,15 @@ export function getNavigationLabel(
     return "Approval requests";
   }
   if (route === "/pages/employee/issues") return "Issues";
+  if (route === "/pages/employee/automation") return "Automation hub";
   if (route.startsWith("/pages/organization/folder")) return "Organizational folder";
   if (route.startsWith("/pages/organization/policy-editor")) return "Policy editor";
   if (route === "/pages/organization") return "Organizational Files";
   if (route === "/pages/organization/approvals") return "Approval requests";
   if (route === "/pages/organization/retention") return "Retention review";
   if (route === "/pages/organization/legal-holds") return "Legal holds";
+  if (route === "/pages/organization/automation") return "Automation hub";
+  if (route === "/pages/organization/policy-assignments") return "Policy assignments";
   if (route === "/pages/pending-uploads") return "Pending Uploads";
   if (route === "/pages/recycle-bin" || (route === "/pages/my-workspace" && searchParams?.get("tab") === "recycle")) return "Recycle Bin";
   if (route === "/pages/dashboard") {

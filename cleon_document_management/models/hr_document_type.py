@@ -40,9 +40,33 @@ class DocumentType(models.Model):
         default=False,
     )
 
+    expires_rule = fields.Selection(
+        [
+            ("yes", "Yes"),
+            ("no", "No"),
+        ],
+        string="Expires?",
+        help="Required before a document type can be active for compliance.",
+    )
+    verification_rule = fields.Selection(
+        [
+            ("yes", "Yes"),
+            ("no", "No"),
+        ],
+        string="Verification required?",
+        help="Required before a document type can be active for compliance.",
+    )
     expiry_applicable = fields.Boolean(
         string="Expiry Applicable",
         default=False,
+    )
+    expiry_configured = fields.Boolean(
+        compute="_compute_compliance_rules",
+        store=True,
+    )
+    verification_required = fields.Boolean(
+        compute="_compute_compliance_rules",
+        store=True,
     )
 
     require_upload_approval = fields.Boolean(
@@ -134,6 +158,62 @@ class DocumentType(models.Model):
         string="Default Extraction Profile",
         ondelete="set null",
     )
+
+    @api.depends("expires_rule", "verification_rule")
+    def _compute_compliance_rules(self):
+        for document_type in self:
+            document_type.expiry_configured = document_type.expires_rule == "yes"
+            document_type.verification_required = (
+                document_type.verification_rule == "yes"
+            )
+            if document_type.expires_rule == "yes":
+                document_type.expiry_applicable = True
+            elif document_type.expires_rule == "no":
+                document_type.expiry_applicable = False
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        prepared = []
+        for vals in vals_list:
+            vals = dict(vals)
+            if not vals.get("expires_rule"):
+                vals["expires_rule"] = "yes" if vals.get("expiry_applicable") else "no"
+            if not vals.get("verification_rule"):
+                vals["verification_rule"] = (
+                    "yes" if vals.get("require_upload_approval") else "no"
+                )
+            prepared.append(vals)
+        return super().create(prepared)
+
+    def write(self, vals):
+        vals = dict(vals)
+        if "expiry_applicable" in vals and "expires_rule" not in vals:
+            vals["expires_rule"] = "yes" if vals["expiry_applicable"] else "no"
+        if "require_upload_approval" in vals and "verification_rule" not in vals:
+            vals["verification_rule"] = (
+                "yes" if vals["require_upload_approval"] else "no"
+            )
+        return super().write(vals)
+
+    @api.constrains("active", "expires_rule", "verification_rule")
+    def _check_compliance_configuration(self):
+        for document_type in self:
+            if not document_type.active:
+                continue
+            if not document_type.expires_rule:
+                raise ValidationError(
+                    _(
+                        'Select whether "%(name)s" expires before activating this document type.',
+                        name=document_type.name,
+                    )
+                )
+            if not document_type.verification_rule:
+                raise ValidationError(
+                    _(
+                        'Select whether "%(name)s" requires verification before activating.',
+                        name=document_type.name,
+                    )
+                )
 
     @api.constrains("require_upload_approval", "approver_ids", "approval_flow")
     def _check_upload_approval_configuration(self):

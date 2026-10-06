@@ -31,11 +31,23 @@ function visibilityLabel(visibility: OrganizationalPolicy["policy_visibility"]) 
   return visibility === "hr_only" ? "HR only" : "Employees";
 }
 
+function statusBadgeClass(status: OrganizationalPolicy["lifecycle_status"]) {
+  if (status === "draft") {
+    return "rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700";
+  }
+  if (status === "active") {
+    return "rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800";
+  }
+  return "rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900";
+}
+
 export default function OrganizationalPoliciesPanel({
   search,
+  viewMode = "list",
   canManageFolders = false,
 }: {
   search: string;
+  viewMode?: "list" | "cards";
   canManageFolders?: boolean;
 }) {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -129,6 +141,88 @@ export default function OrganizationalPoliciesPanel({
           title="No policies yet"
           description="Create a policy from + New in a folder to register classified documents here."
         />
+      ) : viewMode === "cards" ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {items.map((policy) => (
+            <article
+              key={policy.id}
+              className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-brand-pink/30 hover:shadow-lg hover:shadow-pink-100"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-start gap-3">
+                  {canManageFolders ? (
+                    <Checkbox
+                      checked={selectedFolderIds.includes(policy.folder_id)}
+                      onCheckedChange={() => toggleRow(policy.folder_id)}
+                      aria-label={`Select ${policy.name}`}
+                      className="mt-1"
+                    />
+                  ) : null}
+                  <OrgFolderIcon
+                    className="h-10 w-10 shrink-0"
+                    folderKind="policy"
+                    hasContent={Boolean(policy.document_id)}
+                  />
+                </div>
+                <OrganizationalPolicyActions
+                  policy={policy}
+                  canManage={canManageFolders}
+                  onChanged={async () => {
+                    setSelectedFolderIds((current) =>
+                      current.filter((id) => id !== policy.folder_id),
+                    );
+                    await invalidatePolicies();
+                  }}
+                />
+              </div>
+              <h2 className="mt-4 font-bold text-slate-900">
+                <Link
+                  href={`/pages/organization/folder?folder=${policy.folder_id}`}
+                  className="hover:text-brand-pink"
+                >
+                  {policy.name}
+                </Link>
+              </h2>
+              {policy.description ? (
+                <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-500">
+                  {policy.description}
+                </p>
+              ) : null}
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+                <span className={statusBadgeClass(policy.lifecycle_status)}>
+                  {statusLabel(policy.lifecycle_status)}
+                </span>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
+                  {visibilityLabel(policy.policy_visibility)}
+                </span>
+              </div>
+              <dl className="mt-4 grid gap-2 border-t border-slate-100 pt-4 text-xs text-slate-600">
+                <div className="flex justify-between gap-2">
+                  <dt className="font-medium text-slate-500">Category</dt>
+                  <dd className="text-right">{policy.category || "—"}</dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt className="font-medium text-slate-500">Effective</dt>
+                  <dd className="text-right">
+                    {policy.effective_date || "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt className="font-medium text-slate-500">Updated</dt>
+                  <dd className="text-right">
+                    {policy.updated_at ? policy.updated_at.slice(0, 10) : "—"}
+                  </dd>
+                </div>
+                {policy.document_name ? (
+                  <div className="flex justify-between gap-2">
+                    <dt className="font-medium text-slate-500">Document</dt>
+                    <dd className="truncate text-right">{policy.document_name}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </article>
+          ))}
+        </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200">
           <table className="min-w-full text-left text-sm">
@@ -179,15 +273,7 @@ export default function OrganizationalPoliciesPanel({
                   </td>
                   <td className="px-4 py-3 text-slate-600">{policy.category || "—"}</td>
                   <td className="px-4 py-3 text-slate-600">
-                    <span
-                      className={
-                        policy.lifecycle_status === "draft"
-                          ? "rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700"
-                          : policy.lifecycle_status === "active"
-                            ? "rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800"
-                            : "rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900"
-                      }
-                    >
+                    <span className={statusBadgeClass(policy.lifecycle_status)}>
                       {statusLabel(policy.lifecycle_status)}
                     </span>
                   </td>

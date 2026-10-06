@@ -46,6 +46,7 @@ import DocumentTypeFormDialog, {
 } from "./DocumentTypeForm";
 import RolesPage from "./RolesPage";
 import EmployeeFilesSettingsPanel from "./EmployeeFilesSettingsPanel";
+import RetentionSettingsPanel from "./RetentionSettingsPanel";
 import OrganizationalFilesSettingsPanel from "./OrganizationalFilesSettingsPanel";
 import {
   ONBOARDING_MODULE_META,
@@ -65,6 +66,13 @@ const sections = [
     label: "Retention & lifecycle",
     shortLabel: "Lifecycle",
     description: "Control retention and recycle-bin behavior.",
+    icon: History,
+  },
+  {
+    id: "retention_compliance",
+    label: "Retention settings",
+    shortLabel: "Retention",
+    description: "Archive and delete rules per document type for compliance.",
     icon: History,
   },
   {
@@ -202,6 +210,9 @@ export default function SettingsPage() {
     }
     if (requestedSection === "access") {
       setSection("types");
+    }
+    if (requestedSection === "retention_compliance") {
+      setSection("retention_compliance");
     }
   }, [requestedSection, canManageRoles]);
 
@@ -346,6 +357,8 @@ export default function SettingsPage() {
               />
             ) : section === "roles" ? (
               <RolesPage embedded />
+            ) : section === "retention_compliance" ? (
+              <RetentionSettingsPanel documentTypes={documentTypes} />
             ) : section === "onboarding" ? (
               <OnboardingPanel
                 resetModule={async (moduleId: OnboardingModuleId) => {

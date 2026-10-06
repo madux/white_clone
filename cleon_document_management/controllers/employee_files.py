@@ -7,6 +7,12 @@ from odoo import _, http
 from odoo.exceptions import AccessError, UserError
 from odoo.http import request, content_disposition
 
+from odoo.addons.cleon_document_management.controllers.document_automation_api import (
+    LIBRARY_EMPLOYEE,
+    automation_hub_for_library,
+    handle_document_automation,
+)
+
 
 
 class EmployeeFilesController(http.Controller):
@@ -1092,3 +1098,33 @@ class EmployeeFilesController(http.Controller):
                 }
             )
         return {"success": True, "data": options}
+
+    @http.route(
+        "/api/employee-files/automations",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def automations(self, document_id=None, **kwargs):
+        return handle_document_automation(
+            request.env,
+            request.env.user,
+            LIBRARY_EMPLOYEE,
+            document_id,
+            kwargs,
+        )
+
+    @http.route(
+        "/api/employee-files/automation-hub",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def automation_hub(self, **kwargs):
+        return automation_hub_for_library(
+            request.env,
+            request.env.user,
+            LIBRARY_EMPLOYEE,
+        )

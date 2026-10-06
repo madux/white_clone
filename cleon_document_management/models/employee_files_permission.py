@@ -105,6 +105,22 @@ class DocEmployeeFilesPermission(models.AbstractModel):
         return False
 
     @api.model
+    def user_has_ef_automate(self, user):
+        if self.user_is_platform_admin(user) or self.user_has_legacy_manager(user):
+            return True
+        return self._dms().user_has_dms_permission(user, "ef_automate")
+
+    @api.model
+    def user_can_automate_ef_document(self, user, document=None):
+        if not self.user_has_ef_automate(user):
+            return False
+        if not document:
+            return True
+        if document.folder_id.folder_type != "employee":
+            return False
+        return self.user_can_on_document(user, document, "action_view")
+
+    @api.model
     def user_can_on_document(self, user, document, action_field):
         if not document:
             return False
@@ -165,4 +181,5 @@ class DocEmployeeFilesPermission(models.AbstractModel):
             "can_manage_ef_settings": perms.get("ef_manage_ef_settings")
             or perms.get("manage_ef_tenant_config")
             or self.user_is_platform_admin(user),
+            "can_automate": self.user_has_ef_automate(user),
         }

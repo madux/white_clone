@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   Search,
   Share2,
-  SlidersHorizontal,
   Sparkles,
   Star,
   Upload,
@@ -284,6 +283,7 @@ function DocumentTable({
                           documentId={document.id}
                           documentName={document.name}
                           document={document}
+                          organizational={document.folder_type === "organizational"}
                         />
                       </>
                     )}

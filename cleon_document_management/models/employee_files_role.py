@@ -305,10 +305,9 @@ class DocEmployeeFilesRole(models.Model):
         cleaned = []
         for vals in vals_list:
             if vals.get("org_permissions"):
-                role_stub = self.new(vals)
-                sync_legacy_fields_from_permissions(
-                    role_stub, role_stub.get_org_permissions_dict()
-                )
+                org_slice = dict(vals["org_permissions"])
+                role_stub = self.new({**vals, "org_permissions": org_slice})
+                sync_legacy_fields_from_permissions(role_stub, org_slice)
                 for field_name in (
                     "org_access_library",
                     "org_create_folder",

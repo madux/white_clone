@@ -469,6 +469,27 @@ class TestOrganizationalPolicy(TransactionCase):
         policy.write({"lifecycle_status": "draft"})
         self.assertFalse(doc.with_user(reader)._organizational_user_can_access(reader))
 
+    def test_draft_hr_only_policy_hidden_from_employees(self):
+        policy_folder = self.env["doc.folder"].create(
+            {
+                "folder_name": "Draft HR policy",
+                "folder_type": "organizational",
+                "folder_kind": "policy",
+            }
+        )
+        policy = self.env["doc.organizational.policy"].create(
+            {
+                "name": "Draft HR policy",
+                "folder_id": policy_folder.id,
+                "lifecycle_status": "draft",
+                "policy_visibility": "hr_only",
+            }
+        )
+        reader = self._library_user("org_draft_hr_reader")
+        self.assertFalse(policy.with_user(reader).user_can_view(reader))
+        policy.write({"lifecycle_status": "active"})
+        self.assertFalse(policy.with_user(reader).user_can_view(reader))
+
     def test_policy_registry_user_can_view_respects_hr_only(self):
         policy_folder = self.env["doc.folder"].create(
             {
@@ -488,6 +509,38 @@ class TestOrganizationalPolicy(TransactionCase):
         reader = self._library_user("org_policy_tab_reader")
         self.assertFalse(policy.with_user(reader).user_can_view(reader))
         self.assertTrue(policy.user_can_view(self.env.user))
+
+    def test_policy_document_reactivate_after_folder_lifecycle_toggle(self):
+        folder = self.env["doc.folder"].create(
+            {
+                "folder_name": "Security Policy",
+                "folder_type": "organizational",
+                "folder_kind": "policy",
+                "access_scope": "all_staff",
+            }
+        )
+        policy = self.env["doc.organizational.policy"].create(
+            {
+                "name": "Security Policy",
+                "folder_id": folder.id,
+                "lifecycle_status": "active",
+            }
+        )
+        document = self._document("Security policy body.pdf", folder=folder)
+        document.write({"is_policy": True})
+        policy.write({"document_id": document.id})
+        document.action_restore()
+        self.assertEqual(document.state, "approved")
+        self.assertEqual(document.distribution_status, "active")
+        policy.write({"lifecycle_status": "draft"})
+        document.invalidate_recordset()
+        self.assertEqual(document.state, "draft")
+        self.assertEqual(document.distribution_status, "deactivated")
+        policy.write({"lifecycle_status": "active"})
+        document.action_restore()
+        self.assertEqual(document.state, "approved")
+        self.assertTrue(document.active)
+        self.assertEqual(document.distribution_status, "active")
 
     def test_policy_editor_pdf_sync_updates_attachment(self):
         hr_document, editor_document = self.env["doc.document"].create_policy_scratch_draft(

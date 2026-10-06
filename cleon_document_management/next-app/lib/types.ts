@@ -49,11 +49,17 @@ export type DmsPermissionsMap = Partial<
     | "ef_delete"
     | "ef_export"
     | "ef_manage_ef_settings"
+    | "ef_automate"
     | "compliance_view"
     | "compliance_manage_policies"
     | "compliance_run_evaluations"
     | "compliance_manage_exceptions"
     | "compliance_export"
+    | "compliance_request_exception"
+    | "compliance_approve_exception"
+    | "compliance_revoke_exception"
+    | "compliance_verify_routed"
+    | "compliance_complete_review"
     | "templates_view"
     | "templates_create_edit"
     | "templates_assign"
@@ -139,6 +145,7 @@ export interface EmployeeFilesPermissions {
   >;
   can_approve: boolean;
   can_manage_ef_settings: boolean;
+  can_automate?: boolean;
 }
 
 export interface User {
@@ -330,11 +337,34 @@ export interface DocFolder {
   approver_ids?: number[];
 }
 
+export interface OrgFolderIndexRow {
+  id: number;
+  folder_name: string;
+  folder_type: "employee" | "organizational";
+  folder_kind: "folder" | "project" | "vendor" | "policy";
+  parent_id: number | false;
+  parent_name: string;
+  description: string;
+  access_scope: string;
+  document_count: number;
+  last_modified: string;
+  owner_name: string;
+  color_hex: string;
+  locked: boolean;
+  active: boolean;
+  archived: boolean;
+  collection_code: string;
+  organize_by: string;
+  favorite: boolean;
+  pinned: boolean;
+}
+
 export interface DocDocument {
   id: number;
   name: string;
   description: string;
   folder_id: number;
+  folder_type?: "employee" | "organizational";
   folder_name: string;
   folder_color_hex?: string;
   employee_id: number | null;
@@ -569,6 +599,16 @@ export interface MyComplianceEvaluation {
   }>;
 }
 
+export interface MyComplianceInboxItem {
+  policy: string;
+  document_type: string;
+  compliance_status: string;
+  reason_message?: string;
+  due_date?: string;
+  status?: string;
+  valid_until?: string;
+}
+
 export interface MyCompliance {
   employee_id?: number;
   evaluations: MyComplianceEvaluation[];
@@ -577,12 +617,20 @@ export interface MyCompliance {
     document_type: string;
     status: string;
   }>;
+  inbox?: {
+    todo: MyComplianceInboxItem[];
+    waiting: MyComplianceInboxItem[];
+    done: MyComplianceInboxItem[];
+    coming_up: MyComplianceInboxItem[];
+    exceptions: MyComplianceInboxItem[];
+  };
   summary: {
     compliant: number;
     partial: number;
     non_compliant: number;
     outstanding_count: number;
   };
+  tasks?: Array<Record<string, unknown>>;
 }
 
 export interface OnboardingModuleState {
@@ -668,6 +716,9 @@ export interface CompliancePolicy {
   department_ids: number[];
   grade_ids: number[];
   employee_ids: number[];
+  work_location_ids?: number[];
+  employment_type_ids?: number[];
+  branch_ids?: number[];
   minimum_documents: number;
   grace_period_days: number;
   effective_date: string;
@@ -692,6 +743,8 @@ export interface CompliancePolicy {
   sample_pct?: number;
   assigned_auditor_id?: number | false;
   assigned_auditor?: string;
+  retention_action_mode?: string;
+  retention_owner_notice_days?: number;
 }
 
 export type EmployeeLifecycleStatus =
@@ -852,6 +905,46 @@ export interface WorkspaceActivityEvent {
   employee_id?: number | false;
   actor_name: string;
   occurred_at: string;
+}
+
+export interface OrgDocumentAutomationRule {
+  id: number;
+  name: string;
+  document_id: number;
+  document_name?: string;
+  folder_id?: number;
+  folder_name?: string;
+  trigger: string;
+  action: string;
+  condition: string;
+  status: string;
+  actor_id: number;
+  last_run_at?: string | false;
+  last_result?: string;
+  notify_user_ids?: number[];
+  notify_users?: { id: number; name: string; email?: string }[];
+}
+
+export interface OrgDocumentAutomationRun {
+  id: number;
+  automation_id: number;
+  document_id: number;
+  occurred_at: string;
+  trigger: string;
+  trigger_label: string;
+  outcome: string;
+  outcome_label: string;
+  result_message: string;
+  condition: string;
+  condition_label: string;
+  condition_met: boolean;
+  action: string;
+  action_label: string;
+  actor_id: number;
+  actor_name: string;
+  notify_user_count: number;
+  source: string;
+  source_label: string;
 }
 
 export interface WorkspaceAcknowledgement {

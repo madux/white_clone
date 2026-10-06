@@ -545,6 +545,15 @@ class DocumentActions(http.Controller):
                     "message": "You do not have permission to archive this document.",
                 }
             document.action_archive()
+        elif action == "confirm_retention_backup":
+            try:
+                document.action_confirm_retention_backup()
+            except AccessError as error:
+                return {"success": False, "message": str(error)}
+            return {
+                "success": True,
+                "data": document.serialize_for_api(request.env.user),
+            }
         elif action == "copy" and is_org:
             if not org_perm.user_can_manage_org_document(request.env.user):
                 return {

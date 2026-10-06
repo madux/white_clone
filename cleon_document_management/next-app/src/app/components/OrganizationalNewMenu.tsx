@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   Store,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ORG_NEW_MENU_GROUPS } from "../../../lib/orgNewMenuCatalog";
 import { useEffect, useState } from "react";
 import CloudImportDialog from "./CloudImportDialog";
 import type { DocDocument, DocFolder } from "../../../lib/types";
@@ -61,6 +62,7 @@ export default function OrganizationalNewMenu({
   const [creatingTemplate, setCreatingTemplate] = useState(false);
   const [showCreatePolicy, setShowCreatePolicy] = useState(false);
   const [importProvider, setImportProvider] = useState<string | null>(null);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const folderId = parentFolder?.id;
   const inFolder = Boolean(folderId);
@@ -195,9 +197,11 @@ export default function OrganizationalNewMenu({
     createItems.push({
       label: "Create from template",
       icon: FilePlus2,
-      disabled: true,
-      reason: "Templates & Forms module coming soon",
-      onSelect: () => undefined,
+      onSelect: () => {
+        router.push(
+          `/pages/organization/templates-forms?folder_id=${folderId}&intent=generate`,
+        );
+      },
     });
     createItems.push({
       label: "Create template",
@@ -254,9 +258,9 @@ export default function OrganizationalNewMenu({
   }
 
   const groups: NewMenuGroup[] = [
-    { label: "Upload", items: uploadItems },
-    { label: "Create", items: createItems },
-    { label: "Other", items: otherItems },
+    { label: ORG_NEW_MENU_GROUPS.upload, items: uploadItems },
+    { label: ORG_NEW_MENU_GROUPS.create, items: createItems },
+    { label: ORG_NEW_MENU_GROUPS.other, items: otherItems },
   ].filter((group) => group.items.length);
 
   if (!groups.length) return null;

@@ -1,5 +1,6 @@
 "use client";
 
+import { REQUEST_TRIGGER_LABELS, TASK_TYPE_LABELS } from "../../../lib/complianceRequestTasks";
 import { formatFieldLabel } from "../../../lib/formatLabel";
 import type { PolicyCreateFormState, PolicyReviewMeta } from "../../../lib/policyCreateForm";
 import { validatePolicyCreateForm } from "../../../lib/policyCreateValidation";
@@ -16,8 +17,18 @@ type ComplianceRuleReviewScreenProps = {
   confirmLabel?: string;
   /** Compliance engine uses "rule"; organisational policy flows use "policy". */
   entityName?: "rule" | "policy";
+  retentionPreview?: {
+    archive_within_90_days: number;
+    delete_within_90_days: number;
+  } | null;
   onBack: () => void;
   onConfirm: () => void;
+};
+
+const RETENTION_MODE_LABELS: Record<string, string> = {
+  report_only: "Report only",
+  owner_approval: "Owner approval",
+  automatic: "Automatic",
 };
 
 export default function ComplianceRuleReviewScreen({
@@ -31,6 +42,7 @@ export default function ComplianceRuleReviewScreen({
   pending,
   confirmLabel = "Confirm",
   entityName = "rule",
+  retentionPreview,
   onBack,
   onConfirm,
 }: ComplianceRuleReviewScreenProps) {
@@ -72,22 +84,76 @@ export default function ComplianceRuleReviewScreen({
         {form.description ? (
           <ReviewRow label="Description" value={form.description} multiline />
         ) : null}
-        <ReviewRow
-          label="Required document types"
-          value={documentTypeNames.join(", ") || "—"}
-          multiline
-        />
+        {typeCode === "compliance_request" ? (
+          <ReviewRow
+            label="Tasks"
+            value={
+              form.request_tasks
+                .map(
+                  (task) =>
+                    `${task.name} (${TASK_TYPE_LABELS[task.task_type]}, ${task.requirement})`,
+                )
+                .join(", ") || "—"
+            }
+            multiline
+          />
+        ) : (
+          <ReviewRow
+            label="Required document types"
+            value={documentTypeNames.join(", ") || "—"}
+            multiline
+          />
+        )}
+        {typeCode === "compliance_request" ? (
+          <>
+            <ReviewRow
+              label="When it starts"
+              value={REQUEST_TRIGGER_LABELS[form.request_trigger] || form.request_trigger}
+            />
+            <ReviewRow label="Due within" value={`${form.due_days} days`} />
+            <ReviewRow
+              label="Tasks needed"
+              value={formatFieldLabel(form.tasks_needed_mode)}
+            />
+          </>
+        ) : null}
         <ReviewRow label="Applies to" value={scopeLabels.join(", ") || "—"} />
         <ReviewRow
           label="Schedule"
           value={formatFieldLabel(form.schedule || "manual")}
         />
         <ReviewRow label="Effective date" value={form.effective_date || "—"} />
-        <ReviewRow label="Minimum documents" value={form.minimum_documents} />
-        <ReviewRow
-          label="Grace period"
-          value={`${form.grace_period_days} days`}
-        />
+        {typeCode === "retention" ? (
+          <>
+            <ReviewRow
+              label="Action mode"
+              value={
+                RETENTION_MODE_LABELS[form.retention_action_mode] ||
+                form.retention_action_mode
+              }
+            />
+            {form.retention_action_mode === "owner_approval" ? (
+              <ReviewRow
+                label="Owner notice"
+                value={`${form.retention_owner_notice_days} days before`}
+              />
+            ) : null}
+            {retentionPreview ? (
+              <ReviewRow
+                label="90-day preview"
+                value={`${retentionPreview.archive_within_90_days} to archive, ${retentionPreview.delete_within_90_days} to delete`}
+              />
+            ) : null}
+          </>
+        ) : (
+          <>
+            <ReviewRow label="Minimum documents" value={form.minimum_documents} />
+            <ReviewRow
+              label="Grace period"
+              value={`${form.grace_period_days} days`}
+            />
+          </>
+        )}
       </dl>
       {validation.warnings.length ? (
         <ul className="mt-3 space-y-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">

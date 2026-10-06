@@ -17,6 +17,19 @@ import {
   IntelligenceError,
   IntelligenceLoading,
 } from "./states";
+import AppSelect from "../AppSelect";
+
+const INTELLIGENCE_FIELD_TYPE_OPTIONS = [
+  "text",
+  "date",
+  "email",
+  "phone",
+  "integer",
+  "decimal",
+  "currency",
+  "boolean",
+  "employee_reference",
+].map((typeName) => ({ value: typeName, label: typeName }));
 
 const EMPTY_FIELD: IntelligenceField = {
   name: "",
@@ -375,16 +388,14 @@ export default function TypesConfigPanel() {
             </label>
             <label className="mt-3 block">
               <span className="label">Scope</span>
-              <select
-                className="field"
+              <AppSelect
                 value={form.intelligence_scope}
-                onChange={(event) =>
-                  setForm({ ...form, intelligence_scope: event.target.value })
-                }
-              >
-                <option value="employee">Employee</option>
-                <option value="organization">Organization</option>
-              </select>
+                onChange={(value) => setForm({ ...form, intelligence_scope: value })}
+                options={[
+                  { value: "employee", label: "Employee" },
+                  { value: "organization", label: "Organization" },
+                ]}
+              />
             </label>
             <label className="mt-3 block">
               <span className="label">Classification labels</span>
@@ -444,34 +455,18 @@ export default function TypesConfigPanel() {
                         setForm({ ...form, fields });
                       }}
                     />
-                    <select
-                      className="field"
+                    <AppSelect
                       value={field.field_type}
-                      onChange={(event) => {
+                      options={INTELLIGENCE_FIELD_TYPE_OPTIONS}
+                      onChange={(value) => {
                         const fields = [...form.fields];
                         fields[index] = {
                           ...field,
-                          field_type: event.target.value,
+                          field_type: value,
                         };
                         setForm({ ...form, fields });
                       }}
-                    >
-                      {[
-                        "text",
-                        "date",
-                        "email",
-                        "phone",
-                        "integer",
-                        "decimal",
-                        "currency",
-                        "boolean",
-                        "employee_reference",
-                      ].map((typeName) => (
-                        <option key={typeName} value={typeName}>
-                          {typeName}
-                        </option>
-                      ))}
-                    </select>
+                    />
                     <label className="flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"

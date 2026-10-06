@@ -61,6 +61,11 @@ export const ORG_SECTION4_GROUPS: OrgPermissionGroup[] = [
       { key: "delete_without_approval", label: "Delete (no approval)", hint: "" },
       { key: "permanent_delete", label: "Permanent delete", hint: "Super Admin default" },
       { key: "delete_protected_override", label: "Protected delete", hint: "Override retention / hold guards" },
+      {
+        key: "automate",
+        label: "Automate",
+        hint: "Expiry and notification rules (Lifecycle)",
+      },
     ],
   },
   {
@@ -92,7 +97,6 @@ export const ORG_SECTION4_GROUPS: OrgPermissionGroup[] = [
     title: "Approvals & audit",
     columns: [
       { key: "approve_reject_requests", label: "Approve requests", hint: "" },
-      { key: "automate", label: "Automate", hint: "" },
       { key: "view_audit_activity", label: "View audit", hint: "" },
       { key: "is_super_admin", label: "Super Admin", hint: "Private folders + elevated actions" },
     ],

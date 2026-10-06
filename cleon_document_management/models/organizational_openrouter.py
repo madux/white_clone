@@ -530,7 +530,7 @@ def _normalize_proposal(env, payload, default_name=""):
         extra_unknown = unknown
     applies_to = _coerce_choice(
         payload.get("applies_to"),
-        frozenset({"all", "department", "grade", "employee"}),
+        frozenset({"all", "filtered", "department", "grade", "employee"}),
         "all",
     )
     valid_schedules = frozenset(

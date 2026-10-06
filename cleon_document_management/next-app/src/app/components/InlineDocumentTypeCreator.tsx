@@ -16,8 +16,11 @@ import DocumentTypeFormDialog, {
 
 export default function InlineDocumentTypeCreator({
   onCreated,
+  defaultExpiryApplicable = false,
 }: {
   onCreated: (type: DocumentType) => void;
+  /** When true, new types open with expiry enabled (renewable compliance). */
+  defaultExpiryApplicable?: boolean;
 }) {
   const user = useCurrentUser();
   const create = useCreateDocumentType();
@@ -80,7 +83,10 @@ export default function InlineDocumentTypeCreator({
         type="button"
         onClick={() => {
           setError("");
-          setForm(emptyDocumentTypeForm());
+          setForm({
+            ...emptyDocumentTypeForm(),
+            expiry_applicable: defaultExpiryApplicable,
+          });
           setOpen(true);
         }}
         className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-brand-pink hover:underline"

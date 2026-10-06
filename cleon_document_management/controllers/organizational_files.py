@@ -11,6 +11,11 @@ from odoo.osv import expression
 from odoo.addons.cleon_document_management.controllers.document_actions import (
     _draft_policy_guard,
 )
+from odoo.addons.cleon_document_management.controllers.document_automation_api import (
+    LIBRARY_ORGANIZATIONAL,
+    automation_hub_for_library,
+    handle_document_automation,
+)
 from odoo.addons.cleon_document_management.models import organizational_openrouter
 
 _logger = logging.getLogger(__name__)
@@ -1360,48 +1365,13 @@ class OrganizationalFilesController(http.Controller):
         csrf=False,
     )
     def automations(self, document_id=None, **kwargs):
-        perm = self._perm()
-        if not perm.user_can_manage_org_document(request.env.user):
-            return {"success": False, "message": "You do not have permission to manage automations."}
-        document = self._org_document(document_id)
-        if not document:
-            return {"success": False, "message": "Document not found."}
-        op = kwargs.get("op") or "list"
-        Automation = request.env["doc.document.automation"]
-        if op == "create":
-            required = (kwargs.get("name") or "").strip()
-            if not required or not kwargs.get("trigger") or not kwargs.get("action"):
-                return {"success": False, "message": "Name, trigger and action are required."}
-            rule = Automation.create(
-                {
-                    "name": required,
-                    "document_id": document.id,
-                    "trigger": kwargs.get("trigger"),
-                    "condition": kwargs.get("condition") or False,
-                    "action": kwargs.get("action"),
-                    "status": kwargs.get("status") or "active",
-                }
-            )
-            request.env["doc.object.audit"].log(document, "automation", f"Saved automation {rule.name}")
-            return {"success": True, "data": rule.serialize_for_api()}
-        if op == "update":
-            rule = Automation.browse(int(kwargs.get("id") or 0)).exists()
-            if not rule or rule.document_id != document:
-                return {"success": False, "message": "Automation not found."}
-            values = {}
-            for field in ("name", "trigger", "condition", "action", "status"):
-                if field in kwargs:
-                    values[field] = kwargs.get(field)
-            if values:
-                rule.write(values)
-            return {"success": True, "data": rule.serialize_for_api()}
-        if op == "delete":
-            rule = Automation.browse(int(kwargs.get("id") or 0)).exists()
-            if rule and rule.document_id == document:
-                rule.unlink()
-            return {"success": True, "data": {"deleted": True}}
-        rules = Automation.search([("document_id", "=", document.id)])
-        return {"success": True, "data": {"items": [rule.serialize_for_api() for rule in rules]}}
+        return handle_document_automation(
+            request.env,
+            request.env.user,
+            LIBRARY_ORGANIZATIONAL,
+            document_id,
+            kwargs,
+        )
 
     @http.route(
         "/api/organizational/connectors",
@@ -1587,6 +1557,255 @@ class OrganizationalFilesController(http.Controller):
         except UserError as error:
             return {"success": False, "message": error.args[0]}
         return {"success": True, "data": document.serialize_for_api(request.env.user)}
+
+    @staticmethod
+    def _serialize_folder_index_row(folder, user):
+        return {
+            "id": folder.id,
+            "folder_name": folder.folder_name,
+            "folder_type": folder.folder_type,
+            "folder_kind": getattr(folder, "folder_kind", "folder") or "folder",
+            "parent_id": folder.parent_id.id if folder.parent_id else False,
+            "parent_name": folder.parent_id.folder_name if folder.parent_id else "",
+            "description": folder.description or "",
+            "access_scope": folder.access_scope or "all_staff",
+            "document_count": folder.document_count,
+            "last_modified": fields.Datetime.to_string(folder.write_date)
+            if folder.write_date
+            else "",
+            "owner_name": folder.owner_id.name if folder.owner_id else "",
+            "color_hex": folder.color_hex or "",
+            "locked": folder.is_locked,
+            "active": folder.active,
+            "archived": not folder.active,
+            "collection_code": getattr(folder, "collection_code", "") or "",
+            "organize_by": getattr(folder, "organize_by", "none") or "none",
+            "favorite": user in folder.favorite_user_ids,
+            "pinned": user in folder.pinned_user_ids,
+        }
+
+    @http.route(
+        "/api/organizational/folders-index",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def folders_index(self, **kwargs):
+        perm = self._perm()
+        user = request.env.user
+        perm.require_org_library(user)
+        Folder = request.env["doc.folder"]
+        domain = [
+            ("folder_type", "=", "organizational"),
+            ("is_pending_uploads", "=", False),
+        ]
+        archived = (kwargs.get("archived") or "active").strip()
+        if archived == "only":
+            domain.append(("active", "=", False))
+        elif archived == "include":
+            domain.append(("deleted_at", "=", False))
+        else:
+            domain.extend([("active", "=", True), ("deleted_at", "=", False)])
+        folder_kind = (kwargs.get("folder_kind") or "").strip()
+        if folder_kind:
+            domain.append(("folder_kind", "=", folder_kind))
+        access_scope = (kwargs.get("access_scope") or "").strip()
+        if access_scope:
+            domain.append(("access_scope", "=", access_scope))
+        locked = kwargs.get("locked")
+        if locked in ("true", "1", True):
+            domain.append(("is_locked", "=", True))
+        elif locked in ("false", "0", False):
+            domain.append(("is_locked", "=", False))
+        search = (kwargs.get("search") or kwargs.get("query") or "").strip()
+        if search:
+            domain.append(("folder_name", "ilike", search))
+        limit = max(1, min(int(kwargs.get("limit") or 200), 500))
+        offset = max(0, int(kwargs.get("offset") or 0))
+        folders = Folder.search(domain, order="folder_name", limit=limit, offset=offset)
+        accessible = folders.filtered(lambda folder: folder._user_can_access(user))
+        return {
+            "success": True,
+            "data": {
+                "items": [
+                    self._serialize_folder_index_row(folder, user) for folder in accessible
+                ],
+                "total_count": len(accessible),
+            },
+        }
+
+    @http.route(
+        "/api/organizational/search",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def organizational_search(self, query=None, limit=40, **kwargs):
+        perm = self._perm()
+        user = request.env.user
+        perm.require_org_library(user)
+        needle = (query or kwargs.get("q") or "").strip()
+        if not needle:
+            return {"success": True, "data": {"folders": [], "documents": []}}
+        limit = max(1, min(int(limit or kwargs.get("limit") or 40), 100))
+        Folder = request.env["doc.folder"]
+        Document = request.env["doc.document"]
+        folder_domain = [
+            ("folder_type", "=", "organizational"),
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("folder_name", "ilike", needle),
+        ]
+        folders = Folder.search(folder_domain, order="folder_name", limit=limit)
+        folders = folders.filtered(lambda folder: folder._user_can_access(user))
+        doc_domain = [
+            ("folder_id.folder_type", "=", "organizational"),
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("name", "ilike", needle),
+        ]
+        documents = Document.search(doc_domain, order="name", limit=limit)
+        documents = documents.filtered(
+            lambda document: document.folder_id._user_can_access(user)
+        )
+        return {
+            "success": True,
+            "data": {
+                "folders": [
+                    self._serialize_folder_index_row(folder, user) for folder in folders
+                ],
+                "documents": [
+                    document.serialize_for_api(user) for document in documents
+                ],
+            },
+        }
+
+    @http.route(
+        "/api/organizational/policy-assignments",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def policy_assignments(self, **kwargs):
+        perm = self._perm()
+        user = request.env.user
+        if not (
+            perm.user_can_manage_org_document(user)
+            or perm.user_is_org_super_admin(user)
+        ):
+            return {"success": False, "message": "Permission denied."}
+        domain = [("organizational_policy_id", "!=", False)]
+        employee_id = int(kwargs.get("employee_id") or 0)
+        if employee_id:
+            domain.append(("employee_id", "=", employee_id))
+        limit = max(1, min(int(kwargs.get("limit") or 100), 300))
+        offset = max(0, int(kwargs.get("offset") or 0))
+        Assignment = request.env["doc.policy.employee.assignment"]
+        rows = Assignment.search(domain, order="id desc", limit=limit, offset=offset)
+        return {
+            "success": True,
+            "data": {
+                "items": [row.serialize_for_api() for row in rows],
+                "total_count": Assignment.search_count(domain),
+            },
+        }
+
+    @http.route(
+        "/api/organizational/automation-hub",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def automation_hub(self, **kwargs):
+        return automation_hub_for_library(
+            request.env,
+            request.env.user,
+            LIBRARY_ORGANIZATIONAL,
+        )
+
+    @http.route(
+        "/api/organizational/audit-export",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def audit_export(self, res_model=None, res_id=None, **kwargs):
+        perm = self._perm()
+        user = request.env.user
+        if not (
+            perm.user_can_manage_org_document(user)
+            or perm.user_is_org_super_admin(user)
+        ):
+            return {"success": False, "message": "Permission denied."}
+        model = (res_model or kwargs.get("model") or "").strip()
+        rid = int(res_id or kwargs.get("res_id") or 0)
+        if not model or not rid:
+            return {"success": False, "message": "Record is required."}
+        audits = request.env["doc.object.audit"].search(
+            [("res_model", "=", model), ("res_id", "=", rid)],
+            order="occurred_at desc",
+            limit=500,
+        )
+        share_logs = []
+        if model == "doc.document" and kwargs.get("include_shares"):
+            document = request.env["doc.document"].browse(rid).exists()
+            if document:
+                links = request.env["doc.share.link"].search(
+                    [
+                        "|",
+                        ("document_id", "=", document.id),
+                        ("attachment_id", "=", document.id),
+                        ("is_external", "=", True),
+                    ]
+                )
+                Log = request.env["doc.share.access.log"]
+                for link in links:
+                    for log in Log.search([("share_link_id", "=", link.id)], limit=100):
+                        share_logs.append(
+                            {
+                                "share_id": link.id,
+                                "action": log.action,
+                                "occurred_at": log.accessed_at,
+                                "ip_address": log.ip_address or "",
+                            }
+                        )
+        approvals = []
+        if kwargs.get("include_approvals"):
+            Approval = request.env["doc.organizational.approval.request"]
+            if model == "doc.document":
+                approval_domain = [("document_id", "=", rid)]
+            elif model == "doc.folder":
+                approval_domain = [("folder_id", "=", rid)]
+            else:
+                approval_domain = [("id", "=", 0)]
+            requests = Approval.search(
+                approval_domain,
+                order="create_date desc",
+                limit=100,
+            )
+            for item in requests:
+                approvals.append(
+                    {
+                        "id": item.id,
+                        "action_key": item.action_key,
+                        "state": item.state,
+                        "submitted_at": item.create_date,
+                        "executed_at": item.executed_at,
+                    }
+                )
+        return {
+            "success": True,
+            "data": {
+                "object_audit": [row.serialize_for_api() for row in audits],
+                "share_access": share_logs,
+                "approvals": approvals,
+            },
+        }
 
     @http.route(
         "/api/organizational/library-home",

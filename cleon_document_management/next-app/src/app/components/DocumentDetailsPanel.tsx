@@ -151,7 +151,21 @@ export default function DocumentDetailsPanel({
                   </Link>
                 </dd>
               </>
-            ) : organizational &&
+            ) : null}
+            {organizational && document?.linked_template_document_id ? (
+              <>
+                <dt className="text-slate-500">Template</dt>
+                <dd>
+                  <Link
+                    href={`/pages/organization/folder?folder=${document.folder_id}&doc=${document.linked_template_document_id}`}
+                    className="font-medium text-brand-pink hover:underline"
+                  >
+                    {document.linked_template_document_name || "Master template"}
+                  </Link>
+                </dd>
+              </>
+            ) : null}
+            {organizational &&
               document &&
               isOrgDocumentLinkedToPolicy(document) ? (
               <>

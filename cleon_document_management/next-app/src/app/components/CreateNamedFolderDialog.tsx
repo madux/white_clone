@@ -7,7 +7,7 @@ import { api } from "../../../lib/api";
 import { QUERY_KEYS, useCreateFolder } from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
 import type { DocDocument, DocFolder } from "../../../lib/types";
-import ModalDialog from "./ModalDialog";
+import FormWindowShell from "./FormWindowShell";
 import AppSelect from "./AppSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -125,7 +125,7 @@ export default function CreateNamedFolderDialog({
   };
 
   return (
-    <ModalDialog
+    <FormWindowShell
       title={titles[kind]}
       eyebrow="Organizational files"
       description={
@@ -134,7 +134,16 @@ export default function CreateNamedFolderDialog({
           : `Creates a ${kind} at the library root.`
       }
       onClose={onClose}
-      size="md"
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={create.isPending} onClick={() => void submit()}>
+            {create.isPending ? "Creating…" : "Create"}
+          </Button>
+        </div>
+      }
     >
       <label className="block space-y-1 text-sm">
         <span className="font-semibold">Name</span>
@@ -199,14 +208,6 @@ export default function CreateNamedFolderDialog({
           </ul>
         </div>
       ) : null}
-      <div className="mt-5 flex justify-end gap-2">
-        <Button variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button disabled={create.isPending} onClick={() => void submit()}>
-          {create.isPending ? "Creating…" : "Create"}
-        </Button>
-      </div>
-    </ModalDialog>
+    </FormWindowShell>
   );
 }

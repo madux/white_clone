@@ -4,6 +4,7 @@ import { AlertCircle, CheckCircle2, Clock3, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useCreateException, useMyCompliance } from "../../../hooks/useDocuments";
+import ComplianceTaskCompleteDialog from "./ComplianceTaskCompleteDialog";
 import { formatStatusLabel } from "../../../lib/formatLabel";
 import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
 
@@ -29,6 +30,8 @@ export default function MyCompliancePage({
   const [waiverReason, setWaiverReason] = useState("");
   const [waiverUntil, setWaiverUntil] = useState("");
   const [waiverNotice, setWaiverNotice] = useState<string | null>(null);
+  const [activeTask, setActiveTask] = useState<Record<string, unknown> | null>(null);
+  const tasks = (data?.tasks ?? []) as Array<Record<string, unknown>>;
 
   async function submitWaiver(event: FormEvent) {
     event.preventDefault();
@@ -62,6 +65,37 @@ export default function MyCompliancePage({
         </div>
       )}
 
+      {tasks.length > 0 ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-bold text-slate-800">Open compliance tasks</h2>
+          <ul className="mt-3 space-y-2">
+            {tasks.map((task) => (
+              <li
+                key={String(task.id)}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 px-3 py-2"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {String(task.title || "Task")}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {String(task.policy_name || "")}
+                    {task.due_date ? ` · due ${String(task.due_date)}` : ""}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="rounded-lg bg-brand-pink px-3 py-1.5 text-xs font-semibold text-white"
+                  onClick={() => setActiveTask(task)}
+                >
+                  Complete
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section className="app-page-metrics">
         {[
           { label: "Compliant policies", value: summary?.compliant },
@@ -75,6 +109,46 @@ export default function MyCompliancePage({
           </div>
         ))}
       </section>
+
+      {data?.inbox && (
+        <section className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+          {(
+            [
+              ["To do", data.inbox.todo, Clock3],
+              ["Waiting", data.inbox.waiting, ShieldCheck],
+              ["Done", data.inbox.done, CheckCircle2],
+              ["Coming up", data.inbox.coming_up, Clock3],
+              ["Exceptions", data.inbox.exceptions, AlertCircle],
+            ] as const
+          ).map(([title, items, Icon]) => (
+            <div
+              key={title}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                <Icon className="h-4 w-4 text-brand-pink" />
+                {title}
+                <span className="ml-auto text-xs font-semibold text-slate-400">
+                  {items.length}
+                </span>
+              </div>
+              <ul className="mt-3 space-y-2 text-xs text-slate-600">
+                {items.slice(0, 5).map((item, index) => (
+                  <li key={`${title}-${index}`}>
+                    <span className="font-semibold text-slate-800">
+                      {item.document_type || item.policy}
+                    </span>
+                    {item.reason_message ? ` — ${item.reason_message}` : null}
+                  </li>
+                ))}
+                {!items.length && (
+                  <li className="text-slate-400">Nothing here right now.</li>
+                )}
+              </ul>
+            </div>
+          ))}
+        </section>
+      )}
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -252,6 +326,26 @@ export default function MyCompliancePage({
           </form>
         </section>
       )}
+      {activeTask ? (
+        <ComplianceTaskCompleteDialog
+          task={{
+            id: Number(activeTask.id),
+            title: String(activeTask.title || "Task"),
+            task_type: String(activeTask.task_type || "read"),
+            declaration_text: String(activeTask.declaration_text || ""),
+            evidence_document_type_id: Number(activeTask.evidence_document_type_id || 0),
+            linked_form_id: Number(activeTask.linked_form_id || 0),
+            linked_document_id: Number(
+              activeTask.linked_document_id ||
+                (activeTask as { document_id?: number }).document_id ||
+                0,
+            ),
+            linked_folder_id: Number(activeTask.linked_folder_id || 0),
+          }}
+          onClose={() => setActiveTask(null)}
+          onCompleted={() => compliance.refetch()}
+        />
+      ) : null}
     </div>
   );
 }

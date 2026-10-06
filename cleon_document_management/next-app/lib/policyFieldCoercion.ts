@@ -3,7 +3,13 @@ import {
   EVENT_TRIGGER_LABELS,
 } from "./complianceCopy";
 
-export const POLICY_APPLIES_TO = ["all", "department", "grade", "employee"] as const;
+export const POLICY_APPLIES_TO = [
+  "all",
+  "filtered",
+  "department",
+  "grade",
+  "employee",
+] as const;
 
 export const POLICY_SCHEDULES = [
   "manual",

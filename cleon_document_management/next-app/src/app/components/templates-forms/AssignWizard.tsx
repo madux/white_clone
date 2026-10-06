@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { templatesFormsApi } from "../../../../lib/templates-forms-api";
 import { useTemplateEmployees } from "../../../../hooks/useTemplatesForms";
 import type { MergeField, TemplateItem } from "../../../../lib/templates-forms-api";
+import AppSelect from "../AppSelect";
 
 export default function AssignWizard({
   template,
@@ -21,6 +22,7 @@ export default function AssignWizard({
   const [preview, setPreview] = useState<any>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [delivery, setDelivery] = useState("workspace");
   const employeesQuery = useTemplateEmployees({
     q: search,
     department_id: departmentId ? Number(departmentId) : undefined,
@@ -121,17 +123,18 @@ export default function AssignWizard({
                   className="field"
                   aria-label="Search employees"
                 />
-                <select
-                  aria-label="Department"
-                  className="field max-w-xs"
-                  value={departmentId}
-                  onChange={(event) => setDepartmentId(event.target.value)}
-                >
-                  <option value="">All departments</option>
-                  {departments.map((item) => (
-                    <option key={item.id} value={item.id}>{item.name}</option>
-                  ))}
-                </select>
+                <div className="min-w-[12rem] max-w-xs shrink-0">
+                  <AppSelect
+                    ariaLabel="Department"
+                    value={departmentId}
+                    placeholder="All departments"
+                    options={departments.map((item) => ({
+                      value: String(item.id),
+                      label: item.name,
+                    }))}
+                    onChange={setDepartmentId}
+                  />
+                </div>
               </div>
               <table className="w-full text-left text-sm">
                 <thead>
@@ -208,16 +211,17 @@ export default function AssignWizard({
                       onChange={(event) => setValues((current) => ({ ...current, [field.key]: event.target.value }))}
                     />
                   ) : field.dataType === "select" ? (
-                    <select
-                      className="field"
+                    <AppSelect
                       value={values[field.key] || ""}
-                      onChange={(event) => setValues((current) => ({ ...current, [field.key]: event.target.value }))}
-                    >
-                      <option value="">Select</option>
-                      {(field.options || []).map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </select>
+                      placeholder="Select"
+                      options={(field.options || []).map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      }))}
+                      onChange={(next) =>
+                        setValues((current) => ({ ...current, [field.key]: next }))
+                      }
+                    />
                   ) : (
                     <input
                       className="field"
@@ -243,11 +247,15 @@ export default function AssignWizard({
               ))}
               <label className="block">
                 <span className="label">Delivery</span>
-                <select className="field" defaultValue="workspace">
-                  <option value="workspace">Workspace</option>
-                  <option value="email">Email</option>
-                  <option value="both">Email and workspace</option>
-                </select>
+                <AppSelect
+                  value={delivery}
+                  onChange={setDelivery}
+                  options={[
+                    { value: "workspace", label: "Workspace" },
+                    { value: "email", label: "Email" },
+                    { value: "both", label: "Email and workspace" },
+                  ]}
+                />
               </label>
             </div>
           )}

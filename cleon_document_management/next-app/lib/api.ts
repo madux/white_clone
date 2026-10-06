@@ -867,6 +867,52 @@ export const api = {
   organizationalObjectAudit: (payload: { res_model: string; res_id: number }) =>
     rpc<{ success: boolean; data: { items: any[] } }>("/api/organizational/object-audit", payload),
 
+  organizationalFoldersIndex: (payload: Record<string, unknown> = {}) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: { items: import("./types").OrgFolderIndexRow[]; total_count: number };
+    }>("/api/organizational/folders-index", payload),
+
+  organizationalSearch: (payload: { query: string; limit?: number }) =>
+    rpc<{
+      success: boolean;
+      data: {
+        folders: import("./types").OrgFolderIndexRow[];
+        documents: import("./types").DocDocument[];
+      };
+    }>("/api/organizational/search", payload),
+
+  organizationalPolicyAssignments: (payload: Record<string, unknown> = {}) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: { items: Record<string, unknown>[]; total_count: number };
+    }>("/api/organizational/policy-assignments", payload),
+
+  organizationalAutomationHub: () =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: { items: Record<string, unknown>[] };
+    }>("/api/organizational/automation-hub", {}),
+
+  organizationalAuditExport: (payload: {
+    res_model: string;
+    res_id: number;
+    include_shares?: boolean;
+    include_approvals?: boolean;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: {
+        object_audit: Record<string, unknown>[];
+        share_access: Record<string, unknown>[];
+        approvals: Record<string, unknown>[];
+      };
+    }>("/api/organizational/audit-export", payload),
+
   restoreOrganizationalVersion: (versionId: number) =>
     rpc<{ success: boolean; message?: string }>("/api/organizational/restore-version", {
       version_id: versionId,
@@ -1208,6 +1254,117 @@ export const api = {
       `/api/compliance/policies/${policyId}/evaluate`,
       {},
     ).then(unwrapCompliance),
+
+  complianceRunPreflight: (policyId: number) =>
+    rpc<{
+      success: boolean;
+      data?: { applicable: number; exempt: number; to_evaluate: number };
+      message?: string;
+    }>(`/api/compliance/policies/${policyId}/run-preflight`, {}),
+
+  revokeComplianceException: (id: number, reason: string) =>
+    rpc<{ success: boolean; message?: string }>(
+      `/api/compliance/exceptions/${id}/revoke`,
+      { reason },
+    ),
+
+  getMyTeamCompliance: () =>
+    rpc<{
+      success: boolean;
+      data: { rows: Array<Record<string, unknown>>; attention_count: number };
+    }>("/api/compliance/my-team", {}),
+
+  getMyVerifications: () =>
+    rpc<{ success: boolean; data: Array<Record<string, unknown>> }>(
+      "/api/compliance/my-verifications",
+      {},
+    ),
+
+  completeComplianceTask: (taskId: number, payload: Record<string, unknown>) =>
+    rpc<{ success: boolean; data: Record<string, unknown>; message?: string }>(
+      "/api/compliance/tasks/complete",
+      { task_id: taskId, ...payload },
+    ),
+
+  getMyComplianceTasks: () =>
+    rpc<{ success: boolean; data: Record<string, unknown>[] }>(
+      "/api/compliance/my-tasks",
+      {},
+    ),
+
+  listComplianceRequestLinkableContent: (payload: {
+    search?: string;
+    policy_id?: number;
+    applies_to?: string;
+    department_ids?: number[];
+    grade_ids?: number[];
+    employee_ids?: number[];
+    work_location_ids?: number[];
+    employment_type_ids?: number[];
+    branch_ids?: number[];
+    limit?: number;
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: { items: import("./complianceRequestTasks").ComplianceLinkableContentItem[]; count: number };
+    }>("/api/compliance/request-linkable-content", payload),
+
+  listRetentionSettings: (document_type_ids?: number[]) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: Array<Record<string, unknown>>;
+    }>("/api/compliance/retention-settings", {
+      document_type_ids: document_type_ids || [],
+    }),
+
+  saveRetentionSettings: (payload: Record<string, unknown>) =>
+    rpc<{ success: boolean; message?: string; data: Record<string, unknown> }>(
+      "/api/compliance/retention-settings/save",
+      payload,
+    ),
+
+  retentionPreview: (payload: Record<string, unknown>) =>
+    rpc<{
+      success: boolean;
+      data: {
+        archive_within_90_days: number;
+        delete_within_90_days: number;
+      };
+    }>("/api/compliance/retention-preview", payload),
+
+  listRetentionBatches: (policyId?: number) =>
+    rpc<{
+      success: boolean;
+      data: Array<Record<string, unknown>>;
+    }>("/api/compliance/retention-batches", {
+      policy_id: policyId || false,
+    }),
+
+  approveRetentionBatch: (batchId: number) =>
+    rpc<{ success: boolean; message?: string; state?: string }>(
+      `/api/compliance/retention-batches/${batchId}/approve`,
+      {},
+    ),
+
+  rejectRetentionBatch: (batchId: number) =>
+    rpc<{ success: boolean; message?: string; state?: string }>(
+      `/api/compliance/retention-batches/${batchId}/reject`,
+      {},
+    ),
+
+  getMyComplianceReviews: () =>
+    rpc<{ success: boolean; data: Array<Record<string, unknown>> }>(
+      "/api/compliance/my-reviews",
+      {},
+    ),
+
+  getComplianceAuditLog: (policyId?: number) =>
+    rpc<{ success: boolean; data: Array<Record<string, unknown>> }>(
+      "/api/compliance/audit-log",
+      { policy_id: policyId || false },
+    ),
 
   getPolicies: () =>
     rpc<{ success: boolean; count: number; data: CompliancePolicy[] }>(

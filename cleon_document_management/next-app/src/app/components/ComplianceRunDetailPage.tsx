@@ -10,10 +10,10 @@ import {
   Mail,
   Search,
   ShieldCheck,
-  SlidersHorizontal,
   X,
 } from "lucide-react";
 import Link from "next/link";
+import FilterToggleButton from "./FilterToggleButton";
 import { FormEvent, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -242,21 +242,21 @@ export default function ComplianceRunDetailPage() {
                 className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-pink/40 focus:ring-4 focus:ring-brand-pink/10"
               />
             </label>
-            <button
-              type="button"
+            <FilterToggleButton
               aria-expanded={filtersExpanded}
               aria-controls="run-employee-filters"
               onClick={() => setFiltersExpanded((current) => !current)}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-brand-pink hover:text-brand-pink"
+              className="font-semibold text-slate-600 hover:border-brand-pink hover:text-brand-pink"
+              badge={
+                status !== "all" ? (
+                  <span className="rounded-full bg-brand-pink px-2 py-0.5 text-[11px] font-bold text-white">
+                    1
+                  </span>
+                ) : null
+              }
             >
-              <SlidersHorizontal className="h-4 w-4" />
               Filters
-              {status !== "all" ? (
-                <span className="rounded-full bg-brand-pink px-2 py-0.5 text-[11px] font-bold text-white">
-                  1
-                </span>
-              ) : null}
-            </button>
+            </FilterToggleButton>
             {status !== "all" ? (
               <button
                 type="button"

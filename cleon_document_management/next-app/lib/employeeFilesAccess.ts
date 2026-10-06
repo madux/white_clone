@@ -39,6 +39,17 @@ export function canArchiveEmployeeDocuments(user?: User | null): boolean {
   );
 }
 
+export function canAutomateEmployeeDocuments(user?: User | null): boolean {
+  if (!user) return false;
+  const perms = user.employee_files_permissions;
+  return (
+    perms?.can_automate === true ||
+    userHasDmsPermission(user, "ef_automate") ||
+    user.is_document_manager === true ||
+    userIsSuperAdmin(user)
+  );
+}
+
 export function canDeleteEmployeeDocuments(user?: User | null): boolean {
   if (!user) return false;
   const perms = user.employee_files_permissions;

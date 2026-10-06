@@ -7,7 +7,7 @@ import {
   FileText,
   MoreHorizontal,
   Search,
-  SlidersHorizontal,
+  Filter,
   Sparkles,
   Star,
   UserPlus,
@@ -168,7 +168,7 @@ export default function TemplatesFormsLibrary() {
             onClick={() => setShowFilters((current) => !current)}
             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600"
           >
-            <SlidersHorizontal className="h-4 w-4" />
+            <Filter className="h-4 w-4 shrink-0" aria-hidden />
             Filters
           </button>
           <div className="relative">

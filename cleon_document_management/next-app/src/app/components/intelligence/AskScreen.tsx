@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import AppSelect from "../AppSelect";
 import {
   FormEvent,
   useEffect,
@@ -215,7 +216,6 @@ export default function AskScreen() {
   const fileRef = useRef<HTMLInputElement>(null);
   const attachRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
-  const datasetRef = useRef<HTMLSelectElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const datasets = useIntelligenceDatasets();
@@ -1202,34 +1202,33 @@ export default function AskScreen() {
             </p>
           )}
           {readyDatasets.length ? (
-            <select
-              ref={datasetRef}
-              className="mt-3 w-full rounded-xl border border-slate-200 bg-[#f7f8fb] px-3 py-2.5 text-sm text-slate-800 outline-none"
-              value={focusedDatasetId}
-              onChange={async (event) => {
-                const nextId = event.target.value ? Number(event.target.value) : "";
-                setLocalDatasetId(nextId);
-                setDatasetTouched(true);
-                const current = await ensureConversation();
-                const next = await intelligenceDatasetApi.conversationUpdate({
-                  id: current.id,
-                  dataset_id: nextId || 0,
-                });
-                setConversation({
-                  ...next,
-                  messages: current.messages || next.messages,
-                });
-              }}
-            >
-              {readyDatasets.length > 1 ? (
-                <option value="">All approved datasets</option>
-              ) : null}
-              {readyDatasets.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+            <div className="mt-3">
+              <AppSelect
+                value={focusedDatasetId ? String(focusedDatasetId) : ""}
+                placeholder={
+                  readyDatasets.length > 1 ? "All approved datasets" : "Select dataset"
+                }
+                ariaLabel="Focused dataset"
+                options={readyDatasets.map((item) => ({
+                  value: String(item.id),
+                  label: item.name,
+                }))}
+                onChange={async (next) => {
+                  const nextId = next ? Number(next) : "";
+                  setLocalDatasetId(nextId);
+                  setDatasetTouched(true);
+                  const current = await ensureConversation();
+                  const updated = await intelligenceDatasetApi.conversationUpdate({
+                    id: current.id,
+                    dataset_id: nextId || 0,
+                  });
+                  setConversation({
+                    ...updated,
+                    messages: current.messages || updated.messages,
+                  });
+                }}
+              />
+            </div>
           ) : null}
 
           <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">

@@ -1,14 +1,12 @@
+import { validateComplianceRequestConfig } from "./complianceRequestTasks";
 import type { PolicyCreateFormState, PolicyReviewMeta } from "./policyCreateForm";
+import { hasPolicyScopeFilters } from "./policyScope";
 
 export type PolicyValidationResult = {
   canConfirm: boolean;
   missingFields: string[];
   warnings: string[];
 };
-
-function requiresScope(appliesTo: string) {
-  return appliesTo === "department" || appliesTo === "grade" || appliesTo === "employee";
-}
 
 export function validatePolicyCreateForm(
   form: PolicyCreateFormState,
@@ -27,29 +25,53 @@ export function validatePolicyCreateForm(
   if (!form.policy_type_id) {
     missingFields.push(`${cap} type`);
   }
-  if (!form.document_type_ids.length) {
+  if (typeCode === "compliance_request") {
+    const requestErrors = validateComplianceRequestConfig(
+      form.request_tasks,
+      {
+        request_trigger: form.request_trigger,
+        request_start_date: form.request_start_date,
+        repeat_every_months: form.repeat_every_months,
+        tasks_needed_mode: form.tasks_needed_mode as
+          | "all_required"
+          | "any_required"
+          | "minimum_count",
+        tasks_needed_minimum: form.tasks_needed_minimum,
+        reopen_on_content_change: form.reopen_on_content_change,
+      },
+      form.due_days,
+    );
+    missingFields.push(...requestErrors);
+  } else if (typeCode !== "retention" && !form.document_type_ids.length) {
     missingFields.push("At least one required document type");
+  } else if (typeCode === "retention" && !form.document_type_ids.length) {
+    missingFields.push("At least one document type");
   }
   if (!(form.effective_date || "").trim()) {
     missingFields.push("Effective date");
   }
-  if (!form.minimum_documents || Number(form.minimum_documents) < 1) {
+  if (
+    typeCode !== "compliance_request" &&
+    typeCode !== "retention" &&
+    (!form.minimum_documents || Number(form.minimum_documents) < 1)
+  ) {
     missingFields.push("Copies needed (minimum 1)");
   }
 
-  const appliesTo =
-    form.applies_to === "all" || form.scope_ids.length === 0
-      ? "all"
-      : form.applies_to;
-  if (requiresScope(appliesTo) && form.scope_ids.length === 0) {
-    missingFields.push(`Scope (select who this ${lower} applies to)`);
+  if (form.applies_to !== "all" && !hasPolicyScopeFilters(form.scope)) {
+    missingFields.push(`Audience (select who this ${lower} applies to)`);
   }
 
-  if (typeCode === "compliance_request" && !form.assigned_reviewer_id) {
-    missingFields.push("Assigned reviewer");
-  }
-  if (typeCode === "retention" && !form.assigned_auditor_id) {
-    missingFields.push("Assigned auditor");
+  if (typeCode === "retention") {
+    if (!form.retention_action_mode) {
+      missingFields.push("Retention action mode");
+    }
+    if (
+      form.retention_action_mode === "owner_approval" &&
+      (!form.retention_owner_notice_days || form.retention_owner_notice_days < 1)
+    ) {
+      missingFields.push("Owner notice days (at least 1)");
+    }
   }
 
   const unknown = reviewMeta?.unknownDocumentTypeNames ?? [];

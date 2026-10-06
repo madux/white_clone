@@ -14,7 +14,9 @@ import {
   Loader2,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import ComplianceRequestScheduleFields from "./ComplianceRequestScheduleFields";
+import ComplianceRequestTaskList from "./ComplianceRequestTaskList";
 import { formatFieldLabel, formatStatusLabel } from "../../../lib/formatLabel";
 import {
   buildCreatePolicyPayload,
@@ -22,6 +24,8 @@ import {
   type PolicyCreateFormState,
   type PolicyReviewMeta,
 } from "../../../lib/policyCreateForm";
+import { validatePolicyCreateForm } from "../../../lib/policyCreateValidation";
+import { TASK_TYPE_LABELS } from "../../../lib/complianceRequestTasks";
 import {
   coerceEffectiveDate,
   coercePolicyAppliesTo,
@@ -30,6 +34,11 @@ import {
   coercePolicySchedule,
 } from "../../../lib/policyFieldCoercion";
 import { proposalToForm, reviewMetaFromProposal } from "../../../lib/policyProposal";
+import {
+  emptyPolicyScope,
+  formatPolicyScopeSummary,
+} from "../../../lib/policyScope";
+import { PolicyAudienceFilters } from "./PolicyAudienceFilters";
 import { useClientPagination } from "../../../lib/useClientPagination";
 import ListPagination from "./ListPagination";
 import {
@@ -61,10 +70,18 @@ import {
   AUDIT_FREQUENCY_LABELS,
   EVENT_TRIGGER_LABELS,
 } from "../../../lib/complianceCopy";
+import {
+  documentTypesForCompliancePolicy,
+  pruneDocumentTypeIdsForPolicy,
+} from "../../../lib/complianceDocumentTypes";
+import type { DocumentType } from "../../../lib/types";
 import ComplianceReportsPanel from "./ComplianceReportsPanel";
 import EmployeeMetricPicker from "./EmployeeMetricPicker";
 import SectionTabs from "./SectionTabs";
 import ComplianceRuleReviewScreen from "./ComplianceRuleReviewScreen";
+import ComplianceRetentionFields, {
+  useRetentionPreview,
+} from "./ComplianceRetentionFields";
 import {
   InputGroup,
   InputGroupAddon,
@@ -143,10 +160,42 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
     }
   }, [types.data, aiPolicyTypeId]);
 
+  const aiPolicyTypeCode = useMemo(() => {
+    const match = (types.data ?? []).find(
+      (item) => String(item.id) === aiPolicyTypeId,
+    );
+    return match?.code ?? "";
+  }, [types.data, aiPolicyTypeId]);
+
+  const aiSelectableDocumentTypes = useMemo(
+    () =>
+      documentTypesForCompliancePolicy(
+        aiPolicyTypeCode,
+        documents.data ?? [],
+      ),
+    [aiPolicyTypeCode, documents.data],
+  );
+
   useEffect(() => {
-    if (aiDocumentTypeIds.length || !documents.data?.length) return;
-    setAiDocumentTypeIds([documents.data[0].id]);
-  }, [documents.data, aiDocumentTypeIds.length]);
+    if (!documents.data?.length) return;
+    const pruned = pruneDocumentTypeIdsForPolicy(
+      aiPolicyTypeCode,
+      aiDocumentTypeIds,
+      documents.data,
+    );
+    if (pruned.length !== aiDocumentTypeIds.length) {
+      setAiDocumentTypeIds(pruned);
+      return;
+    }
+    if (aiDocumentTypeIds.length) return;
+    const first = aiSelectableDocumentTypes[0];
+    if (first) setAiDocumentTypeIds([first.id]);
+  }, [
+    aiDocumentTypeIds,
+    aiPolicyTypeCode,
+    aiSelectableDocumentTypes,
+    documents.data,
+  ]);
 
   useEffect(() => {
     if (searchParams.get("create") === "1") {
@@ -194,11 +243,6 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
   const submitPolicy = async (event: FormEvent) => {
     event.preventDefault();
     setPolicySubmitError("");
-    const effectiveAppliesTo =
-      policyForm.applies_to === "all" || policyForm.scope_ids.length === 0
-        ? "all"
-        : policyForm.applies_to;
-
     try {
       await createPolicy.mutateAsync(buildCreatePolicyPayload(policyForm));
     } catch (error: any) {
@@ -234,10 +278,25 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
     });
   };
   const runCheck = async () => {
+    const runnable = (policies.data ?? []).filter(policyCanRun);
+    if (!runnable.length) return;
+    const target = runnable[0];
+    const preflight = await api.complianceRunPreflight(target.id);
+    if (!preflight.success || !preflight.data) {
+      await showAlert(preflight.message || "This policy cannot be run right now.", {
+        title: "Run check",
+      });
+      return;
+    }
+    const { applicable, exempt, to_evaluate } = preflight.data;
+    const confirmed = await showConfirm(
+      `Run check for "${target.name}"?\n\nApplicable: ${applicable}\nExempt: ${exempt}\nTo evaluate: ${to_evaluate}`,
+      { title: "Run check", confirmLabel: "Run" },
+    );
+    if (!confirmed) return;
     setRunning(true);
     try {
-      const runnable = (policies.data ?? []).filter(policyCanRun);
-      for (const policy of runnable) await evaluate.mutateAsync(policy.id);
+      await evaluate.mutateAsync(target.id);
     } finally {
       setRunning(false);
     }
@@ -722,10 +781,11 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
                 <div className="block space-y-1 text-sm sm:col-span-2">
                   <span className="font-semibold">Required documents</span>
                   <ComplianceDocumentTypeMultiSelect
-                    types={documents.data ?? []}
+                    types={aiSelectableDocumentTypes}
                     selected={aiDocumentTypeIds}
                     onChange={setAiDocumentTypeIds}
                     placeholder="Select document types"
+                    expiryTypesOnly={aiPolicyTypeCode === "renewable_document"}
                   />
                 </div>
               </div>
@@ -1307,101 +1367,8 @@ function TypeSpecificFields({
     );
   }
 
-  if (typeCode === "compliance_request") {
-    return (
-      <>
-        <Field label="When should this start?">
-          <ThemedSelect
-            value={form.event_trigger}
-            onChange={(val) => setForm({ ...form, event_trigger: val })}
-            options={Object.entries(EVENT_TRIGGER_LABELS).map(([value, label]) => ({
-              value,
-              label,
-            }))}
-          />
-        </Field>
-        <Field label="Days to submit">
-          <input
-            type="number"
-            min="1"
-            className="field"
-            value={form.due_days}
-            onChange={(e) =>
-              setForm({ ...form, due_days: Number(e.target.value) })
-            }
-          />
-        </Field>
-        <Field label="Reminder every (days)">
-          <input
-            type="number"
-            min="1"
-            className="field"
-            value={form.reminder_frequency_days}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                reminder_frequency_days: Number(e.target.value),
-              })
-            }
-          />
-        </Field>
-        <Field label="Who follows up?">
-          <ThemedSelect
-            value={String(form.assigned_reviewer_id || "")}
-            onChange={(val) =>
-              setForm({ ...form, assigned_reviewer_id: val })
-            }
-            placeholder="Select HR contact"
-            options={(targets?.users || []).map((u: any) => ({
-              value: String(u.id),
-              label: u.name,
-            }))}
-          />
-        </Field>
-      </>
-    );
-  }
-
   if (typeCode === "retention") {
-    return (
-      <>
-        <Field label="How often to check">
-          <ThemedSelect
-            value={form.audit_frequency}
-            onChange={(val) => setForm({ ...form, audit_frequency: val })}
-            options={Object.entries(AUDIT_FREQUENCY_LABELS).map(([value, label]) => ({
-              value,
-              label,
-            }))}
-          />
-        </Field>
-        <Field label="Sample size (%)">
-          <input
-            type="number"
-            min="1"
-            max="100"
-            className="field"
-            value={form.sample_pct}
-            onChange={(e) =>
-              setForm({ ...form, sample_pct: Number(e.target.value) })
-            }
-          />
-        </Field>
-        <Field label="Who runs the check?" full>
-          <ThemedSelect
-            value={String(form.assigned_auditor_id || "")}
-            onChange={(val) =>
-              setForm({ ...form, assigned_auditor_id: val })
-            }
-            placeholder="Select HR contact"
-            options={(targets?.users || []).map((u: any) => ({
-              value: String(u.id),
-              label: u.name,
-            }))}
-          />
-        </Field>
-      </>
-    );
+    return <ComplianceRetentionFields form={form} setForm={setForm} />;
   }
 
   return null;
@@ -1426,6 +1393,7 @@ export function PolicyForm({
   const [step, setStep] = useState<"configure" | "review">(initialStep);
   const [formError, setFormError] = useState("");
   const [importPending, setImportPending] = useState(false);
+  const [formTemplates, setFormTemplates] = useState<{ id: number; name: string }[]>([]);
 
   useEffect(() => {
     setStep(initialStep);
@@ -1458,26 +1426,28 @@ export function PolicyForm({
     });
   }, [importDocumentId, initialStep, setForm]);
 
-  const scopeOptions =
-    form.applies_to === "department"
-      ? (targets?.departments ?? [])
-      : form.applies_to === "grade"
-        ? (targets?.grades ?? [])
-        : (targets?.employees ?? []);
-
   const selectedType = (types || []).find(
     (t: any) => String(t.id) === String(form.policy_type_id)
   );
   const typeCode = selectedType?.code || "";
+  const allDocumentTypes = documents as DocumentType[];
+  const selectableDocumentTypes = useMemo(
+    () => documentTypesForCompliancePolicy(typeCode, allDocumentTypes),
+    [typeCode, allDocumentTypes],
+  );
 
-  const toggleScope = (id: number) => {
-    setForm({
-      ...form,
-      scope_ids: form.scope_ids.includes(id)
-        ? form.scope_ids.filter((item: number) => item !== id)
-        : [...form.scope_ids, id],
+  useEffect(() => {
+    if (typeCode !== "compliance_request") return;
+    void api.listActiveTemplatesForms({ kind: "form" }).then((result) => {
+      const templates = result.data?.templates ?? [];
+      setFormTemplates(
+        templates.map((item) => ({
+          id: Number(item.id),
+          name: String(item.name || "Form"),
+        })),
+      );
     });
-  };
+  }, [typeCode]);
 
   const submit = (event: FormEvent) => {
     if (!form.policy_type_id) {
@@ -1487,7 +1457,32 @@ export function PolicyForm({
       );
       return;
     }
-    if (!form.document_type_ids.length) {
+    const validation = validatePolicyCreateForm(
+      form,
+      typeCode,
+      reviewMeta,
+      organizationalMode ? "policy" : "rule",
+    );
+    if (!validation.canConfirm && step === "review") {
+      event.preventDefault();
+      setFormError(validation.missingFields[0] || "Complete required fields.");
+      return;
+    }
+    if (step === "configure") {
+      const configureValidation = validatePolicyCreateForm(
+        form,
+        typeCode,
+        reviewMeta,
+        organizationalMode ? "policy" : "rule",
+      );
+      if (!configureValidation.canConfirm) {
+        event.preventDefault();
+        setFormError(
+          configureValidation.missingFields[0] || "Complete required fields.",
+        );
+        return;
+      }
+    } else if (typeCode !== "compliance_request" && !form.document_type_ids.length) {
       event.preventDefault();
       setFormError("Select at least one required document type.");
       return;
@@ -1504,12 +1499,11 @@ export function PolicyForm({
   const selectedDocumentTypes = documents.filter((item: any) =>
     form.document_type_ids.includes(item.id),
   );
-  const scopeLabels =
-    form.applies_to === "all"
-      ? ["All employees"]
-      : scopeOptions
-          .filter((item: any) => form.scope_ids.includes(item.id))
-          .map((item: any) => item.name);
+  const scopeLabels = formatPolicyScopeSummary(form.scope, targets);
+  const retentionPreview = useRetentionPreview(
+    form,
+    step === "review" && typeCode === "retention",
+  );
 
   return (
     <ModalDialog
@@ -1540,7 +1534,20 @@ export function PolicyForm({
         <Field label={organizationalMode ? "Policy type" : "Rule type"}>
           <ThemedSelect
             value={form.policy_type_id}
-            onChange={(value) => setForm({ ...form, policy_type_id: value })}
+            onChange={(value) => {
+              const nextTypeCode =
+                (types || []).find((t: any) => String(t.id) === value)?.code ??
+                "";
+              setForm({
+                ...form,
+                policy_type_id: value,
+                document_type_ids: pruneDocumentTypeIdsForPolicy(
+                  nextTypeCode,
+                  form.document_type_ids,
+                  allDocumentTypes,
+                ),
+              });
+            }}
             placeholder="Select type"
             options={types.map((item: any) => ({
               value: String(item.id),
@@ -1556,26 +1563,27 @@ export function PolicyForm({
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </Field>
-        <Field label="Applies to">
-          <ThemedSelect
-            value={form.applies_to}
-            onChange={(value) =>
-              setForm({ ...form, applies_to: value, scope_ids: [] })
+        <Field label="Applies to" full>
+          <PolicyAudienceFilters
+            scope={form.scope}
+            targets={targets}
+            allEmployees={form.applies_to === "all"}
+            onAllEmployeesChange={(all) =>
+              setForm({
+                ...form,
+                applies_to: all ? "all" : "filtered",
+                scope: all ? emptyPolicyScope() : form.scope,
+              })
             }
-            options={[
-              { value: "all", label: "All Employees" },
-              { value: "department", label: "Departments" },
-              { value: "grade", label: "Groups" },
-              { value: "employee", label: "Employees" },
-            ]}
+            onChange={(scope) =>
+              setForm({
+                ...form,
+                applies_to: "filtered",
+                scope,
+              })
+            }
           />
         </Field>
-        <ScopeChecklist
-          appliesTo={form.applies_to}
-          items={scopeOptions}
-          selected={form.scope_ids}
-          onToggle={toggleScope}
-        />
 
         <TypeSpecificFields
           typeCode={typeCode}
@@ -1584,21 +1592,74 @@ export function PolicyForm({
           targets={targets}
         />
 
-        <div className="sm:col-span-2">
-          <span className="label">Required documents</span>
-          <ComplianceDocumentTypeMultiSelect
-            types={documents}
-            selected={form.document_type_ids}
-            onChange={(document_type_ids) =>
-              setForm({ ...form, document_type_ids })
-            }
-            error={
-              formError === "Select at least one required document type."
-                ? formError
-                : undefined
-            }
-          />
-        </div>
+        {typeCode === "compliance_request" ? (
+          <>
+            <ComplianceRequestTaskList
+              tasks={form.request_tasks}
+              onChange={(request_tasks) => setForm({ ...form, request_tasks })}
+              documentTypes={allDocumentTypes}
+              linkableContext={{
+                applies_to: form.applies_to,
+                scope: form.scope,
+              }}
+              forms={formTemplates}
+            />
+            <ComplianceRequestScheduleFields
+              schedule={{
+                request_trigger: form.request_trigger,
+                request_start_date: form.request_start_date,
+                repeat_every_months: form.repeat_every_months,
+                tasks_needed_mode: form.tasks_needed_mode as
+                  | "all_required"
+                  | "any_required"
+                  | "minimum_count",
+                tasks_needed_minimum: form.tasks_needed_minimum,
+                reopen_on_content_change: form.reopen_on_content_change,
+              }}
+              onChange={(schedule) => setForm({ ...form, ...schedule })}
+              dueDays={form.due_days}
+              gracePeriodDays={form.grace_period_days}
+              reminderDays={form.reminder_frequency_days}
+              onDueDaysChange={(due_days) => setForm({ ...form, due_days })}
+              onGraceChange={(grace_period_days) =>
+                setForm({ ...form, grace_period_days })
+              }
+              onReminderChange={(reminder_frequency_days) =>
+                setForm({ ...form, reminder_frequency_days })
+              }
+            />
+            <Field label="Who follows up?" full>
+              <ThemedSelect
+                value={String(form.assigned_reviewer_id || "")}
+                onChange={(val) =>
+                  setForm({ ...form, assigned_reviewer_id: val })
+                }
+                placeholder="Select HR contact"
+                options={(targets?.users || []).map((u: any) => ({
+                  value: String(u.id),
+                  label: u.name,
+                }))}
+              />
+            </Field>
+          </>
+        ) : (
+          <div className="sm:col-span-2">
+            <span className="label">Required documents</span>
+            <ComplianceDocumentTypeMultiSelect
+              types={selectableDocumentTypes}
+              selected={form.document_type_ids}
+              onChange={(document_type_ids) =>
+                setForm({ ...form, document_type_ids })
+              }
+              expiryTypesOnly={typeCode === "renewable_document"}
+              error={
+                formError === "Select at least one required document type."
+                  ? formError
+                  : undefined
+              }
+            />
+          </div>
+        )}
         <Field label="Schedule">
           <ThemedSelect
             value={form.schedule}
@@ -1622,19 +1683,24 @@ export function PolicyForm({
             }
           />
         </Field>
-        <Field label="Copies needed">
-          <input
-            required
-            min="1"
-            type="number"
-            className="field"
-            value={form.minimum_documents}
-            onChange={(e) =>
-              setForm({ ...form, minimum_documents: e.target.value })
-            }
-          />
-        </Field>
-        {typeCode !== "document_requirement" && typeCode !== "renewable_document" ? (
+        {typeCode !== "compliance_request" && typeCode !== "retention" ? (
+          <Field label="Copies needed">
+            <input
+              required
+              min="1"
+              type="number"
+              className="field"
+              value={form.minimum_documents}
+              onChange={(e) =>
+                setForm({ ...form, minimum_documents: e.target.value })
+              }
+            />
+          </Field>
+        ) : null}
+        {typeCode !== "document_requirement" &&
+        typeCode !== "renewable_document" &&
+        typeCode !== "compliance_request" &&
+        typeCode !== "retention" ? (
           <Field label="Grace period (days)">
             <input
               required
@@ -1675,6 +1741,7 @@ export function PolicyForm({
           typeCode={typeCode}
           documentTypeNames={selectedDocumentTypes.map((item: any) => item.name)}
           scopeLabels={scopeLabels}
+          retentionPreview={retentionPreview}
           reviewMeta={reviewMeta}
           submitError={submitError || formError}
           pending={pending || importPending}

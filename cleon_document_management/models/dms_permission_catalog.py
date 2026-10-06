@@ -18,6 +18,7 @@ EF_PERMISSION_KEYS = (
     "ef_delete",
     "ef_export",
     "ef_manage_ef_settings",
+    "ef_automate",
 )
 
 COMPLIANCE_PERMISSION_KEYS = (
@@ -25,6 +26,11 @@ COMPLIANCE_PERMISSION_KEYS = (
     "compliance_manage_policies",
     "compliance_run_evaluations",
     "compliance_manage_exceptions",
+    "compliance_request_exception",
+    "compliance_approve_exception",
+    "compliance_revoke_exception",
+    "compliance_verify_routed",
+    "compliance_complete_review",
     "compliance_export",
 )
 
@@ -223,6 +229,7 @@ _ALL_EF = {
     "ef_delete": True,
     "ef_export": True,
     "ef_manage_ef_settings": True,
+    "ef_automate": True,
 }
 _ALL_COMPLIANCE = {k: True for k in COMPLIANCE_PERMISSION_KEYS}
 _ALL_TEMPLATES = {k: True for k in TEMPLATES_PERMISSION_KEYS}

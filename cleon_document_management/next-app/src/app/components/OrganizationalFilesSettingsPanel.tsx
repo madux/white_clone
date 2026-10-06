@@ -1,14 +1,16 @@
 "use client";
 
-import { Save } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useComplianceTargets, useSettings } from "../../../hooks/useDocuments";
 import { useToast } from "../../../hooks/useToast";
+import SectionTabs from "./SectionTabs";
+import ThemedSelect from "./ThemedSelect";
 import OrganizationalVisibilityFields, {
   visibilityFromOrganizationalDefaults,
   visibilityToAccessScope,
   type OrgVisibilityMode,
 } from "./OrganizationalVisibilityFields";
+import { SettingsFieldHelp } from "./EmployeeFilesOrganizingDimensionsSettings";
 
 type SettingsShape = {
   default_org_access_scope?: string;
@@ -22,6 +24,76 @@ type SettingsShape = {
   org_approval_delegate_user_id?: number | false;
   org_approval_delegate_until?: string | false;
 };
+
+type OrgSettingsTab = "general" | "company_owned" | "approvals";
+
+function SectionHeading({ title, description }: { title: string; description?: string }) {
+  return (
+    <div className="mb-3">
+      <h2 className="text-base font-semibold tracking-tight text-[var(--ink)]">{title}</h2>
+      {description ? (
+        <p className="mt-1 text-sm text-slate-600">{description}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function SettingRow({
+  label,
+  help,
+  children,
+  top,
+}: {
+  label: string;
+  help: string;
+  children: ReactNode;
+  top?: boolean;
+}) {
+  return (
+    <div
+      className={`flex gap-4 border-t border-[var(--rule)] py-3 first:border-t-0 first:pt-3 ${
+        top ? "items-start" : "items-center"
+      }`}
+    >
+      <span
+        className={`flex w-44 shrink-0 items-center gap-1.5 text-sm font-medium text-[var(--ink)] ${
+          top ? "pt-1.5" : ""
+        }`}
+      >
+        {label}
+        <SettingsFieldHelp label={label} text={help} />
+      </span>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
+
+function HoursInput({
+  value,
+  onChange,
+  min = 0,
+  suffix = "hrs",
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  suffix?: string;
+}) {
+  return (
+    <div className="flex max-w-[160px] overflow-hidden rounded-lg border border-[var(--rule)] bg-white">
+      <input
+        type="number"
+        min={min}
+        className="min-w-0 flex-1 border-0 px-3 py-2 text-sm outline-none"
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+      <span className="bg-[#f4f2f6] px-3 py-2 text-xs font-semibold text-slate-600">
+        {suffix}
+      </span>
+    </div>
+  );
+}
 
 export default function OrganizationalFilesSettingsPanel({
   values,
@@ -37,6 +109,7 @@ export default function OrganizationalFilesSettingsPanel({
   const settingsQuery = useSettings();
   const targets = useComplianceTargets();
   const { showToast } = useToast();
+  const [tab, setTab] = useState<OrgSettingsTab>("general");
   const [delegateSearch, setDelegateSearch] = useState("");
 
   const defaults = visibilityFromOrganizationalDefaults(values);
@@ -63,6 +136,15 @@ export default function OrganizationalFilesSettingsPanel({
       `${item.name} ${item.email ?? ""}`.toLowerCase().includes(term),
     );
   }, [delegateOptions, delegateSearch]);
+
+  const approverSelectOptions = useMemo(
+    () =>
+      delegateOptions.map((person) => ({
+        value: String(person.id),
+        label: person.name,
+      })),
+    [delegateOptions],
+  );
 
   useEffect(() => {
     const next = visibilityFromOrganizationalDefaults(values);
@@ -98,210 +180,239 @@ export default function OrganizationalFilesSettingsPanel({
   const grades = targets.data?.grades ?? [];
   const employees = targets.data?.employees ?? [];
 
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!delegateIds.length) {
+      showToast("Select at least one user for company-owned access.", "error");
+      return;
+    }
+    onSave();
+  };
+
   return (
-    <section className="space-y-8">
-      <div>
-        <h2 className="text-base font-semibold text-slate-900">Default visibility</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Pre-selects visibility when someone creates a new organizational folder. They can still
-          change it before saving unless the folder parent restricts options.
-        </p>
-        <div className="mt-4">
-          <OrganizationalVisibilityFields
-            visibilityMode={visibilityMode}
-            onVisibilityModeChange={(mode) => {
-              setVisibilityMode(mode);
-              syncVisibilityToSettings(mode, restrictedScope);
-            }}
-            restrictedScope={restrictedScope}
-            onRestrictedScopeChange={(scope) => {
-              setRestrictedScope(scope);
-              syncVisibilityToSettings(visibilityMode, scope);
-            }}
-            scopeIds={[]}
-            onScopeIdsChange={() => undefined}
-            scopeSearch=""
-            onScopeSearchChange={() => undefined}
-            departments={departments}
-            grades={grades}
-            employees={employees}
-          />
-          {visibilityMode === "restricted" && (
-            <p className="mt-2 text-xs text-amber-700">
-              Restricted defaults that need departments, grades, or employees still require a
-              selection when the folder is created.
-            </p>
-          )}
-        </div>
-      </div>
+    <div className="space-y-6">
+      <SectionTabs
+        level="nested"
+        ariaLabel="Organisational Files settings"
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: "general", label: "General" },
+          { id: "company_owned", label: "Company-owned" },
+          { id: "approvals", label: "Approvals" },
+        ]}
+      />
 
-      <div>
-        <h2 className="text-base font-semibold text-slate-900">Company-owned access</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Users who can see folders and files marked <strong>Company owned</strong>, in addition to
-          the uploader and platform or document administrators. Super admins and document admins are
-          included by default until you save a custom list.
-        </p>
-        <div className="mt-4">
-          <input
-            value={delegateSearch}
-            onChange={(event) => setDelegateSearch(event.target.value)}
-            placeholder="Search users…"
-            className="field"
-          />
-          <div className="mt-3 grid max-h-52 gap-2 overflow-y-auto sm:grid-cols-2">
-            {filteredDelegates.map((person) => (
-              <label
-                key={person.id}
-                className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm hover:bg-pink-50"
-              >
-                <input
-                  type="checkbox"
-                  checked={delegateIds.includes(person.id)}
-                  onChange={() => {
-                    const next = delegateIds.includes(person.id)
-                      ? delegateIds.filter((id) => id !== person.id)
-                      : [...delegateIds, person.id];
-                    setDelegateIds(next);
-                    onChange({ org_company_owned_user_ids: next });
+      <form
+        className="w-full rounded-xl border border-[var(--rule)] bg-white"
+        onSubmit={handleSubmit}
+      >
+        {tab === "general" ? (
+          <section className="px-6 pt-5 pb-2">
+            <SectionHeading
+              title="Default visibility"
+              description="Pre-selects visibility when someone creates a new organisational folder. Creators can still change it before saving unless a parent folder restricts options."
+            />
+            <SettingRow
+              label="New folders"
+              help="Default audience for folders created in the organisational library."
+              top
+            >
+              <div className="space-y-2">
+                <OrganizationalVisibilityFields
+                  visibilityMode={visibilityMode}
+                  onVisibilityModeChange={(mode) => {
+                    setVisibilityMode(mode);
+                    syncVisibilityToSettings(mode, restrictedScope);
                   }}
-                  className="h-4 w-4 accent-pink-600"
+                  restrictedScope={restrictedScope}
+                  onRestrictedScopeChange={(scope) => {
+                    setRestrictedScope(scope);
+                    syncVisibilityToSettings(visibilityMode, scope);
+                  }}
+                  scopeIds={[]}
+                  onScopeIdsChange={() => undefined}
+                  scopeSearch=""
+                  onScopeSearchChange={() => undefined}
+                  departments={departments}
+                  grades={grades}
+                  employees={employees}
                 />
-                <span className="min-w-0">
-                  <span className="block truncate font-semibold text-slate-700">
-                    {person.name}
-                  </span>
-                  {person.email && (
-                    <span className="block truncate text-xs text-slate-400">
-                      {person.email}
-                    </span>
-                  )}
-                </span>
-              </label>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-slate-500">
-            {delegateIds.length} user(s) selected. Document and platform administrators always keep
-            access even if unchecked here.
-          </p>
-        </div>
-      </div>
+                {visibilityMode === "restricted" ? (
+                  <p className="text-xs text-amber-700">
+                    Restricted defaults that need departments, grades, or employees still require a
+                    selection when the folder is created.
+                  </p>
+                ) : null}
+              </div>
+            </SettingRow>
+          </section>
+        ) : null}
 
-      <div>
-        <h2 className="text-base font-semibold text-slate-900">Organisational approval workflow</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          SLA, reminders, escalation, and temporary delegation for gated folder and document
-          actions (F43).
-        </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm">
-            <span className="font-semibold">SLA (hours)</span>
-            <input
-              type="number"
-              min={1}
-              className="field mt-1"
-              value={values.org_approval_sla_hours ?? 48}
-              onChange={(event) =>
-                onChange({ org_approval_sla_hours: Number(event.target.value) || 48 })
-              }
+        {tab === "company_owned" ? (
+          <section className="px-6 pt-5 pb-2">
+            <SectionHeading
+              title="Company-owned access"
+              description="Users who can see folders and files marked company owned, in addition to the uploader and administrators. Document and platform administrators always retain access."
             />
-          </label>
-          <label className="block text-sm">
-            <span className="font-semibold">Reminder before due (hours)</span>
-            <input
-              type="number"
-              min={0}
-              className="field mt-1"
-              value={values.org_approval_reminder_hours_before_sla ?? 6}
-              onChange={(event) =>
-                onChange({
-                  org_approval_reminder_hours_before_sla: Number(event.target.value) || 0,
-                })
-              }
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="font-semibold">Escalation approver</span>
-            <select
-              className="field mt-1"
-              value={values.org_approval_escalation_user_id || ""}
-              onChange={(event) =>
-                onChange({
-                  org_approval_escalation_user_id: event.target.value
-                    ? Number(event.target.value)
-                    : false,
-                })
-              }
+            <SettingRow label="Search users" help="Filter the list of eligible approvers and admins.">
+              <input
+                value={delegateSearch}
+                onChange={(event) => setDelegateSearch(event.target.value)}
+                placeholder="Search by name or email…"
+                className="field max-w-md"
+              />
+            </SettingRow>
+            <SettingRow
+              label="Delegates"
+              help="Selected users can access company-owned organisational content."
+              top
             >
-              <option value="">Default (error escalation user)</option>
-              {delegateOptions.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span className="font-semibold">Delegate approver</span>
-            <select
-              className="field mt-1"
-              value={values.org_approval_delegate_user_id || ""}
-              onChange={(event) =>
-                onChange({
-                  org_approval_delegate_user_id: event.target.value
-                    ? Number(event.target.value)
-                    : false,
-                })
-              }
-            >
-              <option value="">None</option>
-              {delegateOptions.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm sm:col-span-2">
-            <span className="font-semibold">Delegate until (optional)</span>
-            <input
-              type="datetime-local"
-              className="field mt-1"
-              value={
-                values.org_approval_delegate_until
-                  ? String(values.org_approval_delegate_until).slice(0, 16)
-                  : ""
-              }
-              onChange={(event) =>
-                onChange({
-                  org_approval_delegate_until: event.target.value
-                    ? new Date(event.target.value).toISOString()
-                    : false,
-                })
-              }
-            />
-          </label>
-        </div>
-      </div>
+              <div className="space-y-3">
+                <div className="grid max-h-56 gap-2 overflow-y-auto sm:grid-cols-2">
+                  {filteredDelegates.map((person) => (
+                    <label
+                      key={person.id}
+                      className="flex items-center gap-2 rounded-lg border border-[var(--rule)] bg-white px-3 py-2 text-sm hover:bg-pink-50/50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={delegateIds.includes(person.id)}
+                        onChange={() => {
+                          const next = delegateIds.includes(person.id)
+                            ? delegateIds.filter((id) => id !== person.id)
+                            : [...delegateIds, person.id];
+                          setDelegateIds(next);
+                          onChange({ org_company_owned_user_ids: next });
+                        }}
+                        className="h-4 w-4 accent-pink-600"
+                      />
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-slate-800">
+                          {person.name}
+                        </span>
+                        {person.email ? (
+                          <span className="block truncate text-xs text-slate-400">
+                            {person.email}
+                          </span>
+                        ) : null}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-500">{delegateIds.length} user(s) selected.</p>
+              </div>
+            </SettingRow>
+          </section>
+        ) : null}
 
-      <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-slate-400">Applies to this company only.</p>
-        <button
-          type="button"
-          onClick={() => {
-            if (!delegateIds.length) {
-              showToast("Select at least one delegate for company-owned access.", "error");
-              return;
-            }
-            onSave();
-          }}
-          disabled={saving}
-          className="inline-flex items-center justify-center gap-2 !rounded-xl bg-gradient-to-r from-brand-text to-brand-pink px-5 py-3 text-sm font-bold text-white shadow-[0_8px_18px_rgba(232,62,140,0.18)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Save className="h-4 w-4" />
-          {saving ? "Saving…" : "Save changes"}
-        </button>
-      </div>
-    </section>
+        {tab === "approvals" ? (
+          <section className="px-6 pt-5 pb-2">
+            <SectionHeading
+              title="Approval workflow"
+              description="SLA, reminders, escalation, and temporary delegation for gated folder and document actions."
+            />
+            <SettingRow
+              label="SLA"
+              help="Hours before a pending organisational approval is considered overdue."
+            >
+              <HoursInput
+                value={values.org_approval_sla_hours ?? 48}
+                min={1}
+                onChange={(hours) =>
+                  onChange({ org_approval_sla_hours: hours > 0 ? hours : 48 })
+                }
+              />
+            </SettingRow>
+            <SettingRow
+              label="Reminder"
+              help="Send a reminder this many hours before the SLA due time."
+            >
+              <HoursInput
+                value={values.org_approval_reminder_hours_before_sla ?? 6}
+                onChange={(hours) =>
+                  onChange({
+                    org_approval_reminder_hours_before_sla: Math.max(0, hours),
+                  })
+                }
+              />
+            </SettingRow>
+            <SettingRow
+              label="Escalation"
+              help="User notified when SLA is breached. Leave default to use the platform error escalation contact."
+            >
+              <ThemedSelect
+                className="field max-w-md"
+                ariaLabel="Escalation approver"
+                value={
+                  values.org_approval_escalation_user_id
+                    ? String(values.org_approval_escalation_user_id)
+                    : "__unset__"
+                }
+                onChange={(next) =>
+                  onChange({
+                    org_approval_escalation_user_id:
+                      next && next !== "__unset__" ? Number(next) : false,
+                  })
+                }
+                options={[
+                  { value: "__unset__", label: "Default (error escalation user)" },
+                  ...approverSelectOptions,
+                ]}
+              />
+            </SettingRow>
+            <SettingRow
+              label="Delegate"
+              help="Temporarily route approvals to another user (optional)."
+            >
+              <ThemedSelect
+                className="field max-w-md"
+                ariaLabel="Delegate approver"
+                value={
+                  values.org_approval_delegate_user_id
+                    ? String(values.org_approval_delegate_user_id)
+                    : "__unset__"
+                }
+                onChange={(next) =>
+                  onChange({
+                    org_approval_delegate_user_id:
+                      next && next !== "__unset__" ? Number(next) : false,
+                  })
+                }
+                options={[{ value: "__unset__", label: "None" }, ...approverSelectOptions]}
+              />
+            </SettingRow>
+            <SettingRow
+              label="Delegate until"
+              help="Delegation ends automatically after this date and time."
+            >
+              <input
+                type="datetime-local"
+                className="field max-w-md"
+                value={
+                  values.org_approval_delegate_until
+                    ? String(values.org_approval_delegate_until).slice(0, 16)
+                    : ""
+                }
+                onChange={(event) =>
+                  onChange({
+                    org_approval_delegate_until: event.target.value
+                      ? new Date(event.target.value).toISOString()
+                      : false,
+                  })
+                }
+              />
+            </SettingRow>
+          </section>
+        ) : null}
+
+        <div className="flex flex-col gap-2 border-t border-[var(--rule)] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-slate-500">Applies to this company only.</p>
+          <button type="submit" disabled={saving} className="app-btn app-btn-primary">
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

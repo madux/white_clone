@@ -3,10 +3,46 @@ from dateutil.relativedelta import relativedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
 
+MATERIAL_POLICY_FIELDS = frozenset(
+    {
+        "document_type_ids",
+        "minimum_documents",
+        "grace_period_days",
+        "due_days",
+        "no_document_due_days",
+        "applies_to",
+        "department_ids",
+        "grade_ids",
+        "employee_ids",
+        "work_location_ids",
+        "employment_type_ids",
+        "branch_ids",
+        "event_trigger",
+        "retention_action_mode",
+        "retention_owner_notice_days",
+        "verified_by",
+        "verification_sla_days",
+    }
+)
+
 
 class CompliancePolicyType(models.Model):
     _name = "doc.compliance.policy.type"
     _description = "Compliance Policy Type"
+
+    def _register_hook(self):
+        super()._register_hook()
+        retention = self.env.ref(
+            "cleon_document_management.policy_type_retention",
+            raise_if_not_found=False,
+        )
+        if retention and retention.code == "retention" and retention.name != "Retention":
+            retention.sudo().write(
+                {
+                    "name": "Retention",
+                    "description": "Ensure employee documents follow organisation retention settings.",
+                }
+            )
 
     name = fields.Char(required=True)
     code = fields.Selection(
@@ -15,6 +51,7 @@ class CompliancePolicyType(models.Model):
             ("renewable_document", "Renewable Document"),
             ("compliance_request", "Compliance Request"),
             ("retention", "Retention"),
+            ("review_schedule", "Review Schedule"),
         ],
         required=True,
     )
@@ -57,12 +94,13 @@ class CompliancePolicy(models.Model):
     applies_to = fields.Selection(
         [
             ("all", "All Employees"),
+            ("filtered", "Filtered audience"),
             ("department", "Departments"),
             ("grade", "Grades"),
             ("employee", "Employees"),
         ],
         required=True,
-        default="department",
+        default="all",
     )
     department_ids = fields.Many2many(
         "hr.department",
@@ -84,6 +122,27 @@ class CompliancePolicy(models.Model):
         "policy_id",
         "employee_id",
         string="Employees",
+    )
+    work_location_ids = fields.Many2many(
+        "hr.work.location",
+        "doc_compliance_policy_work_location_rel",
+        "policy_id",
+        "work_location_id",
+        string="Work locations",
+    )
+    employment_type_ids = fields.Many2many(
+        "hr.core_employment_type",
+        "doc_compliance_policy_employment_type_rel",
+        "policy_id",
+        "employment_type_id",
+        string="Employment types",
+    )
+    branch_ids = fields.Many2many(
+        "multi.branch",
+        "doc_compliance_policy_branch_rel",
+        "policy_id",
+        "branch_id",
+        string="Business units",
     )
     requirement_ids = fields.One2many(
         "doc.compliance.requirement",
@@ -107,7 +166,9 @@ class CompliancePolicy(models.Model):
     lifecycle_status = fields.Selection(
         [
             ("draft", "Draft"),
+            ("scheduled", "Scheduled"),
             ("active", "Active"),
+            ("inactive", "Inactive"),
             ("archived", "Archived"),
         ],
         default="active",
@@ -232,26 +293,74 @@ class CompliancePolicy(models.Model):
             if policy.schedule == "custom" and policy.custom_schedule_days < 1:
                 raise ValidationError(_("A custom schedule must be at least 1 day."))
 
-    @api.constrains("document_type_ids")
+    @api.constrains("document_type_ids", "policy_type_id")
     def _check_document_types(self):
         for policy in self:
+            if (
+                policy.policy_type_id
+                and policy.policy_type_id.code == "compliance_request"
+            ):
+                continue
             if not policy.document_type_ids:
                 raise ValidationError(_("Select at least one required document type."))
+            if policy.policy_type_id.code == "renewable_document":
+                invalid = policy.document_type_ids.filtered(
+                    lambda doc_type: not doc_type.expiry_applicable
+                )
+                if invalid:
+                    raise ValidationError(
+                        _(
+                            "Renewable document rules only support document types "
+                            "with expiry enabled (%s)."
+                        )
+                        % ", ".join(invalid.mapped("name"))
+                    )
 
-    @api.constrains("applies_to", "department_ids", "grade_ids", "employee_ids")
+    def _has_scope_filters(self):
+        self.ensure_one()
+        return bool(
+            self.department_ids
+            or self.grade_ids
+            or self.employee_ids
+            or self.work_location_ids
+            or self.employment_type_ids
+            or self.branch_ids
+        )
+
+    @api.model
+    def _employee_work_location(self, employee):
+        location = getattr(employee, "work_location_id", False)
+        if location:
+            return location
+        return getattr(employee, "location_id", False)
+
+    @api.constrains(
+        "applies_to",
+        "department_ids",
+        "grade_ids",
+        "employee_ids",
+        "work_location_ids",
+        "employment_type_ids",
+        "branch_ids",
+    )
     def _check_scope(self):
         for policy in self:
-            if policy.applies_to == "all":
+            if policy.applies_to == "all" and not policy._has_scope_filters():
                 continue
-            scoped = {
-                "department": policy.department_ids,
-                "grade": policy.grade_ids,
-                "employee": policy.employee_ids,
-            }
-            if not scoped.get(policy.applies_to):
+            if policy.applies_to == "filtered" and not policy._has_scope_filters():
                 raise ValidationError(
-                    _("Select at least one target for the chosen policy scope.")
+                    _("Select at least one audience filter or choose all employees.")
                 )
+            if policy.applies_to in ("department", "grade", "employee"):
+                scoped = {
+                    "department": policy.department_ids,
+                    "grade": policy.grade_ids,
+                    "employee": policy.employee_ids,
+                }
+                if not scoped.get(policy.applies_to):
+                    raise ValidationError(
+                        _("Select at least one target for the chosen policy scope.")
+                    )
 
     def _is_document_admin(self):
         return (
@@ -300,6 +409,8 @@ class CompliancePolicy(models.Model):
         policies = super().create(prepared)
         Requirement = self.env["doc.compliance.requirement"]
         for policy in policies:
+            if hasattr(policy, "_is_retention_policy") and policy._is_retention_policy():
+                continue
             policy.auto_requirement_id = Requirement.create(
                 {
                     "name": policy.name,
@@ -314,6 +425,7 @@ class CompliancePolicy(models.Model):
             lambda policy: policy.active and policy.lifecycle_status != "draft"
         )
         if ready:
+            ready._ensure_current_version()
             ready.action_evaluate(run_type="automatic")
         return policies
 
@@ -325,9 +437,17 @@ class CompliancePolicy(models.Model):
             vals["lifecycle_status"] = "active"
         if "active" in vals:
             if vals.get("active"):
-                vals["lifecycle_status"] = "active"
+                if not vals.get("lifecycle_status"):
+                    vals["lifecycle_status"] = "active"
             elif any(policy.lifecycle_status == "draft" for policy in self):
                 vals["lifecycle_status"] = "active"
+        material = MATERIAL_POLICY_FIELDS.intersection(vals.keys())
+        for policy in self:
+            if material and policy.active and policy.lifecycle_status == "active":
+                policy._create_new_version()
+        if vals.get("active") and vals.get("lifecycle_status") in (False, "active"):
+            for policy in self:
+                policy._validate_document_types_for_activation()
         result = super().write(vals)
         if {"schedule", "custom_schedule_days", "effective_date"}.intersection(vals):
             self.action_set_next_run()
@@ -400,26 +520,76 @@ class CompliancePolicy(models.Model):
 
     def _applies_to_employee(self, employee):
         self.ensure_one()
-        if self.applies_to == "all":
-            return True
-        if self.applies_to == "department":
-            return employee.department_id in self.department_ids
-        if self.applies_to == "grade":
-            return employee.grade_id in self.grade_ids
-        return employee in self.employee_ids
+        if not self._has_scope_filters():
+            return self.applies_to in (False, "all")
+        if self.department_ids and employee.department_id not in self.department_ids:
+            return False
+        if self.grade_ids and employee.grade_id not in self.grade_ids:
+            return False
+        location = self._employee_work_location(employee)
+        if self.work_location_ids and (
+            not location or location not in self.work_location_ids
+        ):
+            return False
+        employment_type = getattr(employee, "employee_type_id", False)
+        if self.employment_type_ids and (
+            not employment_type or employment_type not in self.employment_type_ids
+        ):
+            return False
+        branch = getattr(employee, "branch_id", False)
+        if self.branch_ids and (not branch or branch not in self.branch_ids):
+            return False
+        if self.employee_ids and employee not in self.employee_ids:
+            return False
+        return True
 
     def _target_employees(self):
         Employee = self.env["hr.employee"]
-        if self.applies_to == "all":
-            return Employee.search([])
-        if self.applies_to == "department":
-            return Employee.search([("department_id", "in", self.department_ids.ids)])
-        if self.applies_to == "grade":
-            return Employee.search([("grade_id", "in", self.grade_ids.ids)])
-        return self.employee_ids
+        if not self._has_scope_filters():
+            if self.applies_to == "all":
+                return Employee.search([("active", "=", True)])
+            if self.applies_to == "department":
+                return Employee.search(
+                    [
+                        ("active", "=", True),
+                        ("department_id", "in", self.department_ids.ids),
+                    ]
+                )
+            if self.applies_to == "grade":
+                return Employee.search(
+                    [
+                        ("active", "=", True),
+                        ("grade_id", "in", self.grade_ids.ids),
+                    ]
+                )
+            if self.applies_to == "employee":
+                return self.employee_ids.filtered("active")
+            return Employee.search([("active", "=", True)])
+        domain = [("active", "=", True)]
+        if self.department_ids:
+            domain.append(("department_id", "in", self.department_ids.ids))
+        if self.grade_ids:
+            domain.append(("grade_id", "in", self.grade_ids.ids))
+        if self.work_location_ids:
+            domain.append(
+                "|",
+                ("work_location_id", "in", self.work_location_ids.ids),
+                ("location_id", "in", self.work_location_ids.ids),
+            )
+        if self.employment_type_ids:
+            domain.append(("employee_type_id", "in", self.employment_type_ids.ids))
+        if self.branch_ids:
+            domain.append(("branch_id", "in", self.branch_ids.ids))
+        if self.employee_ids:
+            domain.append(("id", "in", self.employee_ids.ids))
+        return Employee.search(domain)
 
     def evaluate_employee(self, employee):
         self.ensure_one()
+        if self._is_compliance_request():
+            return self.evaluate_compliance_request_employee(employee)
+        if hasattr(self, "_is_retention_policy") and self._is_retention_policy():
+            return self.env["doc.compliance.evaluation"]
         today = fields.Date.context_today(self)
         if (
             not self.active
@@ -446,49 +616,39 @@ class CompliancePolicy(models.Model):
             limit=1,
         )
 
+        Engine = self.env["doc.compliance.engine"]
         for requirement in self.requirement_ids.filtered("active"):
-            # Each selected document type is an independent requirement. This
-            # prevents one document type from satisfying another type in the
-            # same policy.
             for document_type in requirement.document_type_ids:
-                matching_documents = self.env["doc.document"].sudo().search(
-                    [
-                        ("employee_id", "=", employee.id),
-                        ("document_type_id", "=", document_type.id),
-                        ("active", "=", True),
-                        ("state", "in", ["approved", "signed"]),
-                        "|",
-                        ("has_expiry", "=", False),
-                        ("expiry_date", ">=", today),
-                    ]
+                payload = Engine.evaluate_document_type_line(
+                    self,
+                    employee,
+                    document_type,
+                    requirement,
+                    exception,
+                    today=today,
                 )
-                required = requirement.minimum_documents
-                count = len(matching_documents)
-                if exception:
-                    status = "excepted"
-                elif count >= required:
-                    status = "complete"
-                elif requirement.grace_period_days:
-                    reference_date = self.effective_date or today
-                    if employee.create_date:
-                        employee_start = fields.Date.to_date(employee.create_date)
-                        if employee_start and employee_start > reference_date:
-                            reference_date = employee_start
-                    grace_end = reference_date + relativedelta(
-                        days=requirement.grace_period_days
-                    )
-                    status = "grace" if today <= grace_end else "missing"
-                else:
-                    status = "missing"
+                self._sync_assignments_for_employee(
+                    employee, payload, requirement, document_type
+                )
+                for document in self.env["doc.document"].browse(payload["document_ids"]):
+                    if document.exists():
+                        self._maybe_queue_verification(employee, document)
                 line_commands.append(
                     fields.Command.create(
                         {
                             "requirement_id": requirement.id,
                             "document_type_id": document_type.id,
-                            "document_ids": [fields.Command.set(matching_documents.ids)],
-                            "required_count": required,
-                            "matched_count": count,
-                            "status": status,
+                            "document_ids": [
+                                fields.Command.set(payload["document_ids"])
+                            ],
+                            "required_count": payload["required_count"],
+                            "matched_count": payload["matched_count"],
+                            "status": payload["status"],
+                            "compliance_status": payload["compliance_status"],
+                            "reason_code": payload["reason_code"],
+                            "reason_message": payload["reason_message"],
+                            "due_date": payload.get("due_date"),
+                            "grace_end_date": payload.get("grace_end_date"),
                         }
                     )
                 )
@@ -514,10 +674,32 @@ class CompliancePolicy(models.Model):
         runs = self.env["doc.compliance.evaluation.run"].sudo()
         Requirement = self.env["doc.compliance.requirement"].sudo()
         for policy in self:
+            if hasattr(policy, "_is_retention_policy") and policy._is_retention_policy():
+                self.env["doc.compliance.retention.engine"].sudo().run_policy(policy)
+                continue
+            if policy.run_in_progress:
+                raise ValidationError(
+                    _("A run is already in progress for policy %s.") % policy.name
+                )
             today = fields.Date.context_today(policy)
+            if policy.lifecycle_status == "scheduled" and policy.effective_date and policy.effective_date > today:
+                continue
             if not policy.active or (policy.effective_date and policy.effective_date > today):
                 continue
-            if not policy.requirement_ids:
+            policy.write(
+                {
+                    "run_in_progress": True,
+                    "run_started_at": fields.Datetime.now(),
+                }
+            )
+            if (
+                not policy.requirement_ids
+                and not policy._is_compliance_request()
+                and not (
+                    hasattr(policy, "_is_retention_policy")
+                    and policy._is_retention_policy()
+                )
+            ):
                 policy.auto_requirement_id = Requirement.create(
                     {
                         "name": policy.name,
@@ -551,10 +733,48 @@ class CompliancePolicy(models.Model):
                 "non_compliant_count": len(evaluations.filtered(lambda item: item.status == "non_compliant")),
                 "excepted_count": len(evaluations.filtered(lambda item: item.status == "excepted")),
             })
-            policy.write({"last_run_at": run.evaluated_at})
+            policy.write(
+                {
+                    "last_run_at": run.evaluated_at,
+                    "run_in_progress": False,
+                    "run_started_at": False,
+                }
+            )
             policy.action_set_next_run()
+            self.env["doc.compliance.audit.log"].log_event(
+                "run_complete",
+                _("Run completed for %s") % policy.name,
+                policy=policy,
+                run=run,
+            )
             runs |= run
         return runs
+
+    def action_run_preflight(self):
+        """Return Applicable, Exempt, and To evaluate counts for Run Check confirmation."""
+        self.ensure_one()
+        today = fields.Date.context_today(self)
+        if not self.active or (self.effective_date and self.effective_date > today):
+            return {"applicable": 0, "exempt": 0, "to_evaluate": 0}
+        targets = self._target_employees()
+        exempt = 0
+        for employee in targets:
+            if self.env["doc.compliance.exception"].sudo().search_count(
+                [
+                    ("policy_id", "=", self.id),
+                    ("employee_id", "=", employee.id),
+                    ("status", "=", "approved"),
+                    ("active", "=", True),
+                    ("valid_until", ">=", today),
+                ]
+            ):
+                exempt += 1
+        applicable = len(targets)
+        return {
+            "applicable": applicable,
+            "exempt": exempt,
+            "to_evaluate": max(applicable - exempt, 0),
+        }
 
     @api.model
     def _cron_evaluate_policies(self):
@@ -640,6 +860,19 @@ class ComplianceEvaluation(models.Model):
         compute="_compute_results",
         store=True,
     )
+    compliance_status = fields.Selection(
+        [
+            ("compliant", "Compliant"),
+            ("at_risk", "At Risk"),
+            ("pending", "Pending"),
+            ("non_compliant", "Non-compliant"),
+            ("exempt", "Exempt"),
+        ],
+        compute="_compute_results",
+        store=True,
+    )
+    reason_code = fields.Char(compute="_compute_results", store=True)
+    reason_message = fields.Char(compute="_compute_results", store=True)
     complete_count = fields.Integer(compute="_compute_results", store=True)
     missing_count = fields.Integer(compute="_compute_results", store=True)
     grace_count = fields.Integer(compute="_compute_results", store=True)
@@ -652,31 +885,60 @@ class ComplianceEvaluation(models.Model):
         )
     ]
 
-    @api.depends("line_ids.status", "line_ids.required_count", "line_ids.matched_count")
+    @api.depends(
+        "line_ids.status",
+        "line_ids.compliance_status",
+        "line_ids.required_count",
+        "line_ids.matched_count",
+        "exception_id",
+    )
     def _compute_results(self):
+        Engine = self.env["doc.compliance.engine"]
         for evaluation in self:
             lines = evaluation.line_ids
-            complete = len(
-                lines.filtered(lambda line: line.status in ("complete", "excepted"))
+            payloads = [
+                {
+                    "compliance_status": line.compliance_status or "at_risk",
+                }
+                for line in lines
+            ]
+            legacy, comp, code, msg = Engine.aggregate_evaluation_status(
+                payloads, evaluation.exception_id
             )
-            missing = len(lines.filtered(lambda line: line.status == "missing"))
-            grace = len(lines.filtered(lambda line: line.status == "grace"))
+            complete = len(
+                lines.filtered(
+                    lambda line: line.compliance_status in ("compliant", "exempt")
+                    or line.status in ("complete", "excepted")
+                )
+            )
+            missing = len(
+                lines.filtered(
+                    lambda line: line.compliance_status == "non_compliant"
+                    or line.status == "missing"
+                )
+            )
+            grace = len(
+                lines.filtered(
+                    lambda line: line.compliance_status == "at_risk"
+                    or line.status in ("grace", "pending")
+                )
+            )
             score = (complete / len(lines) * 100) if lines else 0.0
             evaluation.complete_count = complete
             evaluation.missing_count = missing
             evaluation.grace_count = grace
             evaluation.score = score
-            evaluation.status = (
-                "excepted"
-                if evaluation.exception_id and lines and complete == len(lines)
-                else (
-                    "compliant"
-                    if lines and complete == len(lines)
-                    else "non_compliant"
-                    if missing == len(lines)
-                    else "partial"
-                )
-            )
+            evaluation.compliance_status = comp
+            evaluation.reason_code = code
+            evaluation.reason_message = msg
+            if comp == "exempt":
+                evaluation.status = "excepted"
+            elif comp == "compliant":
+                evaluation.status = "compliant"
+            elif comp == "non_compliant":
+                evaluation.status = "non_compliant"
+            else:
+                evaluation.status = legacy if legacy in ("partial", "non_compliant") else "partial"
 
 
 class ComplianceEvaluationRun(models.Model):
@@ -833,9 +1095,23 @@ class ComplianceEvaluationRunResultLine(models.Model):
             ("grace", "Grace Period"),
             ("missing", "Missing"),
             ("excepted", "Excepted"),
+            ("pending", "Pending"),
         ],
         required=True,
     )
+    compliance_status = fields.Selection(
+        [
+            ("compliant", "Compliant"),
+            ("at_risk", "At Risk"),
+            ("pending", "Pending"),
+            ("non_compliant", "Non-compliant"),
+            ("exempt", "Exempt"),
+        ],
+    )
+    reason_code = fields.Char()
+    reason_message = fields.Char()
+    due_date = fields.Date()
+    grace_end_date = fields.Date()
 
 
 class ComplianceEvaluationLine(models.Model):
@@ -864,9 +1140,23 @@ class ComplianceEvaluationLine(models.Model):
             ("grace", "Grace Period"),
             ("missing", "Missing"),
             ("excepted", "Excepted"),
+            ("pending", "Pending"),
         ],
         required=True,
     )
+    compliance_status = fields.Selection(
+        [
+            ("compliant", "Compliant"),
+            ("at_risk", "At Risk"),
+            ("pending", "Pending"),
+            ("non_compliant", "Non-compliant"),
+            ("exempt", "Exempt"),
+        ],
+    )
+    reason_code = fields.Char()
+    reason_message = fields.Char()
+    due_date = fields.Date()
+    grace_end_date = fields.Date()
 
 
 class ComplianceException(models.Model):
@@ -890,8 +1180,13 @@ class ComplianceException(models.Model):
         default="draft",
         required=True,
     )
+    requester_id = fields.Many2one("res.users", readonly=True)
     approved_by = fields.Many2one("res.users", readonly=True)
     approved_at = fields.Datetime(readonly=True)
+    revoked_by = fields.Many2one("res.users", readonly=True)
+    revoked_at = fields.Datetime(readonly=True)
+    revoke_reason = fields.Text()
+    requirement_id = fields.Many2one("doc.compliance.requirement", ondelete="set null")
     active = fields.Boolean(default=True)
 
     _sql_constraints = [
@@ -934,6 +1229,8 @@ class ComplianceException(models.Model):
                 raise ValidationError(
                     _("This policy does not allow waiver or exemption requests.")
                 )
+            if "requester_id" not in vals:
+                vals["requester_id"] = self.env.user.id
         return super().create(vals_list)
 
     def write(self, vals):
@@ -957,9 +1254,19 @@ class ComplianceException(models.Model):
         self.unlink()
 
     def action_approve(self):
+        dms = self.env["doc.dms.permission"]
+        if not dms.user_has_dms_permission(
+            self.env.user, "compliance_approve_exception"
+        ) and not dms.user_is_super_admin(self.env.user):
+            if not self.env.user.has_group(
+                "cleon_document_management.group_document_manager"
+            ):
+                raise AccessError(_("You cannot approve compliance exceptions."))
         if any(not record.active or record.status != "draft" for record in self):
             raise ValidationError(_("Only active draft exceptions can be approved."))
         for record in self:
+            if record.requester_id == self.env.user:
+                raise ValidationError(_("You cannot approve an exception you requested."))
             if not record.policy_id.allow_waiver:
                 raise ValidationError(
                     _("This policy does not allow waiver or exemption requests.")
@@ -975,9 +1282,43 @@ class ComplianceException(models.Model):
             record.policy_id.evaluate_employee(record.employee_id)
 
     def action_reject(self):
+        dms = self.env["doc.dms.permission"]
+        if not dms.user_has_dms_permission(
+            self.env.user, "compliance_approve_exception"
+        ) and not dms.user_is_super_admin(self.env.user):
+            if not self.env.user.has_group(
+                "cleon_document_management.group_document_manager"
+            ):
+                raise AccessError(_("You cannot reject compliance exceptions."))
         if any(not record.active or record.status != "draft" for record in self):
             raise ValidationError(_("Only active draft exceptions can be rejected."))
+        for record in self:
+            if record.requester_id == self.env.user:
+                raise ValidationError(_("You cannot reject an exception you requested."))
         self.write({"status": "rejected"})
+        for record in self:
+            record.policy_id.evaluate_employee(record.employee_id)
+
+    def action_revoke(self, reason):
+        dms = self.env["doc.dms.permission"]
+        if not dms.user_has_dms_permission(
+            self.env.user, "compliance_revoke_exception"
+        ) and not dms.user_is_super_admin(self.env.user):
+            raise AccessError(_("You cannot revoke compliance exceptions."))
+        if not reason:
+            raise ValidationError(_("A revoke reason is required."))
+        for record in self:
+            if record.status != "approved":
+                raise ValidationError(_("Only approved exceptions can be revoked."))
+        self.write(
+            {
+                "status": "rejected",
+                "active": False,
+                "revoked_by": self.env.user.id,
+                "revoked_at": fields.Datetime.now(),
+                "revoke_reason": reason,
+            }
+        )
         for record in self:
             record.policy_id.evaluate_employee(record.employee_id)
 

@@ -114,6 +114,11 @@ const employeeArea: DmsPermissionArea = {
           label: "Export",
           description: "Bulk export employee file packages.",
         },
+        {
+          key: "ef_automate",
+          label: "Automate documents",
+          description: "Configure lifecycle automation rules (expiry, notifications).",
+        },
       ],
     },
     {
@@ -163,7 +168,7 @@ function orgFallbackDescription(key: string): string {
     view_hr_only_policies: "View policies marked HR-only.",
     acknowledge_sign_assigned_policy: "Complete assigned policy acknowledgements.",
     approve_reject_requests: "Act on organisational change requests.",
-    automate: "Configure folder automation rules.",
+    automate: "Configure lifecycle automation rules (expiry, notifications).",
     view_audit_activity: "View audit and activity history.",
   };
   return map[key] || "";
@@ -206,6 +211,31 @@ const complianceArea: DmsPermissionArea = {
           key: "compliance_manage_exceptions",
           label: "Exceptions and waivers",
           description: "Record exemptions and override waiver restrictions where permitted.",
+        },
+        {
+          key: "compliance_request_exception",
+          label: "Request exceptions",
+          description: "Submit exception requests for self or direct reports.",
+        },
+        {
+          key: "compliance_approve_exception",
+          label: "Approve or reject exceptions",
+          description: "Decide exception requests (cannot approve own request).",
+        },
+        {
+          key: "compliance_revoke_exception",
+          label: "Revoke exceptions",
+          description: "Revoke approved exceptions with a recorded reason.",
+        },
+        {
+          key: "compliance_verify_routed",
+          label: "Verify routed documents",
+          description: "Work items routed as verifier for compliance.",
+        },
+        {
+          key: "compliance_complete_review",
+          label: "Complete reviews",
+          description: "Complete review schedule tasks assigned to the user.",
         },
       ],
     },

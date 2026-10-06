@@ -118,7 +118,9 @@ class HrEmployee(models.Model):
                 service.reconcile_employee_from_ems(employee)
             else:
                 self.env["doc.folder"].link_employee_to_department_folder(employee)
-        self.env["doc.compliance.policy"]._trigger_lifecycle_event(employees, "onboarding")
+        self.env["doc.compliance.policy"].trigger_compliance_request_for_employees(
+            employees, "employee_start"
+        )
         return employees
 
     def write(self, vals):
@@ -143,12 +145,9 @@ class HrEmployee(models.Model):
         elif "department_id" in vals:
             for employee in self:
                 self.env["doc.folder"].link_employee_to_department_folder(employee)
-        if "department_id" in vals:
-            self.env["doc.compliance.policy"]._trigger_lifecycle_event(self, "department_transfer")
-        if "job_id" in vals:
-            self.env["doc.compliance.policy"]._trigger_lifecycle_event(self, "promotion")
-        if "address_id" in vals or "work_location_id" in vals:
-            self.env["doc.compliance.policy"]._trigger_lifecycle_event(self, "location_change")
-        if "marital" in vals:
-            self.env["doc.compliance.policy"]._trigger_lifecycle_event(self, "marital_status_change")
+        people_keys = {"department_id", "job_id", "work_location_id", "address_id"}
+        if people_keys & set(vals.keys()):
+            self.env["doc.compliance.policy"].trigger_compliance_request_for_employees(
+                self, "people_change"
+            )
         return result

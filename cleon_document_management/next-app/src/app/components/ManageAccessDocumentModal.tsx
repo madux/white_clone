@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ModalDialog from "./ModalDialog";
+import FormWindowShell from "./FormWindowShell";
 import { useCurrentUser } from "../../../hooks/useDocuments";
 import { canExternalShareOrg } from "../../../lib/organizationalFilesAccess";
 import OrganizationalAccessScopeFields, {
@@ -94,14 +94,28 @@ export default function ManageAccessDocumentModal({
   };
 
   return (
-    <ModalDialog
+    <FormWindowShell
       title="Manage document access"
       eyebrow={documentName}
       onClose={onClose}
-      size="lg"
       zIndex={110}
+      footer={
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="secondary-button">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="manage-org-document-access"
+            disabled={saving}
+            className="primary-button"
+          >
+            Save
+          </button>
+        </div>
+      }
     >
-      <form onSubmit={save} className="grid gap-4">
+      <form id="manage-org-document-access" onSubmit={save} className="grid gap-4 p-1">
         <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
           <input
             type="checkbox"
@@ -141,15 +155,7 @@ export default function ManageAccessDocumentModal({
             hideAdminOnly
           />
         ) : null}
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="secondary-button">
-            Cancel
-          </button>
-          <button type="submit" disabled={saving} className="primary-button">
-            Save
-          </button>
-        </div>
       </form>
-    </ModalDialog>
+    </FormWindowShell>
   );
 }

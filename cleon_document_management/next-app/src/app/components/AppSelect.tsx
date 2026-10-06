@@ -51,7 +51,10 @@ export default function AppSelect({
       disabled={disabled}
     >
       <SelectTrigger
-        className={cn("w-full min-w-0", className)}
+        className={cn(
+          "!w-full max-w-full min-w-0 whitespace-normal [&_[data-slot=select-value]]:truncate",
+          className,
+        )}
         aria-label={ariaLabel}
       >
         <SelectValue />

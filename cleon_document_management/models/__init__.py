@@ -3,6 +3,9 @@ from . import hr_document_folder
 from . import hr_document
 from . import hr_document_policy_retention
 from . import compliance_registration
+from . import compliance_engine
+from . import compliance_versioning
+from . import compliance_work_items
 from . import compliance_notify
 from . import compliance_policy_execution
 from . import document_approval
@@ -54,4 +57,10 @@ from . import organizational_openrouter
 from . import folder_lock_audit
 from . import organizational_library
 from . import organizational_policy
+from . import compliance_request
+from . import compliance_request_content
+from . import compliance_request_engine
+from . import compliance_request_evaluation
+from . import compliance_retention
+from . import compliance_retention_engine
 from . import organizational_cloud_oauth

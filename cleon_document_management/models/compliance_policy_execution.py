@@ -346,7 +346,7 @@ class CompliancePolicyExecution(models.Model):
 
     def _run_retention_audit(self):
         self.ensure_one()
-        if self._policy_type_code() != "retention":
+        if self._policy_type_code() != "review_schedule":
             return self.env["doc.compliance.evaluation.run"]
         employees = self._target_employees()
         if not employees:
@@ -398,7 +398,7 @@ class CompliancePolicyExecution(models.Model):
         now = fields.Datetime.now()
         policies = self.search([
             ("active", "=", True),
-            ("policy_type_id.code", "=", "retention"),
+            ("policy_type_id.code", "=", "review_schedule"),
         ])
         for policy in policies:
             delta = policy._audit_frequency_delta()
@@ -407,3 +407,22 @@ class CompliancePolicyExecution(models.Model):
             if policy.last_audit_at and policy.last_audit_at + delta > now:
                 continue
             policy._run_retention_audit()
+
+    @api.model
+    def _cron_compliance_retention_policies(self):
+        """Run Section 12 retention engine for active retention policies."""
+        self.env["doc.compliance.retention.engine"].sudo()._cron_run_all_policies()
+
+    @api.model
+    def _cron_withdraw_leaver_compliance(self):
+        Employee = self.env["hr.employee"].sudo()
+        leavers = Employee.search([("active", "=", False)])
+        Assignment = self.env["doc.compliance.assignment"].sudo()
+        Task = self.env["doc.compliance.task"].sudo()
+        for employee in leavers:
+            Assignment.search(
+                [("employee_id", "=", employee.id), ("state", "=", "open")]
+            ).write({"state": "withdrawn"})
+            Task.search(
+                [("employee_id", "=", employee.id), ("status", "=", "todo")]
+            ).write({"status": "cancelled"})

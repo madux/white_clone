@@ -1,7 +1,9 @@
 "use client";
 
 import { Eye, FileText, Pencil, Play, Power, PowerOff, Trash2 } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
+import ComplianceRequestScheduleFields from "./ComplianceRequestScheduleFields";
+import ComplianceRequestTaskList from "./ComplianceRequestTaskList";
 import {
   useDeletePolicy,
   useDocumentTypes,
@@ -17,13 +19,33 @@ import ModalDialog from "./ModalDialog";
 import ComplianceRuleSourceUploadModal from "./ComplianceRuleSourceUploadModal";
 import ComplianceDocumentTypeMultiSelect from "./ComplianceDocumentTypeMultiSelect";
 import ThemedSelect from "./ThemedSelect";
-import { ScopeChecklist, AlertCadenceSelector } from "./CompliancePage";
+import { AlertCadenceSelector } from "./CompliancePage";
+import { PolicyAudienceFilters } from "./PolicyAudienceFilters";
+import {
+  buildScopePayload,
+  emptyPolicyScope,
+  formatPolicyScopeSummary,
+  policyScopeFromApi,
+} from "../../../lib/policyScope";
 import { formatFieldLabel } from "../../../lib/formatLabel";
 import {
   AUDIT_FREQUENCY_LABELS,
   EVENT_TRIGGER_LABELS,
   eventTriggerLabel,
 } from "../../../lib/complianceCopy";
+import {
+  documentTypesForCompliancePolicy,
+  pruneDocumentTypeIdsForPolicy,
+} from "../../../lib/complianceDocumentTypes";
+import type { DocumentType } from "../../../lib/types";
+import ComplianceRetentionFields from "./ComplianceRetentionFields";
+import Link from "next/link";
+
+const RETENTION_MODE_LABELS: Record<string, string> = {
+  report_only: "Report only",
+  owner_approval: "Owner approval",
+  automatic: "Automatic",
+};
 
 const schedules = [
   "one_time",
@@ -65,8 +87,11 @@ export default function ComplianceRuleActions({
     description: policy.description || "",
     policy_type_id: String(policy.policy_type_id || ""),
     document_type_ids: policy.document_type_ids ?? [],
-    applies_to: policy.applies_to || "all",
-    scope_ids: policy[`${policy.applies_to}_ids`] ?? [],
+    applies_to:
+      policy.applies_to === "filtered" || policy.applies_to === "all"
+        ? policy.applies_to
+        : "filtered",
+    scope: policyScopeFromApi(policy),
     schedule: policy.schedule === "manual" ? "" : policy.schedule,
     custom_schedule_days: String(policy.custom_schedule_days ?? 30),
     minimum_documents: String(policy.minimum_documents ?? 1),
@@ -86,7 +111,18 @@ export default function ComplianceRuleActions({
     audit_frequency: policy.audit_frequency || "quarterly",
     sample_pct: policy.sample_pct ?? 100,
     assigned_auditor_id: String(policy.assigned_auditor_id || ""),
+    request_trigger: policy.request_trigger || "policy_effective",
+    request_start_date: policy.request_start_date || "",
+    repeat_every_months: policy.repeat_every_months ?? 0,
+    tasks_needed_mode: policy.tasks_needed_mode || "all_required",
+    tasks_needed_minimum: policy.tasks_needed_minimum ?? 1,
+    reopen_on_content_change: policy.reopen_on_content_change !== false,
+    request_tasks: policy.request_tasks ?? [],
+    retention_action_mode: policy.retention_action_mode || "report_only",
+    retention_owner_notice_days: policy.retention_owner_notice_days ?? 14,
   });
+  const [retentionBatches, setRetentionBatches] = useState<any[]>([]);
+  const [formTemplates, setFormTemplates] = useState<{ id: number; name: string }[]>([]);
   const [error, setError] = useState("");
   const update = useUpdatePolicy();
   const remove = useDeletePolicy();
@@ -94,6 +130,16 @@ export default function ComplianceRuleActions({
   useEffect(() => {
     if (openView) setMode("view");
   }, [openView]);
+
+  useEffect(() => {
+    if (mode !== "view" || policy.policy_type_code !== "retention") {
+      setRetentionBatches([]);
+      return;
+    }
+    void api.listRetentionBatches(policy.id).then((result) => {
+      if (result.success) setRetentionBatches(result.data || []);
+    });
+  }, [mode, policy.id, policy.policy_type_code]);
   const closeMode = () => {
     setMode(null);
     if (mode === "view") onViewClose?.();
@@ -101,35 +147,47 @@ export default function ComplianceRuleActions({
   const requiredDocuments = (policy.document_type_ids ?? [])
     .map((id: number) => documents.find((document) => document.id === id)?.name)
     .filter(Boolean);
-  const scopeOptions =
-    form.applies_to === "department"
-      ? (targets?.departments ?? [])
-      : form.applies_to === "grade"
-        ? (targets?.grades ?? [])
-        : (targets?.employees ?? []);
-
   const selectedType = (types || []).find(
     (t: any) => String(t.id) === String(form.policy_type_id),
   );
   const typeCode = selectedType?.code || policy.policy_type_code || "";
+  const allDocumentTypes = (documentTypes.data ??
+    documents) as DocumentType[];
+  const selectableDocumentTypes = useMemo(
+    () => documentTypesForCompliancePolicy(typeCode, allDocumentTypes),
+    [typeCode, allDocumentTypes],
+  );
 
-  const toggle = (field: "document_type_ids" | "scope_ids", id: number) =>
+  useEffect(() => {
+    if (typeCode !== "compliance_request" || mode !== "edit") return;
+    void api.listActiveTemplatesForms({ kind: "form" }).then((result) => {
+      const templates = result.data?.templates ?? [];
+      setFormTemplates(
+        templates.map((item) => ({
+          id: Number(item.id),
+          name: String(item.name || "Form"),
+        })),
+      );
+    });
+  }, [mode, typeCode]);
+
+  const toggleDocumentType = (id: number) =>
     setForm({
       ...form,
-      [field]: form[field].includes(id)
-        ? form[field].filter((item: number) => item !== id)
-        : [...form[field], id],
+      document_type_ids: form.document_type_ids.includes(id)
+        ? form.document_type_ids.filter((item: number) => item !== id)
+        : [...form.document_type_ids, id],
     });
   const save = async (event: FormEvent) => {
     event.preventDefault();
     if (!form.policy_type_id) return setError("Please select a rule type.");
-    if (!form.document_type_ids.length)
+    if (typeCode !== "compliance_request" && !form.document_type_ids.length)
       return setError("Select at least one required document type.");
     setError("");
-    const effectiveAppliesTo =
-      form.applies_to === "all" || form.scope_ids.length === 0
-        ? "all"
-        : form.applies_to;
+    const scopePayload =
+      form.applies_to === "all"
+        ? buildScopePayload(emptyPolicyScope())
+        : buildScopePayload(form.scope);
     try {
       await update.mutateAsync({
         id: policy.id,
@@ -137,10 +195,13 @@ export default function ComplianceRuleActions({
         description: form.description.trim(),
         policy_type_id: Number(form.policy_type_id),
         document_type_ids: form.document_type_ids,
-        applies_to: effectiveAppliesTo,
-        department_ids: effectiveAppliesTo === "department" ? form.scope_ids : [],
-        grade_ids: effectiveAppliesTo === "grade" ? form.scope_ids : [],
-        employee_ids: effectiveAppliesTo === "employee" ? form.scope_ids : [],
+        applies_to: form.applies_to === "all" ? "all" : scopePayload.applies_to,
+        department_ids: scopePayload.department_ids,
+        grade_ids: scopePayload.grade_ids,
+        employee_ids: scopePayload.employee_ids,
+        work_location_ids: scopePayload.work_location_ids,
+        employment_type_ids: scopePayload.employment_type_ids,
+        branch_ids: scopePayload.branch_ids,
         schedule: form.schedule || false,
         custom_schedule_days: Number(form.custom_schedule_days),
         minimum_documents: Number(form.minimum_documents),
@@ -163,6 +224,15 @@ export default function ComplianceRuleActions({
         assigned_auditor_id: form.assigned_auditor_id
           ? Number(form.assigned_auditor_id)
           : false,
+        request_trigger: form.request_trigger,
+        request_start_date: form.request_start_date || false,
+        repeat_every_months: form.repeat_every_months,
+        tasks_needed_mode: form.tasks_needed_mode,
+        tasks_needed_minimum: form.tasks_needed_minimum,
+        reopen_on_content_change: form.reopen_on_content_change,
+        request_tasks: form.request_tasks,
+        retention_action_mode: form.retention_action_mode,
+        retention_owner_notice_days: form.retention_owner_notice_days,
       });
     } catch (error: any) {
       setError(error?.message || "Failed to save rule.");
@@ -378,7 +448,12 @@ export default function ComplianceRuleActions({
                   <Info label="Type" value={policy.policy_type} />
                   <Info
                     label="Scope"
-                    value={formatFieldLabel(policy.applies_to)}
+                    value={
+                      formatPolicyScopeSummary(
+                        policyScopeFromApi(policy),
+                        targets,
+                      ).join("; ") || formatFieldLabel(policy.applies_to)
+                    }
                   />
                   <Info
                     label="Schedule"
@@ -435,23 +510,89 @@ export default function ComplianceRuleActions({
                   {policy.policy_type_code === "retention" && (
                     <>
                       <Info
-                        label="How often"
+                        label="Action mode"
                         value={
-                          AUDIT_FREQUENCY_LABELS[policy.audit_frequency] ||
-                          policy.audit_frequency
+                          RETENTION_MODE_LABELS[policy.retention_action_mode] ||
+                          policy.retention_action_mode
                         }
                       />
+                      {policy.retention_action_mode === "owner_approval" ? (
+                        <Info
+                          label="Owner notice"
+                          value={`${policy.retention_owner_notice_days || 0} days`}
+                        />
+                      ) : null}
                       <Info
-                        label="People checked"
-                        value={`${policy.sample_pct}%`}
-                      />
-                      <Info
-                        label="HR contact"
-                        value={policy.assigned_auditor || "Unassigned"}
+                        label="Retention settings"
+                        value={
+                          <Link
+                            href="/pages/settings?section=retention_compliance"
+                            className="font-semibold text-brand-pink hover:underline"
+                          >
+                            Open Settings
+                          </Link>
+                        }
                       />
                     </>
                   )}
                 </div>
+                {policy.policy_type_code === "retention" &&
+                retentionBatches.length ? (
+                  <div className="mt-4 rounded-xl border border-slate-200 p-3">
+                    <p className="text-sm font-bold text-slate-800">
+                      Open retention approvals
+                    </p>
+                    <ul className="mt-2 space-y-2 text-sm text-slate-600">
+                      {retentionBatches.map((batch) => (
+                        <li
+                          key={batch.id}
+                          className="flex flex-wrap items-center justify-between gap-2"
+                        >
+                          <span>
+                            {batch.action} due {batch.due_date} ·{" "}
+                            {batch.item_count} file(s)
+                          </span>
+                          <span className="flex gap-2">
+                            <button
+                              type="button"
+                              className="text-xs font-semibold text-brand-pink"
+                              onClick={() =>
+                                void api
+                                  .approveRetentionBatch(batch.id)
+                                  .then(() =>
+                                    api.listRetentionBatches(policy.id).then(
+                                      (r) =>
+                                        r.success &&
+                                        setRetentionBatches(r.data || []),
+                                    ),
+                                  )
+                              }
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              className="text-xs font-semibold text-slate-500"
+                              onClick={() =>
+                                void api
+                                  .rejectRetentionBatch(batch.id)
+                                  .then(() =>
+                                    api.listRetentionBatches(policy.id).then(
+                                      (r) =>
+                                        r.success &&
+                                        setRetentionBatches(r.data || []),
+                                    ),
+                                  )
+                              }
+                            >
+                              Reject
+                            </button>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -484,9 +625,21 @@ export default function ComplianceRuleActions({
                   <span className="label">Policy type</span>
                   <ThemedSelect
                     value={form.policy_type_id}
-                    onChange={(value) =>
-                      setForm({ ...form, policy_type_id: value })
-                    }
+                    onChange={(value) => {
+                      const nextTypeCode =
+                        (types || []).find(
+                          (item: any) => String(item.id) === value,
+                        )?.code ?? "";
+                      setForm({
+                        ...form,
+                        policy_type_id: value,
+                        document_type_ids: pruneDocumentTypeIdsForPolicy(
+                          nextTypeCode,
+                          form.document_type_ids,
+                          allDocumentTypes,
+                        ),
+                      });
+                    }}
                     options={types.map((item: any) => ({
                       value: String(item.id),
                       label: item.name,
@@ -594,30 +747,42 @@ export default function ComplianceRuleActions({
 
                 {typeCode === "compliance_request" && (
                   <>
-                    <label>
-                      <span className="label">When should this start?</span>
-                      <ThemedSelect
-                        value={form.event_trigger}
-                        onChange={(val) =>
-                          setForm({ ...form, event_trigger: val })
-                        }
-                        options={Object.entries(EVENT_TRIGGER_LABELS).map(
-                          ([value, label]) => ({ value, label }),
-                        )}
-                      />
-                    </label>
-                    <label>
-                      <span className="label">Days to submit</span>
-                      <input
-                        type="number"
-                        min="1"
-                        className="field"
-                        value={form.due_days}
-                        onChange={(e) =>
-                          setForm({ ...form, due_days: Number(e.target.value) })
-                        }
-                      />
-                    </label>
+                    <ComplianceRequestTaskList
+                      tasks={form.request_tasks}
+                      onChange={(request_tasks) =>
+                        setForm({ ...form, request_tasks })
+                      }
+                      documentTypes={allDocumentTypes}
+                      linkableContext={{
+                        policyId: policy.id,
+                        applies_to: form.applies_to,
+                        scope: form.scope,
+                      }}
+                      forms={formTemplates}
+                    />
+                    <ComplianceRequestScheduleFields
+                      schedule={{
+                        request_trigger: form.request_trigger,
+                        request_start_date: form.request_start_date,
+                        repeat_every_months: form.repeat_every_months,
+                        tasks_needed_mode: form.tasks_needed_mode,
+                        tasks_needed_minimum: form.tasks_needed_minimum,
+                        reopen_on_content_change: form.reopen_on_content_change,
+                      }}
+                      onChange={(schedule) => setForm({ ...form, ...schedule })}
+                      dueDays={form.due_days}
+                      gracePeriodDays={form.grace_period_days}
+                      reminderDays={form.reminder_frequency_days}
+                      onDueDaysChange={(due_days) =>
+                        setForm({ ...form, due_days })
+                      }
+                      onGraceChange={(grace_period_days) =>
+                        setForm({ ...form, grace_period_days })
+                      }
+                      onReminderChange={(reminder_frequency_days) =>
+                        setForm({ ...form, reminder_frequency_days })
+                      }
+                    />
                     <label className="sm:col-span-2">
                       <span className="label">Who follows up?</span>
                       <ThemedSelect
@@ -635,86 +800,50 @@ export default function ComplianceRuleActions({
                   </>
                 )}
 
-                {typeCode === "retention" && (
-                  <>
-                    <label>
-                      <span className="label">How often to check</span>
-                      <ThemedSelect
-                        value={form.audit_frequency}
-                        onChange={(val) =>
-                          setForm({ ...form, audit_frequency: val })
-                        }
-                        options={Object.entries(AUDIT_FREQUENCY_LABELS).map(
-                          ([value, label]) => ({ value, label }),
-                        )}
-                      />
-                    </label>
-                    <label>
-                      <span className="label">Sample size (%)</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max="100"
-                        className="field"
-                        value={form.sample_pct}
-                        onChange={(e) =>
-                          setForm({ ...form, sample_pct: Number(e.target.value) })
-                        }
-                      />
-                    </label>
-                    <label className="sm:col-span-2">
-                      <span className="label">Who runs the check?</span>
-                      <ThemedSelect
-                        value={String(form.assigned_auditor_id || "")}
-                        onChange={(val) =>
-                          setForm({ ...form, assigned_auditor_id: val })
-                        }
-                        placeholder="Select HR contact"
-                        options={(targets?.users || []).map((u: any) => ({
-                          value: String(u.id),
-                          label: u.name,
-                        }))}
-                      />
-                    </label>
-                  </>
-                )}
+                {typeCode === "retention" ? (
+                  <ComplianceRetentionFields form={form as any} setForm={setForm as any} />
+                ) : null}
 
+                {typeCode !== "compliance_request" ? (
+                  <div className="sm:col-span-2">
+                    <span className="label">Required documents</span>
+                    <ComplianceDocumentTypeMultiSelect
+                      types={selectableDocumentTypes}
+                      selected={form.document_type_ids}
+                      expiryTypesOnly={typeCode === "renewable_document"}
+                      onChange={(document_type_ids) =>
+                        setForm({ ...form, document_type_ids })
+                      }
+                      error={
+                        error === "Select at least one required document type."
+                          ? error
+                          : undefined
+                      }
+                    />
+                  </div>
+                ) : null}
                 <div className="sm:col-span-2">
-                  <span className="label">Required documents</span>
-                  <ComplianceDocumentTypeMultiSelect
-                    types={documents}
-                    selected={form.document_type_ids}
-                    onChange={(document_type_ids) =>
-                      setForm({ ...form, document_type_ids })
+                  <span className="label">Applies to</span>
+                  <PolicyAudienceFilters
+                    scope={form.scope}
+                    targets={targets}
+                    allEmployees={form.applies_to === "all"}
+                    onAllEmployeesChange={(all) =>
+                      setForm({
+                        ...form,
+                        applies_to: all ? "all" : "filtered",
+                        scope: all ? emptyPolicyScope() : form.scope,
+                      })
                     }
-                    error={
-                      error === "Select at least one required document type."
-                        ? error
-                        : undefined
+                    onChange={(scope) =>
+                      setForm({
+                        ...form,
+                        applies_to: "filtered",
+                        scope,
+                      })
                     }
                   />
                 </div>
-                <label>
-                  <span className="label">Applies to</span>
-                  <ThemedSelect
-                    value={form.applies_to}
-                    onChange={(value) =>
-                      setForm({ ...form, applies_to: value, scope_ids: [] })
-                    }
-                    options={[
-                      { value: "all", label: "All Employees" },
-                      { value: "department", label: "Departments" },
-                      { value: "grade", label: "Groups" },
-                      { value: "employee", label: "Employees" },
-                    ]}
-                  />
-                </label>
-                <ScopeChecklist
-                  appliesTo={form.applies_to}
-                  items={scopeOptions}
-                  selected={form.scope_ids}
-                  onToggle={(id: number) => toggle("scope_ids", id)}
-                />
                 <label>
                   <span className="label">Schedule</span>
                   <ThemedSelect
@@ -905,7 +1034,13 @@ export default function ComplianceRuleActions({
     </>
   );
 }
-function Info({ label, value }: { label: string; value: string }) {
+function Info({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}) {
   return (
     <span className="rounded-xl bg-slate-50 p-3">
       <span className="text-xs text-slate-400">{label}</span>

@@ -56,6 +56,8 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [x] Merged latest origin/document-intelligence into `michael` (company documentary + onboarding). Source had no conflicts; rebuilt DMS static export.
 - [x] Merged origin/document-intelligence again (social gallery, documentary compliance, pending uploads). Combined source conflicts; rebuilt DMS static export.
 - [x] Merged origin/document-intelligence again (employee files roles, compliance, Activity). Combined templates + Ask AI with incoming employee-files; rebuilt DMS static export.
+- [x] Compliance spec remediation (matrix `docs/COMPLIANCE_SPEC_MATRIX.md`, five policy types, engine, versioning, role APIs, My Team / Verifications / Reviews).
+- [x] Compliance Request (Section 11): task definitions, cycles, triggers, employee task APIs/UI. **Clean break** — recreate legacy `compliance_request` rules; lifecycle document-collection path disabled.
 
 ## Ask UI follow-up
 - [x] LLM chat titles that are not the full question (gpt-oss token/content fix)

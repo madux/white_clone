@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="policy_type_retention" model="doc.compliance.policy.type">
+            <field name="name">Retention</field>
+            <field name="code">retention</field>
+            <field name="description">Ensure employee documents follow organisation retention settings.</field>
+        </record>
+
+        <record id="policy_type_review_schedule" model="doc.compliance.policy.type">
+            <field name="name">Review Schedule</field>
+            <field name="code">review_schedule</field>
+            <field name="description">Scheduled milestone reviews for employees in scope.</field>
+            <field name="active">1</field>
+        </record>
+    </data>
+</odoo>

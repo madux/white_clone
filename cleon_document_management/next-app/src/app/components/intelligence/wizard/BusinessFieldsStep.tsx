@@ -11,6 +11,7 @@ import type {
   IntelligenceField,
   IntelligenceProfile,
 } from "../../../../../lib/intelligence-api";
+import AppSelect from "../../AppSelect";
 
 const PAGE_SIZE = 12;
 
@@ -444,22 +445,19 @@ export default function BusinessFieldsStep({
             </p>
             <label className="mt-4 block">
               <span className="label">Document type</span>
-              <select
-                className="field"
+              <AppSelect
                 value={String(form.document_type_id)}
-                onChange={(event) =>
+                options={(types.length ? types : []).map((item) => ({
+                  value: String(item.id),
+                  label: item.name,
+                }))}
+                onChange={(value) =>
                   setForm({
                     ...form,
-                    document_type_id: Number(event.target.value),
+                    document_type_id: Number(value),
                   })
                 }
-              >
-                {(types.length ? types : []).map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
             <label className="mt-3 block">
               <span className="label">Name</span>
@@ -487,19 +485,14 @@ export default function BusinessFieldsStep({
             </label>
             <label className="mt-3 block">
               <span className="label">Type</span>
-              <select
-                className="field"
+              <AppSelect
                 value={form.field_type}
-                onChange={(event) =>
-                  setForm({ ...form, field_type: event.target.value })
-                }
-              >
-                {FIELD_TYPES.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                options={FIELD_TYPES.map(([value, label]) => ({
+                  value,
+                  label,
+                }))}
+                onChange={(value) => setForm({ ...form, field_type: value })}
+              />
             </label>
             <label className="mt-3 block">
               <span className="label">Description</span>

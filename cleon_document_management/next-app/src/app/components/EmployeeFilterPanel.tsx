@@ -1,6 +1,7 @@
 "use client";
 
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, X } from "lucide-react";
+import FilterToggleButton from "./FilterToggleButton";
 import { type ReactNode, useState } from "react";
 import {
   InputGroup,
@@ -120,21 +121,21 @@ export default function EmployeeFilterPanel({
             />
           </InputGroup>
         ) : null}
-        <button
-          type="button"
+        <FilterToggleButton
           aria-expanded={expanded}
           aria-controls="employee-file-filters"
           onClick={() => setExpanded((current) => !current)}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-brand-pink hover:text-brand-pink"
+          className="font-semibold text-slate-600 hover:border-brand-pink hover:text-brand-pink"
+          badge={
+            activeCount > 0 ? (
+              <span className="rounded-full bg-brand-pink px-2 py-0.5 text-[11px] font-bold text-white">
+                {activeCount}
+              </span>
+            ) : null
+          }
         >
-          <SlidersHorizontal className="h-4 w-4" />
           Filters
-          {activeCount > 0 ? (
-            <span className="rounded-full bg-brand-pink px-2 py-0.5 text-[11px] font-bold text-white">
-              {activeCount}
-            </span>
-          ) : null}
-        </button>
+        </FilterToggleButton>
         {activeCount > 0 ? (
           <button
             type="button"

@@ -4,7 +4,7 @@ import {
   FileText,
   FolderPlus,
   ShieldCheck,
-  SlidersHorizontal,
+  Filter,
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -75,6 +75,7 @@ import OrgFolderIcon from "./OrgFolderIcon";
 import SectionTabs from "./SectionTabs";
 import OrganizationalPoliciesPanel from "./OrganizationalPoliciesPanel";
 import OrganizationalStorageBar from "./OrganizationalStorageBar";
+import OrganizationalLibraryAdminLinks from "./OrganizationalLibraryAdminLinks";
 import { useToast } from "../../../hooks/useToast";
 import {
   isPendingApprovalResponse,
@@ -239,6 +240,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
           ]}
         />
       ) : null}
+      {isOrganizationPage ? <OrganizationalLibraryAdminLinks /> : null}
       <section className="app-table-well app-page-body">
         <AppToolbar
           search={search}
@@ -258,7 +260,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
                   aria-controls="folder-filters"
                   onClick={() => setShowFilters((current) => !current)}
                 >
-                  <SlidersHorizontal data-icon="inline-start" />
+                  <Filter data-icon="inline-start" className="h-4 w-4 shrink-0" />
                   Filters
                 </Button>
               </>
@@ -268,7 +270,9 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
             <ViewToggle
               value={viewMode === "cards" ? "card" : "list"}
               onChange={(value) => setViewMode(value === "card" ? "cards" : "list")}
-              ariaLabel="Folder view mode"
+              ariaLabel={
+                orgSectionTab === "policies" ? "Policy view mode" : "Folder view mode"
+              }
             />
           }
           actions={
@@ -409,6 +413,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
         {isOrganizationPage && orgSectionTab === "policies" ? (
           <OrganizationalPoliciesPanel
             search={search}
+            viewMode={viewMode}
             canManageFolders={
               currentUser.data?.is_document_manager === true ||
               canManageOrgFolders(currentUser.data) ||

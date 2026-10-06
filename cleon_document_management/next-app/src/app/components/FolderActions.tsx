@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { DocFolder } from "../../../lib/types";
 import ActionMenuCategory from "./ActionMenuCategory";
+import { ORG_ACTION_MENU_CATEGORIES } from "../../../lib/orgActionCatalog";
 import FolderDetailsPanel from "./FolderDetailsPanel";
 import { useRef, useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
@@ -400,7 +401,7 @@ export default function FolderActions({
             style={{ top: menuPosition.top, left: menuPosition.left }}
             className="org-action-sheet fixed z-[100] w-52 rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-xl shadow-slate-200/60"
           >
-            <ActionMenuCategory label="Information" />
+            <ActionMenuCategory label={ORG_ACTION_MENU_CATEGORIES.information} />
             <button
               type="button"
               onClick={() => {
@@ -412,7 +413,7 @@ export default function FolderActions({
               <Info />
               Details
             </button>
-            <ActionMenuCategory label="Organise" />
+            <ActionMenuCategory label={ORG_ACTION_MENU_CATEGORIES.organise} />
             {!modificationsLocked && showOrgManage ? (
               <button type="button" onClick={openEditModal} className="menu-item">
                 <Edit3 />
@@ -481,7 +482,7 @@ export default function FolderActions({
                   </div>
                 </div>
               )}
-            <ActionMenuCategory label="Access" />
+            <ActionMenuCategory label={ORG_ACTION_MENU_CATEGORIES.access} />
             <button
               type="button"
               onClick={() =>
@@ -510,7 +511,7 @@ export default function FolderActions({
                 {folderType === "organizational" ? "Manage access" : "Share folder"}
               </button>
             ) : null}
-            <ActionMenuCategory label="Lifecycle" />
+            <ActionMenuCategory label={ORG_ACTION_MENU_CATEGORIES.lifecycle} />
             {canLockFolder ? (
               <button
                 type="button"

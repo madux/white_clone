@@ -111,11 +111,11 @@ class TestCompliancePolicy(TransactionCase):
             user=self.admin,
             name="Lifecycle Policy",
             policy_type_id=self.compliance_request_type.id,
-            event_trigger="transfer",
+            event_trigger="department_transfer",
             due_days=21,
             reminder_frequency_days=5,
         )
-        self.assertEqual(policy.event_trigger, "transfer")
+        self.assertEqual(policy.event_trigger, "department_transfer")
         self.assertEqual(policy.due_days, 21)
         self.assertEqual(policy.reminder_frequency_days, 5)
 
@@ -171,7 +171,7 @@ class TestCompliancePolicy(TransactionCase):
             allow_waiver=False,
         )
         with self.assertRaises(ValidationError):
-            self.env["doc.compliance.exception"].with_user(self.admin).create(
+            self.env["doc.compliance.exception"].with_user(self.manager_user).create(
                 {
                     "employee_id": self.employee.id,
                     "policy_id": policy.id,
@@ -179,3 +179,27 @@ class TestCompliancePolicy(TransactionCase):
                     "valid_until": "2099-12-31",
                 }
             )
+
+    def test_multi_dimension_scope_uses_and_logic(self):
+        department = self.env["hr.department"].create({"name": "Scope Dept A"})
+        other_department = self.env["hr.department"].create({"name": "Scope Dept B"})
+        self.employee.write({"department_id": department.id})
+        other_employee = self.env["hr.employee"].create(
+            {
+                "name": "Other Scope Employee",
+                "department_id": other_department.id,
+                "company_id": self.admin.company_id.id,
+            }
+        )
+        policy = self._create_policy(
+            user=self.admin,
+            name="Filtered Policy",
+            applies_to="filtered",
+            department_ids=[(6, 0, [department.id, other_department.id])],
+            employee_ids=[(6, 0, [self.employee.id])],
+        )
+        targets = policy._target_employees()
+        self.assertIn(self.employee, targets)
+        self.assertNotIn(other_employee, targets)
+        self.assertTrue(policy._applies_to_employee(self.employee))
+        self.assertFalse(policy._applies_to_employee(other_employee))

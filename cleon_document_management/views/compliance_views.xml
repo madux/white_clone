@@ -74,9 +74,12 @@
                         </page>
                         <page string="Applies To">
                             <field name="applies_to"/>
-                            <field name="department_ids" widget="many2many_tags" invisible="applies_to != 'department'"/>
-                            <field name="grade_ids" widget="many2many_tags" invisible="applies_to != 'grade'"/>
-                            <field name="employee_ids" widget="many2many_tags" invisible="applies_to != 'employee'"/>
+                            <field name="department_ids" widget="many2many_tags"/>
+                            <field name="grade_ids" widget="many2many_tags"/>
+                            <field name="work_location_ids" widget="many2many_tags"/>
+                            <field name="employment_type_ids" widget="many2many_tags"/>
+                            <field name="branch_ids" widget="many2many_tags"/>
+                            <field name="employee_ids" widget="many2many_tags"/>
                         </page>
                         <page string="Requirements">
                             <field name="requirement_ids">

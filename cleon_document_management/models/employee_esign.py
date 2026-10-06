@@ -46,3 +46,16 @@ class DocDocumentSignatureRequest(models.Model):
             return False
         self.write({"provider": config.esign_provider or "stub"})
         return True
+
+    def write(self, vals):
+        result = super().write(vals)
+        if vals.get("state") == "completed":
+            Automation = self.env["doc.document.automation"]
+            for request in self:
+                document = request.document_id
+                if document.folder_id.folder_type not in ("organizational", "employee"):
+                    continue
+                Automation.search([("document_id", "=", document.id)]).execute(
+                    "document_signed"
+                )
+        return result

@@ -253,6 +253,34 @@ export default function FolderDetailsPanel({
       ) : null}
       {tab === "activity" ? (
         <div className="max-h-[min(50vh,20rem)] overflow-y-auto px-5 py-4">
+          <div className="mb-3 flex justify-end">
+            <button
+              type="button"
+              className="text-xs font-semibold text-brand-pink hover:underline"
+              onClick={() => {
+                void api
+                  .organizationalAuditExport({
+                    res_model: "doc.folder",
+                    res_id: folderId,
+                    include_approvals: true,
+                  })
+                  .then((result) => {
+                    if (!result.success || !result.data) return;
+                    const blob = new Blob([JSON.stringify(result.data, null, 2)], {
+                      type: "application/json",
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const anchor = document.createElement("a");
+                    anchor.href = url;
+                    anchor.download = `org-folder-audit-${folderId}.json`;
+                    anchor.click();
+                    URL.revokeObjectURL(url);
+                  });
+              }}
+            >
+              Export audit bundle
+            </button>
+          </div>
           {auditLoading ? (
             <p className="text-sm text-slate-500">Loading activity…</p>
           ) : auditRows.length ? (

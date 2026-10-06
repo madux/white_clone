@@ -17,12 +17,19 @@ CANONICAL_POLICY_TYPE_NAMES = {
     "document_requirement": "Document Requirement",
     "renewable_document": "Renewable Document",
     "compliance_request": "Compliance Request",
-    "retention": "Review Schedule",
+    "retention": "Retention",
+    "review_schedule": "Review Schedule",
 }
 
 
 class ComplianceController(http.Controller):
     """JSON API used by the document-management frontend."""
+
+    @staticmethod
+    def _normalize_retention_mode(mode):
+        if mode in ("archive", "delete"):
+            return "automatic"
+        return mode or "report_only"
 
     @staticmethod
     def _policy_data(policy):
@@ -40,12 +47,28 @@ class ComplianceController(http.Controller):
             "department_ids": policy.department_ids.ids,
             "grade_ids": policy.grade_ids.ids,
             "employee_ids": policy.employee_ids.ids,
+            "work_location_ids": policy.work_location_ids.ids,
+            "employment_type_ids": policy.employment_type_ids.ids,
+            "branch_ids": policy.branch_ids.ids,
             "minimum_documents": policy.minimum_documents,
             "grace_period_days": policy.grace_period_days,
             "effective_date": str(policy.effective_date or ""),
             "active": policy.active,
             "lifecycle_status": policy.lifecycle_status or "active",
             "ai_drafted": bool(policy.ai_drafted),
+            "owner_id": policy.owner_id.id if policy.owner_id else False,
+            "owner_name": policy.owner_id.name if policy.owner_id else "",
+            "no_document_due_days": policy.no_document_due_days,
+            "retention_action_mode": ComplianceController._normalize_retention_mode(
+                policy.retention_action_mode
+            ),
+            "retention_owner_notice_days": policy.retention_owner_notice_days or 0,
+            "verified_by": policy.verified_by or "",
+            "verification_sla_days": policy.verification_sla_days,
+            "run_in_progress": bool(policy.run_in_progress),
+            "current_version_id": policy.current_version_id.id
+            if policy.current_version_id
+            else False,
             "last_run_at": str(policy.last_run_at or ""),
             "next_run_at": str(policy.next_run_at or ""),
             # Type-specific parameters
@@ -72,32 +95,94 @@ class ComplianceController(http.Controller):
             "source_folder_id": policy.source_document_id.folder_id.id
             if policy.source_document_id and policy.source_document_id.folder_id
             else False,
+            **(
+                policy.request_fields_api()
+                if policy.policy_type_id
+                and policy.policy_type_id.code == "compliance_request"
+                else {
+                    "request_trigger": "",
+                    "request_start_date": "",
+                    "repeat_every_months": 0,
+                    "tasks_needed_mode": "all_required",
+                    "tasks_needed_minimum": 1,
+                    "reopen_on_content_change": True,
+                    "request_tasks": [],
+                }
+            ),
         }
 
     @staticmethod
-    def _policy_create_values(env, kwargs):
+    def _policy_type_code(env, policy_type_id):
+        if not policy_type_id:
+            return ""
+        policy_type = env["doc.compliance.policy.type"].browse(int(policy_type_id)).exists()
+        return policy_type.code if policy_type else ""
+
+    @staticmethod
+    def _request_policy_values(kwargs):
+        values = {}
+        for key in (
+            "request_trigger",
+            "request_start_date",
+            "repeat_every_months",
+            "tasks_needed_mode",
+            "tasks_needed_minimum",
+            "reopen_on_content_change",
+        ):
+            if key in kwargs:
+                values[key] = kwargs[key]
+        if "request_start_date" in values and not values["request_start_date"]:
+            values["request_start_date"] = False
+        if "repeat_every_months" in values:
+            values["repeat_every_months"] = int(values["repeat_every_months"] or 0)
+        if "tasks_needed_minimum" in values:
+            values["tasks_needed_minimum"] = int(values["tasks_needed_minimum"] or 1)
+        if "reopen_on_content_change" in values:
+            values["reopen_on_content_change"] = bool(
+                values["reopen_on_content_change"]
+            )
+        return values
+
+    @staticmethod
+    def _parse_policy_scope_ids(env, kwargs):
+        def _ids(model, key):
+            return env[model].browse(kwargs.get(key, []) or []).exists().ids
+
+        return {
+            "department_ids": _ids("hr.department", "department_ids"),
+            "grade_ids": _ids("hr.grade", "grade_ids"),
+            "employee_ids": _ids("hr.employee", "employee_ids"),
+            "work_location_ids": _ids("hr.work.location", "work_location_ids"),
+            "employment_type_ids": _ids(
+                "hr.core_employment_type", "employment_type_ids"
+            ),
+            "branch_ids": _ids("multi.branch", "branch_ids"),
+        }
+
+    @staticmethod
+    def _resolve_applies_to(kwargs, scope_ids):
         applies_to = kwargs.get("applies_to", "all")
-        dept_ids = (
-            env["hr.department"]
-            .browse(kwargs.get("department_ids", []) or [])
-            .exists()
-            .ids
-        )
-        grade_ids = (
-            env["hr.grade"].browse(kwargs.get("grade_ids", []) or []).exists().ids
-        )
-        emp_ids = (
-            env["hr.employee"]
-            .browse(kwargs.get("employee_ids", []) or [])
-            .exists()
-            .ids
-        )
-        if applies_to == "department" and not dept_ids:
+        has_filters = any(scope_ids.values())
+        if applies_to == "all" and not has_filters:
+            return "all"
+        if applies_to == "filtered" or has_filters:
+            if not has_filters:
+                raise ValidationError(
+                    _("Select at least one audience filter or choose all employees.")
+                )
+            return "filtered"
+        if applies_to == "department" and not scope_ids["department_ids"]:
             raise ValidationError(_("Select at least one department."))
-        if applies_to == "grade" and not grade_ids:
+        if applies_to == "grade" and not scope_ids["grade_ids"]:
             raise ValidationError(_("Select at least one grade."))
-        if applies_to == "employee" and not emp_ids:
+        if applies_to == "employee" and not scope_ids["employee_ids"]:
             raise ValidationError(_("Select at least one employee."))
+        return applies_to
+
+    @staticmethod
+    def _policy_create_values(env, kwargs):
+        scope_ids = ComplianceController._parse_policy_scope_ids(env, kwargs)
+        applies_to = ComplianceController._resolve_applies_to(kwargs, scope_ids)
         values = {
             "name": kwargs.get("name"),
             "description": kwargs.get("description", ""),
@@ -113,9 +198,16 @@ class ComplianceController(http.Controller):
             "schedule": kwargs.get("schedule") or False,
             "custom_schedule_days": kwargs.get("custom_schedule_days", 30),
             "applies_to": applies_to,
-            "department_ids": [fields.Command.set(dept_ids)],
-            "grade_ids": [fields.Command.set(grade_ids)],
-            "employee_ids": [fields.Command.set(emp_ids)],
+            "department_ids": [fields.Command.set(scope_ids["department_ids"])],
+            "grade_ids": [fields.Command.set(scope_ids["grade_ids"])],
+            "employee_ids": [fields.Command.set(scope_ids["employee_ids"])],
+            "work_location_ids": [
+                fields.Command.set(scope_ids["work_location_ids"])
+            ],
+            "employment_type_ids": [
+                fields.Command.set(scope_ids["employment_type_ids"])
+            ],
+            "branch_ids": [fields.Command.set(scope_ids["branch_ids"])],
             "minimum_documents": kwargs.get("minimum_documents", 1),
             "grace_period_days": kwargs.get("grace_period_days", 0),
             "effective_date": kwargs.get("effective_date") or False,
@@ -142,6 +234,16 @@ class ComplianceController(http.Controller):
             "policy_audience": kwargs.get("policy_audience") or "everyone",
             "source_document_id": int(kwargs.get("source_document_id") or 0) or False,
             "ai_drafted": bool(kwargs.get("ai_drafted")),
+            "owner_id": int(kwargs.get("owner_id") or 0) or False,
+            "no_document_due_days": int(kwargs.get("no_document_due_days") or 30),
+            "retention_action_mode": ComplianceController._normalize_retention_mode(
+                kwargs.get("retention_action_mode")
+            ),
+            "retention_owner_notice_days": int(
+                kwargs.get("retention_owner_notice_days") or 0
+            ),
+            "verified_by": kwargs.get("verified_by") or "hr_admin",
+            "verification_sla_days": int(kwargs.get("verification_sla_days") or 7),
         }
         if values["lifecycle_status"] == "draft":
             values["active"] = False
@@ -149,10 +251,17 @@ class ComplianceController(http.Controller):
             values["active"] = False
         if not values["name"] or not values["policy_type_id"]:
             raise ValidationError(_("Name and policy type are required."))
-        if not env["doc.document.type"].browse(
-            kwargs.get("document_type_ids", []) or []
-        ).exists():
-            raise ValidationError(_("Select at least one required document type."))
+        type_code = ComplianceController._policy_type_code(
+            env, kwargs.get("policy_type_id")
+        )
+        if type_code != "compliance_request":
+            if not env["doc.document.type"].browse(
+                kwargs.get("document_type_ids", []) or []
+            ).exists():
+                raise ValidationError(_("Select at least one required document type."))
+        else:
+            values["document_type_ids"] = [fields.Command.clear()]
+            values.update(ComplianceController._request_policy_values(kwargs))
         return values
 
     @staticmethod
@@ -166,6 +275,9 @@ class ComplianceController(http.Controller):
             "employee": evaluation.employee_id.name,
             "score": evaluation.score,
             "status": evaluation.status,
+            "compliance_status": evaluation.compliance_status,
+            "reason_code": evaluation.reason_code or "",
+            "reason_message": evaluation.reason_message or "",
             "complete_count": evaluation.complete_count,
             "missing_count": evaluation.missing_count,
             "grace_count": evaluation.grace_count,
@@ -182,6 +294,10 @@ class ComplianceController(http.Controller):
                     "required_count": line.required_count,
                     "matched_count": line.matched_count,
                     "status": line.status,
+                    "compliance_status": line.compliance_status,
+                    "reason_code": line.reason_code or "",
+                    "reason_message": line.reason_message or "",
+                    "due_date": str(line.due_date or ""),
                 }
                 for line in evaluation.line_ids
             ],
@@ -326,6 +442,16 @@ class ComplianceController(http.Controller):
             )
         except KeyError:
             locations = request.env["hr.employee"].browse()
+        try:
+            employment_types = request.env["hr.core_employment_type"].search(
+                [], order="name"
+            )
+        except KeyError:
+            employment_types = request.env["hr.employee"].browse()
+        try:
+            branches = request.env["multi.branch"].search([], order="name")
+        except KeyError:
+            branches = request.env["hr.employee"].browse()
 
         return {
             "success": True,
@@ -345,6 +471,16 @@ class ComplianceController(http.Controller):
                         if employee.work_location_id
                         else False,
                         "work_location": employee.work_location_id.name or "",
+                        "employment_type_id": (
+                            employee.employee_type_id.id
+                            if getattr(employee, "employee_type_id", False)
+                            else False
+                        ),
+                        "branch_id": (
+                            employee.branch_id.id
+                            if getattr(employee, "branch_id", False)
+                            else False
+                        ),
                         "lifecycle_status": employee.get_document_lifecycle_status(
                             lifecycle_context
                         ),
@@ -370,6 +506,12 @@ class ComplianceController(http.Controller):
                 "locations": [
                     {"id": location.id, "name": location.name}
                     for location in locations
+                ],
+                "employment_types": [
+                    {"id": row.id, "name": row.name} for row in employment_types
+                ],
+                "branches": [
+                    {"id": branch.id, "name": branch.name} for branch in branches
                 ],
                 "users": [
                     {"id": user.id, "name": user.name, "email": user.email or ""}
@@ -485,6 +627,8 @@ class ComplianceController(http.Controller):
         try:
             values = self._policy_create_values(request.env, kwargs)
             policy = request.env["doc.compliance.policy"].create(values)
+            if policy._is_compliance_request():
+                policy._sync_request_task_definitions(kwargs.get("request_tasks"))
         except (AccessError, ValidationError) as error:
             return {"success": False, "message": str(error)}
         return {"success": True, "data": self._policy_data(policy)}
@@ -614,6 +758,12 @@ class ComplianceController(http.Controller):
                 "reminder_frequency_days",
                 "audit_frequency",
                 "sample_pct",
+                "request_trigger",
+                "request_start_date",
+                "repeat_every_months",
+                "tasks_needed_mode",
+                "tasks_needed_minimum",
+                "reopen_on_content_change",
             )
             if key in kwargs
         }
@@ -624,6 +774,16 @@ class ComplianceController(http.Controller):
         if "assigned_auditor_id" in kwargs:
             values["assigned_auditor_id"] = (
                 int(kwargs["assigned_auditor_id"]) if kwargs["assigned_auditor_id"] else False
+            )
+        if "retention_action_mode" in kwargs:
+            values["retention_action_mode"] = (
+                ComplianceController._normalize_retention_mode(
+                    kwargs["retention_action_mode"]
+                )
+            )
+        if "retention_owner_notice_days" in kwargs:
+            values["retention_owner_notice_days"] = int(
+                kwargs.get("retention_owner_notice_days") or 0
             )
         if "policy_type_id" in kwargs:
             values["policy_type_id"] = (
@@ -637,6 +797,9 @@ class ComplianceController(http.Controller):
             ("department_ids", "hr.department"),
             ("grade_ids", "hr.grade"),
             ("employee_ids", "hr.employee"),
+            ("work_location_ids", "hr.work.location"),
+            ("employment_type_ids", "hr.core_employment_type"),
+            ("branch_ids", "multi.branch"),
         ):
             if field_name in kwargs:
                 values[field_name] = [
@@ -648,29 +811,27 @@ class ComplianceController(http.Controller):
                     )
                 ]
 
-        target_applies = values.get("applies_to", policy.applies_to)
-        dept_ids = (
-            values["department_ids"][0][2]
-            if "department_ids" in values
-            else policy.department_ids.ids
-        )
-        grade_ids = (
-            values["grade_ids"][0][2]
-            if "grade_ids" in values
-            else policy.grade_ids.ids
-        )
-        emp_ids = (
-            values["employee_ids"][0][2]
-            if "employee_ids" in values
-            else policy.employee_ids.ids
-        )
-
-        if target_applies == "department" and not dept_ids:
-            return {"success": False, "message": "Select at least one department."}
-        if target_applies == "grade" and not grade_ids:
-            return {"success": False, "message": "Select at least one grade."}
-        if target_applies == "employee" and not emp_ids:
-            return {"success": False, "message": "Select at least one employee."}
+        scope_ids = {
+            "department_ids": policy.department_ids.ids,
+            "grade_ids": policy.grade_ids.ids,
+            "employee_ids": policy.employee_ids.ids,
+            "work_location_ids": policy.work_location_ids.ids,
+            "employment_type_ids": policy.employment_type_ids.ids,
+            "branch_ids": policy.branch_ids.ids,
+        }
+        for key in scope_ids:
+            if key in values and values[key]:
+                scope_ids[key] = values[key][0][2]
+        merged_kwargs = dict(kwargs)
+        if "applies_to" in values:
+            merged_kwargs["applies_to"] = values["applies_to"]
+        try:
+            target_applies = ComplianceController._resolve_applies_to(
+                merged_kwargs, scope_ids
+            )
+        except ValidationError as error:
+            return {"success": False, "message": str(error)}
+        values["applies_to"] = target_applies
 
         if "active" in values:
             values["active"] = bool(values["active"])
@@ -686,8 +847,18 @@ class ComplianceController(http.Controller):
             values["minimum_documents"] = int(values["minimum_documents"])
         if "grace_period_days" in values:
             values["grace_period_days"] = int(values["grace_period_days"])
+        if "repeat_every_months" in values:
+            values["repeat_every_months"] = int(values["repeat_every_months"] or 0)
+        if "tasks_needed_minimum" in values:
+            values["tasks_needed_minimum"] = int(values["tasks_needed_minimum"] or 1)
+        if "reopen_on_content_change" in values:
+            values["reopen_on_content_change"] = bool(values["reopen_on_content_change"])
+        if policy._is_compliance_request() and "document_type_ids" not in values:
+            values["document_type_ids"] = [fields.Command.clear()]
         try:
             policy.write(values)
+            if policy._is_compliance_request() and "request_tasks" in kwargs:
+                policy._sync_request_task_definitions(kwargs.get("request_tasks"))
         except (AccessError, ValidationError) as error:
             return {"success": False, "message": str(error)}
         return {"success": True, "data": self._policy_data(policy)}
@@ -721,12 +892,17 @@ class ComplianceController(http.Controller):
     )
     def evaluate_policy(self, policy_id, **kwargs):
         try:
-            require_compliance_manage()
+            require_compliance_run()
         except AccessError as error:
             return {"success": False, "message": str(error)}
         policy = request.env["doc.compliance.policy"].browse(policy_id).exists()
         if not policy:
             return {"success": False, "message": "Policy not found."}
+        if policy.run_in_progress:
+            return {
+                "success": False,
+                "message": "A run is already in progress for this policy.",
+            }
         runs = policy.action_evaluate(run_type="manual")
         evaluations = policy.evaluation_ids if runs else request.env["doc.compliance.evaluation"]
         return {
@@ -1468,14 +1644,15 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def approve_exception(self, exception_id, **kwargs):
-        if not request.env.user.has_group("cleon_document_management.group_document_manager"):
-            return {"success": False, "message": "Document manager access is required."}
         exception = (
             request.env["doc.compliance.exception"].browse(exception_id).exists()
         )
         if not exception:
             return {"success": False, "message": "Exception not found."}
-        exception.action_approve()
+        try:
+            exception.action_approve()
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
         return {"success": True, "status": exception.status}
 
     @http.route(
@@ -1486,12 +1663,425 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def reject_exception(self, exception_id, **kwargs):
-        if not request.env.user.has_group("cleon_document_management.group_document_manager"):
-            return {"success": False, "message": "Document manager access is required."}
         exception = (
             request.env["doc.compliance.exception"].browse(exception_id).exists()
         )
         if not exception:
             return {"success": False, "message": "Exception not found."}
-        exception.action_reject()
+        try:
+            exception.action_reject()
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
         return {"success": True, "status": exception.status}
+
+    @http.route(
+        "/api/compliance/exceptions/<int:exception_id>/revoke",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def revoke_exception(self, exception_id, **kwargs):
+        exception = (
+            request.env["doc.compliance.exception"].browse(exception_id).exists()
+        )
+        if not exception:
+            return {"success": False, "message": "Exception not found."}
+        try:
+            exception.action_revoke(kwargs.get("reason") or "")
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "status": exception.status}
+
+    @http.route(
+        "/api/compliance/policies/<int:policy_id>/run-preflight",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def policy_run_preflight(self, policy_id, **kwargs):
+        try:
+            require_compliance_run()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        policy = request.env["doc.compliance.policy"].browse(policy_id).exists()
+        if not policy:
+            return {"success": False, "message": "Policy not found."}
+        return {"success": True, "data": policy.action_run_preflight()}
+
+    @staticmethod
+    def _employee_compliance_row(evaluation):
+        return {
+            "employee_id": evaluation.employee_id.id,
+            "employee": evaluation.employee_id.name,
+            "status": evaluation.compliance_status or evaluation.status,
+            "reason_message": evaluation.reason_message or "",
+            "policy": evaluation.policy_id.name,
+            "policy_id": evaluation.policy_id.id,
+        }
+
+    @http.route(
+        "/api/compliance/my-team",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def my_team_compliance(self, **kwargs):
+        user = request.env.user
+        employee = user.employee_id
+        if not employee:
+            return {"success": True, "data": {"rows": [], "attention_count": 0}}
+        reports = request.env["hr.employee"].search(
+            [("parent_id", "=", employee.id), ("active", "=", True)]
+        )
+        evaluations = request.env["doc.compliance.evaluation"].search(
+            [("employee_id", "in", reports.ids)]
+        )
+        rows = [self._employee_compliance_row(item) for item in evaluations]
+        attention = len(
+            [
+                row
+                for row in rows
+                if row["status"] in ("non_compliant", "at_risk", "partial", "pending")
+            ]
+        )
+        return {"success": True, "data": {"rows": rows, "attention_count": attention}}
+
+    @http.route(
+        "/api/compliance/my-verifications",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def my_verifications(self, **kwargs):
+        items = request.env["doc.compliance.verification.item"].search(
+            [("verifier_id", "=", request.env.user.id), ("status", "=", "pending")]
+        )
+        return {
+            "success": True,
+            "data": [
+                {
+                    "id": item.id,
+                    "employee": item.employee_id.name,
+                    "document": item.document_id.name,
+                    "policy": item.policy_id.name if item.policy_id else "",
+                    "sla_due_at": str(item.sla_due_at or ""),
+                }
+                for item in items
+            ],
+        }
+
+    @http.route(
+        "/api/compliance/my-reviews",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def my_reviews(self, **kwargs):
+        employee = request.env.user.employee_id
+        domain = [("status", "in", ("todo", "waiting", "reopened"))]
+        if employee:
+            domain.append(("employee_id.parent_id", "=", employee.id))
+        tasks = request.env["doc.compliance.task"].search(domain, limit=200)
+        return {
+            "success": True,
+            "data": [
+                {
+                    "id": task.id,
+                    "title": task.title,
+                    "employee": task.employee_id.name,
+                    "due_date": str(task.due_date or ""),
+                    "status": task.status,
+                    "task_type": task.task_type,
+                }
+                for task in tasks
+            ],
+        }
+
+    @http.route(
+        "/api/compliance/request-linkable-content",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def compliance_request_linkable_content(self, **kwargs):
+        try:
+            require_compliance_manage()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        Policy = request.env["doc.compliance.policy"]
+        try:
+            policy = Policy._policy_for_linkable_audience(
+                policy_id=kwargs.get("policy_id"),
+                audience_payload={
+                    "applies_to": kwargs.get("applies_to"),
+                    "department_ids": kwargs.get("department_ids"),
+                    "grade_ids": kwargs.get("grade_ids"),
+                    "employee_ids": kwargs.get("employee_ids"),
+                    "work_location_ids": kwargs.get("work_location_ids"),
+                    "employment_type_ids": kwargs.get("employment_type_ids"),
+                    "branch_ids": kwargs.get("branch_ids"),
+                },
+            )
+        except ValidationError as error:
+            return {"success": False, "message": str(error)}
+        items = policy.search_compliance_linkable_content(
+            search=kwargs.get("search") or "",
+            user=request.env.user,
+            limit=kwargs.get("limit") or 50,
+        )
+        return {"success": True, "data": {"items": items, "count": len(items)}}
+
+    @http.route(
+        "/api/compliance/my-tasks",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def my_compliance_tasks(self, **kwargs):
+        employee = request.env.user.employee_id
+        if not employee:
+            return {"success": True, "data": []}
+        tasks = request.env["doc.compliance.task"].search(
+            [
+                ("employee_id", "=", employee.id),
+                ("cycle_id.state", "=", "open"),
+                ("status", "in", ("todo", "waiting", "reopened")),
+            ],
+            order="due_date asc, id asc",
+            limit=200,
+        )
+        return {"success": True, "data": [task.to_api_dict() for task in tasks]}
+
+    @http.route(
+        "/api/compliance/tasks/complete",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def complete_compliance_task(self, **kwargs):
+        task = request.env["doc.compliance.task"].browse(int(kwargs.get("task_id") or 0)).exists()
+        if not task:
+            return {"success": False, "message": "Task not found."}
+        policy = task.policy_id
+        try:
+            task = policy.complete_request_task(task, kwargs)
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": task.to_api_dict()}
+
+    @http.route(
+        "/api/compliance/audit-log",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def compliance_audit_log(self, policy_id=None, limit=100, **kwargs):
+        try:
+            require_compliance_view()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        domain = []
+        if policy_id:
+            domain.append(("policy_id", "=", int(policy_id)))
+        logs = request.env["doc.compliance.audit.log"].search(
+            domain, order="create_date desc", limit=min(int(limit or 100), 500)
+        )
+        return {
+            "success": True,
+            "data": [
+                {
+                    "id": log.id,
+                    "event_type": log.event_type,
+                    "summary": log.summary,
+                    "detail": log.detail or "",
+                    "policy_id": log.policy_id.id if log.policy_id else False,
+                    "created_at": str(log.create_date or ""),
+                }
+                for log in logs
+            ],
+        }
+
+    @http.route(
+        "/api/compliance/retention-settings",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def retention_settings_list(self, document_type_ids=None, **kwargs):
+        try:
+            require_compliance_view()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        Retention = request.env["doc.retention.policy"].sudo()
+        domain = [("active", "=", True)]
+        if document_type_ids:
+            domain.append(
+                ("document_type_id", "in", list(document_type_ids or []))
+            )
+        rules = Retention.search(domain, order="document_type_id")
+        return {"success": True, "data": [rule.to_api_dict() for rule in rules]}
+
+    @http.route(
+        "/api/compliance/retention-settings/save",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def retention_settings_save(self, **kwargs):
+        try:
+            require_compliance_manage()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        Retention = request.env["doc.retention.policy"].sudo()
+        rule_id = int(kwargs.get("id") or 0)
+        doc_type_id = int(kwargs.get("document_type_id") or 0)
+        if not doc_type_id:
+            raise ValidationError(_("Document type is required."))
+        values = {
+            "document_type_id": doc_type_id,
+            "name": kwargs.get("name")
+            or request.env["doc.document.type"].browse(doc_type_id).name,
+            "archive_after_value": int(kwargs.get("archive_after_value") or 0),
+            "archive_after_unit": kwargs.get("archive_after_unit") or "years",
+            "delete_after_value": int(kwargs.get("delete_after_value") or 0),
+            "delete_after_unit": kwargs.get("delete_after_unit") or "years",
+            "clock_start": kwargs.get("clock_start") or "upload_date",
+            "backup_required": bool(kwargs.get("backup_required")),
+            "active": bool(kwargs.get("active", True)),
+        }
+        if rule_id:
+            rule = Retention.browse(rule_id).exists()
+            if not rule:
+                return {"success": False, "message": "Rule not found."}
+            rule.write(values)
+        else:
+            rule = Retention.create(values)
+        return {"success": True, "data": rule.to_api_dict()}
+
+    @http.route(
+        "/api/compliance/retention-preview",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def retention_preview(self, **kwargs):
+        try:
+            require_compliance_manage()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        document_type_ids = kwargs.get("document_type_ids") or []
+        scope = {
+            "applies_to": kwargs.get("applies_to") or "all",
+            "department_ids": kwargs.get("department_ids") or [],
+            "grade_ids": kwargs.get("grade_ids") or [],
+            "employee_ids": kwargs.get("employee_ids") or [],
+            "work_location_ids": kwargs.get("work_location_ids") or [],
+            "employment_type_ids": kwargs.get("employment_type_ids") or [],
+            "branch_ids": kwargs.get("branch_ids") or [],
+        }
+        counts = (
+            request.env["doc.compliance.retention.engine"]
+            .sudo()
+            .preview_counts(document_type_ids, scope)
+        )
+        return {"success": True, "data": counts}
+
+    @http.route(
+        "/api/compliance/retention-batches",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def retention_batches(self, policy_id=None, **kwargs):
+        try:
+            require_compliance_view()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        domain = [("state", "=", "open")]
+        if policy_id:
+            domain.append(("policy_id", "=", int(policy_id)))
+        batches = request.env["doc.compliance.retention.owner.batch"].sudo().search(
+            domain, order="due_date"
+        )
+        return {
+            "success": True,
+            "data": [
+                {
+                    "id": batch.id,
+                    "policy_id": batch.policy_id.id,
+                    "policy_name": batch.policy_id.name,
+                    "owner_id": batch.owner_id.id,
+                    "owner_name": batch.owner_id.name,
+                    "action": batch.action,
+                    "due_date": str(batch.due_date or ""),
+                    "state": batch.state,
+                    "item_count": len(batch.item_ids),
+                }
+                for batch in batches
+            ],
+        }
+
+    @http.route(
+        "/api/compliance/retention-batches/<int:batch_id>/approve",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def retention_batch_approve(self, batch_id, **kwargs):
+        try:
+            require_compliance_manage()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        batch = (
+            request.env["doc.compliance.retention.owner.batch"]
+            .sudo()
+            .browse(batch_id)
+            .exists()
+        )
+        if not batch:
+            return {"success": False, "message": "Batch not found."}
+        try:
+            batch.action_approve()
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "state": batch.state}
+
+    @http.route(
+        "/api/compliance/retention-batches/<int:batch_id>/reject",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def retention_batch_reject(self, batch_id, **kwargs):
+        try:
+            require_compliance_manage()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        batch = (
+            request.env["doc.compliance.retention.owner.batch"]
+            .sudo()
+            .browse(batch_id)
+            .exists()
+        )
+        if not batch:
+            return {"success": False, "message": "Batch not found."}
+        try:
+            batch.action_reject()
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "state": batch.state}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 import {
   useComplianceTargets,
@@ -20,6 +20,10 @@ import {
   type PolicyReviewMeta,
 } from "../../../lib/policyCreateForm";
 import { proposalToForm, reviewMetaFromProposal } from "../../../lib/policyProposal";
+import {
+  documentTypesForCompliancePolicy,
+  pruneDocumentTypeIdsForPolicy,
+} from "../../../lib/complianceDocumentTypes";
 import { PolicyForm } from "./CompliancePage";
 import ModalDialog from "./ModalDialog";
 import ComplianceDocumentPickerModal from "./ComplianceDocumentPickerModal";
@@ -97,10 +101,42 @@ export default function OrganizationalCreatePolicyFlow({
     }
   }, [types.data, aiPolicyTypeId]);
 
+  const aiPolicyTypeCode = useMemo(() => {
+    const match = (types.data ?? []).find(
+      (item) => String(item.id) === aiPolicyTypeId,
+    );
+    return match?.code ?? "";
+  }, [types.data, aiPolicyTypeId]);
+
+  const aiSelectableDocumentTypes = useMemo(
+    () =>
+      documentTypesForCompliancePolicy(
+        aiPolicyTypeCode,
+        documents.data ?? [],
+      ),
+    [aiPolicyTypeCode, documents.data],
+  );
+
   useEffect(() => {
-    if (aiDocumentTypeIds.length || !documents.data?.length) return;
-    setAiDocumentTypeIds([documents.data[0].id]);
-  }, [documents.data, aiDocumentTypeIds.length]);
+    if (!documents.data?.length) return;
+    const pruned = pruneDocumentTypeIdsForPolicy(
+      aiPolicyTypeCode,
+      aiDocumentTypeIds,
+      documents.data,
+    );
+    if (pruned.length !== aiDocumentTypeIds.length) {
+      setAiDocumentTypeIds(pruned);
+      return;
+    }
+    if (aiDocumentTypeIds.length) return;
+    const first = aiSelectableDocumentTypes[0];
+    if (first) setAiDocumentTypeIds([first.id]);
+  }, [
+    aiDocumentTypeIds,
+    aiPolicyTypeCode,
+    aiSelectableDocumentTypes,
+    documents.data,
+  ]);
 
   const closeAll = () => {
     setPolicyPath(null);
@@ -349,10 +385,11 @@ export default function OrganizationalCreatePolicyFlow({
                 <div className="block space-y-1 text-sm sm:col-span-2">
                   <span className="font-semibold">Required documents</span>
                   <ComplianceDocumentTypeMultiSelect
-                    types={documents.data ?? []}
+                    types={aiSelectableDocumentTypes}
                     selected={aiDocumentTypeIds}
                     onChange={setAiDocumentTypeIds}
                     placeholder="Select document types"
+                    expiryTypesOnly={aiPolicyTypeCode === "renewable_document"}
                   />
                 </div>
               </div>

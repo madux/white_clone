@@ -30,6 +30,7 @@ import {
 import type { DocDocument } from "../../../lib/types";
 import { documentPreviewUrl } from "../../../lib/documentPreviewUrls";
 import DocumentViewerDialog from "./DocumentViewerDialog";
+import EmployeeFilesAutomationAdminLink from "./EmployeeFilesAutomationAdminLink";
 
 type HomeView = "groups" | "employees" | "documents";
 type WorkspaceTab = "browse" | "issues" | "compliance";
@@ -268,6 +269,7 @@ export default function EmployeeFilesHome() {
 
       {workspaceTab === "browse" ? (
         <>
+          <EmployeeFilesAutomationAdminLink />
           {stats.data ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               {[
