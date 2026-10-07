@@ -4,10 +4,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import {
   ArchiveRestore,
+  ClipboardCheck,
   FileText,
+  ListChecks,
   Pin,
   ShieldCheck,
   Trash2,
+  Users,
 } from "lucide-react";
 import { useCurrentUser } from "../../../hooks/useDocuments";
 import {
@@ -24,12 +27,28 @@ import MyDocumentsPage from "./MyDocumentsPage";
 import DocumentLifecyclePage from "./DocumentLifecyclePage";
 import QuickAccessPage from "./QuickAccessPage";
 import MyCompliancePage from "./MyCompliancePage";
+import ReviewQueuePage from "./ReviewQueuePage";
+import MyReviewsPage from "./MyReviewsPage";
+import MyTeamCompliancePage from "./MyTeamCompliancePage";
 
-function tabFromParam(value: string | null, canArchive: boolean, showCompliance: boolean): WorkspaceTabId {
+function tabFromParam(
+  value: string | null,
+  canArchive: boolean,
+  showCompliance: boolean,
+): WorkspaceTabId {
   if (value === "archived" && canArchive) return "archived";
   if (value === "recycle") return "recycle";
   if (value === "quick-access") return "quick-access";
   if (value === "compliance" && showCompliance) return "compliance";
+  if (
+    value === "review-queue" ||
+    value === "verifications" ||
+    value === "approvals"
+  ) {
+    return "review-queue";
+  }
+  if (value === "reviews" || value === "scheduled-reviews") return "reviews";
+  if (value === "team") return "team";
   return "documents";
 }
 
@@ -42,7 +61,7 @@ export default function MyWorkspacePage() {
     canArchiveEmployeeDocuments(user.data) ||
     canAccessOrgArchived(user.data) ||
     (!canAccessEmployeeFilesAdmin(user.data) && !canAccessOrgLibrary(user.data));
-  const showCompliance = !isManager;
+  const showCompliance = Boolean(user.data?.id);
   const tab = tabFromParam(searchParams.get("tab"), canArchive, showCompliance);
 
   const items = useMemo(
@@ -56,6 +75,13 @@ export default function MyWorkspacePage() {
       ...(showCompliance
         ? [{ id: "compliance" as const, label: "My Compliance", icon: ShieldCheck }]
         : []),
+      {
+        id: "review-queue" as const,
+        label: "Approvals",
+        icon: ClipboardCheck,
+      },
+      { id: "reviews" as const, label: "Scheduled reviews", icon: ListChecks },
+      { id: "team" as const, label: "My Team", icon: Users },
     ],
     [canArchive, showCompliance],
   );
@@ -65,7 +91,10 @@ export default function MyWorkspacePage() {
       <header className="app-page-header">
         <div>
           <h1>My Workspace</h1>
-          <p>Personal documents, archived files, recycle bin, and pinned items.</p>
+          <p>
+            Personal documents, compliance, approvals, scheduled reviews, and team
+            status.
+          </p>
         </div>
       </header>
       <SectionTabs
@@ -84,6 +113,9 @@ export default function MyWorkspacePage() {
       ) : null}
       {tab === "quick-access" ? <QuickAccessPage embedded /> : null}
       {tab === "compliance" ? <MyCompliancePage embedded /> : null}
+      {tab === "review-queue" ? <ReviewQueuePage embedded /> : null}
+      {tab === "reviews" ? <MyReviewsPage embedded /> : null}
+      {tab === "team" ? <MyTeamCompliancePage embedded /> : null}
     </div>
   );
 }

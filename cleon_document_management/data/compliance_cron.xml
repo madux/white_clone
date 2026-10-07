@@ -108,6 +108,15 @@
         <field name="interval_type">minutes</field>
         <field name="active">True</field>
     </record>
+    <record id="ir_cron_compliance_verification_sla" model="ir.cron">
+        <field name="name">Compliance Verification SLA</field>
+        <field name="model_id" ref="model_doc_compliance_verification_item"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_verification_sla()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active">True</field>
+    </record>
     <record id="ir_cron_compliance_leaver_withdrawal" model="ir.cron">
         <field name="name">Compliance Leaver Withdrawal</field>
         <field name="model_id" ref="model_doc_compliance_policy"/>

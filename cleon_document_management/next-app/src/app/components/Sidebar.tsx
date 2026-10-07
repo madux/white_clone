@@ -2,10 +2,12 @@
 import {
   Brain,
   Building2,
-  Inbox,
+  ClipboardCheck,
   LayoutDashboard,
+  ListChecks,
   Menu,
   ScrollText,
+  ShieldCheck,
   Users,
   Settings,
   Briefcase,
@@ -23,11 +25,10 @@ import {
   canAccessEmployeeFilesAdmin,
   canApproveEmployeeDocuments,
 } from "../../../lib/employeeFilesAccess";
-import {
-  canAccessOrgLibrary,
-  canApproveOrgRequests,
-} from "../../../lib/organizationalFilesAccess";
-import { isWorkspacePath } from "../../../lib/workspaceRoutes";
+import { canAccessOrgLibrary } from "../../../lib/organizationalFilesAccess";
+import { canApproveOrgRequests } from "../../../lib/organizationalFilesAccess";
+import { reviewQueueHref } from "../../../lib/reviewQueue";
+import { isWorkspacePath, myWorkspaceHref } from "../../../lib/workspaceRoutes";
 import { useCurrentUser } from "../../../hooks/useDocuments";
 
 type NavLink = { name: string; link: string; icon: any };
@@ -43,9 +44,6 @@ export default function Sidebar() {
   const canTemplates = canViewTemplatesModule(currentUser.data);
   const canEmployeeFiles = canAccessEmployeeFilesAdmin(currentUser.data);
   const canOrgFiles = canAccessOrgLibrary(currentUser.data);
-  const canApprovalRequests =
-    canApproveOrgRequests(currentUser.data) ||
-    canApproveEmployeeDocuments(currentUser.data);
   const [mobileOpen, setMobileOpen] = useState(false);
   const routePath =
     pathname?.replace(/^\/document-management(?=\/|$)/, "") || "/";
@@ -63,15 +61,6 @@ export default function Sidebar() {
         : []),
       ...(canEmployeeFiles
         ? [{ name: "Employee Files", link: "/pages/employee", icon: Users }]
-        : []),
-      ...(canApprovalRequests
-        ? [
-            {
-              name: "Approval requests",
-              link: "/pages/approvals",
-              icon: Inbox,
-            },
-          ]
         : []),
       ...(canOrgFiles
         ? [
@@ -103,17 +92,52 @@ export default function Sidebar() {
     const admin: NavLink[] = canSettings
       ? [{ name: "Settings", link: "/pages/settings", icon: Settings }]
       : [];
+    const user = currentUser.data;
+    const showSelfService =
+      !canEmployeeFiles || user?.is_document_manager !== true;
+    const selfService: NavLink[] = showSelfService
+      ? [
+          {
+            name: "My Compliance",
+            link: "/pages/my-compliance",
+            icon: ShieldCheck,
+          },
+          {
+            name: "My Team",
+            link: myWorkspaceHref("team"),
+            icon: Users,
+          },
+          ...(canApproveEmployeeDocuments(user) ||
+          canApproveOrgRequests(user)
+            ? [
+                {
+                  name: "Approvals",
+                  link: reviewQueueHref("compliance"),
+                  icon: ClipboardCheck,
+                },
+              ]
+            : []),
+          {
+            name: "Scheduled reviews",
+            link: myWorkspaceHref("reviews"),
+            icon: ListChecks,
+          },
+        ]
+      : [];
     return [
       { id: "primary", label: "Workspace", links: primary },
+      ...(selfService.length
+        ? [{ id: "self-service", label: "Self-Service", links: selfService }]
+        : []),
       ...(admin.length ? [{ id: "admin", label: "Admin", links: admin }] : []),
     ];
   }, [
     canEmployeeFiles,
     canOrgFiles,
-    canApprovalRequests,
     canTemplates,
     canSettings,
     isAppAdmin,
+    currentUser.data,
   ]);
 
   const renderLink = (item: NavLink) => {
@@ -123,8 +147,13 @@ export default function Sidebar() {
         ? routePath.startsWith("/pages/dashboard") ||
           routePath.startsWith("/pages/activity")
         : item.name === "My Workspace"
-          ? isWorkspacePath(routePath)
-          : item.name === "Employee Files"
+          ? isWorkspacePath(routePath) &&
+            !routePath.startsWith("/pages/my-compliance")
+          : item.name === "My Compliance"
+            ? routePath.startsWith("/pages/my-compliance") ||
+              (routePath.startsWith("/pages/my-workspace") &&
+                routePath.includes("tab=compliance"))
+            : item.name === "Employee Files"
             ? routePath.startsWith("/pages/employee") ||
               routePath.startsWith("/pages/compliance")
             : item.name === "Approval requests"

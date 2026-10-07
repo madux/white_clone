@@ -12,6 +12,7 @@ import {
   useWorkspaceActivity,
 } from "../../../hooks/useDocuments";
 import { formatDocumentDate } from "../../../lib/formatDocumentDate";
+import { reviewQueueHref } from "../../../lib/reviewQueue";
 import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
 import LibraryFileTable, { type LibraryFileRow } from "./LibraryFileTable";
 import NewMenu from "./NewMenu";
@@ -74,7 +75,7 @@ export default function Dashboard() {
       subtitle: item.document_type || item.department || undefined,
       href: item.employee_id
         ? `/pages/employee/profile/?employee=${item.employee_id}`
-        : "/pages/approvals?kind=employee",
+        : reviewQueueHref("employee"),
       owner: item.employee_name || "—",
       ownerHref: item.employee_id
         ? `/pages/employee/profile/?employee=${item.employee_id}`
@@ -82,11 +83,9 @@ export default function Dashboard() {
       status: (
         <StatusPill
           label={
-            item.status === "awaiting_folder"
-              ? "Awaiting folder"
-              : item.status === "awaiting_folder_restore"
-                ? "Awaiting restore"
-                : "Employee upload"
+            item.status === "awaiting_folder_restore"
+              ? "Awaiting restore"
+              : "Employee upload"
           }
           tone="pending"
         />
@@ -154,8 +153,8 @@ export default function Dashboard() {
       <div>
         <TableHeading
           title="Suggested"
-          href="/pages/approvals?kind=employee"
-          hrefLabel="Open queue"
+          href={reviewQueueHref("employee")}
+          hrefLabel="Open approvals"
         />
         <div className="app-page-body">
           <LibraryFileTable

@@ -153,7 +153,7 @@ export default function EmployeeFilesHome() {
   useEffect(() => {
     const tab = searchParams.get("tab");
     if (tab === "pending-approvals" || tab === "pending") {
-      router.replace("/pages/approvals?kind=employee");
+      router.replace("/pages/my-workspace?tab=review-queue&section=employee");
     }
   }, [searchParams, router]);
 

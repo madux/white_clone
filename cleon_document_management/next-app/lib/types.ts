@@ -549,7 +549,7 @@ export interface PendingEmployeeUpload {
   department_id?: number;
   approval_state: DocDocument["approval_state"];
   state: DocDocument["state"];
-  status: "pending_review" | "awaiting_folder" | "awaiting_folder_restore";
+  status: "pending_review" | "awaiting_folder_restore";
   origin_folder_id?: number;
   origin_folder_name?: string;
   created_at: string;
@@ -566,7 +566,7 @@ export interface MyPendingUpload {
   document_type: string;
   approval_state: DocDocument["approval_state"];
   state: DocDocument["state"];
-  status: "pending_review" | "awaiting_folder" | "awaiting_folder_restore";
+  status: "pending_review" | "awaiting_folder_restore";
   status_label: string;
   origin_folder_name?: string;
   created_at: string;
@@ -599,14 +599,54 @@ export interface MyComplianceEvaluation {
   }>;
 }
 
+export type MyComplianceInboxTab =
+  | "todo"
+  | "waiting"
+  | "done"
+  | "coming_up"
+  | "exceptions";
+
+export type MyCompliancePrimaryAction =
+  | "upload"
+  | "resubmit"
+  | "complete_task"
+  | "view"
+  | "none";
+
 export interface MyComplianceInboxItem {
+  id: string;
+  kind: "document_requirement" | "task" | "exception";
+  tab: MyComplianceInboxTab;
+  evaluation_line_id?: number | false;
+  evaluation_id?: number | false;
+  task_id?: number | false;
+  exception_id?: number | false;
+  title: string;
+  subtitle?: string;
+  policy_id?: number;
   policy: string;
+  policy_description?: string;
+  requirement_description?: string;
+  instructions?: string;
+  document_type_id?: number | false;
   document_type: string;
-  compliance_status: string;
-  reason_message?: string;
+  document_type_name?: string;
+  document_id?: number | false;
   due_date?: string;
-  status?: string;
+  grace_end_date?: string;
+  compliance_status?: string;
+  reason_message?: string;
+  reason_code?: string;
+  status_label?: string;
+  rejection_message?: string;
+  primary_action: MyCompliancePrimaryAction;
+  waiting_label?: string;
+  submitted_at?: string;
+  submitted_by_hr?: boolean;
+  submitted_by_name?: string;
+  task_type?: string;
   valid_until?: string;
+  status?: string;
 }
 
 export interface MyCompliance {
@@ -624,6 +664,10 @@ export interface MyCompliance {
     coming_up: MyComplianceInboxItem[];
     exceptions: MyComplianceInboxItem[];
   };
+  items?: MyComplianceInboxItem[];
+  inbox_summary?: Record<MyComplianceInboxTab, number>;
+  overall_status?: "compliant" | "at_risk" | "non_compliant";
+  has_compliance_portal?: boolean;
   summary: {
     compliant: number;
     partial: number;
@@ -745,6 +789,27 @@ export interface CompliancePolicy {
   assigned_auditor?: string;
   retention_action_mode?: string;
   retention_owner_notice_days?: number;
+  review_trigger?: string;
+  review_start_date?: string;
+  review_reviewer_mode?: string;
+  review_completion_mode?: string;
+  review_completion_minimum?: number;
+  review_overdue_mode?: string;
+  review_milestones?: Array<Record<string, unknown>>;
+}
+
+export interface RetentionSettingRule {
+  id: number;
+  document_type_id: number;
+  document_type_name: string;
+  archive_after_value: number;
+  archive_after_unit: string;
+  delete_after_value: number;
+  delete_after_unit: string;
+  clock_start: string;
+  backup_required: boolean;
+  active: boolean;
+  compliance_complete: boolean;
 }
 
 export type EmployeeLifecycleStatus =
@@ -870,6 +935,37 @@ export interface ComplianceReportResponse<T = Record<string, unknown>> {
   page_size: number;
   data: T[];
   message?: string;
+}
+
+export interface ComplianceVerificationItem {
+  id: number;
+  employee_id: number;
+  employee_name: string;
+  document_id: number;
+  document_name: string;
+  document_type?: string;
+  policy_id?: number | false;
+  policy_name?: string;
+  sla_due_at?: string;
+  status: string;
+  display_status?: string;
+  verifier_note?: string;
+  reviewer_not_found?: boolean;
+  rejection_reason_code?: string;
+  can_act?: boolean;
+  mime_type?: string;
+  issue_date?: string;
+  expiry_date?: string;
+  description?: string;
+  approval_state?: string;
+  state?: string;
+  current_version_number?: number;
+  previous_version_id?: number | false;
+  version_ids?: Array<{
+    id: number;
+    version_number: number;
+    upload_date: string;
+  }>;
 }
 
 export type ComplianceReportKey =

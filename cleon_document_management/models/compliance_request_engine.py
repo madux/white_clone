@@ -372,10 +372,7 @@ class ComplianceRequestEngine(models.Model):
                 and document.document_type_id != task.evidence_document_type_id
             ):
                 raise ValidationError(_("Document type does not match this task."))
-            needs_verify = (
-                document.document_type_id.verification_required
-                or document.document_type_id.require_upload_approval
-            )
+            needs_verify = document.document_type_id.verification_required
             task.write(
                 {
                     "document_id": document.id,

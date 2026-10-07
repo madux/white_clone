@@ -14,6 +14,9 @@ const WORKSPACE_PATH_PREFIXES = [
   "/pages/recycle-bin",
   "/pages/activity",
   "/pages/my-compliance",
+  "/pages/my-verifications",
+  "/pages/my-reviews",
+  "/pages/my-team",
 ];
 
 function isWorkspaceRoute(pathname: string): boolean {

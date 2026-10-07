@@ -1,5 +1,8 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export default function OrganizationalApprovalsRedirect() {
-  redirect("/pages/approvals?kind=organizational");
+import QueryRedirect from "@/app/components/QueryRedirect";
+import { reviewQueueHref } from "../../../../../lib/reviewQueue";
+
+export default function OrganizationApprovalsRoute() {
+  return <QueryRedirect href={() => reviewQueueHref("org")} />;
 }

@@ -27,7 +27,7 @@ Routine testing uses **baseline B only** (current folder-based DMS). See:
 - [`docs/EMPLOYEE_FILES_QA_BASELINE.md`](../docs/EMPLOYEE_FILES_QA_BASELINE.md) — scope and gap prioritization
 - [`docs/EMPLOYEE_FILES_QA_TEST_MATRIX.md`](../docs/EMPLOYEE_FILES_QA_TEST_MATRIX.md) — traceability matrix and **release smoke** (steps 1–9)
 
-**Out of scope:** Document Intelligence; **Compliance** (policies/runs/My Compliance) until a separate Compliance QA document is added.
+**Out of scope:** Document Intelligence admin flows. Employee **My Compliance** (Section 17) is in scope; admin Compliance runs/policies UI may still be tracked separately in Compliance QA docs.
 
 ## Build and deploy into Odoo
 

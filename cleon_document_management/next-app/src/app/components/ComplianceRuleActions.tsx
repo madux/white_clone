@@ -37,8 +37,16 @@ import {
   documentTypesForCompliancePolicy,
   pruneDocumentTypeIdsForPolicy,
 } from "../../../lib/complianceDocumentTypes";
+import type { PolicyCreateFormState } from "../../../lib/policyCreateForm";
 import type { DocumentType } from "../../../lib/types";
 import ComplianceRetentionFields from "./ComplianceRetentionFields";
+import ComplianceReviewScheduleFields from "./ComplianceReviewScheduleFields";
+import ComplianceVerificationFields from "./ComplianceVerificationFields";
+import {
+  REVIEW_COMPLETION_LABELS,
+  REVIEW_REVIEWER_LABELS,
+  REVIEW_TRIGGER_LABELS,
+} from "../../../lib/reviewSchedule";
 import Link from "next/link";
 
 const RETENTION_MODE_LABELS: Record<string, string> = {
@@ -120,6 +128,15 @@ export default function ComplianceRuleActions({
     request_tasks: policy.request_tasks ?? [],
     retention_action_mode: policy.retention_action_mode || "report_only",
     retention_owner_notice_days: policy.retention_owner_notice_days ?? 14,
+    review_trigger: policy.review_trigger || "employee_start",
+    review_start_date: policy.review_start_date || "",
+    review_reviewer_mode: policy.review_reviewer_mode || "line_manager",
+    review_completion_mode: policy.review_completion_mode || "all_scheduled",
+    review_completion_minimum: policy.review_completion_minimum ?? 1,
+    review_overdue_mode: policy.review_overdue_mode || "after_grace",
+    review_milestones: policy.review_milestones ?? [],
+    verified_by: policy.verified_by || "hr_admin",
+    verification_sla_days: policy.verification_sla_days ?? 3,
   });
   const [retentionBatches, setRetentionBatches] = useState<any[]>([]);
   const [formTemplates, setFormTemplates] = useState<{ id: number; name: string }[]>([]);
@@ -159,7 +176,8 @@ export default function ComplianceRuleActions({
   );
 
   useEffect(() => {
-    if (typeCode !== "compliance_request" || mode !== "edit") return;
+    if (mode !== "edit") return;
+    if (typeCode !== "compliance_request" && typeCode !== "review_schedule") return;
     void api.listActiveTemplatesForms({ kind: "form" }).then((result) => {
       const templates = result.data?.templates ?? [];
       setFormTemplates(
@@ -181,7 +199,11 @@ export default function ComplianceRuleActions({
   const save = async (event: FormEvent) => {
     event.preventDefault();
     if (!form.policy_type_id) return setError("Please select a rule type.");
-    if (typeCode !== "compliance_request" && !form.document_type_ids.length)
+    if (
+      typeCode !== "compliance_request" &&
+      typeCode !== "review_schedule" &&
+      !form.document_type_ids.length
+    )
       return setError("Select at least one required document type.");
     setError("");
     const scopePayload =
@@ -233,6 +255,15 @@ export default function ComplianceRuleActions({
         request_tasks: form.request_tasks,
         retention_action_mode: form.retention_action_mode,
         retention_owner_notice_days: form.retention_owner_notice_days,
+        review_trigger: form.review_trigger,
+        review_start_date: form.review_start_date || false,
+        review_reviewer_mode: form.review_reviewer_mode,
+        review_completion_mode: form.review_completion_mode,
+        review_completion_minimum: form.review_completion_minimum,
+        review_overdue_mode: form.review_overdue_mode,
+        review_milestones: form.review_milestones,
+        verified_by: form.verified_by,
+        verification_sla_days: form.verification_sla_days,
       });
     } catch (error: any) {
       setError(error?.message || "Failed to save rule.");
@@ -504,6 +535,35 @@ export default function ComplianceRuleActions({
                       <Info
                         label="HR contact"
                         value={policy.assigned_reviewer || "Unassigned"}
+                      />
+                    </>
+                  )}
+                  {policy.policy_type_code === "review_schedule" && (
+                    <>
+                      <Info
+                        label="Starts when"
+                        value={
+                          REVIEW_TRIGGER_LABELS[policy.review_trigger] ||
+                          policy.review_trigger
+                        }
+                      />
+                      <Info
+                        label="Reviewer"
+                        value={
+                          REVIEW_REVIEWER_LABELS[policy.review_reviewer_mode] ||
+                          policy.review_reviewer_mode
+                        }
+                      />
+                      <Info
+                        label="Milestones"
+                        value={`${(policy.review_milestones || []).length} configured`}
+                      />
+                      <Info
+                        label="Reviews needed"
+                        value={
+                          REVIEW_COMPLETION_LABELS[policy.review_completion_mode] ||
+                          policy.review_completion_mode
+                        }
                       />
                     </>
                   )}
@@ -804,7 +864,23 @@ export default function ComplianceRuleActions({
                   <ComplianceRetentionFields form={form as any} setForm={setForm as any} />
                 ) : null}
 
-                {typeCode !== "compliance_request" ? (
+                {typeCode !== "review_schedule" ? (
+                  <ComplianceVerificationFields
+                    form={form as PolicyCreateFormState}
+                    setForm={setForm as (next: PolicyCreateFormState) => void}
+                  />
+                ) : null}
+
+                {typeCode === "review_schedule" ? (
+                  <ComplianceReviewScheduleFields
+                    form={form as any}
+                    setForm={setForm as any}
+                    forms={formTemplates}
+                    targets={targets}
+                  />
+                ) : null}
+
+                {typeCode !== "compliance_request" && typeCode !== "review_schedule" ? (
                   <div className="sm:col-span-2">
                     <span className="label">Required documents</span>
                     <ComplianceDocumentTypeMultiSelect

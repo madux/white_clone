@@ -345,6 +345,80 @@ export const api = {
   getMyCompliance: () =>
     rpc<{ success: boolean; data: MyCompliance }>("/api/my-compliance", {}),
 
+  getMyComplianceInboxItem: (payload: { kind: string; record_id: number }) =>
+    rpc<{ success: boolean; data: import("./types").MyComplianceInboxItem }>(
+      "/api/compliance/my-inbox/item",
+      payload,
+    ),
+
+  submitComplianceDocument: (payload: {
+    files: File[];
+    document_type_ids: number[];
+    policy_id?: number;
+    evaluation_line_id?: number;
+    replace_document_id?: number;
+    expiry_dates?: string[];
+    issue_dates?: string[];
+    descriptions?: string[];
+  }) => {
+    const form = new FormData();
+    payload.files.forEach((file) => form.append("file", file, file.name));
+    form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
+    if (payload.policy_id) {
+      form.append("policy_id", String(payload.policy_id));
+    }
+    if (payload.evaluation_line_id) {
+      form.append("evaluation_line_id", String(payload.evaluation_line_id));
+    }
+    if (payload.replace_document_id) {
+      form.append("replace_document_id", String(payload.replace_document_id));
+    }
+    if (payload.expiry_dates?.length) {
+      form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
+    }
+    if (payload.issue_dates?.length) {
+      form.append("issue_dates", JSON.stringify(payload.issue_dates));
+    }
+    if (payload.descriptions?.length) {
+      form.append("descriptions", JSON.stringify(payload.descriptions));
+    }
+    return multipartClient
+      .post<{ success: boolean; message?: string; data?: { id: number; name: string } }>(
+        "/api/compliance/submit-document",
+        form,
+      )
+      .then((response) => {
+        const body = response.data;
+        if (!body?.success) {
+          throw new Error(body?.message || "We could not save your document. Try again.");
+        }
+        return body;
+      })
+      .catch((err: unknown) => {
+        if (axios.isAxiosError(err) && err.response?.data) {
+          const data = err.response.data as { message?: string };
+          if (data.message) throw new Error(data.message);
+        }
+        throw err;
+      });
+  },
+
+  previewUploadMetadata: (file: File) => {
+    const form = new FormData();
+    form.append("file", file, file.name);
+    return multipartClient
+      .post<{
+        success: boolean;
+        data?: {
+          issue_date?: string;
+          expiry_date?: string;
+          description?: string;
+          detected_fields?: string[];
+        };
+      }>("/api/my-documents/upload-preview", form)
+      .then((r) => r.data);
+  },
+
   getDocument: (id: number) =>
     rpc<{ success: boolean; data: DocDocument }>(
       `/api/view-document/${id}`,
@@ -1275,10 +1349,34 @@ export const api = {
     }>("/api/compliance/my-team", {}),
 
   getMyVerifications: () =>
-    rpc<{ success: boolean; data: Array<Record<string, unknown>> }>(
-      "/api/compliance/my-verifications",
-      {},
-    ),
+    rpc<{
+      success: boolean;
+      data: import("./types").ComplianceVerificationItem[];
+    }>("/api/compliance/my-verifications", {}),
+
+  getComplianceVerificationDetail: (itemId: number) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: import("./types").ComplianceVerificationItem;
+    }>(`/api/compliance/verifications/${itemId}`, {}),
+
+  approveComplianceVerification: (itemId: number) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data?: import("./types").ComplianceVerificationItem;
+    }>(`/api/compliance/verifications/${itemId}/approve`, {}),
+
+  rejectComplianceVerification: (
+    itemId: number,
+    payload: { reason_code: string; note?: string },
+  ) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data?: import("./types").ComplianceVerificationItem;
+    }>(`/api/compliance/verifications/${itemId}/reject`, payload),
 
   completeComplianceTask: (taskId: number, payload: Record<string, unknown>) =>
     rpc<{ success: boolean; data: Record<string, unknown>; message?: string }>(
@@ -1314,13 +1412,17 @@ export const api = {
     rpc<{
       success: boolean;
       message?: string;
-      data: Array<Record<string, unknown>>;
+      data: import("./types").RetentionSettingRule[];
     }>("/api/compliance/retention-settings", {
       document_type_ids: document_type_ids || [],
     }),
 
   saveRetentionSettings: (payload: Record<string, unknown>) =>
-    rpc<{ success: boolean; message?: string; data: Record<string, unknown> }>(
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: import("./types").RetentionSettingRule;
+    }>(
       "/api/compliance/retention-settings/save",
       payload,
     ),
@@ -1358,6 +1460,21 @@ export const api = {
     rpc<{ success: boolean; data: Array<Record<string, unknown>> }>(
       "/api/compliance/my-reviews",
       {},
+    ),
+
+  startComplianceReview: (reviewId: number) =>
+    rpc<{ success: boolean; message?: string; data?: Record<string, unknown> }>(
+      `/api/compliance/reviews/${reviewId}/start`,
+      {},
+    ),
+
+  completeComplianceReview: (
+    reviewId: number,
+    payload: { outcome?: string; submission_id?: number },
+  ) =>
+    rpc<{ success: boolean; message?: string; data?: Record<string, unknown> }>(
+      `/api/compliance/reviews/${reviewId}/complete`,
+      payload,
     ),
 
   getComplianceAuditLog: (policyId?: number) =>

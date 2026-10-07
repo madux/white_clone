@@ -4,6 +4,7 @@ import {
   defaultRequestSchedule,
   type ComplianceRequestTaskDefinition,
 } from "./complianceRequestTasks";
+import type { ReviewMilestoneDefinition } from "./reviewSchedule";
 import {
   buildScopePayload,
   emptyPolicyScope,
@@ -49,6 +50,15 @@ export type PolicyCreateFormState = {
   request_tasks: ComplianceRequestTaskDefinition[];
   retention_action_mode: string;
   retention_owner_notice_days: number;
+  review_trigger: string;
+  review_start_date: string;
+  review_reviewer_mode: string;
+  review_completion_mode: string;
+  review_completion_minimum: number;
+  review_overdue_mode: string;
+  review_milestones: ReviewMilestoneDefinition[];
+  verified_by: string;
+  verification_sla_days: number;
 };
 
 export type PolicyReviewMeta = {
@@ -94,6 +104,15 @@ export function defaultPolicyForm(policyTypeId = ""): PolicyCreateFormState {
     request_tasks: [],
     retention_action_mode: "report_only",
     retention_owner_notice_days: 14,
+    review_trigger: "employee_start",
+    review_start_date: "",
+    review_reviewer_mode: "line_manager",
+    review_completion_mode: "all_scheduled",
+    review_completion_minimum: 1,
+    review_overdue_mode: "after_grace",
+    review_milestones: [],
+    verified_by: "hr_admin",
+    verification_sla_days: 3,
   };
 }
 
@@ -140,5 +159,14 @@ export function buildCreatePolicyPayload(form: PolicyCreateFormState) {
     request_tasks: form.request_tasks,
     retention_action_mode: form.retention_action_mode || "report_only",
     retention_owner_notice_days: form.retention_owner_notice_days || 0,
+    review_trigger: form.review_trigger,
+    review_start_date: form.review_start_date || false,
+    review_reviewer_mode: form.review_reviewer_mode,
+    review_completion_mode: form.review_completion_mode,
+    review_completion_minimum: form.review_completion_minimum,
+    review_overdue_mode: form.review_overdue_mode,
+    review_milestones: form.review_milestones,
+    verified_by: form.verified_by || "hr_admin",
+    verification_sla_days: form.verification_sla_days || 3,
   };
 }

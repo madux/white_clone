@@ -1,7 +1,8 @@
 "use client";
 
-import MyVerificationsPage from "@/app/components/MyVerificationsPage";
+import QueryRedirect from "@/app/components/QueryRedirect";
+import { reviewQueueHref } from "../../../../lib/reviewQueue";
 
 export default function MyVerificationsRoute() {
-  return <MyVerificationsPage />;
+  return <QueryRedirect href={() => reviewQueueHref("compliance")} />;
 }

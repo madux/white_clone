@@ -109,6 +109,20 @@ class ComplianceController(http.Controller):
                     "request_tasks": [],
                 }
             ),
+            **(
+                policy.review_fields_api()
+                if policy.policy_type_id
+                and policy.policy_type_id.code == "review_schedule"
+                else {
+                    "review_trigger": "",
+                    "review_start_date": "",
+                    "review_reviewer_mode": "line_manager",
+                    "review_completion_mode": "all_scheduled",
+                    "review_completion_minimum": 1,
+                    "review_overdue_mode": "after_grace",
+                    "review_milestones": [],
+                }
+            ),
         }
 
     @staticmethod
@@ -140,6 +154,27 @@ class ComplianceController(http.Controller):
         if "reopen_on_content_change" in values:
             values["reopen_on_content_change"] = bool(
                 values["reopen_on_content_change"]
+            )
+        return values
+
+    @staticmethod
+    def _review_policy_values(kwargs):
+        values = {}
+        for key in (
+            "review_trigger",
+            "review_start_date",
+            "review_reviewer_mode",
+            "review_completion_mode",
+            "review_completion_minimum",
+            "review_overdue_mode",
+        ):
+            if key in kwargs:
+                values[key] = kwargs[key]
+        if "review_start_date" in values and not values["review_start_date"]:
+            values["review_start_date"] = False
+        if "review_completion_minimum" in values:
+            values["review_completion_minimum"] = int(
+                values["review_completion_minimum"] or 1
             )
         return values
 
@@ -243,7 +278,7 @@ class ComplianceController(http.Controller):
                 kwargs.get("retention_owner_notice_days") or 0
             ),
             "verified_by": kwargs.get("verified_by") or "hr_admin",
-            "verification_sla_days": int(kwargs.get("verification_sla_days") or 7),
+            "verification_sla_days": int(kwargs.get("verification_sla_days") or 3),
         }
         if values["lifecycle_status"] == "draft":
             values["active"] = False
@@ -254,14 +289,17 @@ class ComplianceController(http.Controller):
         type_code = ComplianceController._policy_type_code(
             env, kwargs.get("policy_type_id")
         )
-        if type_code != "compliance_request":
+        if type_code == "compliance_request":
+            values["document_type_ids"] = [fields.Command.clear()]
+            values.update(ComplianceController._request_policy_values(kwargs))
+        elif type_code == "review_schedule":
+            values["document_type_ids"] = [fields.Command.clear()]
+            values.update(ComplianceController._review_policy_values(kwargs))
+        elif type_code != "retention":
             if not env["doc.document.type"].browse(
                 kwargs.get("document_type_ids", []) or []
             ).exists():
                 raise ValidationError(_("Select at least one required document type."))
-        else:
-            values["document_type_ids"] = [fields.Command.clear()]
-            values.update(ComplianceController._request_policy_values(kwargs))
         return values
 
     @staticmethod
@@ -629,6 +667,8 @@ class ComplianceController(http.Controller):
             policy = request.env["doc.compliance.policy"].create(values)
             if policy._is_compliance_request():
                 policy._sync_request_task_definitions(kwargs.get("request_tasks"))
+            if policy._is_review_schedule_policy():
+                policy._sync_review_milestones(kwargs.get("review_milestones"))
         except (AccessError, ValidationError) as error:
             return {"success": False, "message": str(error)}
         return {"success": True, "data": self._policy_data(policy)}
@@ -764,6 +804,12 @@ class ComplianceController(http.Controller):
                 "tasks_needed_mode",
                 "tasks_needed_minimum",
                 "reopen_on_content_change",
+                "review_trigger",
+                "review_start_date",
+                "review_reviewer_mode",
+                "review_completion_mode",
+                "review_completion_minimum",
+                "review_overdue_mode",
             )
             if key in kwargs
         }
@@ -855,10 +901,14 @@ class ComplianceController(http.Controller):
             values["reopen_on_content_change"] = bool(values["reopen_on_content_change"])
         if policy._is_compliance_request() and "document_type_ids" not in values:
             values["document_type_ids"] = [fields.Command.clear()]
+        if policy._is_review_schedule_policy() and "document_type_ids" not in values:
+            values["document_type_ids"] = [fields.Command.clear()]
         try:
             policy.write(values)
             if policy._is_compliance_request() and "request_tasks" in kwargs:
                 policy._sync_request_task_definitions(kwargs.get("request_tasks"))
+            if policy._is_review_schedule_policy() and "review_milestones" in kwargs:
+                policy._sync_review_milestones(kwargs.get("review_milestones"))
         except (AccessError, ValidationError) as error:
             return {"success": False, "message": str(error)}
         return {"success": True, "data": self._policy_data(policy)}
@@ -1757,21 +1807,108 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def my_verifications(self, **kwargs):
-        items = request.env["doc.compliance.verification.item"].search(
-            [("verifier_id", "=", request.env.user.id), ("status", "=", "pending")]
+        user = request.env.user
+        Item = request.env["doc.compliance.verification.item"].sudo()
+        service = request.env["doc.compliance.verification.service"].sudo()
+        items = Item.search(
+            [
+                ("verifier_id", "=", user.id),
+                ("status", "=", "pending"),
+            ],
+            order="sla_due_at asc, id asc",
+            limit=200,
         )
+        if user.has_group("cleon_document_management.group_document_admin"):
+            escalated = Item.search(
+                [("status", "=", "pending"), ("sla_escalated", "=", True)],
+                limit=50,
+            )
+            items = items | escalated
         return {
             "success": True,
-            "data": [
-                {
-                    "id": item.id,
-                    "employee": item.employee_id.name,
-                    "document": item.document_id.name,
-                    "policy": item.policy_id.name if item.policy_id else "",
-                    "sla_due_at": str(item.sla_due_at or ""),
-                }
-                for item in items
-            ],
+            "data": [service.with_user(user).item_to_api_dict(item) for item in items],
+        }
+
+    @http.route(
+        "/api/compliance/verifications/<int:item_id>",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def verification_detail(self, item_id, **kwargs):
+        item = (
+            request.env["doc.compliance.verification.item"]
+            .sudo()
+            .browse(item_id)
+            .exists()
+        )
+        if not item:
+            return {"success": False, "message": "Verification not found."}
+        service = request.env["doc.compliance.verification.service"]
+        user = request.env.user
+        if item.verifier_id != user and not user.has_group(
+            "cleon_document_management.group_document_admin"
+        ):
+            return {"success": False, "message": "Verification not found."}
+        item.document_id.check_access_rule("read")
+        return {
+            "success": True,
+            "data": service.with_user(user).item_detail_api_dict(item),
+        }
+
+    @http.route(
+        "/api/compliance/verifications/<int:item_id>/approve",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def verification_approve(self, item_id, **kwargs):
+        item = (
+            request.env["doc.compliance.verification.item"]
+            .sudo()
+            .browse(item_id)
+            .exists()
+        )
+        if not item:
+            return {"success": False, "message": "Verification not found."}
+        service = request.env["doc.compliance.verification.service"]
+        try:
+            service.approve_items(item, request.env.user)
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {
+            "success": True,
+            "data": service.item_to_api_dict(item),
+        }
+
+    @http.route(
+        "/api/compliance/verifications/<int:item_id>/reject",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def verification_reject(self, item_id, **kwargs):
+        item = (
+            request.env["doc.compliance.verification.item"]
+            .sudo()
+            .browse(item_id)
+            .exists()
+        )
+        if not item:
+            return {"success": False, "message": "Verification not found."}
+        reason_code = kwargs.get("reason_code") or ""
+        note = kwargs.get("note") or kwargs.get("reason") or ""
+        service = request.env["doc.compliance.verification.service"]
+        try:
+            service.reject_items(item, request.env.user, reason_code, note=note)
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {
+            "success": True,
+            "data": service.item_to_api_dict(item),
         }
 
     @http.route(
@@ -1782,25 +1919,73 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def my_reviews(self, **kwargs):
-        employee = request.env.user.employee_id
-        domain = [("status", "in", ("todo", "waiting", "reopened"))]
-        if employee:
-            domain.append(("employee_id.parent_id", "=", employee.id))
-        tasks = request.env["doc.compliance.task"].search(domain, limit=200)
+        user = request.env.user
+        Review = request.env["doc.compliance.review.instance"].sudo()
+        reviews = Review.search(
+            [
+                ("state", "in", ("scheduled", "in_progress", "overdue", "escalated")),
+                ("participant_ids.user_id", "=", user.id),
+            ],
+            order="due_date asc",
+            limit=200,
+        )
+        owner_reviews = Review.search(
+            [
+                ("state", "in", ("scheduled", "in_progress", "overdue", "escalated")),
+                ("reviewer_not_found", "=", True),
+                ("policy_id.owner_id", "=", user.id),
+            ],
+            order="due_date asc",
+            limit=50,
+        )
+        reviews = reviews | owner_reviews
         return {
             "success": True,
-            "data": [
-                {
-                    "id": task.id,
-                    "title": task.title,
-                    "employee": task.employee_id.name,
-                    "due_date": str(task.due_date or ""),
-                    "status": task.status,
-                    "task_type": task.task_type,
-                }
-                for task in tasks
-            ],
+            "data": [review.to_api_dict() for review in reviews],
         }
+
+    @http.route(
+        "/api/compliance/reviews/<int:review_id>/start",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def review_start(self, review_id, **kwargs):
+        review = (
+            request.env["doc.compliance.review.instance"].sudo().browse(review_id).exists()
+        )
+        if not review or not review.user_can_access(request.env.user):
+            return {"success": False, "message": "Review not found."}
+        try:
+            review.policy_id.action_start_review(review, request.env.user)
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": review.to_api_dict()}
+
+    @http.route(
+        "/api/compliance/reviews/<int:review_id>/complete",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def review_complete(self, review_id, **kwargs):
+        review = (
+            request.env["doc.compliance.review.instance"].sudo().browse(review_id).exists()
+        )
+        if not review or not review.user_can_access(request.env.user):
+            return {"success": False, "message": "Review not found."}
+        try:
+            review.policy_id.action_complete_review_participant(
+                review,
+                request.env.user,
+                outcome=kwargs.get("outcome") or "",
+                submission_id=kwargs.get("submission_id"),
+            )
+        except (AccessError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": review.to_api_dict()}
 
     @http.route(
         "/api/compliance/request-linkable-content",
@@ -1836,6 +2021,28 @@ class ComplianceController(http.Controller):
             limit=kwargs.get("limit") or 50,
         )
         return {"success": True, "data": {"items": items, "count": len(items)}}
+
+    @http.route(
+        "/api/compliance/my-inbox/item",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def my_compliance_inbox_item(self, kind=None, record_id=None, **kwargs):
+        employee = request.env.user.employee_id
+        if not employee:
+            return {"success": False, "message": "No employee record linked to this user."}
+        kind = kind or kwargs.get("kind")
+        record_id = record_id or kwargs.get("record_id") or kwargs.get("id")
+        if not kind or not record_id:
+            return {"success": False, "message": "kind and record_id are required."}
+        Inbox = request.env["doc.compliance.employee.inbox"]
+        try:
+            data = Inbox.get_item_detail(employee, kind, int(record_id))
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": data}
 
     @http.route(
         "/api/compliance/my-tasks",

@@ -298,7 +298,7 @@ class CompliancePolicy(models.Model):
         for policy in self:
             if (
                 policy.policy_type_id
-                and policy.policy_type_id.code == "compliance_request"
+                and policy.policy_type_id.code in ("compliance_request", "review_schedule")
             ):
                 continue
             if not policy.document_type_ids:
@@ -410,6 +410,11 @@ class CompliancePolicy(models.Model):
         Requirement = self.env["doc.compliance.requirement"]
         for policy in policies:
             if hasattr(policy, "_is_retention_policy") and policy._is_retention_policy():
+                continue
+            if (
+                hasattr(policy, "_is_review_schedule_policy")
+                and policy._is_review_schedule_policy()
+            ):
                 continue
             policy.auto_requirement_id = Requirement.create(
                 {
@@ -590,6 +595,22 @@ class CompliancePolicy(models.Model):
             return self.evaluate_compliance_request_employee(employee)
         if hasattr(self, "_is_retention_policy") and self._is_retention_policy():
             return self.env["doc.compliance.evaluation"]
+        if hasattr(self, "_is_review_schedule_policy") and self._is_review_schedule_policy():
+            Evaluation = self._sudo_evaluation_env()
+            evaluation = Evaluation.search(
+                [("policy_id", "=", self.id), ("employee_id", "=", employee.id)],
+                limit=1,
+            )
+            if not evaluation:
+                evaluation = Evaluation.create(
+                    {
+                        "policy_id": self.id,
+                        "employee_id": employee.id,
+                        "evaluated_at": fields.Datetime.now(),
+                    }
+                )
+            evaluation._compute_results()
+            return evaluation
         today = fields.Date.context_today(self)
         if (
             not self.active
@@ -676,6 +697,14 @@ class CompliancePolicy(models.Model):
         for policy in self:
             if hasattr(policy, "_is_retention_policy") and policy._is_retention_policy():
                 self.env["doc.compliance.retention.engine"].sudo().run_policy(policy)
+                continue
+            if (
+                hasattr(policy, "_is_review_schedule_policy")
+                and policy._is_review_schedule_policy()
+            ):
+                for employee in policy._target_employees():
+                    policy._generate_reviews_for_employee(employee)
+                policy._process_review_states(fields.Date.context_today(policy))
                 continue
             if policy.run_in_progress:
                 raise ValidationError(

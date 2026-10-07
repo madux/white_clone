@@ -6,6 +6,8 @@ from . import compliance_registration
 from . import compliance_engine
 from . import compliance_versioning
 from . import compliance_work_items
+from . import compliance_verification_service
+from . import compliance_employee_inbox
 from . import compliance_notify
 from . import compliance_policy_execution
 from . import document_approval
@@ -63,4 +65,7 @@ from . import compliance_request_engine
 from . import compliance_request_evaluation
 from . import compliance_retention
 from . import compliance_retention_engine
+from . import compliance_review_schedule
+from . import compliance_review_engine
+from . import compliance_review_evaluation
 from . import organizational_cloud_oauth

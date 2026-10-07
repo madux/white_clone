@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { api } from "../../../lib/api";
 import type { PolicyCreateFormState } from "../../../lib/policyCreateForm";
+import type { RetentionSettingRule } from "../../../lib/types";
 import { buildScopePayload } from "../../../lib/policyScope";
 function Field({
   label,
@@ -21,19 +22,6 @@ function Field({
     </div>
   );
 }
-
-export type RetentionSettingRule = {
-  id: number;
-  document_type_id: number;
-  document_type_name: string;
-  archive_after_value: number;
-  archive_after_unit: string;
-  delete_after_value: number;
-  delete_after_unit: string;
-  clock_start: string;
-  backup_required: boolean;
-  compliance_complete: boolean;
-};
 
 const CLOCK_LABELS: Record<string, string> = {
   upload_date: "Upload date",

@@ -1,7 +1,8 @@
 "use client";
 
-import MyReviewsPage from "@/app/components/MyReviewsPage";
+import QueryRedirect from "@/app/components/QueryRedirect";
+import { myWorkspaceHref } from "../../../../lib/workspaceRoutes";
 
 export default function MyReviewsRoute() {
-  return <MyReviewsPage />;
+  return <QueryRedirect href={() => myWorkspaceHref("reviews")} />;
 }

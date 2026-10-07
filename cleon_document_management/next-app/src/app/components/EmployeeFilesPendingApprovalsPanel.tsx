@@ -2,12 +2,7 @@
 
 import { AlertCircle, Clock3, ExternalLink, Inbox } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import {
-  buildCreateFolderHref,
-  storeCreateFolderIntent,
-} from "../../../lib/createFolderIntent";
 import {
   useApprovalInbox,
   usePendingEmployeeUploads,
@@ -50,11 +45,6 @@ const statusMeta = {
     className: "bg-amber-50 text-amber-700",
     icon: Clock3,
   },
-  awaiting_folder: {
-    label: "Awaiting folder",
-    className: "bg-sky-50 text-sky-700",
-    icon: AlertCircle,
-  },
   awaiting_folder_restore: {
     label: "Restore folder to reassign",
     className: "bg-violet-50 text-violet-700",
@@ -88,26 +78,28 @@ function actionForItem(item: PendingEmployeeUpload) {
     };
   }
   return {
-    href: buildCreateFolderHref(item),
-    label: "Create folder",
-    hint: "Opens the create-folder flow with this employee's department prefilled",
-    secondaryHref: `/pages/employee/profile?employee=${item.employee_id}`,
-    secondaryLabel: "View employee",
-    openCreateFolder: true,
+    href: `/pages/employee/profile?employee=${item.employee_id}&doc=${item.id}`,
+    label: "Review",
+    hint: "Open the employee file to continue",
   };
 }
 
-export default function EmployeeFilesPendingApprovalsPanel() {
-  const router = useRouter();
+export default function EmployeeFilesPendingApprovalsPanel({
+  excludeDocumentIds,
+}: {
+  excludeDocumentIds?: Set<number>;
+} = {}) {
   const uploads = usePendingEmployeeUploads(true);
   const approvalInbox = useApprovalInbox(true);
   const [filter, setFilter] = useState<
-    "all" | "pending_review" | "awaiting_folder" | "awaiting_folder_restore"
+    "all" | "pending_review" | "awaiting_folder_restore"
   >("all");
 
   const uploadItems = uploads.data?.items ?? [];
   const inboxItems = (approvalInbox.data?.items ?? []).filter(
-    (item) => item.folder_type !== "organizational",
+    (item) =>
+      item.folder_type !== "organizational" &&
+      !(excludeDocumentIds?.has(item.document_id) ?? false),
   );
   const inboxDocumentIds = new Set(inboxItems.map((item) => item.document_id));
 
@@ -128,8 +120,6 @@ export default function EmployeeFilesPendingApprovalsPanel() {
       pending_review:
         rows.filter((item) => item.status === "pending_review").length +
         inboxItems.length,
-      awaiting_folder: rows.filter((item) => item.status === "awaiting_folder")
-        .length,
       awaiting_folder_restore: rows.filter(
         (item) => item.status === "awaiting_folder_restore",
       ).length,
@@ -147,17 +137,12 @@ export default function EmployeeFilesPendingApprovalsPanel() {
         value={filter}
         onChange={(value) =>
           setFilter(
-            value as
-              | "all"
-              | "pending_review"
-              | "awaiting_folder"
-              | "awaiting_folder_restore",
+            value as "all" | "pending_review" | "awaiting_folder_restore",
           )
         }
         items={[
           { id: "all", label: "All", count: counts.all },
           { id: "pending_review", label: "Pending approval", count: counts.pending_review },
-          { id: "awaiting_folder", label: "Awaiting folder", count: counts.awaiting_folder },
           {
             id: "awaiting_folder_restore",
             label: "Awaiting restore",
@@ -284,43 +269,14 @@ export default function EmployeeFilesPendingApprovalsPanel() {
                         {formatDate(item.created_at)}
                       </td>
                       <td className="dms-col-actions">
-                        <div className="flex flex-col items-end gap-1.5">
-                          {"openCreateFolder" in action && action.openCreateFolder ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                storeCreateFolderIntent({
-                                  employeeId: item.employee_id,
-                                  departmentId: item.department_id || undefined,
-                                  folderName: item.department || "",
-                                });
-                                router.push(action.href);
-                              }}
-                              className="app-btn app-btn-primary"
-                              title={action.hint}
-                            >
-                              {action.label}
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </button>
-                          ) : (
-                            <Link
-                              href={action.href}
-                              className="app-btn app-btn-primary"
-                              title={action.hint}
-                            >
-                              {action.label}
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </Link>
-                          )}
-                          {"secondaryHref" in action && action.secondaryHref ? (
-                            <Link
-                              href={action.secondaryHref}
-                              className="text-xs font-semibold text-brand-pink hover:underline"
-                            >
-                              {action.secondaryLabel}
-                            </Link>
-                          ) : null}
-                        </div>
+                        <Link
+                          href={action.href}
+                          className="app-btn app-btn-primary"
+                          title={action.hint}
+                        >
+                          {action.label}
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Link>
                       </td>
                     </tr>
                   );

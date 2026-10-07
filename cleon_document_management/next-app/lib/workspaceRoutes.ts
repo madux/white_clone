@@ -5,7 +5,10 @@ export type WorkspaceTabId =
   | "archived"
   | "recycle"
   | "quick-access"
-  | "compliance";
+  | "compliance"
+  | "review-queue"
+  | "reviews"
+  | "team";
 
 export const WORKSPACE_TAB_IDS: WorkspaceTabId[] = [
   "documents",
@@ -13,6 +16,9 @@ export const WORKSPACE_TAB_IDS: WorkspaceTabId[] = [
   "recycle",
   "quick-access",
   "compliance",
+  "review-queue",
+  "reviews",
+  "team",
 ];
 
 export function isWorkspacePath(path: string) {
@@ -22,7 +28,10 @@ export function isWorkspacePath(path: string) {
     path.startsWith("/pages/archived") ||
     path.startsWith("/pages/recycle-bin") ||
     path.startsWith("/pages/quick-access") ||
-    path.startsWith("/pages/my-compliance")
+    path.startsWith("/pages/my-compliance") ||
+    path.startsWith("/pages/my-verifications") ||
+    path.startsWith("/pages/my-reviews") ||
+    path.startsWith("/pages/my-team")
   );
 }
 

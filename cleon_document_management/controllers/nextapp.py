@@ -262,6 +262,7 @@ class NextAppController(http.Controller):
             ],
             order="create_date desc, sequence asc",
         )
+        Verification = request.env["doc.compliance.verification.service"].sudo()
         items = []
         for approval in approvals:
             document = approval.document_id
@@ -269,6 +270,10 @@ class NextAppController(http.Controller):
                 continue
             if document.folder_id.folder_type == "organizational":
                 document._mark_upload_approved_without_review()
+                continue
+            if document.document_type_id.verification_required and Verification.document_pending_verification(
+                document
+            ):
                 continue
             employee = document.employee_id.name if document.employee_id else "Organization"
             items.append(
@@ -313,16 +318,18 @@ class NextAppController(http.Controller):
             pending_folders = request.env["doc.folder"].get_pending_upload_folder()
         Document = request.env["doc.document"]
 
-        def pending_upload_item(document):
-            employee = document.employee_id
+        def pending_upload_status(document):
             if document.approval_state == "pending":
-                status = "pending_review"
-            elif document.recycle_origin_folder_id:
-                status = "awaiting_folder_restore"
-            elif document.state in ("draft", "processing"):
-                status = "awaiting_folder"
-            else:
-                status = "awaiting_folder"
+                return "pending_review"
+            if document.recycle_origin_folder_id:
+                return "awaiting_folder_restore"
+            return None
+
+        def pending_upload_item(document):
+            status = pending_upload_status(document)
+            if not status:
+                return None
+            employee = document.employee_id
             return {
                 "id": document.id,
                 "name": document.name,
@@ -338,7 +345,6 @@ class NextAppController(http.Controller):
                 "status": status,
                 "status_label": dict(
                     pending_review="Pending review",
-                    awaiting_folder="Awaiting folder",
                     awaiting_folder_restore="Restore folder to reassign",
                 ).get(status, status),
                 "origin_folder_id": document.recycle_origin_folder_id.id or False,
@@ -358,7 +364,10 @@ class NextAppController(http.Controller):
         items = []
         seen_document_ids = set()
         for document in documents:
-            items.append(pending_upload_item(document))
+            item = pending_upload_item(document)
+            if not item:
+                continue
+            items.append(item)
             seen_document_ids.add(document.id)
 
         approval_pending = Document.search(
@@ -372,7 +381,10 @@ class NextAppController(http.Controller):
             order="create_date desc",
         )
         for document in approval_pending:
-            items.append(pending_upload_item(document))
+            item = pending_upload_item(document)
+            if not item:
+                continue
+            items.append(item)
             seen_document_ids.add(document.id)
 
         return {"success": True, "data": {"count": len(items), "items": items}}

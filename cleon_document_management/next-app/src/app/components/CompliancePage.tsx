@@ -82,6 +82,8 @@ import ComplianceRuleReviewScreen from "./ComplianceRuleReviewScreen";
 import ComplianceRetentionFields, {
   useRetentionPreview,
 } from "./ComplianceRetentionFields";
+import ComplianceReviewScheduleFields from "./ComplianceReviewScheduleFields";
+import ComplianceVerificationFields from "./ComplianceVerificationFields";
 import {
   InputGroup,
   InputGroupAddon,
@@ -1437,7 +1439,7 @@ export function PolicyForm({
   );
 
   useEffect(() => {
-    if (typeCode !== "compliance_request") return;
+    if (typeCode !== "compliance_request" && typeCode !== "review_schedule") return;
     void api.listActiveTemplatesForms({ kind: "form" }).then((result) => {
       const templates = result.data?.templates ?? [];
       setFormTemplates(
@@ -1585,12 +1587,25 @@ export function PolicyForm({
           />
         </Field>
 
-        <TypeSpecificFields
-          typeCode={typeCode}
-          form={form}
-          setForm={setForm}
-          targets={targets}
-        />
+        {typeCode === "review_schedule" ? (
+          <ComplianceReviewScheduleFields
+            form={form}
+            setForm={setForm}
+            forms={formTemplates}
+            targets={targets}
+          />
+        ) : (
+          <TypeSpecificFields
+            typeCode={typeCode}
+            form={form}
+            setForm={setForm}
+            targets={targets}
+          />
+        )}
+
+        {typeCode !== "review_schedule" ? (
+          <ComplianceVerificationFields form={form} setForm={setForm} />
+        ) : null}
 
         {typeCode === "compliance_request" ? (
           <>
@@ -1642,7 +1657,7 @@ export function PolicyForm({
               />
             </Field>
           </>
-        ) : (
+        ) : typeCode !== "review_schedule" ? (
           <div className="sm:col-span-2">
             <span className="label">Required documents</span>
             <ComplianceDocumentTypeMultiSelect
@@ -1659,7 +1674,7 @@ export function PolicyForm({
               }
             />
           </div>
-        )}
+        ) : null}
         <Field label="Schedule">
           <ThemedSelect
             value={form.schedule}
@@ -1683,7 +1698,9 @@ export function PolicyForm({
             }
           />
         </Field>
-        {typeCode !== "compliance_request" && typeCode !== "retention" ? (
+        {typeCode !== "compliance_request" &&
+        typeCode !== "retention" &&
+        typeCode !== "review_schedule" ? (
           <Field label="Copies needed">
             <input
               required

@@ -153,8 +153,22 @@ class ComplianceVerificationItem(models.Model):
         index=True,
     )
     rejection_reason = fields.Text()
+    rejection_reason_code = fields.Selection(
+        selection=[
+            ("illegible", "Illegible"),
+            ("wrong_document", "Wrong document"),
+            ("expired", "Expired"),
+            ("details_mismatch", "Details do not match"),
+            ("incomplete", "Incomplete"),
+            ("other", "Other"),
+        ],
+    )
     submitted_at = fields.Datetime(default=fields.Datetime.now)
     sla_due_at = fields.Datetime()
+    sla_reminder_sent = fields.Boolean(default=False, copy=False)
+    sla_escalated = fields.Boolean(default=False, copy=False)
+    verifier_not_found = fields.Boolean(default=False, copy=False)
+    verifier_note = fields.Char()
 
     def _check_not_self_verify(self):
         for item in self:
@@ -169,69 +183,50 @@ class ComplianceVerificationItem(models.Model):
         return records
 
     def action_approve(self):
-        self._check_not_self_verify()
-        if self.env.user not in self.mapped("verifier_id") and not self.env.user.has_group(
-            "cleon_document_management.group_document_admin"
-        ):
-            raise AccessError(_("This verification is not assigned to you."))
-        for item in self:
-            item.document_id.sudo().write(
-                {"approval_state": "approved", "state": "approved"}
-            )
-            item.status = "approved"
-            self.env["doc.compliance.recheck.job"].schedule_employee(
-                item.employee_id, item.policy_id, reason="verification_approved"
-            )
-            Task = self.env["doc.compliance.task"].sudo()
-            waiting = Task.search(
-                [
-                    ("document_id", "=", item.document_id.id),
-                    ("employee_id", "=", item.employee_id.id),
-                    ("status", "=", "waiting"),
-                ],
-                limit=1,
-            )
-            if waiting:
-                waiting.write(
-                    {
-                        "status": "done",
-                        "completed_at": fields.Datetime.now(),
-                    }
-                )
-                if waiting.cycle_id:
-                    waiting.policy_id._sync_request_cycle_state(waiting.cycle_id)
+        self.env["doc.compliance.verification.service"].approve_items(
+            self, self.env.user
+        )
 
-    def action_reject(self, reason):
-        if not reason:
-            raise ValidationError(_("A rejection reason is required."))
-        for item in self:
-            item.document_id.sudo().write(
-                {
-                    "approval_state": "rejected",
-                    "rejection_reason": reason,
-                }
-            )
-            item.write({"status": "rejected", "rejection_reason": reason})
-            self.env["doc.compliance.recheck.job"].schedule_employee(
-                item.employee_id, item.policy_id, reason="verification_rejected"
-            )
-            Task = self.env["doc.compliance.task"].sudo()
-            waiting = Task.search(
-                [
-                    ("document_id", "=", item.document_id.id),
-                    ("employee_id", "=", item.employee_id.id),
-                    ("status", "in", ("waiting", "done")),
-                ],
-                limit=1,
-            )
-            if waiting:
-                waiting.write(
-                    {
-                        "status": "reopened",
-                        "rejection_reason": reason,
-                        "completed_at": False,
-                        "document_id": False,
-                    }
+    def action_reject(self, reason, reason_code=None):
+        code = reason_code or "other"
+        note = reason or ""
+        if code != "other":
+            note = reason or ""
+        self.env["doc.compliance.verification.service"].reject_items(
+            self,
+            self.env.user,
+            code,
+            note=note if code == "other" else (reason or ""),
+        )
+
+    @api.model
+    def _cron_verification_sla(self):
+        now = fields.Datetime.now()
+        pending = self.search([("status", "=", "pending")])
+        Audit = self.env["doc.compliance.audit.log"]
+        for item in pending:
+            if not item.sla_due_at or not item.policy_id:
+                continue
+            policy = item.policy_id
+            sla_days = max(policy.verification_sla_days or 3, 1)
+            escalate_at = item.sla_due_at + timedelta(days=sla_days)
+            if now >= item.sla_due_at and not item.sla_reminder_sent:
+                item.sla_reminder_sent = True
+                Audit.log_event(
+                    "verification_sla_reminder",
+                    _("Verification SLA reminder"),
+                    policy=policy,
+                    employee=item.employee_id,
+                    detail=item.document_id.name,
+                )
+            if now >= escalate_at and not item.sla_escalated:
+                item.sla_escalated = True
+                Audit.log_event(
+                    "verification_sla_escalated",
+                    _("Verification overdue (2× SLA)"),
+                    policy=policy,
+                    employee=item.employee_id,
+                    detail=item.document_id.name,
                 )
 
 
@@ -264,16 +259,24 @@ class CompliancePolicyWorkItems(models.AbstractModel):
     def _maybe_queue_verification(self, employee, document):
         self.ensure_one()
         document_type = document.document_type_id
-        needs = document_type.verification_required or document_type.require_upload_approval
-        if not needs:
+        if not document_type.verification_required:
             return
         verifier = self._resolve_verifier_user(employee)
+        verifier_not_found = False
+        verifier_note = ""
+        original = verifier
         if not verifier:
-            return
+            verifier = self._admin_users()[:1]
+            verifier_not_found = True
+            verifier_note = _("Verifier not found; routed to HR administrator.")
         if employee.user_id and verifier == employee.user_id:
             verifier = self.owner_id or self._admin_users()[:1]
+            verifier_note = _("Submitter cannot verify; routed to alternate verifier.")
         if not verifier:
             return
+        if not original and not verifier_not_found:
+            verifier_not_found = True
+            verifier_note = _("Verifier not found; routed to HR administrator.")
         existing = self.env["doc.compliance.verification.item"].search(
             [
                 ("document_id", "=", document.id),
@@ -283,13 +286,19 @@ class CompliancePolicyWorkItems(models.AbstractModel):
         )
         if existing:
             return
-        sla_days = max(self.verification_sla_days or 7, 1)
-        self.env["doc.compliance.verification.item"].create(
+        sla_days = max(self.verification_sla_days or 3, 1)
+        item = self.env["doc.compliance.verification.item"].create(
             {
                 "policy_id": self.id,
                 "employee_id": employee.id,
                 "document_id": document.id,
                 "verifier_id": verifier.id,
                 "sla_due_at": fields.Datetime.now() + timedelta(days=sla_days),
+                "verifier_not_found": verifier_not_found,
+                "verifier_note": verifier_note,
             }
         )
+        self.env["doc.compliance.verification.service"].clear_duplicate_upload_approvals(
+            document
+        )
+        return item

@@ -204,7 +204,7 @@ class CompliancePolicyVersioning(models.AbstractModel):
         ],
         default="hr_admin",
     )
-    verification_sla_days = fields.Integer(default=7)
+    verification_sla_days = fields.Integer(default=3)
     assignment_ids = fields.One2many(
         "doc.compliance.assignment", "policy_id", string="Assignments"
     )

@@ -1,4 +1,5 @@
 import { validateComplianceRequestConfig } from "./complianceRequestTasks";
+import { validateReviewScheduleConfig } from "./reviewSchedule";
 import type { PolicyCreateFormState, PolicyReviewMeta } from "./policyCreateForm";
 import { hasPolicyScopeFilters } from "./policyScope";
 
@@ -42,10 +43,25 @@ export function validatePolicyCreateForm(
       form.due_days,
     );
     missingFields.push(...requestErrors);
-  } else if (typeCode !== "retention" && !form.document_type_ids.length) {
+  } else if (
+    typeCode !== "retention" &&
+    typeCode !== "review_schedule" &&
+    !form.document_type_ids.length
+  ) {
     missingFields.push("At least one required document type");
   } else if (typeCode === "retention" && !form.document_type_ids.length) {
     missingFields.push("At least one document type");
+  } else if (typeCode === "review_schedule") {
+    missingFields.push(...validateReviewScheduleConfig(form.review_milestones));
+    if (!form.review_trigger) {
+      missingFields.push("When reviews start");
+    }
+    if (
+      form.review_reviewer_mode === "assigned_reviewer" &&
+      !form.assigned_reviewer_id
+    ) {
+      missingFields.push("Assigned reviewer");
+    }
   }
   if (!(form.effective_date || "").trim()) {
     missingFields.push("Effective date");
@@ -53,6 +69,7 @@ export function validatePolicyCreateForm(
   if (
     typeCode !== "compliance_request" &&
     typeCode !== "retention" &&
+    typeCode !== "review_schedule" &&
     (!form.minimum_documents || Number(form.minimum_documents) < 1)
   ) {
     missingFields.push("Copies needed (minimum 1)");

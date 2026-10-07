@@ -85,10 +85,77 @@ class ComplianceNotify(models.AbstractModel):
                 note=note,
             )
 
+    def _notify_sms_if_available(self, employee, message):
+        phone = employee.mobile_phone or employee.work_phone
+        if not phone:
+            return
+        Sms = self.env.get("sms.sms")
+        if not Sms:
+            _logger.info(
+                "Compliance SMS skipped for %s (no sms module): %s",
+                employee.name,
+                message,
+            )
+            return
+        try:
+            Sms.create({"number": phone, "body": message}).send()
+        except Exception:
+            _logger.exception("Compliance SMS failed for employee %s", employee.id)
+
+    @api.model
+    def notify_employee_action_required(self, policy, employee, evaluation):
+        """Notify employee (portal) or HR (no portal) that compliance action is needed."""
+        if not evaluation or not policy.active or not employee:
+            return
+        today = fields.Date.context_today(self)
+        kind = "employee_action_required"
+        if self._already_sent(policy, employee, kind, today):
+            return
+        actionable = evaluation.line_ids.filtered(
+            lambda line: line.reason_code == "rejected"
+            or (
+                line.status in ("missing", "grace")
+                and line.compliance_status not in ("pending", "compliant", "exempt")
+            )
+        )
+        if not actionable:
+            return
+        missing_names = ", ".join(
+            actionable.mapped("document_type_id.name") or actionable.mapped("requirement_id.name")
+        )
+        note = _(
+            "Action needed for %(policy)s: %(items)s",
+            policy=policy.name,
+            items=missing_names or _("required items"),
+        )
+        if employee.has_compliance_portal_access() and employee.user_id:
+            self._send_mail(
+                employee.user_id,
+                _("Compliance action needed: %s") % policy.name,
+                "<p>%s</p><p>Open My Compliance in CleanHR Document Management.</p>"
+                % note,
+            )
+        else:
+            recipients = self._admin_users()
+            if policy.assigned_reviewer_id:
+                recipients |= policy.assigned_reviewer_id
+            self._send_mail(
+                recipients,
+                _("Submit compliance documents for %s") % employee.name,
+                "<p>%(employee)s does not have portal access. Please submit on their behalf.</p><p>%(note)s</p>"
+                % {"employee": employee.name, "note": note},
+            )
+            self._notify_sms_if_available(
+                employee,
+                _("HR action needed: compliance documents for %s.") % employee.name,
+            )
+        self._log_sent(policy, employee, kind, today)
+
     @api.model
     def notify_after_evaluation(self, policy, employee, evaluation, previous_status=False):
         if not evaluation or not policy.active:
             return
+        self.notify_employee_action_required(policy, employee, evaluation)
         code = policy.policy_type_id.code if policy.policy_type_id else ""
         if code != "document_requirement":
             return

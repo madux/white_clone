@@ -72,9 +72,17 @@ class ComplianceEngine(models.AbstractModel):
 
     @api.model
     def _document_is_verified(self, document, document_type):
-        if not document_type.verification_required and not document_type.require_upload_approval:
+        if document_type.verification_required:
+            service = self.env["doc.compliance.verification.service"].sudo()
+            if service.document_pending_verification(document):
+                return False
+            return service.document_has_approved_verification(document)
+        if not document_type.require_upload_approval:
             return True
-        if document.approval_state == "approved" or document.state in ("approved", "signed"):
+        if document.approval_state == "approved" or document.state in (
+            "approved",
+            "signed",
+        ):
             return True
         if document.approval_state == "rejected":
             return False

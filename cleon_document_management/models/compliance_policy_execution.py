@@ -395,18 +395,8 @@ class CompliancePolicyExecution(models.Model):
 
     @api.model
     def _cron_retention_audits(self):
-        now = fields.Datetime.now()
-        policies = self.search([
-            ("active", "=", True),
-            ("policy_type_id.code", "=", "review_schedule"),
-        ])
-        for policy in policies:
-            delta = policy._audit_frequency_delta()
-            if not delta:
-                continue
-            if policy.last_audit_at and policy.last_audit_at + delta > now:
-                continue
-            policy._run_retention_audit()
+        """Daily Review Schedule engine (Section 13)."""
+        self._cron_review_schedule()
 
     @api.model
     def _cron_compliance_retention_policies(self):

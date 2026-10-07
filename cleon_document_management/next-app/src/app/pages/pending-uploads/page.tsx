@@ -1,5 +1,8 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import QueryRedirect from "@/app/components/QueryRedirect";
+import { reviewQueueHref } from "../../../../lib/reviewQueue";
 
 export default function PendingUploadsRoute() {
-  redirect("/pages/approvals?kind=employee");
+  return <QueryRedirect href={() => reviewQueueHref("employee")} />;
 }

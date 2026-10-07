@@ -99,6 +99,13 @@ class Document(models.Model):
         default=lambda self: self.env.user,
         readonly=True,
     )
+    submitted_on_behalf_by = fields.Many2one(
+        "res.users",
+        string="Submitted on behalf by",
+        readonly=True,
+        copy=False,
+        help="Set when HR uploads a document for an employee.",
+    )
 
     owner_id = fields.Many2one(
         "res.users",
@@ -1239,6 +1246,18 @@ class Document(models.Model):
             return
 
         require_approval, approvers, approval_flow = self._resolve_approval_requirements()
+
+        if self.document_type_id.verification_required:
+            if folder.is_pending_uploads or (
+                folder.folder_type == "employee" and employee
+            ):
+                self.sudo().write(
+                    {
+                        "state": "pending",
+                        "approval_state": "pending",
+                    }
+                )
+            return
 
         if require_approval and not approvers:
             if folder.is_pending_uploads or (

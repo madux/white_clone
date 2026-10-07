@@ -95,7 +95,7 @@ export default function ValidateScreen() {
       <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-            {isResults ? "Extraction results" : "Review queue"}
+            {isResults ? "Extraction results" : "Validation queue"}
           </p>
           <h1 className="mt-1 text-3xl font-medium text-slate-900">
             {isResults ? "Results" : "Validate"}
@@ -140,7 +140,7 @@ export default function ValidateScreen() {
       </section>
 
       {queue.isError ? (
-        <IntelligenceError message="The review queue could not be loaded." />
+        <IntelligenceError message="The validation queue could not be loaded." />
       ) : null}
       {message ? (
         <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">

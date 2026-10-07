@@ -13,7 +13,6 @@ const STATUS_LABELS: Record<string, string> = {
   not_required: "Not Required",
   pending_review: "Pending Review",
   pending_approval: "Pending Approval",
-  awaiting_folder: "Awaiting Folder",
   awaiting_folder_restore: "Awaiting Restore",
   non_compliant: "Non-Compliant",
   compliant: "Compliant",

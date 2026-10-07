@@ -150,4 +150,22 @@ class HrEmployee(models.Model):
             self.env["doc.compliance.policy"].trigger_compliance_request_for_employees(
                 self, "people_change"
             )
+            self.env["doc.compliance.policy"].trigger_review_schedule_for_employees(
+                self, "people_change"
+            )
+        if "parent_id" in vals:
+            for employee in self:
+                self.env["doc.compliance.policy"].reassign_reviews_for_manager_change(
+                    employee
+                )
         return result
+
+    def has_compliance_portal_access(self):
+        """True when the employee can use the My Compliance self-service UI."""
+        self.ensure_one()
+        user = self.user_id
+        if not user or not user.active:
+            return False
+        if user.share:
+            return False
+        return user.has_group("cleon_document_management.group_document_user")

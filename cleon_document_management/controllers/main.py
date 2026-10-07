@@ -1809,6 +1809,216 @@ class DocumentUICreation(http.Controller):
             {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
         )
 
+    def _finalize_compliance_upload(self, employee, document, policy_id=None):
+        Policy = request.env["doc.compliance.policy"]
+        policies = Policy.browse([int(policy_id)]) if policy_id else Policy.search(
+            [("active", "=", True)]
+        )
+        for policy in policies:
+            if policy_id and policy.id != int(policy_id):
+                continue
+            if not policy._applies_to_employee(employee):
+                continue
+            policy._maybe_queue_verification(employee, document)
+            policy.evaluate_employee(employee)
+        request.env["doc.compliance.recheck.job"].sudo().schedule_employee(
+            employee,
+            policies[:1] if policy_id else False,
+            reason="compliance_upload",
+        )
+
+    @http.route(
+        "/api/compliance/submit-document",
+        type="http",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def compliance_submit_document(self, **kwargs):
+        """Employee compliance upload with optional replace and policy context."""
+        employee = request.env.user.employee_id
+        uploads = _uploaded_files()
+        document_type_ids = _upload_type_ids()
+        policy_id = request.httprequest.form.get("policy_id")
+        evaluation_line_id = request.httprequest.form.get("evaluation_line_id")
+        if not employee:
+            return request.make_json_response(
+                {
+                    "success": False,
+                    "message": "Your user account is not linked to an employee record.",
+                },
+                status=400,
+            )
+        if evaluation_line_id:
+            line = (
+                request.env["doc.compliance.evaluation.line"]
+                .browse(int(evaluation_line_id))
+                .exists()
+            )
+            if not line or line.evaluation_id.employee_id != employee:
+                return request.make_json_response(
+                    {"success": False, "message": "Invalid compliance requirement."},
+                    status=403,
+                )
+            if not policy_id:
+                policy_id = str(line.evaluation_id.policy_id.id)
+        if not uploads or not document_type_ids:
+            return request.make_json_response(
+                {"success": False, "message": "File and document type are required."},
+                status=400,
+            )
+        document_types = request.env["doc.document.type"].browse(
+            list(set(document_type_ids))
+        ).exists()
+        if len(document_types) != len(set(document_type_ids)):
+            return request.make_json_response(
+                {"success": False, "message": "Select a valid document type."},
+                status=400,
+            )
+        if not employee.department_id:
+            return request.make_json_response(
+                {
+                    "success": False,
+                    "message": "Your employee record needs a department before uploading a document.",
+                },
+                status=400,
+            )
+        folder = request.env["doc.folder"].get_pending_upload_folder()
+        if not folder:
+            return request.make_json_response(
+                {
+                    "success": False,
+                    "message": "We could not save your document. Try again.",
+                },
+                status=400,
+            )
+        expiry_dates = _upload_expiry_dates()
+        issue_dates = _upload_issue_dates()
+        descriptions = _upload_descriptions()
+        replace_document_ids = _upload_replace_document_ids()
+        change_notes = _upload_change_notes()
+        allow_separate = _upload_allow_separate_duplicates()
+        documents = request.env["doc.document"]
+        try:
+            for index, upload in enumerate(uploads):
+                type_id = (
+                    document_type_ids[0]
+                    if len(document_type_ids) == 1
+                    else document_type_ids[index]
+                )
+                document_type = document_types.filtered(lambda item: item.id == type_id)[
+                    :1
+                ]
+                expiry_date = (
+                    expiry_dates[index]
+                    if index < len(expiry_dates)
+                    else (expiry_dates[0] if len(expiry_dates) == 1 else False)
+                )
+                issue_date = (
+                    issue_dates[index]
+                    if index < len(issue_dates)
+                    else (issue_dates[0] if len(issue_dates) == 1 else False)
+                )
+                description = (
+                    descriptions[index]
+                    if index < len(descriptions)
+                    else (descriptions[0] if len(descriptions) == 1 else "")
+                )
+                expiry_values = _expiry_values_for_upload(document_type, expiry_date)
+                if expiry_values is None:
+                    return request.make_json_response(
+                        {
+                            "success": False,
+                            "message": f"An expiry date is required for {document_type.name}.",
+                        },
+                        status=400,
+                    )
+                replace_id = (
+                    replace_document_ids[index]
+                    if index < len(replace_document_ids)
+                    else None
+                )
+                if not replace_id:
+                    replace_raw = request.httprequest.form.get("replace_document_id")
+                    replace_id = int(replace_raw) if replace_raw else None
+                change_note = change_notes[index] if index < len(change_notes) else ""
+                allow_flag = allow_separate[index] if index < len(allow_separate) else False
+                documents |= _process_document_upload(
+                    upload,
+                    document_type,
+                    expiry_values,
+                    folder,
+                    employee=employee,
+                    replace_document_id=replace_id,
+                    change_note=change_note or _("Compliance submission"),
+                    issue_date=issue_date or None,
+                    description=description,
+                    allow_separate_duplicate=allow_flag,
+                )
+        except (ValidationError, AccessError, UserError) as error:
+            return request.make_json_response(
+                {"success": False, "message": str(error)},
+                status=400,
+            )
+        except Exception:
+            return request.make_json_response(
+                {
+                    "success": False,
+                    "message": "We could not save your document. Try again.",
+                },
+                status=400,
+            )
+        request.env["doc.folder"].sync_pending_upload_assignments()
+        document = documents[:1]
+        if document:
+            self._finalize_compliance_upload(employee, document, policy_id=policy_id)
+            Item = request.env["doc.compliance.verification.item"].sudo()
+            pending = Item.search(
+                [("document_id", "=", document.id), ("status", "=", "pending")],
+                limit=1,
+            )
+            if pending:
+                pending.write({"policy_id": int(policy_id)}) if policy_id else None
+        return request.make_json_response(
+            {
+                "success": True,
+                "data": {
+                    "id": documents[0].id,
+                    "name": documents[0].name,
+                    "submitted_by_hr": False,
+                },
+                "documents": [{"id": doc.id, "name": doc.name} for doc in documents],
+            }
+        )
+
+    @http.route(
+        "/api/my-documents/upload-preview",
+        type="http",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def upload_preview_metadata(self, **kwargs):
+        """Return suggested metadata from an uploaded file (best-effort)."""
+        uploads = _uploaded_files()
+        if not uploads:
+            return request.make_json_response(
+                {"success": False, "message": "File is required."},
+                status=400,
+            )
+        upload = uploads[0]
+        return request.make_json_response(
+            {
+                "success": True,
+                "data": {
+                    "issue_date": "",
+                    "expiry_date": "",
+                    "description": "",
+                    "detected_fields": [],
+                },
+            }
+        )
+
     @http.route(
         "/api/employee-documents/upload",
         type="http",
@@ -1904,8 +2114,25 @@ class DocumentUICreation(http.Controller):
                 )
         except (ValidationError, AccessError, UserError) as error:
             return request.make_json_response({"success": False, "message": str(error)}, status=400)
+        for document in documents:
+            document.sudo().write(
+                {"submitted_on_behalf_by": request.env.user.id},
+            )
+            self._finalize_compliance_upload(
+                employee,
+                document,
+                policy_id=request.httprequest.form.get("policy_id"),
+            )
         return request.make_json_response(
-            {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
+            {
+                "success": True,
+                "data": {
+                    "id": documents[0].id,
+                    "name": documents[0].name,
+                    "submitted_by_hr": True,
+                },
+                "documents": [{"id": doc.id, "name": doc.name} for doc in documents],
+            }
         )
 
     @http.route(
@@ -2225,7 +2452,6 @@ class DocumentUICreation(http.Controller):
         )
         status_labels = {
             "pending_review": "Pending review",
-            "awaiting_folder": "Submitted — waiting for folder setup",
             "awaiting_folder_restore": "Awaiting folder restore",
         }
         items = []
@@ -2238,8 +2464,6 @@ class DocumentUICreation(http.Controller):
                 status = "pending_review"
             elif document.recycle_origin_folder_id:
                 status = "awaiting_folder_restore"
-            elif document.folder_id in pending_folders:
-                status = "awaiting_folder"
             else:
                 continue
             items.append(
@@ -2326,46 +2550,10 @@ class DocumentUICreation(http.Controller):
                     "lines": lines,
                 }
             )
-        inbox = {
-            "todo": [],
-            "waiting": [],
-            "done": [],
-            "coming_up": [],
-            "exceptions": [],
-        }
-        for evaluation in evaluations:
-            for line in evaluation.line_ids:
-                item = {
-                    "policy": evaluation.policy_id.name,
-                    "document_type": line.document_type_id.name,
-                    "compliance_status": line.compliance_status or line.status,
-                    "reason_message": line.reason_message or "",
-                    "due_date": str(line.due_date or ""),
-                }
-                status = item["compliance_status"]
-                if status in ("non_compliant", "at_risk") and line.status != "pending":
-                    inbox["todo"].append(item)
-                elif status == "pending":
-                    inbox["waiting"].append(item)
-                elif status in ("compliant", "exempt"):
-                    inbox["done"].append(item)
-                else:
-                    inbox["coming_up"].append(item)
-        exceptions = request.env["doc.compliance.exception"].search(
-            [
-                ("employee_id", "=", employee.id),
-                ("status", "in", ("draft", "approved")),
-                ("active", "=", True),
-            ]
+        inbox_payload = request.env["doc.compliance.employee.inbox"].build_for_employee(
+            employee
         )
-        for exc in exceptions:
-            inbox["exceptions"].append(
-                {
-                    "policy": exc.policy_id.name,
-                    "status": exc.status,
-                    "valid_until": str(exc.valid_until or ""),
-                }
-            )
+        inbox = inbox_payload["inbox"]
         summary = {
             "compliant": len(
                 evaluations.filtered(lambda item: item.status == "compliant")
@@ -2394,6 +2582,10 @@ class DocumentUICreation(http.Controller):
                 "evaluations": evaluation_data,
                 "outstanding": outstanding,
                 "inbox": inbox,
+                "items": inbox_payload["items"],
+                "inbox_summary": inbox_payload["inbox_summary"],
+                "overall_status": inbox_payload["overall_status"],
+                "has_compliance_portal": employee.has_compliance_portal_access(),
                 "summary": summary,
                 "tasks": [task.to_api_dict() for task in open_tasks],
             },
