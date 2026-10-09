@@ -362,7 +362,7 @@ class DmsContractsController(http.Controller):
         csrf=False,
     )
     def work_items_stub(self, **kwargs):
-        """C5 consumer hook — returns empty until Developer B feed is live."""
+        """C5 consumer hook — returns empty until Mike's work-item feed is live."""
         workspace_ctx(kwargs)
         employee_id = kwargs.get("employeeId") or kwargs.get("employee_id")
         user = request.env.user

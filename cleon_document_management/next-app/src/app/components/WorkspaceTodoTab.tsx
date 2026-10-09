@@ -47,7 +47,7 @@ export default function WorkspaceTodoTab({ kind }: { kind?: string | null }) {
           title="You're all caught up"
           description={
             source === "pending_developer_b"
-              ? "The unified work item feed (Developer B) is not connected yet. Use the links below for legacy queues."
+              ? "The unified work item feed (for Mike) is not connected yet. Use the links below for legacy queues."
               : "Approvals, signatures, and requests assigned to you will appear here."
           }
         />

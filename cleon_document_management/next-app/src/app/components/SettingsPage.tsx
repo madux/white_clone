@@ -111,11 +111,15 @@ const settingsNavGroupDefs: { title: string; sectionIds: SectionId[] }[] = [
   },
   {
     title: "Workflow",
-    sectionIds: ["approval_workflow", "notification_rules", "triggers"],
+    sectionIds: ["approval_workflow", "notification_rules"],
   },
   {
-    title: "Integrations",
-    sectionIds: ["signatures", "cleonai", "onboarding"],
+    title: "For Mike",
+    sectionIds: ["triggers", "signatures", "cleonai"],
+  },
+  {
+    title: "Help",
+    sectionIds: ["onboarding"],
   },
 ];
 
