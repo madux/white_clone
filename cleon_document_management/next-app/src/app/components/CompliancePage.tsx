@@ -1604,7 +1604,13 @@ export function PolicyForm({
         )}
 
         {typeCode !== "review_schedule" ? (
-          <ComplianceVerificationFields form={form} setForm={setForm} />
+          <ComplianceVerificationFields
+            form={form}
+            setForm={setForm}
+            typeCode={typeCode}
+            documentTypes={allDocumentTypes}
+            entityName={organizationalMode ? "policy" : "rule"}
+          />
         ) : null}
 
         {typeCode === "compliance_request" ? (
@@ -1757,6 +1763,7 @@ export function PolicyForm({
           typeName={selectedType?.name || ""}
           typeCode={typeCode}
           documentTypeNames={selectedDocumentTypes.map((item: any) => item.name)}
+          documentTypes={allDocumentTypes}
           scopeLabels={scopeLabels}
           retentionPreview={retentionPreview}
           reviewMeta={reviewMeta}

@@ -17,6 +17,18 @@ class DocumentType(models.Model):
         default=10,
     )
 
+    category_id = fields.Many2one(
+        "doc.document.category",
+        string="Category",
+        ondelete="restrict",
+        index=True,
+    )
+
+    expiry_reminder_days = fields.Integer(
+        string="Expiry reminder (days before)",
+        default=60,
+    )
+
     category = fields.Selection(
         [
             ("hr", "Human Resources"),
@@ -159,6 +171,48 @@ class DocumentType(models.Model):
         ondelete="set null",
     )
 
+    @api.model
+    def _legacy_category_from_category_record(self, category):
+        if not category:
+            return "other"
+        mapping = {
+            "identification_documents": "identity",
+            "employment_documents": "employment",
+            "medical_documents": "medical",
+            "legal_documents": "legal",
+            "training_certifications": "training",
+            "payroll_documents": "finance",
+            "finance_documents": "finance",
+            "tax_documents": "finance",
+            "benefits_documents": "hr",
+            "performance_documents": "hr",
+            "disciplinary_documents": "hr",
+            "onboarding_documents": "hr",
+            "other_documents": "other",
+        }
+        return mapping.get(category.code, "other")
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._apply_category_id_vals(vals)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if "category_id" in vals:
+            patched = dict(vals)
+            self._apply_category_id_vals(patched)
+            vals = patched
+        return super().write(vals)
+
+    @api.model
+    def _apply_category_id_vals(self, vals):
+        category_id = vals.get("category_id")
+        if category_id:
+            category = self.env["doc.document.category"].browse(category_id).exists()
+            if category:
+                vals["category"] = self._legacy_category_from_category_record(category)
+
     @api.depends("expires_rule", "verification_rule")
     def _compute_compliance_rules(self):
         for document_type in self:
@@ -290,12 +344,16 @@ class DocumentType(models.Model):
         return {
             "id": self.id,
             "name": self.name,
+            "category_id": self.category_id.id or False,
+            "category_name": self.category_id.name if self.category_id else "",
             "category": self.category,
             "description": self.description or "",
+            "expiry_reminder_days": self.expiry_reminder_days or 60,
             "is_mandatory_default": self.is_mandatory_default,
             "default_retention_years": self.default_retention_years,
             "expiry_applicable": self.expiry_applicable,
             "require_upload_approval": self.require_upload_approval,
+            "verification_required": self.verification_required,
             "require_issue_date": self.require_issue_date,
             "require_description": self.require_description,
             "enable_versioning": self.enable_versioning,

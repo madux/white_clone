@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import Header from "@/app/components/Header";
 import OfflineBanner from "@/app/components/OfflineBanner";
+import WorkspaceRouteGuard from "@/app/components/WorkspaceRouteGuard";
 
 function isImmersive(pathname: string) {
   return (
@@ -26,7 +27,9 @@ export default function AppChrome({ children }: { children: ReactNode }) {
         <Header />
       </Suspense>
       <OfflineBanner />
-      <main className="min-h-0 flex-1 overflow-y-auto bg-slate-50">{children}</main>
+      <main className="min-h-0 flex-1 overflow-y-auto bg-slate-50">
+        <WorkspaceRouteGuard>{children}</WorkspaceRouteGuard>
+      </main>
     </div>
   );
 }

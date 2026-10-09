@@ -11,7 +11,9 @@ from .access import (
     require_compliance_manage,
     require_compliance_run,
     require_compliance_view,
+    require_document_admin,
 )
+from .workspace_delegation import effective_employee, effective_user, workspace_ctx
 
 CANONICAL_POLICY_TYPE_NAMES = {
     "document_requirement": "Document Requirement",
@@ -664,11 +666,18 @@ class ComplianceController(http.Controller):
             return {"success": False, "message": str(error)}
         try:
             values = self._policy_create_values(request.env, kwargs)
-            policy = request.env["doc.compliance.policy"].create(values)
-            if policy._is_compliance_request():
-                policy._sync_request_task_definitions(kwargs.get("request_tasks"))
-            if policy._is_review_schedule_policy():
-                policy._sync_review_milestones(kwargs.get("review_milestones"))
+            with request.env.cr.savepoint():
+                policy = (
+                    request.env["doc.compliance.policy"]
+                    .with_context(defer_compliance_request_check=True)
+                    .create(values)
+                    .with_context(defer_compliance_request_check=False)
+                )
+                if policy._is_compliance_request():
+                    policy._sync_request_task_definitions(kwargs.get("request_tasks"))
+                    policy._check_compliance_request_policy()
+                if policy._is_review_schedule_policy():
+                    policy._sync_review_milestones(kwargs.get("review_milestones"))
         except (AccessError, ValidationError) as error:
             return {"success": False, "message": str(error)}
         return {"success": True, "data": self._policy_data(policy)}
@@ -1779,8 +1788,11 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def my_team_compliance(self, **kwargs):
-        user = request.env.user
-        employee = user.employee_id
+        try:
+            ctx = workspace_ctx(kwargs)
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        employee = effective_employee(ctx)
         if not employee:
             return {"success": True, "data": {"rows": [], "attention_count": 0}}
         reports = request.env["hr.employee"].search(
@@ -1807,7 +1819,11 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def my_verifications(self, **kwargs):
-        user = request.env.user
+        try:
+            ctx = workspace_ctx(kwargs)
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        user = effective_user(ctx)
         Item = request.env["doc.compliance.verification.item"].sudo()
         service = request.env["doc.compliance.verification.service"].sudo()
         items = Item.search(
@@ -1919,7 +1935,11 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def my_reviews(self, **kwargs):
-        user = request.env.user
+        try:
+            ctx = workspace_ctx(kwargs)
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        user = effective_user(ctx)
         Review = request.env["doc.compliance.review.instance"].sudo()
         reviews = Review.search(
             [
@@ -2023,6 +2043,41 @@ class ComplianceController(http.Controller):
         return {"success": True, "data": {"items": items, "count": len(items)}}
 
     @http.route(
+        "/api/compliance/request-linkable-tree",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def compliance_request_linkable_tree(self, **kwargs):
+        try:
+            require_compliance_manage()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        Policy = request.env["doc.compliance.policy"]
+        try:
+            policy = Policy._policy_for_linkable_audience(
+                policy_id=kwargs.get("policy_id"),
+                audience_payload={
+                    "applies_to": kwargs.get("applies_to"),
+                    "department_ids": kwargs.get("department_ids"),
+                    "grade_ids": kwargs.get("grade_ids"),
+                    "employee_ids": kwargs.get("employee_ids"),
+                    "work_location_ids": kwargs.get("work_location_ids"),
+                    "employment_type_ids": kwargs.get("employment_type_ids"),
+                    "branch_ids": kwargs.get("branch_ids"),
+                },
+            )
+        except ValidationError as error:
+            return {"success": False, "message": str(error)}
+        data = policy.compliance_linkable_tree(
+            parent_folder_id=kwargs.get("parent_folder_id"),
+            search=kwargs.get("search") or "",
+            user=request.env.user,
+        )
+        return {"success": True, "data": data}
+
+    @http.route(
         "/api/compliance/my-inbox/item",
         type="json",
         auth="user",
@@ -2030,7 +2085,11 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def my_compliance_inbox_item(self, kind=None, record_id=None, **kwargs):
-        employee = request.env.user.employee_id
+        try:
+            ctx = workspace_ctx(kwargs)
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        employee = effective_employee(ctx)
         if not employee:
             return {"success": False, "message": "No employee record linked to this user."}
         kind = kind or kwargs.get("kind")
@@ -2052,7 +2111,11 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def my_compliance_tasks(self, **kwargs):
-        employee = request.env.user.employee_id
+        try:
+            ctx = workspace_ctx(kwargs)
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        employee = effective_employee(ctx)
         if not employee:
             return {"success": True, "data": []}
         tasks = request.env["doc.compliance.task"].search(

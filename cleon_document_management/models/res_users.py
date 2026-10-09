@@ -17,6 +17,12 @@ class ResUsers(models.Model):
         default=lambda self: self._default_document_onboarding_state(),
     )
 
+    workspace_active_grant_id = fields.Many2one(
+        "doc.workspace.grant",
+        string="Active workspace delegation",
+        ondelete="set null",
+    )
+
     def _default_document_onboarding_state(self):
         from odoo.addons.cleon_document_management.controllers.onboarding_state import (
             default_onboarding_state,

@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { NavigationHistoryProvider } from "../../hooks/useNavigationHistory";
+import { WorkspaceDelegationProvider } from "../../lib/workspaceDelegation";
 import { ToastProvider } from "../../hooks/useToast";
 import { AppDialogProvider } from "../../hooks/useAppDialog";
 import { FormWindowProvider } from "@/app/components/FormWindowProvider";
@@ -28,7 +29,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <TooltipProvider>
             <AppDialogProvider>
               <FormWindowProvider>
-                <NavigationHistoryProvider>{children}</NavigationHistoryProvider>
+                <WorkspaceDelegationProvider>
+                  <NavigationHistoryProvider>{children}</NavigationHistoryProvider>
+                </WorkspaceDelegationProvider>
               </FormWindowProvider>
             </AppDialogProvider>
           </TooltipProvider>

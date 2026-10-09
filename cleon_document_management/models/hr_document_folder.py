@@ -768,6 +768,44 @@ class DocumentFolder(models.Model):
             return employee in self.employee_ids
         return False
 
+    def _employee_can_access(self, employee):
+        """Scope-based folder access for an employee (no user account required)."""
+        self.ensure_one()
+        employee = employee.sudo().exists()
+        if not employee:
+            return False
+        if self.folder_type == "employee":
+            return employee in self.employee_ids
+        if self.folder_type != "organizational":
+            return True
+        if (self.folder_kind or "folder") == "policy":
+            policy = self.env["doc.organizational.policy"].for_folder(self)
+            if policy and policy.lifecycle_status == "draft":
+                return False
+        scope = self.access_scope or "all_staff"
+        if scope in ("admin_only", "private", "company_owned"):
+            return False
+        if scope == "all_staff":
+            return True
+        if scope == "department":
+            return employee.department_id in self.department_ids
+        if scope == "grade":
+            return employee.grade_id in self.grade_ids
+        employment_type = getattr(employee, "employee_type_id", False)
+        if scope == "employment_type":
+            return employment_type in self.employment_type_ids
+        branch = getattr(employee, "branch_id", False)
+        if scope == "business_unit":
+            return branch in self.branch_ids
+        if scope == "individual":
+            return employee in self.employee_ids
+        if scope == "role":
+            user = employee.user_id
+            if not user:
+                return False
+            return bool(self.role_group_ids & user.groups_id)
+        return False
+
     @api.model
     def _allowed_document_access_scopes_for_folder_scope(self, folder_access_scope):
         """Scopes a document may use when overriding folder access (must not widen)."""

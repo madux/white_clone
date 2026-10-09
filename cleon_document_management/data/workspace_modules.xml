@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="workspace_module_home" model="doc.workspace.module">
+        <field name="key">home</field>
+        <field name="name">Home &amp; activity</field>
+        <field name="group">workspace</field>
+        <field name="sequence">5</field>
+    </record>
+    <record id="workspace_module_my_workspace" model="doc.workspace.module">
+        <field name="key">my_workspace</field>
+        <field name="name">My Workspace</field>
+        <field name="group">personal</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="workspace_module_self_service_compliance" model="doc.workspace.module">
+        <field name="key">self_service_compliance</field>
+        <field name="name">My Compliance</field>
+        <field name="group">self_service</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="workspace_module_self_service_approvals" model="doc.workspace.module">
+        <field name="key">self_service_approvals</field>
+        <field name="name">Approvals</field>
+        <field name="group">self_service</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="workspace_module_self_service_reviews" model="doc.workspace.module">
+        <field name="key">self_service_reviews</field>
+        <field name="name">Scheduled reviews</field>
+        <field name="group">self_service</field>
+        <field name="sequence">40</field>
+    </record>
+    <record id="workspace_module_self_service_team" model="doc.workspace.module">
+        <field name="key">self_service_team</field>
+        <field name="name">My Team</field>
+        <field name="group">self_service</field>
+        <field name="sequence">50</field>
+    </record>
+    <record id="workspace_module_employee_files" model="doc.workspace.module">
+        <field name="key">employee_files</field>
+        <field name="name">Employee Files</field>
+        <field name="group">document_management</field>
+        <field name="sequence">60</field>
+    </record>
+    <record id="workspace_module_organizational_files" model="doc.workspace.module">
+        <field name="key">organizational_files</field>
+        <field name="name">Organizational Files</field>
+        <field name="group">document_management</field>
+        <field name="sequence">70</field>
+    </record>
+    <record id="workspace_module_templates_forms" model="doc.workspace.module">
+        <field name="key">templates_forms</field>
+        <field name="name">Templates &amp; Forms</field>
+        <field name="group">document_management</field>
+        <field name="sequence">80</field>
+    </record>
+    <record id="workspace_module_document_intelligence" model="doc.workspace.module">
+        <field name="key">document_intelligence</field>
+        <field name="name">Document Intelligence</field>
+        <field name="group">intelligence</field>
+        <field name="sequence">90</field>
+    </record>
+    <record id="workspace_module_compliance_admin" model="doc.workspace.module">
+        <field name="key">compliance_admin</field>
+        <field name="name">Compliance (admin)</field>
+        <field name="group">intelligence</field>
+        <field name="sequence">100</field>
+    </record>
+    <record id="workspace_module_settings" model="doc.workspace.module">
+        <field name="key">settings</field>
+        <field name="name">Settings</field>
+        <field name="group">administration</field>
+        <field name="sequence">110</field>
+        <field name="sensitive" eval="True"/>
+    </record>
+    <record id="workspace_module_roles" model="doc.workspace.module">
+        <field name="key">roles</field>
+        <field name="name">Roles</field>
+        <field name="group">administration</field>
+        <field name="sequence">120</field>
+        <field name="sensitive" eval="True"/>
+    </record>
+    <record id="workspace_module_super_admin" model="doc.workspace.module">
+        <field name="key">super_admin</field>
+        <field name="name">Super Admin</field>
+        <field name="group">administration</field>
+        <field name="sequence">130</field>
+        <field name="sensitive" eval="True"/>
+    </record>
+</odoo>

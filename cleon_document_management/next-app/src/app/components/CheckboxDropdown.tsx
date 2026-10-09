@@ -4,6 +4,7 @@ import { ChevronDown, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DROPDOWN_EMPTY_LABEL } from "../../../lib/dropdownEmptyLabel";
 
 export type CheckboxDropdownOption = {
   value: string;
@@ -18,7 +19,7 @@ export default function CheckboxDropdown({
   options,
   values,
   onChange,
-  emptyLabel = "No options available",
+  emptyLabel = DROPDOWN_EMPTY_LABEL,
 }: {
   label?: string;
   placeholder?: string;

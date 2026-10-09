@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DROPDOWN_EMPTY_LABEL } from "../../../lib/dropdownEmptyLabel";
 
 export type SelectOption = {
   value: string;
@@ -24,6 +25,7 @@ export default function AppSelect({
   className,
   ariaLabel,
   disabled,
+  emptyLabel = DROPDOWN_EMPTY_LABEL,
 }: {
   value: string;
   options: SelectOption[];
@@ -33,6 +35,7 @@ export default function AppSelect({
   ariaLabel?: string;
   portaled?: boolean;
   disabled?: boolean;
+  emptyLabel?: string;
 }) {
   const items = [
     { label: placeholder, value: null as string | null },
@@ -59,18 +62,22 @@ export default function AppSelect({
       >
         <SelectValue />
       </SelectTrigger>
-      <SelectContent alignItemWithTrigger side="bottom">
-        <SelectGroup>
-          {options.map((option) => (
-            <SelectItem
-              key={option.value}
-              value={option.value}
-              disabled={option.disabled}
-            >
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
+      <SelectContent alignItemWithTrigger side="bottom" className="min-w-(--anchor-width)">
+        {options.length === 0 ? (
+          <p className="px-3 py-4 text-sm text-muted-foreground">{emptyLabel}</p>
+        ) : (
+          <SelectGroup>
+            {options.map((option) => (
+              <SelectItem
+                key={option.value}
+                value={option.value}
+                disabled={option.disabled}
+              >
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        )}
       </SelectContent>
     </Select>
   );

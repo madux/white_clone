@@ -19,7 +19,7 @@ import type { DocFolder } from "../../../lib/types";
 import ActionMenuCategory from "./ActionMenuCategory";
 import { ORG_ACTION_MENU_CATEGORIES } from "../../../lib/orgActionCatalog";
 import FolderDetailsPanel from "./FolderDetailsPanel";
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useRef, useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { api } from "../../../lib/api";
@@ -60,6 +60,7 @@ import {
 import { formatFieldLabel } from "../../../lib/formatLabel";
 import FolderDescriptionAssist from "./FolderDescriptionAssist";
 import AppSelect from "./AppSelect";
+import { positionActionMenu } from "../../../lib/positionActionMenu";
 
 export default function FolderActions({
   folderId,
@@ -104,8 +105,8 @@ export default function FolderActions({
   const [open, setOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(folderName);
-  const [folderDescription, setFolderDescription] = useState(description);
+  const [name, setName] = useState(folderName || "");
+  const [folderDescription, setFolderDescription] = useState(description || "");
   const [organize, setOrganize] = useState(organizeBy || "none");
   const [uploadApproval, setUploadApproval] = useState(requireUploadApproval);
   const [flow, setFlow] = useState<ApprovalFlow>(
@@ -148,6 +149,8 @@ export default function FolderActions({
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const MENU_WIDTH = 208;
+  const MENU_HEIGHT_ESTIMATE = 420;
   const update = useUpdateFolder();
   const remove = useDeleteFolder();
   const action = useFolderAction();
@@ -210,28 +213,41 @@ export default function FolderActions({
 
   useClickOutside(menuRef, () => setOpen(false), [triggerRef]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open || !triggerRef.current) return;
     const updatePosition = () => {
       const rect = triggerRef.current?.getBoundingClientRect();
-      if (rect)
-        setMenuPosition({
-          top: Math.max(12, rect.top - 250 - 8),
-          left: Math.max(8, rect.right - 208),
-        });
+      if (!rect) return;
+      const menuEl = menuRef.current;
+      const width = menuEl?.offsetWidth || MENU_WIDTH;
+      const height = menuEl?.offsetHeight || MENU_HEIGHT_ESTIMATE;
+      setMenuPosition(
+        positionActionMenu(rect, { width, height }),
+      );
     };
     updatePosition();
+    const raf = window.requestAnimationFrame(updatePosition);
+    const observer =
+      menuRef.current &&
+      new ResizeObserver(() => {
+        updatePosition();
+      });
+    if (observer && menuRef.current) {
+      observer.observe(menuRef.current);
+    }
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
     return () => {
+      window.cancelAnimationFrame(raf);
+      observer?.disconnect();
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open]);
+  }, [open, folderType, showOrgManage, canArchive, canLockFolder, canShareAccess]);
 
   const resetEditForm = () => {
-    setName(folderName);
-    setFolderDescription(description);
+    setName(folderName || "");
+    setFolderDescription(description || "");
     setUploadApproval(requireUploadApproval);
     setFlow((approvalFlow as ApprovalFlow) || "any");
     setSelectedApproverIds(approverIds ?? []);
@@ -253,8 +269,8 @@ export default function FolderActions({
 
   const openEditModal = () => {
     resetEditForm();
-    setEditing(true);
     setOpen(false);
+    window.setTimeout(() => setEditing(true), 0);
   };
 
   const run = async (task: () => Promise<unknown>) => {
@@ -399,7 +415,8 @@ export default function FolderActions({
           <div
             ref={menuRef}
             style={{ top: menuPosition.top, left: menuPosition.left }}
-            className="org-action-sheet fixed z-[100] w-52 rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-xl shadow-slate-200/60"
+            className="org-action-sheet fixed z-[100] max-h-[min(70vh,calc(100vh-24px))] w-52 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-xl shadow-slate-200/60"
+            onPointerDown={(event) => event.stopPropagation()}
           >
             <ActionMenuCategory label={ORG_ACTION_MENU_CATEGORIES.information} />
             <button
@@ -580,7 +597,7 @@ export default function FolderActions({
           onClose={() => setEditing(false)}
           size={showApprovalFields || showAccessScopeFields ? "lg" : "md"}
           titleClassName="text-xl"
-          zIndex={110}
+          zIndex={120}
         >
           <form onSubmit={save} className="space-y-5 text-left">
             <label className="flex w-full flex-col items-start gap-1.5 text-left">
@@ -730,7 +747,7 @@ export default function FolderActions({
           title="Duplicate folder"
           eyebrow={folderName}
           onClose={() => setDuplicateOpen(false)}
-          zIndex={110}
+          zIndex={120}
         >
           <p className="text-sm text-slate-600">
             Choose whether to copy documents into the new folder or duplicate the

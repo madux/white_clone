@@ -77,7 +77,8 @@ class ComplianceEngine(models.AbstractModel):
             if service.document_pending_verification(document):
                 return False
             return service.document_has_approved_verification(document)
-        if not document_type.require_upload_approval:
+        workflow = self.env["doc.approval.workflow.service"].get_upload_approval_config()
+        if not workflow["require_upload_approval"]:
             return True
         if document.approval_state == "approved" or document.state in (
             "approved",

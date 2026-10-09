@@ -17,6 +17,105 @@ export type ComplianceLinkableContentItem = {
   access_summary?: string;
 };
 
+export type ComplianceLinkableTreeFolder = {
+  id: number;
+  name: string;
+  folder_kind: string;
+  has_children: boolean;
+  path?: string;
+  org_policy_id: number | false;
+  org_policy_name: string;
+  disabled_reason: string;
+};
+
+export type ComplianceLinkableTreeDocument = {
+  id: number;
+  name: string;
+  folder_id: number;
+  folder_name: string;
+  mime_type?: string;
+  path?: string;
+  eligible: boolean;
+  reason: string;
+  /** Set when this file is the policy's primary document. */
+  org_policy_id: number | false;
+  org_policy_name: string;
+};
+
+export type ComplianceLinkableTreeLevel = {
+  folders: ComplianceLinkableTreeFolder[];
+  documents: ComplianceLinkableTreeDocument[];
+};
+
+/** One picked file; `key` is `doc:<id>` (or `policy:<id>` for legacy policy links). */
+export type ComplianceContentSelection = {
+  key: string;
+  name: string;
+  document_id?: number;
+  org_policy_id?: number;
+  org_policy_name?: string;
+  folder_id?: number;
+  folder_name?: string;
+};
+
+export const MAX_LINKED_CONTENT_SELECTION = 50;
+
+export function selectionFromTreeDocument(
+  document: ComplianceLinkableTreeDocument,
+): ComplianceContentSelection {
+  return {
+    key: `doc:${document.id}`,
+    name: document.name,
+    document_id: document.id,
+    org_policy_id: document.org_policy_id || undefined,
+    org_policy_name: document.org_policy_name || undefined,
+    folder_id: document.folder_id,
+    folder_name: document.folder_name,
+  };
+}
+
+export function selectionFromTask(
+  task: ComplianceRequestTaskDefinition,
+): ComplianceContentSelection | null {
+  if (task.linked_org_policy_id) {
+    return {
+      key: `policy:${task.linked_org_policy_id}`,
+      name: task.linked_org_policy_name || "Policy",
+      org_policy_id: task.linked_org_policy_id,
+      org_policy_name: task.linked_org_policy_name,
+      folder_id: task.source_folder_id || undefined,
+      folder_name: task.source_folder_name,
+    };
+  }
+  if (task.linked_document_id) {
+    return {
+      key: `doc:${task.linked_document_id}`,
+      name: task.linked_document_name || "Document",
+      document_id: task.linked_document_id,
+      folder_id: task.source_folder_id || undefined,
+      folder_name: task.source_folder_name,
+    };
+  }
+  return null;
+}
+
+/** Policy primaries link via the policy so new policy versions reopen the task. */
+export function applySelectionToTask(
+  task: ComplianceRequestTaskDefinition,
+  item: ComplianceContentSelection,
+): ComplianceRequestTaskDefinition {
+  const viaPolicy = Boolean(item.org_policy_id);
+  return {
+    ...task,
+    linked_org_policy_id: viaPolicy ? item.org_policy_id : undefined,
+    linked_org_policy_name: viaPolicy ? item.org_policy_name || item.name : undefined,
+    linked_document_id: viaPolicy ? undefined : item.document_id,
+    linked_document_name: viaPolicy ? undefined : item.name,
+    source_folder_id: item.folder_id,
+    source_folder_name: item.folder_name,
+  };
+}
+
 export type ComplianceLinkableContext = {
   policyId?: number;
   applies_to: string;
@@ -34,6 +133,8 @@ export type ComplianceRequestTaskDefinition = {
   linked_org_policy_name?: string;
   linked_document_id?: number;
   linked_document_name?: string;
+  source_folder_id?: number;
+  source_folder_name?: string;
   declaration_text?: string;
   evidence_document_type_id?: number;
   linked_form_id?: number;

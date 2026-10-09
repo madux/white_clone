@@ -868,6 +868,8 @@ export default function ComplianceRuleActions({
                   <ComplianceVerificationFields
                     form={form as PolicyCreateFormState}
                     setForm={setForm as (next: PolicyCreateFormState) => void}
+                    typeCode={typeCode}
+                    documentTypes={allDocumentTypes}
                   />
                 ) : null}
 

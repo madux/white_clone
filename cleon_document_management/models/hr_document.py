@@ -781,12 +781,17 @@ class Document(models.Model):
             return self.pending_attachment_id
         return self.attachment_id
 
+    def _workflow_requires_upload_approval(self):
+        self.ensure_one()
+        config = self.env["doc.approval.workflow.service"].get_upload_approval_config()
+        return bool(config["require_upload_approval"])
+
     def _should_bypass_upload_approval(self):
         self.ensure_one()
         folder = self.folder_id
         if folder.folder_type == "organizational":
             return True
-        if self.document_type_id.require_upload_approval:
+        if self._workflow_requires_upload_approval():
             return False
         employee = self.employee_id
         return (
@@ -812,9 +817,9 @@ class Document(models.Model):
         self.sudo().write(values)
 
     def _resolve_approval_requirements(self):
-        """Return (require_approval, approvers, approval_flow) from the document type."""
+        """Return (require_approval, approvers, approval_flow) from global workflow settings."""
         self.ensure_one()
-        config = self.document_type_id.get_upload_approval_config()
+        config = self.env["doc.approval.workflow.service"].get_upload_approval_config()
         return (
             bool(config["require_upload_approval"]),
             config["approvers"],
@@ -911,10 +916,18 @@ class Document(models.Model):
             partner_ids=uploader.partner_id.ids,
             subtype_xmlid="mail.mt_note",
         )
-        self._send_users_mail(
-            uploader,
+        event = "ef.upload_approved" if approved else "ef.upload_rejected"
+        self.env["doc.notification.service"].notify(
+            event,
             subject,
-            "<p>%s</p>" % body,
+            {
+                "title": subject,
+                "body": body,
+                "res_model": "doc.document",
+                "res_id": self.id,
+                "owner_user_id": uploader.id,
+                "employee_id": self.employee_id.id if self.employee_id else False,
+            },
         )
 
     def _discard_pending_replacement(self):
@@ -1114,12 +1127,28 @@ class Document(models.Model):
             raise_if_not_found=False,
         )
         admin_users = admin_group.users if admin_group else self.env["res.users"]
+        notify = self.env["doc.notification.service"]
         for document in documents:
             note = _(
                 "%(document)s for %(employee)s expires on %(date)s.",
                 document=document.name,
                 employee=document.employee_id.name or _("Unknown employee"),
                 date=document.expiry_date,
+            )
+            notify.notify(
+                "ef.document_expiring",
+                _("Document expiring: %s") % document.name,
+                {
+                    "title": _("Document expiring soon"),
+                    "body": note,
+                    "res_model": "doc.document",
+                    "res_id": document.id,
+                    "employee_id": document.employee_id.id
+                    if document.employee_id
+                    else False,
+                },
+                dedupe_key="ef.expiring:%s:%s"
+                % (document.id, today.isoformat()),
             )
             if activity_type and admin_users:
                 for user in admin_users:
@@ -1297,8 +1326,9 @@ class Document(models.Model):
 
     def _get_effective_approval_flow(self):
         self.ensure_one()
-        if self.document_type_id.require_upload_approval:
-            return self.document_type_id.approval_flow or "any"
+        config = self.env["doc.approval.workflow.service"].get_upload_approval_config()
+        if config["require_upload_approval"]:
+            return config["approval_flow"] or "any"
         return "any"
 
     def _get_current_pending_approval(self):
@@ -1308,6 +1338,7 @@ class Document(models.Model):
         ).sorted("sequence")[:1]
 
     def _notify_pending_approvers(self):
+        notify = self.env["doc.notification.service"]
         for document in self:
             pending = document.approval_ids.filtered(
                 lambda approval: approval.state == "pending"
@@ -1317,10 +1348,28 @@ class Document(models.Model):
             employee_name = (
                 document.employee_id.name if document.employee_id else "An employee"
             )
+            body = _("%s submitted %s for your approval.") % (
+                employee_name,
+                document.name,
+            )
+            approver_ids = pending.mapped("approver_id").ids
+            notify.notify(
+                "ef.upload_needs_approval",
+                _("Upload needs your approval: %s") % document.name,
+                {
+                    "title": _("Upload needs your approval"),
+                    "body": body,
+                    "res_model": "doc.document",
+                    "res_id": document.id,
+                    "approver_user_ids": approver_ids,
+                    "employee_id": document.employee_id.id
+                    if document.employee_id
+                    else False,
+                },
+            )
             for approval in pending:
                 document.sudo().message_post(
-                    body=_("%s submitted %s for your approval.")
-                    % (employee_name, document.name),
+                    body=body,
                     partner_ids=approval.approver_id.partner_id.ids,
                     subtype_xmlid="mail.mt_note",
                 )
@@ -1337,12 +1386,23 @@ class Document(models.Model):
         if not next_waiting:
             return self.env["doc.document.approval"]
         next_waiting.write({"state": "pending"})
-        employee_name = (
-            self.employee_id.name if self.employee_id else "An employee"
+        body = _("%s is ready for your approval after prior review steps.") % (
+            self.name,
+        )
+        self.env["doc.notification.service"].notify(
+            "ef.upload_needs_approval",
+            _("Upload needs your approval: %s") % self.name,
+            {
+                "title": _("Upload needs your approval"),
+                "body": body,
+                "res_model": "doc.document",
+                "res_id": self.id,
+                "approver_user_ids": next_waiting.approver_id.ids,
+                "employee_id": self.employee_id.id if self.employee_id else False,
+            },
         )
         self.sudo().message_post(
-            body=_("%s is ready for your approval after prior review steps.")
-            % (self.name,),
+            body=body,
             partner_ids=next_waiting.approver_id.partner_id.ids,
             subtype_xmlid="mail.mt_note",
         )
@@ -1761,6 +1821,42 @@ class Document(models.Model):
             return True
         return False
 
+    def _organizational_employee_can_access(self, employee):
+        """Whether an employee is in this document's org access audience (by scope)."""
+        self.ensure_one()
+        employee = employee.sudo().exists()
+        if not employee:
+            return False
+        if employee.user_id:
+            return self._organizational_user_can_access(employee.user_id)
+        document = self.sudo()
+        folder = document.folder_id
+        if folder.folder_type != "organizational":
+            return True
+        if not folder._employee_can_access(employee):
+            return False
+        visibility = document.policy_visibility or "employees"
+        if document._in_policy_folder():
+            policy = self.env["doc.organizational.policy"].for_folder(folder)
+            if policy:
+                visibility = policy.policy_visibility or visibility
+        if visibility == "hr_only":
+            return False
+        if document.org_use_folder_access or not document.org_access_scope:
+            return True
+        scope = document.org_access_scope
+        if scope == "all_staff":
+            return True
+        if scope == "department":
+            return employee.department_id in document.org_department_ids
+        if scope == "grade":
+            return employee.grade_id in document.org_grade_ids
+        if scope == "individual":
+            return employee in document.org_employee_ids
+        if scope in ("admin_only", "private", "company_owned"):
+            return False
+        return False
+
     @api.model
     def _prepare_organizational_access_values(
         self,
@@ -1950,11 +2046,15 @@ class Document(models.Model):
             "document_category": self.document_type_id.category
             if self.document_type_id
             else "other",
-            "document_category_label": dict(
-                self.document_type_id._fields["category"].selection
-            ).get(self.document_type_id.category, _("Other"))
-            if self.document_type_id
-            else _("Other"),
+            "document_category_label": (
+                self.document_type_id.category_id.name
+                if self.document_type_id and self.document_type_id.category_id
+                else dict(
+                    self.document_type_id._fields["category"].selection
+                ).get(self.document_type_id.category, _("Other"))
+                if self.document_type_id
+                else _("Other")
+            ),
             "state": self.state,
             "approval_state": self.approval_state,
             "ocr_state": self.ocr_state,

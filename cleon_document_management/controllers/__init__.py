@@ -14,3 +14,5 @@ from . import organizational_oauth
 from . import organizational_approval
 from . import organizational_share
 from . import organizational_legal_hold
+from . import workspace_access
+from . import dms_contracts

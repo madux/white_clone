@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 
@@ -227,17 +227,19 @@ class TemplateAssignment(models.Model):
         return True
 
     def _queue_mail(self, recipient):
-        email = recipient.employee_id.work_email
-        if not email:
+        user = recipient.employee_id.user_id
+        if not user:
             return
-        self.env["mail.mail"].sudo().create(
+        title = _("Document assigned: %s") % self.template_id.name
+        self.env["doc.notification.service"].notify(
+            "tf.document_assigned",
+            title,
             {
-                "subject": "A document was assigned to you: %s" % self.template_id.name,
-                "body_html": "<p>You have a new HR document: %s</p>"
-                % self.template_id.name,
-                "email_to": email,
-                "auto_delete": False,
-            }
+                "title": title,
+                "body": _("You have a new HR document: %s") % self.template_id.name,
+                "owner_user_id": user.id,
+                "employee_id": recipient.employee_id.id,
+            },
         )
 
 

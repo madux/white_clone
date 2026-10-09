@@ -57,7 +57,7 @@ export function useCurrentUser() {
   return useQuery({
     queryKey: QUERY_KEYS.me,
     queryFn: api.me,
-    initialData: api.injectedUser,
+    initialData: () => api.injectedUser() ?? undefined,
   });
 }
 
@@ -257,6 +257,17 @@ export function useSaveSettingsDocumentType() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.saveSettingsDocumentType,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["document-settings"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documentTypes });
+    },
+  });
+}
+
+export function useSaveSettingsDocumentCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.saveSettingsDocumentCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["document-settings"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documentTypes });

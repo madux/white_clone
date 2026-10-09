@@ -24,8 +24,10 @@ export const DOCUMENT_TYPE_CATEGORIES = [
 export type DocumentTypeFormValues = {
   id?: number;
   name: string;
+  category_id?: number;
   category: string;
   description: string;
+  expiry_reminder_days?: number;
   is_mandatory_default: boolean;
   expiry_applicable: boolean;
   require_upload_approval: boolean;
@@ -68,6 +70,7 @@ const emptyForm = (): DocumentTypeFormValues => ({
   approval_flow: "any",
   approver_ids: [],
   default_retention_years: 7,
+  expiry_reminder_days: 60,
 });
 
 export function emptyDocumentTypeForm(
@@ -81,6 +84,8 @@ export function emptyDocumentTypeForm(
     approver_ids:
       item.approver_ids ??
       (item.approvers ?? []).map((approver: { id: number }) => approver.id),
+    category_id: item.category_id,
+    expiry_reminder_days: item.expiry_reminder_days ?? 60,
   };
 }
 
@@ -314,6 +319,8 @@ export default function DocumentTypeFormDialog({
   error,
   zIndex,
   submitLabel,
+  categories = [],
+  lockedCategoryId,
 }: {
   form: DocumentTypeFormValues;
   setForm: (next: DocumentTypeFormValues) => void;
@@ -321,6 +328,8 @@ export default function DocumentTypeFormDialog({
   onSubmit: (event: FormEvent) => void | Promise<void>;
   saving?: boolean;
   allApprovers?: Approver[];
+  categories?: { id: number; name: string }[];
+  lockedCategoryId?: number | null;
   error?: string;
   zIndex?: number;
   submitLabel?: string;
@@ -330,7 +339,7 @@ export default function DocumentTypeFormDialog({
   return (
     <ModalDialog
       title={isEdit ? "Edit document type" : "Add document type"}
-      description="Name the type, then set how uploads of this kind should behave."
+      description="Category and type catalogue (global spec): expiry metadata only. Approval and retention live under Settings tabs."
       onClose={onClose}
       size="lg"
       zIndex={zIndex}
@@ -355,11 +364,14 @@ export default function DocumentTypeFormDialog({
           <label>
             <span className="label">Category</span>
             <ThemedSelect
-              value={form.category}
-              onChange={(value) => setForm({ ...form, category: value })}
-              options={DOCUMENT_TYPE_CATEGORIES.map(([value, label]) => ({
-                value,
-                label,
+              value={String(form.category_id || lockedCategoryId || "")}
+              onChange={(value) =>
+                setForm({ ...form, category_id: Number(value) })
+              }
+              disabled={Boolean(lockedCategoryId)}
+              options={categories.map((item) => ({
+                value: String(item.id),
+                label: item.name,
               }))}
             />
           </label>
@@ -375,122 +387,56 @@ export default function DocumentTypeFormDialog({
               placeholder="When should people use this type?"
             />
           </label>
-          <div>
-            <div className="mb-1.5 flex items-center gap-1.5">
-              <span className="label mb-0">Keep for</span>
-              <FieldHelp label="Keep for">
-                How many years files of this type should be kept. This is the
-                default retention for new uploads.
-              </FieldHelp>
-            </div>
-            <ThemedSelect
-              value={String(form.default_retention_years ?? 7)}
-              onChange={(value) =>
-                setForm({
-                  ...form,
-                  default_retention_years: Number(value),
-                })
-              }
-              options={retentionYearOptions(form.default_retention_years ?? 7)}
-            />
-          </div>
-          <div>
-            <div className="mb-1.5 flex items-center gap-1.5">
-              <span className="label mb-0">If a file already exists</span>
-              <FieldHelp label="If a file already exists">
-                <span className="flex flex-col gap-1">
-                  <span>
-                    What happens when someone uploads another file of this type
-                    for the same person.
-                  </span>
-                  <span>
-                    Use company default — follow the workspace setting.
-                  </span>
-                  <span>Warn, then allow — show a warning, then continue.</span>
-                  <span>Block duplicates — stop the upload.</span>
-                  <span>
-                    Ask for confirmation — the uploader must confirm a second
-                    copy.
-                  </span>
-                </span>
-              </FieldHelp>
-            </div>
-            <ThemedSelect
-              value={String(form.duplicate_detection_mode || "inherit")}
-              onChange={(value) =>
-                setForm({ ...form, duplicate_detection_mode: value })
-              }
-              options={[
-                { value: "inherit", label: "Use company default" },
-                { value: "warn", label: "Warn, then allow" },
-                { value: "prevent", label: "Block duplicates" },
-                { value: "allow_confirm", label: "Ask for confirmation" },
-              ]}
-            />
-          </div>
         </div>
 
         <div>
-          <p className="mb-2 text-sm font-semibold text-slate-800">Rules</p>
+          <p className="mb-2 text-sm font-semibold text-slate-800">Expiry</p>
           <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
             <RuleToggle
-              title="Required by default"
-              description="Employees are expected to have this on file."
-              checked={Boolean(form.is_mandatory_default)}
-              onChange={(next) =>
-                setForm({ ...form, is_mandatory_default: next })
-              }
-            />
-            <RuleToggle
-              title="Has an expiry date"
-              description="Uploads need an expiry date, such as passports or certificates."
+              title="Does this document expire?"
+              description="When yes, expiry reminders use the Employee Files expiry engine."
               checked={Boolean(form.expiry_applicable)}
               onChange={(next) =>
                 setForm({ ...form, expiry_applicable: next })
               }
             />
-            <RuleToggle
-              title="Keep versions"
-              description="Updating replaces the current file and stores the previous one."
-              checked={Boolean(form.enable_versioning ?? true)}
-              onChange={(next) =>
-                setForm({ ...form, enable_versioning: next })
-              }
-            />
-            <RuleToggle
-              title="Issue date required"
-              description="Ask for the date the document was issued."
-              checked={Boolean(form.require_issue_date)}
-              onChange={(next) =>
-                setForm({ ...form, require_issue_date: next })
-              }
-            />
-            <RuleToggle
-              title="Description required"
-              description="Ask for a short note on every upload."
-              checked={Boolean(form.require_description)}
-              onChange={(next) =>
-                setForm({ ...form, require_description: next })
-              }
-            />
-            <RuleToggle
-              title="Requires Approval"
-              description="Hold new files until a reviewer approves them."
-              checked={Boolean(form.require_upload_approval)}
-              onChange={(next) =>
-                setForm({ ...form, require_upload_approval: next })
-              }
-            />
+            {form.expiry_applicable ? (
+              <>
+                <RuleToggle
+                  title="Expiry date required on upload"
+                  description="Uploads must include an expiry date."
+                  checked={Boolean(form.require_issue_date)}
+                  onChange={(next) =>
+                    setForm({ ...form, require_issue_date: next })
+                  }
+                />
+                <div className="border-t border-slate-100 px-3.5 py-3">
+                  <p className="text-sm font-semibold text-slate-800">
+                    Expiry reminder
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Days before expiry to send a reminder.
+                  </p>
+                  <ThemedSelect
+                    className="field mt-2 max-w-xs"
+                    value={String(form.expiry_reminder_days ?? 60)}
+                    onChange={(value) =>
+                      setForm({
+                        ...form,
+                        expiry_reminder_days: Number(value),
+                      })
+                    }
+                    options={[
+                      { value: "30", label: "30 days before" },
+                      { value: "60", label: "60 days before" },
+                      { value: "90", label: "90 days before" },
+                    ]}
+                  />
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
-
-        {form.require_upload_approval ? (
-          <TypeApprovalEditor
-            form={form}
-            setForm={setForm}
-            allApprovers={allApprovers}
-          />
-        ) : null}
 
         {error ? (
           <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">

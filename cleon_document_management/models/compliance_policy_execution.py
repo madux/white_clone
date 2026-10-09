@@ -126,18 +126,10 @@ class CompliancePolicyExecution(models.Model):
                 note=note,
             )
 
-    def _send_renewal_mail(self, users, subject, body_html):
-        users = users.filtered(lambda user: user.email)
-        if not users:
-            return
-        Mail = self.env["mail.mail"].sudo()
-        for user in users:
-            Mail.create({
-                "subject": subject,
-                "body_html": body_html,
-                "email_to": user.email,
-                "auto_delete": True,
-            }).send()
+    def _send_renewal_mail(self, users, subject, body_html, dedupe_key=None):
+        self.env["doc.compliance.notify"]._send_mail(
+            users, subject, body_html, dedupe_key=dedupe_key
+        )
 
     def _documents_due_for_renewal(self, employee, today):
         self.ensure_one()

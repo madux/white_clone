@@ -1,6 +1,6 @@
 "use client";
 
-import { GripVertical, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { FolderOpen, GripVertical, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import ComplianceRequestTaskModal from "./ComplianceRequestTaskModal";
 import {
@@ -36,12 +36,31 @@ export default function ComplianceRequestTaskList({
     setModalOpen(true);
   };
 
-  const saveTask = (task: ComplianceRequestTaskDefinition) => {
+  const saveTasks = (saved: ComplianceRequestTaskDefinition[]) => {
     if (editingIndex === null) {
-      onChange([...tasks, task]);
+      onChange([...tasks, ...saved]);
       return;
     }
-    onChange(tasks.map((item, index) => (index === editingIndex ? task : item)));
+    onChange(
+      tasks.flatMap((item, index) => (index === editingIndex ? saved : [item])),
+    );
+  };
+
+  const folderGroupSizes = tasks.reduce<Map<number, number>>((sizes, task) => {
+    if (task.source_folder_id) {
+      sizes.set(task.source_folder_id, (sizes.get(task.source_folder_id) ?? 0) + 1);
+    }
+    return sizes;
+  }, new Map());
+
+  const groupHeaderAt = (index: number) => {
+    const folderId = tasks[index].source_folder_id;
+    if (!folderId || (folderGroupSizes.get(folderId) ?? 0) < 2) return null;
+    if (index > 0 && tasks[index - 1].source_folder_id === folderId) return null;
+    return {
+      name: tasks[index].source_folder_name || "Folder",
+      count: folderGroupSizes.get(folderId) ?? 0,
+    };
   };
 
   const removeTask = (index: number) => {
@@ -62,10 +81,24 @@ export default function ComplianceRequestTaskList({
             Add at least one required task for this compliance request.
           </p>
         ) : (
-          tasks.map((task, index) => (
+          tasks.map((task, index) => {
+            const header = groupHeaderAt(index);
+            const grouped =
+              Boolean(task.source_folder_id) &&
+              (folderGroupSizes.get(task.source_folder_id ?? 0) ?? 0) > 1;
+            return (
+            <div key={`${task.id ?? "new"}-${index}`}>
+            {header ? (
+              <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                <FolderOpen className="h-3.5 w-3.5 text-brand-pink" aria-hidden />
+                {header.name}
+                <span className="font-normal text-slate-400">
+                  · {header.count} files
+                </span>
+              </div>
+            ) : null}
             <div
-              key={`${task.id ?? "new"}-${index}`}
-              className="flex items-center gap-3 px-3 py-2.5"
+              className={`flex items-center gap-3 py-2.5 pr-3 ${grouped ? "pl-6" : "pl-3"}`}
             >
               <GripVertical className="h-4 w-4 shrink-0 text-slate-300" aria-hidden />
               <div className="min-w-0 flex-1">
@@ -108,18 +141,23 @@ export default function ComplianceRequestTaskList({
                 <MoreHorizontal className="h-4 w-4 text-slate-300" aria-hidden />
               </div>
             </div>
-          ))
+            </div>
+            );
+          })
         )}
       </div>
+      {modalOpen ? (
       <ComplianceRequestTaskModal
+        key={editingIndex ?? "new"}
         open={modalOpen}
         initial={editingIndex === null ? null : tasks[editingIndex]}
         documentTypes={documentTypes}
         linkableContext={linkableContext}
         forms={forms}
         onClose={() => setModalOpen(false)}
-        onSave={saveTask}
+        onSave={saveTasks}
       />
+      ) : null}
     </div>
   );
 }

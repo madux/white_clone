@@ -581,11 +581,28 @@ class DocDocumentAutomation(models.Model):
         partners = partners.filtered(lambda partner: partner)
         if not partners:
             raise UserError(_("No recipients to notify."))
+        body = self._automation_notification_body(document)
         document.message_post(
-            body=self._automation_notification_body(document),
+            body=body,
             partner_ids=partners.ids,
             subtype_xmlid="mail.mt_comment",
         )
+        notify = self.env["doc.notification.service"]
+        for partner in partners:
+            user = partner.user_ids[:1]
+            if not user:
+                continue
+            notify.notify(
+                "org.access_shared",
+                _("Organisational file update: %s") % document.name,
+                {
+                    "title": _("Organisational file update"),
+                    "body": body,
+                    "res_model": "doc.document",
+                    "res_id": document.id,
+                    "owner_user_id": user.id,
+                },
+            )
 
     def _run_action(self):
         self.ensure_one()

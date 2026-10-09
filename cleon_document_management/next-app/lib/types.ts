@@ -148,6 +148,35 @@ export interface EmployeeFilesPermissions {
   can_automate?: boolean;
 }
 
+export interface WorkspaceModule {
+  id: number;
+  key: string;
+  name: string;
+  group: string;
+  sequence: number;
+  sensitive?: boolean;
+}
+
+export interface WorkspaceGrant {
+  id: number;
+  state: string;
+  owner_id: number;
+  owner_name: string;
+  delegate_id?: number | false;
+  delegate_name?: string;
+  valid_from?: string;
+  valid_until: string;
+  note?: string;
+  module_keys: string[];
+  modules?: WorkspaceModule[];
+  invite_code?: string;
+}
+
+export interface WorkspaceAccessMe {
+  pending_invite_count: number;
+  active_grant: WorkspaceGrant | null;
+}
+
 export interface User {
   id: number;
   name: string;
@@ -162,6 +191,7 @@ export interface User {
   dms_permissions?: DmsPermissionsMap;
   employee_files_permissions?: EmployeeFilesPermissions;
   organizational_files_permissions?: OrganizationalFilesPermissions;
+  workspace_access?: WorkspaceAccessMe;
 }
 
 export interface EmployeeFilesRoleLine {
@@ -712,6 +742,7 @@ export interface DocumentType {
   default_retention_years: number;
   expiry_applicable?: boolean;
   require_upload_approval?: boolean;
+  verification_required?: boolean;
   require_issue_date?: boolean;
   require_description?: boolean;
   enable_versioning?: boolean;

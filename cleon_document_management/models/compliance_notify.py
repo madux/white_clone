@@ -56,21 +56,28 @@ class ComplianceNotify(models.AbstractModel):
             "reference_date": reference_date,
         })
 
-    def _send_mail(self, users, subject, body_html):
-        users = users.filtered(lambda user: user.email)
+    def _send_mail(self, users, subject, body_html, dedupe_key=None):
+        users = users.filtered(lambda user: user.active)
         if not users:
             return
-        Mail = self.env["mail.mail"].sudo()
+        import re
+
+        notify = self.env["doc.notification.service"]
+        body_text = re.sub(r"<[^>]+>", "", body_html or subject or "")
         for user in users:
-            try:
-                Mail.create({
-                    "subject": subject,
-                    "body_html": body_html,
-                    "email_to": user.email,
-                    "auto_delete": True,
-                }).send()
-            except Exception:
-                _logger.exception("Compliance mail failed for %s", user.email)
+            key = dedupe_key
+            if key:
+                key = "%s:%s" % (key, user.id)
+            notify.notify(
+                "compliance.policy_reminder",
+                subject,
+                {
+                    "title": subject,
+                    "body": body_text,
+                    "owner_user_id": user.id,
+                },
+                dedupe_key=key,
+            )
 
     def _schedule_activity(self, record, users, summary, note, deadline):
         activity_type = self.env.ref("mail.mail_activity_data_todo", raise_if_not_found=False)

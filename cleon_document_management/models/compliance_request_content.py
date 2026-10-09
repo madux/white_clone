@@ -100,6 +100,10 @@ class CompliancePolicyLinkableContent(models.Model):
             lambda employee: self._applies_to_employee(employee)
         )
 
+    def _compliance_audience_is_all_employees(self):
+        self.ensure_one()
+        return not self._has_scope_filters() and (self.applies_to or "all") == "all"
+
     def _document_covers_compliance_audience(self, document):
         self.ensure_one()
         document = document.sudo().exists()
@@ -108,11 +112,12 @@ class CompliancePolicyLinkableContent(models.Model):
         employees = self._compliance_audience_employees()
         if not employees:
             return True
+        if self._compliance_audience_is_all_employees():
+            scope = document._compliance_effective_access_scope()
+            if scope == "all_staff":
+                return True
         for employee in employees:
-            user = employee.user_id
-            if not user:
-                return False
-            if not document._organizational_user_can_access(user):
+            if not document._organizational_employee_can_access(employee):
                 return False
         return True
 
@@ -177,6 +182,183 @@ class CompliancePolicyLinkableContent(models.Model):
         if definition.linked_org_policy_id:
             return definition.linked_org_policy_id.assignable_document()
         return self.env["doc.document"]
+
+    def _compliance_link_ineligible_reason(self, document):
+        """Empty string when the document can back a read/acknowledge task, else why not."""
+        self.ensure_one()
+        document = document.sudo()
+        folder = document.folder_id
+        if document.state == "draft" or document.distribution_status != "active":
+            return _("Not published")
+        if (document.policy_visibility or "employees") == "hr_only":
+            return _("HR only")
+        if (folder.folder_kind or "folder") == "policy":
+            org_policy = self.env["doc.organizational.policy"].for_folder(folder)
+            if org_policy:
+                if org_policy.lifecycle_status == "draft":
+                    return _("Draft policy")
+                if not org_policy.active or org_policy.lifecycle_status != "active":
+                    return _("Policy not active")
+                if org_policy.policy_visibility == "hr_only":
+                    return _("HR only")
+        scope = document._compliance_effective_access_scope()
+        if scope in document._COMPLIANCE_LINK_EXCLUDED_SCOPES:
+            return _("Private or admin-only access")
+        if document._compliance_request_link_excluded():
+            return _("Not available")
+        if not self._document_covers_compliance_audience(document):
+            return _("Access doesn't cover this audience")
+        return ""
+
+    @api.model
+    def _compliance_folder_path(self, folder):
+        names = []
+        current = folder
+        depth = 0
+        while current and depth < 12:
+            names.append(current.folder_name or current.display_name or "")
+            current = current.parent_id
+            depth += 1
+        return " / ".join(reversed([name for name in names if name]))
+
+    def _compliance_tree_folder_api(self, folder, with_path=False):
+        self.ensure_one()
+        folder = folder.sudo()
+        Folder = self.env["doc.folder"]
+        Document = self.env["doc.document"].sudo()
+        has_children = bool(
+            Folder.sudo().search_count(
+                [
+                    ("parent_id", "=", folder.id),
+                    ("active", "=", True),
+                    ("deleted_at", "=", False),
+                ],
+                limit=1,
+            )
+            or Document.search_count(
+                [
+                    ("folder_id", "=", folder.id),
+                    ("active", "=", True),
+                    ("deleted_at", "=", False),
+                    ("is_shortcut", "=", False),
+                    ("is_template", "=", False),
+                ],
+                limit=1,
+            )
+        )
+        row = {
+            "id": folder.id,
+            "name": folder.folder_name or folder.display_name or "",
+            "folder_kind": folder.folder_kind or "folder",
+            "has_children": has_children,
+            "org_policy_id": False,
+            "org_policy_name": "",
+            "disabled_reason": "",
+        }
+        if with_path:
+            row["path"] = self._compliance_folder_path(folder.parent_id)
+        if (folder.folder_kind or "folder") == "policy":
+            org_policy = self.env["doc.organizational.policy"].sudo().for_folder(folder)
+            if org_policy:
+                row["org_policy_id"] = org_policy.id
+                row["org_policy_name"] = org_policy.name or ""
+                if org_policy.lifecycle_status == "draft":
+                    row["disabled_reason"] = _("Draft policy")
+                elif not org_policy.active or org_policy.lifecycle_status != "active":
+                    row["disabled_reason"] = _("Policy not active")
+                elif org_policy.policy_visibility == "hr_only":
+                    row["disabled_reason"] = _("HR only")
+        return row
+
+    def _compliance_tree_document_api(self, document, with_path=False):
+        self.ensure_one()
+        document = document.sudo()
+        folder = document.folder_id
+        reason = self._compliance_link_ineligible_reason(document)
+        row = {
+            "id": document.id,
+            "name": document.name or "",
+            "folder_id": folder.id,
+            "folder_name": folder.folder_name or folder.display_name or "",
+            "mime_type": document.mime_type or "",
+            "eligible": not reason,
+            "reason": reason,
+            "org_policy_id": False,
+            "org_policy_name": "",
+        }
+        if with_path:
+            row["path"] = self._compliance_folder_path(folder)
+        if (folder.folder_kind or "folder") == "policy":
+            org_policy = self.env["doc.organizational.policy"].sudo().for_folder(folder)
+            if org_policy and org_policy.assignable_document() == document:
+                row["org_policy_id"] = org_policy.id
+                row["org_policy_name"] = org_policy.name or ""
+        return row
+
+    def compliance_linkable_tree(self, parent_folder_id=None, search="", user=None, limit=200):
+        """One level of the org library tree (or flat search hits) for task linking."""
+        self.ensure_one()
+        user = user or self.env.user
+        perm = self.env["doc.organizational.files.permission"]
+        if not perm.user_can_access_org_library(user):
+            return {"folders": [], "documents": []}
+        limit = max(1, min(int(limit or 200), 500))
+        query = (search or "").strip()
+        Folder = self.env["doc.folder"]
+        Document = self.env["doc.document"]
+        folder_domain = [
+            ("folder_type", "=", "organizational"),
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+        ]
+        doc_domain = [
+            ("folder_id.folder_type", "=", "organizational"),
+            ("folder_id.active", "=", True),
+            ("folder_id.deleted_at", "=", False),
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("is_shortcut", "=", False),
+            ("is_template", "=", False),
+        ]
+        if query:
+            folders = Folder.search(
+                folder_domain + [("folder_name", "ilike", query)],
+                order="folder_name",
+                limit=50,
+            )
+            documents = Document.search(
+                doc_domain + [("name", "ilike", query)],
+                order="name",
+                limit=limit,
+            )
+        else:
+            parent_id = int(parent_folder_id or 0)
+            folders = Folder.search(
+                folder_domain + [("parent_id", "=", parent_id or False)],
+                order="folder_name",
+            )
+            documents = (
+                Document.search(
+                    doc_domain + [("folder_id", "=", parent_id)],
+                    order="name",
+                    limit=limit,
+                )
+                if parent_id
+                else Document.browse()
+            )
+        folders = folders.filtered(lambda folder: folder._user_can_access(user))
+        documents = documents.filter_for_organizational_access(user)
+        with_path = bool(query)
+        return {
+            "folders": [
+                self._compliance_tree_folder_api(folder, with_path=with_path)
+                for folder in folders
+            ],
+            "documents": [
+                self._compliance_tree_document_api(document, with_path=with_path)
+                for document in documents
+            ],
+        }
 
     def search_compliance_linkable_content(self, search="", user=None, limit=50):
         """Org policies and documents eligible for compliance request task linking."""

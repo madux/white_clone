@@ -61,6 +61,12 @@ class ComplianceRequestTaskDefinition(models.Model):
         ondelete="set null",
         domain="[('folder_id.is_organizational', '=', True)]",
     )
+    source_folder_id = fields.Many2one(
+        "doc.folder",
+        string="Picked from folder",
+        ondelete="set null",
+        help="Folder the linked content was selected from; used to group tasks.",
+    )
     declaration_text = fields.Text(string="Declaration statement")
     evidence_document_type_id = fields.Many2one(
         "doc.document.type",
@@ -122,6 +128,8 @@ class ComplianceRequestTaskDefinition(models.Model):
             "linked_org_policy_name": self.linked_org_policy_id.name or "",
             "linked_document_id": self.linked_document_id.id or False,
             "linked_document_name": self.linked_document_id.name or "",
+            "source_folder_id": self.source_folder_id.id or False,
+            "source_folder_name": self.source_folder_id.folder_name or "",
             "declaration_text": self.declaration_text or "",
             "evidence_document_type_id": self.evidence_document_type_id.id or False,
             "evidence_document_type_name": self.evidence_document_type_id.name or "",
@@ -227,6 +235,9 @@ class CompliancePolicyRequestFields(models.Model):
         "lifecycle_status",
     )
     def _check_compliance_request_policy(self):
+        # Tasks are synced after create(); the controller re-runs this check once they exist.
+        if self.env.context.get("defer_compliance_request_check"):
+            return
         for policy in self:
             if not policy._is_compliance_request():
                 continue
@@ -295,6 +306,7 @@ class CompliancePolicyRequestFields(models.Model):
                 or False,
                 "linked_document_id": int(payload.get("linked_document_id") or 0)
                 or False,
+                "source_folder_id": int(payload.get("source_folder_id") or 0) or False,
                 "declaration_text": payload.get("declaration_text") or "",
                 "evidence_document_type_id": int(
                     payload.get("evidence_document_type_id") or 0

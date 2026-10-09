@@ -63,10 +63,18 @@ export function policyScopeFromApi(policy: {
   return scope;
 }
 
-export function buildScopePayload(scope: PolicyScopeState) {
+export function buildScopePayload(
+  scope: PolicyScopeState,
+  appliesTo?: string,
+) {
   const filtered = hasPolicyScopeFilters(scope);
+  const applies_to = filtered
+    ? "filtered"
+    : appliesTo === "filtered"
+      ? "filtered"
+      : "all";
   return {
-    applies_to: filtered ? "filtered" : "all",
+    applies_to,
     department_ids: scope.department_ids,
     grade_ids: scope.grade_ids,
     work_location_ids: scope.work_location_ids,

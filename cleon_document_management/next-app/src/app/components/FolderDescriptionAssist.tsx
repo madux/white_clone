@@ -18,8 +18,9 @@ export default function FolderDescriptionAssist({
 }) {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const folderName = name.trim();
-  const hasDraft = Boolean(description.trim());
+  const folderName = (name || "").trim();
+  const draft = (description || "").trim();
+  const hasDraft = Boolean(draft);
 
   const suggest = async () => {
     if (!folderName) {
@@ -31,7 +32,7 @@ export default function FolderDescriptionAssist({
       const result = await api.suggestOrganizationalFolderDescription({
         name: folderName,
         visibility,
-        description: description.trim() || undefined,
+        description: draft || undefined,
       });
       const suggested = result.data?.description?.trim() || "";
       if (!suggested) {

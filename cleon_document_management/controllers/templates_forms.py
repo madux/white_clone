@@ -740,13 +740,14 @@ class TemplatesFormsController(http.Controller):
         html_text = "".join(html)
         if kwargs.get("email"):
             self._rate_limit("email")
-            request.env["mail.mail"].sudo().create(
+            request.env["doc.notification.service"].notify(
+                "platform.export_ready",
+                "Templates & Forms export",
                 {
-                    "subject": "Templates & Forms export",
-                    "body_html": html_text,
-                    "email_to": kwargs["email"],
-                    "auto_delete": False,
-                }
+                    "title": "Templates & Forms export",
+                    "body": "Your export is ready.",
+                    "actor_user_id": request.env.user.id,
+                },
             )
             request.env["doc.template.audit.event"].log_event(
                 "export", "email", detail=kwargs["email"]

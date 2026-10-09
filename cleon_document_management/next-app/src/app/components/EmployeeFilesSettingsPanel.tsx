@@ -68,7 +68,14 @@ function SettingRow({
   );
 }
 
-export default function EmployeeFilesSettingsPanel() {
+type EmployeeFilesSettingsPanelProps = {
+  /** When true, upload rules are edited under Settings → Files & Uploads only. */
+  hideGlobalUploadRules?: boolean;
+};
+
+export default function EmployeeFilesSettingsPanel({
+  hideGlobalUploadRules = false,
+}: EmployeeFilesSettingsPanelProps) {
   const config = useEmployeeFilesConfig();
   const save = useSaveEmployeeFilesConfig();
   const saveHeaderFields = useSaveEmployeeFilesHeaderFields();
@@ -234,89 +241,117 @@ export default function EmployeeFilesSettingsPanel() {
             </SettingRow>
           </section>
 
-          <section className="px-6 pt-5 pb-2">
-            <SectionHeading title="Uploads" />
-            <SettingRow
-              label="Duplicates"
-              help="What happens if a similar file already exists."
-            >
-              <ThemedSelect
-                value={String(values.duplicate_detection_mode || "warn")}
-                onChange={(value) => update("duplicate_detection_mode", value)}
-                ariaLabel="Duplicates"
-                className="field"
-                options={[
-                  { value: "warn", label: "Warn" },
-                  { value: "prevent", label: "Block" },
-                  { value: "allow_confirm", label: "Ask first" },
-                ]}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Max size"
-              help="Largest file that can be uploaded."
-            >
-              <div className="flex max-w-[160px] overflow-hidden rounded-lg border border-[var(--rule)] bg-white">
-                <input
-                  type="number"
-                  min={1}
-                  className="min-w-0 flex-1 border-0 px-3 py-2 text-sm outline-none"
-                  value={Number(values.max_file_size_mb || 25)}
-                  onChange={(event) =>
-                    update("max_file_size_mb", Number(event.target.value))
-                  }
+          {!hideGlobalUploadRules ? (
+            <section className="px-6 pt-5 pb-2">
+              <SectionHeading title="Uploads" />
+              <SettingRow
+                label="Duplicates"
+                help="What happens if a similar file already exists."
+              >
+                <ThemedSelect
+                  value={String(values.duplicate_detection_mode || "warn")}
+                  onChange={(value) => update("duplicate_detection_mode", value)}
+                  ariaLabel="Duplicates"
+                  className="field"
+                  options={[
+                    { value: "warn", label: "Warn" },
+                    { value: "prevent", label: "Block" },
+                    { value: "allow_confirm", label: "Ask first" },
+                  ]}
                 />
-                <span className="bg-[#f4f2f6] px-3 py-2 text-xs font-semibold text-slate-600">
-                  MB
-                </span>
-              </div>
-            </SettingRow>
-            <SettingRow
-              label="Folder names"
-              help="Show the full name or the code."
-            >
-              <ThemedSelect
-                value={String(values.group_name_display || "name")}
-                onChange={(value) => update("group_name_display", value)}
-                ariaLabel="Folder names"
-                className="field"
-                options={[
-                  { value: "name", label: "Full name" },
-                  { value: "code", label: "Code" },
-                ]}
-              />
-            </SettingRow>
-            <SettingRow
-              label="File types"
-              help="Formats that can be uploaded."
-              top
-            >
-              <div className="flex flex-wrap gap-2">
-                {ALLOWED_FILE_TYPE_CATALOG.map((type) => {
-                  const on = allowedTypes.includes(type);
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => {
-                        const next = on
-                          ? allowedTypes.filter((item) => item !== type)
-                          : [...allowedTypes, type];
-                        update("allowed_file_types", serializeAllowedFileTypes(next));
-                      }}
-                      className={`rounded-lg border px-2.5 py-1.5 text-[13px] font-medium ${
-                        on
-                          ? "border-brand-pink bg-pink-50 text-brand-text"
-                          : "border-[var(--rule)] bg-white text-slate-600"
-                      }`}
-                    >
-                      {type.toUpperCase()}
-                    </button>
-                  );
-                })}
-              </div>
-            </SettingRow>
-          </section>
+              </SettingRow>
+              <SettingRow
+                label="Max size"
+                help="Largest file that can be uploaded."
+              >
+                <div className="flex max-w-[160px] overflow-hidden rounded-lg border border-[var(--rule)] bg-white">
+                  <input
+                    type="number"
+                    min={1}
+                    className="min-w-0 flex-1 border-0 px-3 py-2 text-sm outline-none"
+                    value={Number(values.max_file_size_mb || 25)}
+                    onChange={(event) =>
+                      update("max_file_size_mb", Number(event.target.value))
+                    }
+                  />
+                  <span className="bg-[#f4f2f6] px-3 py-2 text-xs font-semibold text-slate-600">
+                    MB
+                  </span>
+                </div>
+              </SettingRow>
+              <SettingRow
+                label="Folder names"
+                help="Show the full name or the code."
+              >
+                <ThemedSelect
+                  value={String(values.group_name_display || "name")}
+                  onChange={(value) => update("group_name_display", value)}
+                  ariaLabel="Folder names"
+                  className="field"
+                  options={[
+                    { value: "name", label: "Full name" },
+                    { value: "code", label: "Code" },
+                  ]}
+                />
+              </SettingRow>
+              <SettingRow
+                label="File types"
+                help="Formats that can be uploaded."
+                top
+              >
+                <div className="flex flex-wrap gap-2">
+                  {ALLOWED_FILE_TYPE_CATALOG.map((type) => {
+                    const on = allowedTypes.includes(type);
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          const next = on
+                            ? allowedTypes.filter((item) => item !== type)
+                            : [...allowedTypes, type];
+                          update(
+                            "allowed_file_types",
+                            serializeAllowedFileTypes(next),
+                          );
+                        }}
+                        className={`rounded-lg border px-2.5 py-1.5 text-[13px] font-medium ${
+                          on
+                            ? "border-brand-pink bg-pink-50 text-brand-text"
+                            : "border-[var(--rule)] bg-white text-slate-600"
+                        }`}
+                      >
+                        {type.toUpperCase()}
+                      </button>
+                    );
+                  })}
+                </div>
+              </SettingRow>
+            </section>
+          ) : (
+            <section className="px-6 pt-5 pb-2">
+              <SectionHeading title="Display" />
+              <SettingRow
+                label="Folder names"
+                help="Show the full name or the code."
+              >
+                <ThemedSelect
+                  value={String(values.group_name_display || "name")}
+                  onChange={(value) => update("group_name_display", value)}
+                  ariaLabel="Folder names"
+                  className="field"
+                  options={[
+                    { value: "name", label: "Full name" },
+                    { value: "code", label: "Code" },
+                  ]}
+                />
+              </SettingRow>
+              <p className="mt-2 text-xs text-slate-500">
+                Global upload size, file types, and duplicate handling are under{" "}
+                <span className="font-semibold">Files &amp; Uploads</span>.
+              </p>
+            </section>
+          )}
 
           <details className="mx-6 mb-4 border-t border-[var(--rule)] pt-3.5">
             <summary className="cursor-pointer text-[13px] font-semibold text-slate-500">

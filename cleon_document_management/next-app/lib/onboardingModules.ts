@@ -192,10 +192,11 @@ const administrationSteps: GuideStep[] = [
   },
   {
     id: "approval-inbox",
-    title: "Review your Approval Inbox",
-    description: "Assigned documents ready for your decision appear under the inbox icon in the header.",
-    href: "/pages/dashboard?guide=approval-inbox",
-    action: "Highlight approval inbox",
+    title: "Check your notifications",
+    description:
+      "Approvals, expiries, and other alerts appear in the bell notification centre.",
+    href: "/pages/dashboard?guide=notifications",
+    action: "Highlight notifications bell",
   },
 ];
 

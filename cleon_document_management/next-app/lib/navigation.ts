@@ -65,6 +65,7 @@ export function getNavigationLabel(
     return "My Workspace";
   }
   if (route === "/pages/my-verifications") return "Approvals";
+  if (route === "/pages/remote-access") return "Remote access";
   if (route === "/pages/my-compliance") return "My Compliance";
   if (route === "/pages/my-reviews") return "Scheduled reviews";
   if (route === "/pages/my-team") return "My Team";

@@ -1,8 +1,8 @@
-import { myWorkspaceHref, type WorkspaceTabId } from "./workspaceRoutes";
+import { myWorkspaceHref, type LegacyWorkspaceTabId } from "./workspaceRoutes";
 
 export type ReviewQueueSection = "compliance" | "employee" | "org";
 
-export const REVIEW_QUEUE_TAB: WorkspaceTabId = "review-queue";
+export const REVIEW_QUEUE_TAB: LegacyWorkspaceTabId = "review-queue";
 
 export const DEFAULT_REVIEW_QUEUE_SECTION: ReviewQueueSection = "compliance";
 

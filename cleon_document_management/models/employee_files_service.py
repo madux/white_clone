@@ -2547,21 +2547,22 @@ class DocEmployeeFilesService(models.AbstractModel):
             "new": new_display or "—",
             "time": fields.Datetime.to_string(log.changed_at),
         }
-        Mail = self.env["mail.mail"].sudo()
+        notify = self.env["doc.notification.service"]
+        import re
+
+        body_text = re.sub(r"<[^>]+>", "", body_html or subject or "")
         for user in manager_users:
-            try:
-                Mail.create(
-                    {
-                        "subject": subject,
-                        "body_html": body_html,
-                        "email_to": user.email,
-                        "auto_delete": True,
-                    }
-                ).send()
-            except Exception:
-                _logger.exception(
-                    "Employee Files EMS change mail failed for %s", user.email
-                )
+            notify.notify(
+                "ef.document_uploaded",
+                subject,
+                {
+                    "title": subject,
+                    "body": body_text,
+                    "owner_user_id": user.id,
+                    "employee_id": employee.id,
+                },
+                dedupe_key="ef.ems_change:%s:%s" % (log.id, user.id),
+            )
         activity_type = self.env.ref(
             "mail.mail_activity_data_todo", raise_if_not_found=False
         )

@@ -1,121 +1,99 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
-  ArchiveRestore,
-  ClipboardCheck,
+  Activity,
   FileText,
-  ListChecks,
-  Pin,
-  ShieldCheck,
-  Trash2,
-  Users,
+  ListTodo,
+  ScrollText,
+  Send,
 } from "lucide-react";
-import { useCurrentUser } from "../../../hooks/useDocuments";
-import {
-  canAccessEmployeeFilesAdmin,
-  canArchiveEmployeeDocuments,
-} from "../../../lib/employeeFilesAccess";
-import { canAccessOrgArchived, canAccessOrgLibrary } from "../../../lib/organizationalFilesAccess";
 import {
   type WorkspaceTabId,
+  MY_WORKSPACE_PATH,
   myWorkspaceHref,
+  resolveWorkspaceTab,
+  mapLegacyDocumentsParams,
 } from "../../../lib/workspaceRoutes";
 import SectionTabs from "./SectionTabs";
 import MyDocumentsPage from "./MyDocumentsPage";
 import DocumentLifecyclePage from "./DocumentLifecyclePage";
 import QuickAccessPage from "./QuickAccessPage";
-import MyCompliancePage from "./MyCompliancePage";
-import ReviewQueuePage from "./ReviewQueuePage";
-import MyReviewsPage from "./MyReviewsPage";
-import MyTeamCompliancePage from "./MyTeamCompliancePage";
-
-function tabFromParam(
-  value: string | null,
-  canArchive: boolean,
-  showCompliance: boolean,
-): WorkspaceTabId {
-  if (value === "archived" && canArchive) return "archived";
-  if (value === "recycle") return "recycle";
-  if (value === "quick-access") return "quick-access";
-  if (value === "compliance" && showCompliance) return "compliance";
-  if (
-    value === "review-queue" ||
-    value === "verifications" ||
-    value === "approvals"
-  ) {
-    return "review-queue";
-  }
-  if (value === "reviews" || value === "scheduled-reviews") return "reviews";
-  if (value === "team") return "team";
-  return "documents";
-}
+import ActivityPage from "./ActivityPage";
+import WorkspaceTodoTab from "./WorkspaceTodoTab";
+import WorkspacePoliciesTab from "./WorkspacePoliciesTab";
+import WorkspaceMyRequestsTab from "./WorkspaceMyRequestsTab";
+import OutOfOfficeBanner from "./OutOfOfficeBanner";
 
 export default function MyWorkspacePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const user = useCurrentUser();
-  const isManager = user.data?.is_document_manager === true;
-  const canArchive =
-    canArchiveEmployeeDocuments(user.data) ||
-    canAccessOrgArchived(user.data) ||
-    (!canAccessEmployeeFilesAdmin(user.data) && !canAccessOrgLibrary(user.data));
-  const showCompliance = Boolean(user.data?.id);
-  const tab = tabFromParam(searchParams.get("tab"), canArchive, showCompliance);
+  const kind = searchParams.get("kind");
+  const tab = resolveWorkspaceTab(searchParams.get("tab"), kind);
+  const lifecycle = searchParams.get("lifecycle");
+  const scope = searchParams.get("scope");
+
+  useEffect(() => {
+    const legacyTab = searchParams.get("tab");
+    if (
+      !legacyTab ||
+      !["archived", "recycle", "quick-access", "compliance", "review-queue"].includes(
+        legacyTab,
+      )
+    ) {
+      return;
+    }
+    const next = mapLegacyDocumentsParams(searchParams);
+    const target = `${MY_WORKSPACE_PATH}/?${next.toString()}`;
+    if (`${window.location.pathname}${window.location.search}` !== target) {
+      router.replace(target);
+    }
+  }, [router, searchParams]);
 
   const items = useMemo(
     () => [
-      { id: "documents" as const, label: "Documents", icon: FileText },
-      ...(canArchive
-        ? [{ id: "archived" as const, label: "Archived", icon: ArchiveRestore }]
-        : []),
-      { id: "recycle" as const, label: "Recycle Bin", icon: Trash2 },
-      { id: "quick-access" as const, label: "Quick Access", icon: Pin },
-      ...(showCompliance
-        ? [{ id: "compliance" as const, label: "My Compliance", icon: ShieldCheck }]
-        : []),
-      {
-        id: "review-queue" as const,
-        label: "Approvals",
-        icon: ClipboardCheck,
-      },
-      { id: "reviews" as const, label: "Scheduled reviews", icon: ListChecks },
-      { id: "team" as const, label: "My Team", icon: Users },
+      { id: "todo" as const, label: "To do", icon: ListTodo },
+      { id: "documents" as const, label: "My Documents", icon: FileText },
+      { id: "policies" as const, label: "Policies", icon: ScrollText },
+      { id: "requests" as const, label: "My Requests", icon: Send },
+      { id: "activity" as const, label: "Activity", icon: Activity },
     ],
-    [canArchive, showCompliance],
+    [],
   );
+
+  const documentsView =
+    lifecycle === "archived"
+      ? <DocumentLifecyclePage lifecycle="archived" embedded />
+      : lifecycle === "recycle"
+        ? <DocumentLifecyclePage lifecycle="recycle_bin" embedded />
+        : scope === "quick-access"
+          ? <QuickAccessPage embedded />
+          : <MyDocumentsPage embedded />;
 
   return (
     <div className="app-page space-y-4">
+      <OutOfOfficeBanner />
       <header className="app-page-header">
         <div>
           <h1>My Workspace</h1>
-          <p>
-            Personal documents, compliance, approvals, scheduled reviews, and team
-            status.
-          </p>
+          <p>Everything that is yours: to do, documents, policies, requests, and activity.</p>
         </div>
       </header>
       <SectionTabs
         items={items}
         value={tab}
-        onChange={(next) => router.replace(myWorkspaceHref(next))}
+        onChange={(next: WorkspaceTabId) =>
+          router.replace(myWorkspaceHref(next, kind ? { kind } : undefined))
+        }
         level="page"
         ariaLabel="My Workspace sections"
       />
-      {tab === "documents" ? <MyDocumentsPage embedded /> : null}
-      {tab === "archived" ? (
-        <DocumentLifecyclePage lifecycle="archived" embedded />
-      ) : null}
-      {tab === "recycle" ? (
-        <DocumentLifecyclePage lifecycle="recycle_bin" embedded />
-      ) : null}
-      {tab === "quick-access" ? <QuickAccessPage embedded /> : null}
-      {tab === "compliance" ? <MyCompliancePage embedded /> : null}
-      {tab === "review-queue" ? <ReviewQueuePage embedded /> : null}
-      {tab === "reviews" ? <MyReviewsPage embedded /> : null}
-      {tab === "team" ? <MyTeamCompliancePage embedded /> : null}
+      {tab === "todo" ? <WorkspaceTodoTab kind={kind} /> : null}
+      {tab === "documents" ? documentsView : null}
+      {tab === "policies" ? <WorkspacePoliciesTab /> : null}
+      {tab === "requests" ? <WorkspaceMyRequestsTab /> : null}
+      {tab === "activity" ? <ActivityPage embedded /> : null}
     </div>
   );
 }

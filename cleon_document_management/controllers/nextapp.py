@@ -17,6 +17,7 @@ from .access import (
 )
 from .main import _expiring_documents_domain, _serialize_expiring_document
 from .onboarding_state import ONBOARDING_STEPS, serialize_for_api, update_state
+from .workspace_delegation import effective_user, workspace_ctx
 
 _logger = logging.getLogger(__name__)
 
@@ -181,6 +182,8 @@ class NextAppController(http.Controller):
             request.env["doc.employee.files.role.service"].sudo().ensure_odoo_admin_super_admin_bindings(
                 user
             )
+            access = request.env["doc.workspace.access"]
+            active = access.session_summary(user)
             return {
                 "success": True,
                 "data": {
@@ -206,6 +209,10 @@ class NextAppController(http.Controller):
                         "doc.dms.permission"
                     ].user_is_super_admin(user),
                     "groups": user.groups_id.mapped("name"),
+                    "workspace_access": {
+                        "pending_invite_count": access.pending_invite_count(user),
+                        "active_grant": active,
+                    },
                 },
             }
         except Exception as e:
@@ -249,7 +256,11 @@ class NextAppController(http.Controller):
     )
     def api_admin_approval_inbox(self, **kwargs):
         """Return approval tasks that are ready for the current manager's decision."""
-        user = request.env.user
+        try:
+            ctx = workspace_ctx(kwargs)
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        user = effective_user(ctx)
         if not user_is_document_manager(user, request.env):
             return {"success": True, "data": {"count": 0, "items": []}}
 

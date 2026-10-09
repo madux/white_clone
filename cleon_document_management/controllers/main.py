@@ -15,6 +15,11 @@ from odoo.addons.cleon_document_management.controllers.access import (
     require_manage_retention_lifecycle,
     settings_panel_access_message,
 )
+from odoo.addons.cleon_document_management.controllers.workspace_delegation import (
+    effective_employee,
+    effective_user,
+    workspace_ctx,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -520,6 +525,9 @@ class DocumentUICreation(http.Controller):
         denied = self._settings_denied()
         if denied:
             return denied
+        categories = request.env["doc.document.category"].search(
+            [], order="sequence, name"
+        )
         types = request.env["doc.document.type"].with_context(active_test=False).search(
             [], order="sequence, name"
         )
@@ -533,9 +541,51 @@ class DocumentUICreation(http.Controller):
                         [("active", "=", True)], order="name"
                     )
                 ],
+                "document_categories": [
+                    item.serialize_for_api() for item in categories
+                ],
                 "document_types": [item.serialize_for_api() for item in types],
             },
         }
+
+    @http.route(
+        "/api/settings/document-category",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def save_settings_document_category(self, **kwargs):
+        try:
+            require_manage_document_types()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        name = (kwargs.get("name") or "").strip()
+        if not name:
+            return {"success": False, "message": "Category name is required."}
+        Category = request.env["doc.document.category"].with_context(active_test=False)
+        item = Category.browse(int(kwargs["id"])).exists() if kwargs.get("id") else Category.browse()
+        code = (kwargs.get("code") or "").strip() or name.lower().replace(" ", "_")[:64]
+        values = {
+            "name": name,
+            "code": code,
+            "description": (kwargs.get("description") or "").strip(),
+            "sequence": int(kwargs.get("sequence") or 10),
+            "active": bool(kwargs.get("active", True)),
+        }
+        duplicate = Category.search(
+            [("name", "=ilike", name), ("id", "!=", item.id or 0)], limit=1
+        )
+        if duplicate:
+            return {"success": False, "message": "A category with this name already exists."}
+        try:
+            if item:
+                item.write(values)
+            else:
+                item = Category.create(values)
+        except ValidationError as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": item.serialize_for_api()}
 
     @http.route(
         "/api/settings/document-type",
@@ -550,19 +600,28 @@ class DocumentUICreation(http.Controller):
         except AccessError as error:
             return {"success": False, "message": str(error)}
         name = (kwargs.get("name") or "").strip()
-        category = kwargs.get("category") or "other"
-        valid_categories = {"hr", "finance", "legal", "identity", "employment", "medical", "training", "other"}
-        if not name or category not in valid_categories:
+        category_id = int(kwargs.get("category_id") or 0)
+        category_record = request.env["doc.document.category"].browse(category_id).exists()
+        if not name or not category_record:
             return {"success": False, "message": "A valid name and category are required."}
+        category = category_record.code and request.env["doc.document.type"]._legacy_category_from_category_record(
+            category_record
+        ) or "other"
         flow = kwargs.get("approval_flow") or "any"
         if flow not in {"sequential", "random", "any"}:
             return {"success": False, "message": "Select a valid approval flow."}
+        expiry_applicable = bool(kwargs.get("expiry_applicable", False))
         values = {
             "name": name,
+            "category_id": category_record.id,
             "category": category,
             "description": (kwargs.get("description") or "").strip(),
             "is_mandatory_default": bool(kwargs.get("is_mandatory_default", False)),
-            "expiry_applicable": bool(kwargs.get("expiry_applicable", False)),
+            "expiry_applicable": expiry_applicable,
+            "expires_rule": "yes" if expiry_applicable else "no",
+            "expiry_reminder_days": max(
+                int(kwargs.get("expiry_reminder_days") or 60), 1
+            ),
             "require_upload_approval": bool(kwargs.get("require_upload_approval", False)),
             "require_issue_date": bool(kwargs.get("require_issue_date", False)),
             "require_description": bool(kwargs.get("require_description", False)),
@@ -587,9 +646,19 @@ class DocumentUICreation(http.Controller):
             values["approver_order"] = ",".join(str(user_id) for user_id in users.ids)
         model = request.env["doc.document.type"].with_context(active_test=False)
         item = model.browse(int(kwargs["id"])).exists() if kwargs.get("id") else model.browse()
-        duplicate = model.search([("name", "ilike", name), ("id", "!=", item.id)], limit=1)
+        duplicate = model.search(
+            [
+                ("category_id", "=", category_record.id),
+                ("name", "=ilike", name),
+                ("id", "!=", item.id or 0),
+            ],
+            limit=1,
+        )
         if duplicate:
-            return {"success": False, "message": "A document type with this name already exists."}
+            return {
+                "success": False,
+                "message": "A document type with this name already exists in this category.",
+            }
         try:
             if item:
                 item.write(values)
@@ -703,6 +772,16 @@ class DocumentUICreation(http.Controller):
             "cleon_document_management.default_approver_ids",
             ",".join(str(value) for value in approver_ids),
         )
+        if (
+            "default_require_upload_approval" in kwargs
+            or "default_approval_flow" in kwargs
+            or "default_approver_ids" in kwargs
+        ):
+            workflow = request.env["doc.approval.workflow.service"]
+            if workflow.is_enabled():
+                request.env[
+                    "doc.approval.workflow.migration"
+                ].clear_type_level_approval_config()
         config = request.env["doc.employee.files.config"].get_for_company()
         org_scope_values = {}
         allowed_org_scopes = {
@@ -1690,10 +1769,15 @@ class DocumentUICreation(http.Controller):
         "/api/my-documents", type="json", auth="user", methods=["POST"], csrf=False
     )
     def my_documents(self, **kwargs):
-        employee = request.env.user.employee_id
+        try:
+            ctx = workspace_ctx(kwargs)
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        user = effective_user(ctx)
+        employee = effective_employee(ctx)
         domain = expression.OR([
             [
-                ("owner_id", "=", request.env.user.id),
+                ("owner_id", "=", user.id),
                 ("folder_id.folder_type", "=", "employee"),
             ],
             [("employee_id", "=", employee.id or 0)],
@@ -1711,7 +1795,7 @@ class DocumentUICreation(http.Controller):
         return {
             "success": True,
             "data": [
-                document.serialize_for_api(request.env.user)
+                document.serialize_for_api(user)
                 for document in documents
             ],
         }
@@ -2209,18 +2293,14 @@ class DocumentUICreation(http.Controller):
     )
     def my_workspace(self, **kwargs):
         try:
-            return self._my_workspace_data()
-        except AccessError:
-            return {
-                "success": False,
-                "message": _(
-                    "Document access is not configured for your account. Contact your administrator."
-                ),
-            }
+            ctx = workspace_ctx(kwargs)
+            return self._my_workspace_data(ctx)
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
 
-    def _my_workspace_data(self):
-        user = request.env.user
-        employee = user.employee_id
+    def _my_workspace_data(self, ctx=None):
+        user = effective_user(ctx)
+        employee = effective_employee(ctx)
         own_domain = [
             *expression.OR([
                 [
@@ -2416,8 +2496,12 @@ class DocumentUICreation(http.Controller):
         csrf=False,
     )
     def my_pending_uploads(self, **kwargs):
-        user = request.env.user
-        employee = user.employee_id
+        try:
+            ctx = workspace_ctx(kwargs)
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        user = effective_user(ctx)
+        employee = effective_employee(ctx)
         if not employee:
             return {"success": True, "data": {"count": 0, "items": []}}
         request.env["doc.folder"].sync_pending_upload_assignments()
@@ -2490,8 +2574,11 @@ class DocumentUICreation(http.Controller):
         csrf=False,
     )
     def my_compliance(self, **kwargs):
-        user = request.env.user
-        employee = user.employee_id
+        try:
+            ctx = workspace_ctx(kwargs)
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        employee = effective_employee(ctx)
         if not employee:
             return {
                 "success": True,

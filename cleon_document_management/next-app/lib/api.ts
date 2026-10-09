@@ -4,6 +4,7 @@ import {
   assertOrgUploadSucceeded,
   type OrgUploadApiResult,
 } from "./orgDocumentUpload";
+import { getActiveWorkspaceGrantId } from "./workspaceGrantRpc";
 import type {
   DocFolder,
   DocDocument,
@@ -29,6 +30,8 @@ import type {
   DocumentType,
   ShareLink,
   UploadConflict,
+  WorkspaceGrant,
+  WorkspaceModule,
 } from "./types";
 
 interface JsonRpcResponse<T> {
@@ -74,19 +77,34 @@ export const multipartClient = axios.create({
   withCredentials: true,
 });
 
+multipartClient.interceptors.request.use((config) => {
+  const grantId = getActiveWorkspaceGrantId();
+  if (grantId) {
+    config.params = { ...(config.params || {}), workspace_grant_id: grantId };
+  }
+  return config;
+});
+
 export async function rpc<T = any>(
   path: string,
   params: Record<string, any> = {},
-  options: { timeout?: number } = {},
+  options: { timeout?: number; skipWorkspaceGrant?: boolean } = {},
 ): Promise<T> {
   try {
+    const grantId = options.skipWorkspaceGrant
+      ? null
+      : getActiveWorkspaceGrantId();
+    const rpcParams =
+      grantId && !path.startsWith("/api/workspace-access")
+        ? { ...params, workspace_grant_id: grantId }
+        : params;
     const { data } = await client.post<JsonRpcResponse<T>>(
       path,
       {
         jsonrpc: "2.0",
         method: "call",
         id: Date.now(),
-        params,
+        params: rpcParams,
       },
       options.timeout ? { timeout: options.timeout } : undefined,
     );
@@ -118,6 +136,8 @@ function unwrapCompliance<T extends { success?: boolean; message?: string }>(
 
 export const api = {
   injectedUser: (): User | null => {
+    // The page HTML embeds the signed-in user; a remote session must load the owner from /api/me.
+    if (getActiveWorkspaceGrantId()) return null;
     const rawUser =
       typeof window !== "undefined" ? window.__ODOO_USER__ : undefined;
 
@@ -1162,10 +1182,15 @@ export const api = {
     rpc<{ success: boolean; data: any[] }>("/api/folder-lifecycle", { lifecycle }),
 
   getSettings: () =>
-    rpc<{ success: boolean; data: { settings: any; document_types: any[]; approvers: any[] } }>(
-      "/api/settings",
-      {},
-    ),
+    rpc<{
+      success: boolean;
+      data: {
+        settings: any;
+        document_categories: any[];
+        document_types: any[];
+        approvers: any[];
+      };
+    }>("/api/settings", {},),
 
   getOrganizationalDefaults: () =>
     rpc<{
@@ -1185,6 +1210,12 @@ export const api = {
   saveSettingsDocumentType: (payload: Record<string, any>) =>
     rpc<{ success: boolean; data?: any; message?: string }>(
       "/api/settings/document-type",
+      payload,
+    ),
+
+  saveSettingsDocumentCategory: (payload: Record<string, any>) =>
+    rpc<{ success: boolean; data?: any; message?: string }>(
+      "/api/settings/document-category",
       payload,
     ),
 
@@ -1407,6 +1438,24 @@ export const api = {
       message?: string;
       data: { items: import("./complianceRequestTasks").ComplianceLinkableContentItem[]; count: number };
     }>("/api/compliance/request-linkable-content", payload),
+
+  listComplianceRequestLinkableTree: (payload: {
+    parent_folder_id?: number;
+    search?: string;
+    policy_id?: number;
+    applies_to?: string;
+    department_ids?: number[];
+    grade_ids?: number[];
+    employee_ids?: number[];
+    work_location_ids?: number[];
+    employment_type_ids?: number[];
+    branch_ids?: number[];
+  }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: import("./complianceRequestTasks").ComplianceLinkableTreeLevel;
+    }>("/api/compliance/request-linkable-tree", payload),
 
   listRetentionSettings: (document_type_ids?: number[]) =>
     rpc<{
@@ -2042,6 +2091,168 @@ export const api = {
       if (!r.success) {
         throw new Error(r.message || "Could not remove document relationship.");
       }
+      return r;
+    }),
+
+  workspaceAccessCatalog: () =>
+    rpc<{ success: boolean; message?: string; data: { modules: WorkspaceModule[] } }>(
+      "/api/workspace-access/modules/catalog",
+      {},
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data.modules;
+    }),
+
+  workspaceAccessEligibleModules: () =>
+    rpc<{ success: boolean; message?: string; data: { modules: WorkspaceModule[] } }>(
+      "/api/workspace-access/modules/eligible",
+      {},
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data.modules;
+    }),
+
+  workspaceAccessIncoming: () =>
+    rpc<{ success: boolean; message?: string; data: { items: WorkspaceGrant[] } }>(
+      "/api/workspace-access/invites/incoming",
+      {},
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data.items;
+    }),
+
+  workspaceAccessOutgoing: () =>
+    rpc<{ success: boolean; message?: string; data: { items: WorkspaceGrant[] } }>(
+      "/api/workspace-access/invites/outgoing",
+      {},
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data.items;
+    }),
+
+  workspaceAccessCreateInvite: (payload: {
+    delegate_id?: number;
+    valid_until: string;
+    module_keys: string[];
+    note?: string;
+    generate_code?: boolean;
+  }) =>
+    rpc<{ success: boolean; message?: string; data: WorkspaceGrant }>(
+      "/api/workspace-access/invites/create",
+      payload,
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data;
+    }),
+
+  workspaceAccessAccept: (grantId: number) =>
+    rpc<{ success: boolean; message?: string; data: WorkspaceGrant }>(
+      "/api/workspace-access/invites/accept",
+      { grant_id: grantId },
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data;
+    }),
+
+  workspaceAccessAcceptCode: (code: string) =>
+    rpc<{ success: boolean; message?: string; data: WorkspaceGrant }>(
+      "/api/workspace-access/invites/accept-code",
+      { code },
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data;
+    }),
+
+  workspaceAccessDecline: (grantId: number) =>
+    rpc<{ success: boolean; message?: string }>(
+      "/api/workspace-access/invites/decline",
+      { grant_id: grantId },
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r;
+    }),
+
+  workspaceAccessRevoke: (grantId: number) =>
+    rpc<{ success: boolean; message?: string; data: WorkspaceGrant }>(
+      "/api/workspace-access/grants/revoke",
+      { grant_id: grantId },
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data;
+    }),
+
+  workspaceAccessCancel: (grantId: number) =>
+    rpc<{ success: boolean; message?: string; data: WorkspaceGrant }>(
+      "/api/workspace-access/grants/cancel",
+      { grant_id: grantId },
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data;
+    }),
+
+  workspaceAccessDeactivate: (grantId: number) =>
+    rpc<{ success: boolean; message?: string; data: WorkspaceGrant }>(
+      "/api/workspace-access/grants/deactivate",
+      { grant_id: grantId },
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data;
+    }),
+
+  workspaceAccessUpdateGrant: (payload: {
+    grant_id: number;
+    module_keys: string[];
+    valid_until: string;
+  }) =>
+    rpc<{ success: boolean; message?: string; data: WorkspaceGrant }>(
+      "/api/workspace-access/grants/update",
+      payload,
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data;
+    }),
+
+  workspaceAccessSearchUsers: (query: string) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: { items: { id: number; name: string; email: string }[] };
+    }>("/api/workspace-access/users/search", { query }, { skipWorkspaceGrant: true }).then(
+      (r) => {
+        if (r.success === false) throw new Error(r.message || "Request failed.");
+        return r.data.items;
+      },
+    ),
+
+  workspaceAccessSession: (grantId?: number) =>
+    rpc<{ success: boolean; message?: string; data: { grant: WorkspaceGrant | null } }>(
+      "/api/workspace-access/session",
+      grantId ? { grant_id: grantId } : {},
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
+      return r.data.grant;
+    }),
+
+  workspaceAccessClearSession: () =>
+    rpc<{ success: boolean; message?: string }>(
+      "/api/workspace-access/session/clear",
+      {},
+      { skipWorkspaceGrant: true },
+    ).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Request failed.");
       return r;
     }),
 };

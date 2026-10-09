@@ -17,9 +17,11 @@ import {
   Save,
   Shield,
   Trash2,
+  ClipboardCheck,
+  Bell,
+  Mail,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import SectionTabs from "./SectionTabs";
 import AppToolbar from "./AppToolbar";
 import EmptyState from "./EmptyState";
 import StatusPill from "./StatusPill";
@@ -47,55 +49,35 @@ import DocumentTypeFormDialog, {
 import RolesPage from "./RolesPage";
 import EmployeeFilesSettingsPanel from "./EmployeeFilesSettingsPanel";
 import RetentionSettingsPanel from "./RetentionSettingsPanel";
-import OrganizationalFilesSettingsPanel from "./OrganizationalFilesSettingsPanel";
+import GeneralSettingsTab from "./settings/GeneralSettingsTab";
+import ApprovalWorkflowSettingsTab from "./settings/ApprovalWorkflowSettingsTab";
+import FilesUploadsSettingsTab from "./settings/FilesUploadsSettingsTab";
+import ModulesSettingsTab from "./settings/ModulesSettingsTab";
+import NotificationRulesSettingsTab from "./settings/NotificationRulesSettingsTab";
+import DevBOwnedTabPlaceholder from "./settings/DevBOwnedTabPlaceholder";
+import CategoriesAndTypesTab from "./settings/CategoriesAndTypesTab";
+import SettingsSidebar, {
+  type SettingsSidebarGroup,
+} from "./settings/SettingsSidebar";
+import { useRouter } from "next/navigation";
 import {
   ONBOARDING_MODULE_META,
   ONBOARDING_MODULE_ORDER,
   type OnboardingModuleId,
 } from "../../../lib/onboardingModules";
-const sections = [
-  {
-    id: "types",
-    label: "Document types",
-    shortLabel: "Types",
-    description: "Keep classification consistent across every upload.",
-    icon: FileText,
-  },
-  {
-    id: "lifecycle",
-    label: "Retention & lifecycle",
-    shortLabel: "Lifecycle",
-    description: "Control retention and recycle-bin behavior.",
-    icon: History,
-  },
-  {
-    id: "retention_compliance",
-    label: "Retention settings",
-    shortLabel: "Retention",
-    description: "Archive and delete rules per document type for compliance.",
-    icon: History,
-  },
-  {
-    id: "onboarding",
-    label: "Help & onboarding",
-    shortLabel: "Help",
-    description: "Restart the guided introduction for your workspace.",
-    icon: CircleHelp,
-  },
-  {
-    id: "employee_files",
-    label: "Employee Files",
-    shortLabel: "EF v3",
-    description: "EMS grouping, upload rules, and error handling.",
-    icon: FolderCog,
-  },
-  {
-    id: "organizational_files",
-    label: "Organizational files",
-    shortLabel: "Org files",
-    description: "Default folder visibility and company-owned access delegates.",
-    icon: Building2,
-  },
+const specSections = [
+  { id: "general", label: "General", icon: Building2 },
+  { id: "users_roles", label: "Users & Roles", icon: Shield },
+  { id: "types", label: "Categories & Types", icon: FileText },
+  { id: "approval_workflow", label: "Approval Workflow", icon: ClipboardCheck },
+  { id: "notification_rules", label: "Notification Rules", icon: Bell },
+  { id: "triggers", label: "Triggers & Alerts", icon: AlertCircle },
+  { id: "retention", label: "Retention & Legal Hold", icon: History },
+  { id: "files_uploads", label: "Files & Uploads", icon: FolderCog },
+  { id: "modules", label: "Modules", icon: FolderCog },
+  { id: "signatures", label: "Signatures", icon: Pencil },
+  { id: "cleonai", label: "CleonAI", icon: CircleHelp },
+  { id: "onboarding", label: "Help & onboarding", icon: CircleHelp },
 ] as const;
 
 const fallbackSettings = {
@@ -110,17 +92,35 @@ const fallbackSettings = {
   default_company_owned_admin_user_ids: [] as number[],
 };
 
-const rolesSection = {
-  id: "roles" as const,
-  label: "Module roles",
-  shortLabel: "Roles",
-  description: "Custom roles for Employee Files and Organizational Files, plus platform administrator access.",
-  icon: Shield,
-};
+type SectionId =
+  | (typeof specSections)[number]["id"]
+  | "roles"
+  | "lifecycle"
+  | "employee_files"
+  | "organizational_files"
+  | "retention_compliance";
 
-type SectionId = (typeof sections)[number]["id"] | "roles";
+const settingsNavGroupDefs: { title: string; sectionIds: SectionId[] }[] = [
+  {
+    title: "Workspace",
+    sectionIds: ["general", "users_roles", "modules"],
+  },
+  {
+    title: "Documents",
+    sectionIds: ["types", "files_uploads", "retention"],
+  },
+  {
+    title: "Workflow",
+    sectionIds: ["approval_workflow", "notification_rules", "triggers"],
+  },
+  {
+    title: "Integrations",
+    sectionIds: ["signatures", "cleonai", "onboarding"],
+  },
+];
 
 export default function SettingsPage() {
+  const router = useRouter();
   const query = useSettings();
   const currentUser = useCurrentUser();
   const params = useSearchParams();
@@ -167,6 +167,7 @@ export default function SettingsPage() {
   const [section, setSection] = useState<SectionId>("types");
   const [settings, setSettings] = useState<Record<string, any> | null>(null);
   const [search, setSearch] = useState("");
+  const [settingsFind, setSettingsFind] = useState("");
   const [notice, setNotice] = useState<{
     message: string;
     error?: boolean;
@@ -178,17 +179,70 @@ export default function SettingsPage() {
     currentUser.data?.is_document_admin === true ||
     currentUser.data?.is_admin === true;
 
-  const visibleSections = useMemo(
-    () => (canManageRoles ? [...sections, rolesSection] : [...sections]),
-    [canManageRoles],
+  const visibleSections = useMemo(() => {
+    const term = settingsFind.trim().toLowerCase();
+    let tabs = [...specSections];
+    if (!canManageRoles) {
+      tabs = tabs.filter((item) => item.id !== "users_roles");
+    }
+    if (term) {
+      tabs = tabs.filter((item) => item.label.toLowerCase().includes(term));
+    }
+    return tabs;
+  }, [canManageRoles, settingsFind]);
+
+  type SpecSectionId = (typeof specSections)[number]["id"];
+
+  const sectionById = useMemo(
+    () => new Map<string, (typeof specSections)[number]>(
+      specSections.map((item) => [item.id, item]),
+    ),
+    [],
   );
+
+  const isSpecSection = (id: SectionId): id is SpecSectionId =>
+    sectionById.has(id);
+
+  const sidebarGroups = useMemo((): SettingsSidebarGroup[] => {
+    const visibleIds = new Set<string>(visibleSections.map((item) => item.id));
+    return settingsNavGroupDefs.map((group) => ({
+      title: group.title,
+      items: group.sectionIds
+        .filter((id) => visibleIds.has(id))
+        .map((id) => {
+          const meta = sectionById.get(id);
+          return { id, label: meta?.label ?? id };
+        }),
+    }));
+  }, [visibleSections, sectionById]);
+
+  const selectSection = (next: SectionId) => {
+    setSection(next);
+    router.replace(`/pages/settings?section=${next}`, { scroll: false });
+  };
+
+  useEffect(() => {
+    if (!isSpecSection(section)) {
+      return;
+    }
+    const visibleIds = new Set(visibleSections.map((item) => item.id));
+    if (!visibleIds.has(section)) {
+      const fallback = visibleSections[0]?.id;
+      if (fallback) {
+        setSection(fallback);
+        router.replace(`/pages/settings?section=${fallback}`, { scroll: false });
+      }
+    }
+  }, [visibleSections, section, router]);
 
   const guideTarget = params.get("guide");
   const requestedSection = params.get("section");
   const guideSection: SectionId | null =
-    guideTarget === "document-types" || guideTarget === "approval-workflow"
+    guideTarget === "document-types"
       ? "types"
-      : null;
+      : guideTarget === "approval-workflow"
+        ? "approval_workflow"
+        : null;
 
   useEffect(() => {
     if (query.data?.settings && !settings) setSettings(query.data.settings);
@@ -200,19 +254,22 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (requestedSection === "roles" && canManageRoles) {
-      setSection("roles");
+      setSection("users_roles");
     }
-    if (requestedSection === "employee_files") {
-      setSection("employee_files");
-    }
-    if (requestedSection === "organizational_files") {
-      setSection("organizational_files");
+    if (requestedSection === "employee_files" || requestedSection === "organizational_files") {
+      setSection("modules");
     }
     if (requestedSection === "access") {
       setSection("types");
     }
-    if (requestedSection === "retention_compliance") {
-      setSection("retention_compliance");
+    if (
+      requestedSection === "retention_compliance" ||
+      requestedSection === "lifecycle"
+    ) {
+      setSection("retention");
+    }
+    if (requestedSection === "approval-workflow" || requestedSection === "approval_workflow") {
+      setSection("approval_workflow");
     }
   }, [requestedSection, canManageRoles]);
 
@@ -279,6 +336,10 @@ export default function SettingsPage() {
 
   const isDocAdmin = currentUser.data?.is_document_admin === true;
 
+  const activeSectionLabel = isSpecSection(section)
+    ? (sectionById.get(section)?.label ?? "Settings")
+    : "Settings";
+
   return (
     <div className="app-page">
         {query.isError && (
@@ -315,46 +376,65 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <SectionTabs
-          items={visibleSections.map((item) => ({
-            id: item.id,
-            label: item.label,
-            icon: item.icon,
-            emphasisClassName:
-              guideSection === item.id ? "guide-emphasis" : undefined,
-          }))}
-          value={section}
-          onChange={setSection}
-          level="page"
-          stretch
-          ariaLabel="Settings sections"
-        />
-        <div className="mt-6">
+        <header className="app-page-header border-b border-slate-200 pb-5">
+          <div>
+            <h1>Settings</h1>
+            <p>Manage your workspace, documents, workflows, and integrations.</p>
+          </div>
+        </header>
+
+        <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start">
+          <SettingsSidebar
+            groups={sidebarGroups}
+            activeId={section}
+            onSelect={(id) => selectSection(id as SectionId)}
+            search={settingsFind}
+            onSearchChange={setSettingsFind}
+            activeEmphasis={guideSection === section}
+          />
+          <div className="min-w-0 flex-1">
+            <h2 className="mb-6 border-b border-slate-200 pb-4 text-lg font-semibold text-slate-900">
+              {activeSectionLabel}
+            </h2>
             {query.isLoading ? (
               <LoadingState />
+            ) : section === "general" ? (
+              <GeneralSettingsTab />
+            ) : section === "users_roles" ? (
+              <RolesPage embedded />
+            ) : section === "approval_workflow" ? (
+              <ApprovalWorkflowSettingsTab />
+            ) : section === "notification_rules" ? (
+              <NotificationRulesSettingsTab />
+            ) : section === "files_uploads" ? (
+              <FilesUploadsSettingsTab />
+            ) : section === "modules" ? (
+              <ModulesSettingsTab />
+            ) : section === "triggers" ? (
+              <DevBOwnedTabPlaceholder title="Triggers & Alerts" />
+            ) : section === "signatures" ? (
+              <DevBOwnedTabPlaceholder title="Signatures" />
+            ) : section === "cleonai" ? (
+              <DevBOwnedTabPlaceholder title="CleonAI" />
+            ) : section === "retention" ? (
+              <>
+                <RetentionSettingsPanel documentTypes={documentTypes} />
+                <div className="mt-8">
+                  <SettingsPanel
+                    section="lifecycle"
+                    values={values}
+                    update={update}
+                    save={saveSettings}
+                    saving={save.isPending}
+                  />
+                </div>
+              </>
             ) : section === "types" ? (
-              <Types
-                types={filteredTypes}
-                total={documentTypes.length}
-                search={search}
-                setSearch={setSearch}
-                edit={openDocumentTypeForm}
-                toggle={(id: number) => toggleType.mutate(id)}
-                onDelete={handleDeleteDocumentType}
-                loading={toggleType.isPending || deleteType.isPending}
-              />
+              <CategoriesAndTypesTab />
             ) : section === "employee_files" ? (
-              <EmployeeFilesSettingsPanel />
+              <ModulesSettingsTab />
             ) : section === "organizational_files" ? (
-              <OrganizationalFilesSettingsPanel
-                values={values}
-                onChange={(patch) => {
-                  setSettings({ ...values, ...patch });
-                  setNotice(null);
-                }}
-                onSave={saveSettings}
-                saving={save.isPending}
-              />
+              <ModulesSettingsTab />
             ) : section === "roles" ? (
               <RolesPage embedded />
             ) : section === "retention_compliance" ? (
@@ -393,6 +473,7 @@ export default function SettingsPage() {
               />
             )}
           </div>
+        </div>
 
       {typeForm && (
         <DocumentTypeFormDialog

@@ -233,40 +233,11 @@ def handle_document_automation(env, user, library, document_id, kwargs):
 
 
 def automation_hub_for_library(env, user, library):
-    can_manage = _can_manage_automation(env, user, library)
-    can_view = _can_view_automation(env, user, library)
-    if not can_manage and not can_view:
-        return {"success": False, "message": "Permission denied."}
-    Automation = env["doc.document.automation"]
-    Document = env["doc.document"]
-    docs = Document.search(
-        [
-            ("folder_id.folder_type", "=", library),
-            ("active", "=", True),
-            ("deleted_at", "=", False),
-        ]
-    )
-    if library == LIBRARY_ORGANIZATIONAL:
-        docs = docs.filtered(lambda document: document.folder_id._user_can_access(user))
-    else:
-        ef_perm = _ef_perm(env)
-        docs = docs.filtered(
-            lambda document: ef_perm.user_can_on_document(user, document, "action_view")
-        )
-    rules = Automation.search([("document_id", "in", docs.ids)])
-    items = []
-    for rule in rules:
-        document = rule.document_id
-        payload = rule.serialize_for_api()
-        payload["document_id"] = document.id
-        payload["document_name"] = document.name
-        payload["folder_id"] = document.folder_id.id
-        payload["folder_name"] = document.folder_id.folder_name
-        if library == LIBRARY_EMPLOYEE and document.employee_id:
-            payload["employee_id"] = document.employee_id.id
-            payload["employee_name"] = document.employee_id.name
-        items.append(payload)
     return {
-        "success": True,
-        "data": {"items": items, "can_manage": can_manage},
+        "success": False,
+        "code": "AUTOMATION_HUB_REMOVED",
+        "message": (
+            "The automation rule hub was removed (global spec GL-05). "
+            "Use per-document Lifecycle and Settings → Notification Rules."
+        ),
     }

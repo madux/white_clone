@@ -1,35 +1,25 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import ModalDialog from "./ModalDialog";
 import ThemedSelect from "./ThemedSelect";
-import { api } from "../../../lib/api";
+import ComplianceContentTreePicker from "./ComplianceContentTreePicker";
 import { buildScopePayload } from "../../../lib/policyScope";
 import {
+  applySelectionToTask,
   emptyRequestTask,
+  selectionFromTask,
   TASK_TYPE_LABELS,
   validateRequestTask,
+  type ComplianceContentSelection,
   type ComplianceLinkableContext,
-  type ComplianceLinkableContentItem,
   type ComplianceRequestTaskDefinition,
   type ComplianceRequestTaskType,
 } from "../../../lib/complianceRequestTasks";
 import type { DocumentType } from "../../../lib/types";
 
-function linkableContentValue(task: ComplianceRequestTaskDefinition): string {
-  if (task.linked_org_policy_id) {
-    return `org_policy:${task.linked_org_policy_id}`;
-  }
-  if (task.linked_document_id) {
-    return `document:${task.linked_document_id}`;
-  }
-  return "";
-}
-
-function linkableContentLabel(task: ComplianceRequestTaskDefinition): string {
-  if (task.linked_org_policy_name) return task.linked_org_policy_name;
-  if (task.linked_document_name) return task.linked_document_name;
-  return "";
+function isContentTask(type: ComplianceRequestTaskType) {
+  return type === "read" || type === "acknowledge";
 }
 
 export default function ComplianceRequestTaskModal({
@@ -47,140 +37,104 @@ export default function ComplianceRequestTaskModal({
   linkableContext: ComplianceLinkableContext;
   forms: { id: number; name: string }[];
   onClose: () => void;
-  onSave: (task: ComplianceRequestTaskDefinition) => void;
+  onSave: (tasks: ComplianceRequestTaskDefinition[]) => void;
 }) {
-  const [form, setForm] = useState<ComplianceRequestTaskDefinition>(emptyRequestTask());
+  const [form, setForm] = useState<ComplianceRequestTaskDefinition>(() =>
+    initial ? { ...initial } : emptyRequestTask(),
+  );
   const [error, setError] = useState("");
-  const [contentSearch, setContentSearch] = useState("");
-  const [contentOptions, setContentOptions] = useState<ComplianceLinkableContentItem[]>([]);
-  const [contentLoading, setContentLoading] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setForm(initial ? { ...initial } : emptyRequestTask());
-      setError("");
-      setContentSearch(linkableContentLabel(initial ?? emptyRequestTask()));
-    }
-  }, [open, initial]);
+  const [selection, setSelection] = useState<ComplianceContentSelection[]>(() => {
+    const picked = initial ? selectionFromTask(initial) : null;
+    return picked ? [picked] : [];
+  });
+  const editing = Boolean(initial);
 
   const scopePayload = useMemo(
-    () => buildScopePayload(linkableContext.scope),
-    [linkableContext.scope],
+    () => buildScopePayload(linkableContext.scope, linkableContext.applies_to),
+    [linkableContext.scope, linkableContext.applies_to],
   );
-
-  useEffect(() => {
-    if (!open) return;
-    if (form.task_type !== "read" && form.task_type !== "acknowledge") return;
-    const timer = window.setTimeout(() => {
-      setContentLoading(true);
-      void api
-        .listComplianceRequestLinkableContent({
-          search: contentSearch,
-          policy_id: linkableContext.policyId,
-          applies_to: scopePayload.applies_to,
-          department_ids: scopePayload.department_ids,
-          grade_ids: scopePayload.grade_ids,
-          employee_ids: scopePayload.employee_ids,
-          work_location_ids: scopePayload.work_location_ids,
-          employment_type_ids: scopePayload.employment_type_ids,
-          branch_ids: scopePayload.branch_ids,
-        })
-        .then((result) => {
-          if (result.success && result.data?.items) {
-            setContentOptions(result.data.items);
-          } else {
-            setContentOptions([]);
-          }
-        })
-        .finally(() => setContentLoading(false));
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [
-    open,
-    form.task_type,
-    contentSearch,
-    linkableContext.policyId,
-    scopePayload,
-  ]);
-
-  const contentSelectOptions = useMemo(() => {
-    const fromApi = contentOptions.map((item) => ({
-      value: `${item.kind}:${item.id}`,
-      label:
-        item.kind === "org_policy"
-          ? `${item.name} (policy)`
-          : `${item.name} · ${item.folder_name}`,
-    }));
-    const current = linkableContentValue(form);
-    if (current && !fromApi.some((option) => option.value === current)) {
-      const label = linkableContentLabel(form);
-      if (label) {
-        fromApi.unshift({ value: current, label });
-      }
-    }
-    return fromApi;
-  }, [contentOptions, form]);
 
   if (!open) return null;
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    const message = validateRequestTask(form);
-    if (message) {
-      setError(message);
-      return;
+  const contentTask = isContentTask(form.task_type);
+  const bulk = contentTask && !editing && selection.length > 1;
+
+  const contentTaskName = (item: ComplianceContentSelection) => {
+    const base = form.name.trim();
+    if (bulk) {
+      return base ? `${base}: ${item.name}` : `${TASK_TYPE_LABELS[form.task_type]}: ${item.name}`;
     }
-    onSave(form);
-    onClose();
+    return base || `${TASK_TYPE_LABELS[form.task_type]}: ${item.name}`;
   };
 
-  const applyLinkableContent = (value: string) => {
-    if (!value) {
-      setForm({
-        ...form,
-        linked_org_policy_id: undefined,
-        linked_org_policy_name: undefined,
-        linked_document_id: undefined,
-        linked_document_name: undefined,
-      });
+  const submit = () => {
+    if (!contentTask) {
+      const message = validateRequestTask(form);
+      if (message) {
+        setError(message);
+        return;
+      }
+      onSave([form]);
+      onClose();
       return;
     }
-    const item = contentOptions.find((row) => `${row.kind}:${row.id}` === value);
-    if (!item) {
+    if (!selection.length) {
+      setError("Select at least one file or folder to link.");
       return;
     }
-    if (item.kind === "org_policy") {
-      setForm({
-        ...form,
-        linked_org_policy_id: item.id,
-        linked_org_policy_name: item.name,
-        linked_document_id: undefined,
-        linked_document_name: undefined,
-      });
-      setContentSearch(item.name);
-      return;
-    }
-    setForm({
-      ...form,
-      linked_document_id: item.id,
-      linked_document_name: item.name,
-      linked_org_policy_id: undefined,
-      linked_org_policy_name: undefined,
+    const items = editing ? selection.slice(0, 1) : selection;
+    const tasks = items.map((item, index) => {
+      const base: ComplianceRequestTaskDefinition =
+        editing || index === 0 ? { ...form } : { ...form, id: undefined };
+      return applySelectionToTask({ ...base, name: contentTaskName(item) }, item);
     });
-    setContentSearch(item.name);
+    for (const task of tasks) {
+      const message = validateRequestTask(task);
+      if (message) {
+        setError(message);
+        return;
+      }
+    }
+    onSave(tasks);
+    onClose();
   };
 
   return (
     <ModalDialog title="Compliance task" eyebrow="Request task" onClose={onClose} size="lg">
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
+      {/* Not a <form>: this modal renders inside the rule wizard's form, so Enter in an
+          input must not implicitly submit that outer form. */}
+      <div
+        className="grid gap-3 sm:grid-cols-2"
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && (event.target as HTMLElement).tagName === "INPUT") {
+            event.preventDefault();
+          }
+        }}
+      >
         <label className="block space-y-1 sm:col-span-2">
-          <span className="label">Task name</span>
+          <span className="label">
+            Task name
+            {contentTask ? (
+              <span className="ml-1 font-normal text-slate-400">(optional)</span>
+            ) : null}
+          </span>
           <input
-            required
+            required={!contentTask}
             className="field"
             value={form.name}
             onChange={(event) => setForm({ ...form, name: event.target.value })}
+            placeholder={
+              contentTask
+                ? `Defaults to “${TASK_TYPE_LABELS[form.task_type]}: <file name>”`
+                : undefined
+            }
           />
+          {bulk ? (
+            <span className="block text-xs text-slate-500">
+              Each file becomes its own task
+              {form.name.trim() ? ` named “${form.name.trim()}: <file name>”` : ""}.
+            </span>
+          ) : null}
         </label>
         <label className="block space-y-1">
           <span className="label">Task type</span>
@@ -270,26 +224,36 @@ export default function ComplianceRequestTaskModal({
             />
           </label>
         ) : null}
-        {form.task_type === "read" || form.task_type === "acknowledge" ? (
-          <label className="block space-y-1 sm:col-span-2">
+        {contentTask ? (
+          <div className="space-y-1 sm:col-span-2">
             <span className="label">Organizational content</span>
-            <input
-              className="field mb-2"
-              value={contentSearch}
-              onChange={(event) => setContentSearch(event.target.value)}
-              placeholder="Search org policies and files in scope…"
-            />
-            <ThemedSelect
-              value={linkableContentValue(form)}
-              onChange={applyLinkableContent}
-              placeholder={contentLoading ? "Loading…" : "Select content"}
-              options={contentSelectOptions}
-            />
-            <p className="mt-1 text-xs text-slate-500">
-              Only active, non-private org content that already covers your Applies to
-              audience is listed.
+            <p className="text-xs text-slate-500">
+              {editing
+                ? "Pick the file this task links to."
+                : "Tick a folder to include every eligible file in it, or pick individual files."}{" "}
+              Only active, non-private content that covers your Applies to audience can be
+              selected.
             </p>
-          </label>
+            <ComplianceContentTreePicker
+              key={JSON.stringify(scopePayload)}
+              scopePayload={scopePayload}
+              policyId={linkableContext.policyId}
+              multiple={!editing}
+              selected={selection}
+              onChange={(next) => {
+                setSelection(next);
+                setError("");
+              }}
+            />
+            {bulk ? (
+              <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                {selection.length} separate {TASK_TYPE_LABELS[form.task_type].toLowerCase()}{" "}
+                tasks will be created. If Tasks needed is set to “At least one” or a
+                minimum count, employees may finish the request without completing every
+                file.
+              </p>
+            ) : null}
+          </div>
         ) : null}
         {error ? (
           <p className="sm:col-span-2 text-sm text-red-600">{error}</p>
@@ -298,9 +262,11 @@ export default function ComplianceRequestTaskModal({
           <button type="button" className="secondary-button" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className="primary-button">Save task</button>
+          <button type="button" className="primary-button" onClick={submit}>
+            {bulk ? `Add ${selection.length} tasks` : "Save task"}
+          </button>
         </div>
-      </form>
+      </div>
     </ModalDialog>
   );
 }

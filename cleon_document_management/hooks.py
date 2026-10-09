@@ -82,3 +82,14 @@ def post_init_hook(env):
             ).ensure_canonical_org_roles(company)
     if "doc.employee.files.role.service" in env:
         env["doc.employee.files.role.service"].ensure_odoo_admin_super_admin_bindings()
+    if "doc.document.catalog.service" in env:
+        env["doc.document.catalog.service"].ensure_default_catalog()
+    if "doc.notification.catalog.service" in env:
+        env["doc.notification.catalog.service"].ensure_default_notification_rules()
+    if "doc.approval.workflow.migration" in env:
+        env["doc.approval.workflow.migration"].migrate_document_types_to_workflow()
+    if "doc.registry.service" in env:
+        documents = env["doc.document"].search(
+            [("active", "=", True), ("deleted_at", "=", False)], limit=5000
+        )
+        env["doc.registry.service"].sync_document_registry(documents)
