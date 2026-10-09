@@ -80,9 +80,10 @@ class ImportApplicants(models.TransientModel):
     def create_job_position(self, name):
         job_position_obj = self.env['hr.job']
         if name:
-            position_rec = job_position_obj.search([('name', '=', name.strip())], limit = 1)
+            position_rec = job_position_obj.search([('name', 'ilike', name.strip())], limit = 1)
             job_position = job_position_obj.create({
-                        "name": name.strip()
+                        "name": name.strip(), 
+                        "active": True,
                     }) if not position_rec else position_rec
             return job_position
         else:

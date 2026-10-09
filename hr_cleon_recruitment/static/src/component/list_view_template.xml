@@ -201,6 +201,13 @@
                     </li>
 
                     <li>
+                        <a class="sidebar-nav-item" t-on-click="openEmployee">
+                            <i class="sidebar-nav-icon fa fa-store"></i>
+                            Employees
+                        </a>
+                    </li>
+
+                    <li>
                         <a class="sidebar-nav-item" t-on-click="openCandidate">
                             <i class="sidebar-nav-icon fa fa-store"></i>
                             Vendors

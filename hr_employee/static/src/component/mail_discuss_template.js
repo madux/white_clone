@@ -8,7 +8,7 @@ patch(DiscussSidebar.prototype, {
 
     setup() {
         super.setup();
-
+        this.actionService = useService("action");
         this.action = useService("action");
     },
     
@@ -21,6 +21,39 @@ patch(DiscussSidebar.prototype, {
                 target: "current",
             }
         );
+    },
+
+     
+    
+    async openEmployee(ev) {
+        ev.preventDefault();
+
+        await this.env.services.action.doAction(
+            "hr_administration.action_view_employee_kanban_custom",
+            {
+                target: "new",
+            }
+        );
+    },
+    async openAnnouncement(ev) {
+        ev.preventDefault();
+
+        await this.env.services.action.doAction(
+            "hr_employee.action_hr_core_announcement",
+            {
+                target: "new",
+            }
+        );
+    },
+
+    async openDepartment(ev) {
+        ev.preventDefault();
+        await this.env.services.action.doAction(
+            "hr_cleon_recruitment.action_hr_department_recruitment",
+            {
+                target: "new",
+            }
+        ); 
     }
 
     // async openMessage() {

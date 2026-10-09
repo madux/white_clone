@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Custom OWL dashboard client action: greeting header, stat cards per
+        stage (+ Total and Escalated), a monthly bar chart and a by-type pie
+        chart — matching the reference dashboard design.
+        Implementation: static/src/js/grievance_dashboard.js
+    -->
+    <record id="action_grievance_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard</field>
+        <field name="tag">grievance_dashboard</field>
+    </record>
+</odoo>

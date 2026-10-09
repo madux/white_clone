@@ -54,6 +54,10 @@ $cc-radius:     8px;
         text-align: right;
     }
 
+    .cc-action-row span {
+        color: #FFFFFF !important;
+    }
+
     // ── Row 2: our sidebar (left) ──
     > .o_cc_admin_sidebar {
         flex: 0 0 #{$cc-sidebar-w} !important;

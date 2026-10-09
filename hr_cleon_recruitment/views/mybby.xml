@@ -131,8 +131,8 @@
                             </div>
                             <div class="rc_row_2col">
                                 <div class="rc_field_group">
-                                    <label class="rc_label rc_required" for="min_salary_band">Salary Range</label>
-                                    <field name="min_salary_band" placeholder="200,000" nolabel="1" class="rc_input" required="1"/>
+                                    <label class="rc_label rc_required" for="minimum_salary_band">Salary Range</label>
+                                    <field name="minimum_salary_band" placeholder="200,000" nolabel="1" class="rc_input" required="1"/>
                                 </div>-
                                 <div class="rc_field_group">
                                     <field name="max_salary_band" placeholder="600,000" nolabel="1" class="rc_input"/>

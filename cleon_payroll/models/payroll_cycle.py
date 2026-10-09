@@ -77,7 +77,7 @@ class HrPayrollCycle(models.Model):
 
         return self.next_run_date + relativedelta(months=1)
 
-    def generate_payroll_run(self):
+    def generate_payroll_run(self, show_notification=True):
         '''THIS runs based on the set cycle'''
         self.ensure_one()
 
@@ -105,12 +105,24 @@ class HrPayrollCycle(models.Model):
             'company_id': self.company_id.id,
         })
 
-        self._generate_payslips(run)
+        msg = self._generate_payslips(run)
 
         self.last_run_date = self.next_run_date
         self.next_run_date = self._get_next_run_date()
+        if not show_notification:
+            return run, msg
+        else:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                    'params': {
+                        'title': _("Successfully generated Pay runs"),
+                        'message':  _(f"Total slip generate: {msg}"),
+                        'type': 'success',
+                        'sticky': False
+                    }
+            }
 
-        return run
 
     def _generate_payslips(self, run):
         Contract = self.env['hr.contract']
@@ -147,16 +159,17 @@ class HrPayrollCycle(models.Model):
                 if self.auto_confirm:
                     slip.action_confirm()
         msg = f"""Generated total of {run.slip_count} Payslips"""
-        return {
-                    'type': 'ir.actions.client',
-                    'tag': 'display_notification',
-                    'params': {
-                        'title': _('Overtime Computation tip'),
-                        'message': _(msg),
-                        'type': 'success',
-                        'sticky': False,
-                    }
-                }
+        return run.slip_count
+        # {
+        #             'type': 'ir.actions.client',
+        #             'tag': 'display_notification',
+        #             'params': {
+        #                 'title': _('Overtime Computation tip'),
+        #                 'message': _(msg),
+        #                 'type': 'success',
+        #                 'sticky': False,
+        #             }
+        #         }
 
     @api.model
     def cron_generate_payroll_cycles(self):
@@ -167,6 +180,19 @@ class HrPayrollCycle(models.Model):
             ('active', '=', True),
             ('next_run_date', '=', today)
         ])
-
+        total, total_slip = 0, 0
         for cycle in cycles:
-            cycle.generate_payroll_run()
+            run, total_slip = cycle.generate_payroll_run()
+            if run:
+                total += 1
+                total_slip += 1
+        return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                    'params': {
+                        'title': _("Successfully generated Pay runs"),
+                        'message':  _(f"A total of {total} payroll was generated successfully.\nTotal Payslip generated is {total_slip} "),
+                        'type': 'success',
+                        'sticky': False
+                    }
+            }

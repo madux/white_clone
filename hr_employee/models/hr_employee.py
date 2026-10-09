@@ -13,6 +13,22 @@ class irAttachment(models.Model):
 
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
+    #     _sql_constraints = [
+    #     (
+    #         'employee_number_unique',
+    #         'unique(employee_number)',
+    #         'Employee Number must be unique. An employee with this number already exists.'
+    #     ),
+    # ]
+
+    @api.model
+    def create(self, vals):
+        if not vals.get('employee_number'):
+            vals['employee_number'] = self.env['ir.sequence'].next_by_code(
+                'hr.employee.number'
+            )
+
+        return super().create(vals)
 
     @api.constrains('employee_number')
     def _check_duplicate_employee_number(self):

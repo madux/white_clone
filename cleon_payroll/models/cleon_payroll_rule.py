@@ -80,7 +80,7 @@ class CleonPayrollRule(models.Model):
         "cleon.payroll.category", string="Category", required=True, tracking=True)
 
     rule_type = fields.Selection([
-        ("gross", "Gross / Allowance"),
+        ("gross", "Gross"),
         ("deduction", "Deduction"),
         ("employer_contribution", "Employer Contribution"),
         ("net", "Net"),

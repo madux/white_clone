@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="grievance_category_workplace_conditions" model="grievance.category">
+        <field name="name">Workplace Conditions</field>
+        <field name="description">Issues related to working environment and conditions</field>
+    </record>
+    <record id="grievance_category_management_relations" model="grievance.category">
+        <field name="name">Management Relations</field>
+        <field name="description">Concerns about management practices and communication</field>
+    </record>
+    <record id="grievance_category_compensation" model="grievance.category">
+        <field name="name">Compensation &amp; Benefits</field>
+        <field name="description">Pay, overtime, benefits and related disputes</field>
+    </record>
+</odoo>

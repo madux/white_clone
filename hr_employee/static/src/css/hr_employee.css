@@ -7,6 +7,41 @@
   --os-text-muted: #8896aa;
   --os-font: 'DM Sans', sans-serif;
 }
+
+.o_insurance_benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.o_benefit_item {
+    display: flex;
+    align-items: center;
+    min-height: 25px;
+}
+
+.o_benefit_icon {
+    color: #ff4081;
+    font-size: 16px;
+    margin-right: 9px;
+}
+
+.o_benefit_name {
+    color: #34495e;
+    font-size: 14px;
+    flex: 1;
+}
+
+.o_benefit_remove {
+    color: #999;
+    padding: 0;
+    margin-left: 10px;
+}
+
+.o_benefit_remove:hover {
+    color: #dc3545;
+}
+
 .list-group-item-action {
     background-color: #fad4e6 !important;
 }

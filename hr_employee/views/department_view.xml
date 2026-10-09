@@ -4,7 +4,7 @@
         <field name="name">hr.core_department.tree</field>
         <field name="model">hr.department</field>
         <field name="arch" type="xml">
-            <tree string="Department" js_class="organisation_list">
+            <tree string="Department">
                 <field name="name"/>
                 <!-- <field name="code"/> -->
                 <field name="manager_id"/>

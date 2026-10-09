@@ -34,6 +34,11 @@ class HrGrade(models.Model):
         copy=False,
     )
 
+    minimum_salary_band = fields.Float(
+            string="Min Salary Band",
+            copy=False,
+        )
+
     max_salary_band = fields.Float(
         string="Max Salary Band",
         copy=False,
@@ -84,7 +89,7 @@ class HrGrade(models.Model):
     @api.onchange('max_salary_band')
     def onchange_max_salary_band(self):
         self.ensure_one()
-        if self.max_salary_band > 0 and self.max_salary_band < self.min_salary_band:
+        if self.max_salary_band > 0 and self.max_salary_band < self.minimum_salary_band:
             raise ValidationError("Max salary band cannot be lesser than min salary band")
 
     def _format_amount(self, amount):
@@ -96,12 +101,12 @@ class HrGrade(models.Model):
             return f"{amount / 1_000:.1f}K".rstrip('0').rstrip('.')
         return str(int(amount))
 
-    @api.depends('min_salary_band', 'max_salary_band')
+    @api.depends('minimum_salary_band', 'max_salary_band')
     def _compute_salary_band(self):
         for rec in self:
-            if rec.min_salary_band and rec.max_salary_band:
+            if rec.minimum_salary_band and rec.max_salary_band:
                 rec.salary_band = (
-                    f"{self._format_amount(rec.min_salary_band)} - "
+                    f"{self._format_amount(rec.minimum_salary_band)} - "
                     f"{self._format_amount(rec.max_salary_band)}"
                 )
             else:

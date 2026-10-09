@@ -1,3 +1,403 @@
+/* ==========================================================
+   INSURANCE BENEFITS FIELD
+   ========================================================== */
+
+.o_insurance_benefits {
+
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+
+    padding: 4px 0;
+}
+
+
+/* ==========================================================
+   BENEFIT ITEM
+   ========================================================== */
+
+.o_insurance_benefit_item {
+
+    display: flex;
+
+    align-items: center;
+
+    min-height: 25px;
+
+    font-size: 14px;
+
+    color: #34495e;
+
+    transition: all 0.15s ease;
+}
+
+
+/* ==========================================================
+   CHECK ICON
+   ========================================================== */
+
+.o_insurance_benefit_icon {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin-right: 9px;
+
+    color: #ff4081;
+
+    font-size: 16px;
+
+    flex-shrink: 0;
+}
+
+
+/* ==========================================================
+   BENEFIT NAME
+   ========================================================== */
+
+.o_insurance_benefit_name {
+
+    flex: 1;
+
+    line-height: 1.5;
+}
+
+
+/* ==========================================================
+   REMOVE BUTTON
+   ========================================================== */
+
+.o_insurance_benefit_remove {
+
+    padding: 2px 5px !important;
+
+    margin-left: 8px;
+
+    color: #adb5bd;
+
+    opacity: 0;
+
+    transition: all 0.15s ease;
+}
+
+.o_insurance_benefit_item:hover
+.o_insurance_benefit_remove {
+
+    opacity: 1;
+}
+
+.o_insurance_benefit_remove:hover {
+
+    color: #dc3545 !important;
+
+}
+
+
+/* ==========================================================
+   ADD BUTTON
+   ========================================================== */
+
+.o_insurance_add_benefit {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    width: fit-content;
+
+    padding: 4px 0 !important;
+
+    margin-top: 4px;
+
+    color: #714b67 !important;
+
+    text-decoration: none !important;
+
+    font-size: 14px;
+
+    font-weight: 500;
+}
+
+.o_insurance_add_benefit:hover {
+
+    color: #563a50 !important;
+
+}
+
+
+/* ==========================================================
+   EMPTY
+   ========================================================== */
+
+.o_insurance_benefits_empty {
+
+    color: #98a2b3;
+
+    font-size: 13px;
+
+    font-style: italic;
+
+    padding: 4px 0;
+}
+
+
+/* ==========================================================
+   DIALOG
+   ========================================================== */
+
+.o_insurance_benefit_dialog {
+
+    min-height: 350px;
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+/* ==========================================================
+   SEARCH
+   ========================================================== */
+
+.o_insurance_search {
+
+    margin-bottom: 15px;
+}
+
+.o_insurance_search
+.input-group {
+
+    border-radius: 6px;
+
+    overflow: hidden;
+}
+
+
+/* ==========================================================
+   CREATE
+   ========================================================== */
+
+.o_insurance_create {
+
+    padding: 12px;
+
+    margin-bottom: 10px;
+
+    border: 1px solid #e9ecef;
+
+    border-radius: 7px;
+
+    background: #fafafa;
+}
+
+.o_insurance_create_title {
+
+    margin-bottom: 8px;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    text-transform: uppercase;
+
+    color: #6c757d;
+}
+
+
+/* ==========================================================
+   SELECT ACTIONS
+   ========================================================== */
+
+.o_insurance_select_actions {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 5px;
+
+    padding-bottom: 8px;
+
+    border-bottom: 1px solid #e9ecef;
+}
+
+
+/* ==========================================================
+   LIST
+   ========================================================== */
+
+.o_insurance_benefit_list {
+
+    max-height: 350px;
+
+    overflow-y: auto;
+
+    padding: 5px 0;
+}
+
+
+/* ==========================================================
+   CHECKBOX ITEM
+   ========================================================== */
+
+.o_insurance_benefit_checkbox {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    width: 100%;
+
+    padding: 9px 10px;
+
+    margin: 0;
+
+    cursor: pointer;
+
+    border-radius: 6px;
+
+    transition: background 0.15s ease;
+}
+
+.o_insurance_benefit_checkbox:hover {
+
+    background: #f8f9fa;
+}
+
+
+/* Hide native checkbox */
+
+.o_insurance_benefit_checkbox
+input[type="checkbox"] {
+
+    display: none;
+}
+
+
+/* ==========================================================
+   CUSTOM CHECKBOX
+   ========================================================== */
+
+.o_insurance_custom_checkbox {
+
+    width: 18px;
+
+    height: 18px;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border: 1px solid #ced4da;
+
+    border-radius: 4px;
+
+    background: white;
+
+    color: transparent;
+
+    transition: all 0.15s ease;
+}
+
+
+/* Checked */
+
+.o_insurance_benefit_checkbox
+input[type="checkbox"]:checked
++ .o_insurance_custom_checkbox {
+
+    background: #ff4081;
+
+    border-color: #ff4081;
+
+    color: white;
+}
+
+.o_insurance_custom_checkbox
+i {
+
+    font-size: 11px;
+}
+
+
+/* ==========================================================
+   CHECKBOX NAME
+   ========================================================== */
+
+.o_insurance_checkbox_name {
+
+    flex: 1;
+
+    font-size: 14px;
+
+    color: #34495e;
+}
+
+
+/* ==========================================================
+   LOADING
+   ========================================================== */
+
+.o_insurance_loading {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    min-height: 200px;
+
+    color: #6c757d;
+
+    font-size: 13px;
+}
+
+
+/* ==========================================================
+   NO RESULTS
+   ========================================================== */
+
+.o_insurance_no_results {
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    min-height: 180px;
+
+    color: #98a2b3;
+
+    font-size: 13px;
+}
+
+.o_insurance_no_results
+i {
+
+    font-size: 22px;
+
+    opacity: 0.5;
+}
+
 .qms-badge-row {
     display: flex;
     gap: 8px;

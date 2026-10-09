@@ -412,7 +412,7 @@ class Hrofferwizard(models.TransientModel):
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                     'params': {
-                        'title': _("Sucessfully sent offers"),
+                        'title': _("Successfully sent offers"),
                         'message':  _(f"A total of {len(self.candidate_ids.ids)} was send successfully "),
                         'type': 'success',
                         'sticky': False

@@ -13,8 +13,8 @@
         - Email notifications at each stage transition
         - Full audit trail via chatter
     """,
-    'author': 'Your Company',
-    'depends': ['hr', 'mail', 'hr_administration', 'ik_multi_branch', 'hr_company_calendar'],
+    'author': 'MAACH SOFTWARE',
+    'depends': ['hr', 'mail', 'hr_administration', 'ik_multi_branch', 'hr_company_calendar', 'grievance_management'],
     'data': [
         'security/hr_warning_security.xml',
         'security/ir.model.access.csv',

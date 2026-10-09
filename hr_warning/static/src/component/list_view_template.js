@@ -79,11 +79,24 @@ export class CustomListRenderer extends ListRenderer {
         });
     }
 
+     
+
     async openCustomAppeal(ev) {
         ev.preventDefault();
 
         await this.env.services.action.doAction(
             "hr_warning.action_hr_warning_appeals",
+            {
+                target: "current",
+            }
+        );
+    }
+
+    async openGrievance(ev) {
+        ev.preventDefault();
+
+        await this.env.services.action.doAction(
+            "grievance_management.action_grievance_dashboard",
             {
                 target: "current",
             }

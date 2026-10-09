@@ -16,6 +16,11 @@ class HrJob(models.Model):
         string="Min Salary Band",
         copy=False,
     )
+    minimum_salary_band = fields.Float(
+            string="Min Salary Band",
+            copy=False,
+        )
+
 
     max_salary_band = fields.Float(
         string="Max Salary Band",
@@ -32,17 +37,40 @@ class HrJob(models.Model):
         'hr.grade',
         string='Grade', 
     )
+    # @api.onchange('grade_id')
+    # def onchange_grade_id(self):
+    #     self.ensure_one()
+    #     try:
+
+    #         self.minimum_salary_band = self.grade_id.minimum_salary_band 
+    #         self.max_salary_band = self.grade_id.max_salary_band 
+    #         self.salary_band = self.grade_id.salary_band 
+    #     except Exception as e:
+    #         self.minimum_salary_band = self.grade_id.minimum_salary_band 
+    #         self.max_salary_band = 0
+    #         self.salary_band = 200000
+
     @api.onchange('grade_id')
     def onchange_grade_id(self):
-        self.ensure_one()
-        self.min_salary_band = self.grade_id.min_salary_band 
-        self.max_salary_band = self.grade_id.max_salary_band 
-        self.salary_band = self.grade_id.salary_band 
+        if self.grade_id:
+            # t = self.env['hr.grade']._fields.get('minimum_salary_band')
+            # r = self.env['hr.grade']._fields.keys()
+            # raise ValidationError(f"{t} --- {r}")
+
+            self.minimum_salary_band = getattr(
+                self.grade_id, 'minimum_salary_band', 0
+            )
+            self.max_salary_band = getattr(
+                self.grade_id, 'max_salary_band', 0
+            )
+            self.salary_band = getattr(
+                self.grade_id, 'salary_band', 200000
+            )
 
     @api.onchange('max_salary_band')
     def onchange_max_salary_band(self):
         self.ensure_one()
-        if self.max_salary_band > 0 and self.max_salary_band < self.min_salary_band:
+        if self.max_salary_band > 0 and self.max_salary_band < self.minimum_salary_band:
             raise ValidationError("Max salary band cannot be lesser than min salary band")
 
     def _format_amount(self, amount):
@@ -54,12 +82,12 @@ class HrJob(models.Model):
             return f"{amount / 1_000:.1f}K".rstrip('0').rstrip('.')
         return str(int(amount))
 
-    @api.depends('grade_id','min_salary_band', 'max_salary_band')
+    @api.depends('grade_id','minimum_salary_band', 'max_salary_band')
     def _compute_salary_band(self):
         for rec in self:
-            if rec.min_salary_band and rec.max_salary_band:
+            if rec.minimum_salary_band and rec.max_salary_band:
                 rec.salary_band = (
-                    f"{self._format_amount(rec.min_salary_band)} - "
+                    f"{self._format_amount(rec.minimum_salary_band)} - "
                     f"{self._format_amount(rec.max_salary_band)}"
                 )
             else:

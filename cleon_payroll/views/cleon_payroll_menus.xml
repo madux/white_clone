@@ -31,9 +31,9 @@
     <!-- Configuration -->
     <menuitem id="menu_cleon_payroll_config" name="Configuration"
               parent="menu_cleon_payroll_root" sequence="90"/>
-    <menuitem id="menu_cleon_payroll_structure" name="Payroll Structures"
+    <menuitem id="menu_cleon_payroll_structure" name="Pay Structures / Group"
               parent="menu_cleon_payroll_config" action="action_cleon_payroll_structure" sequence="10"/>
-    <menuitem id="menu_cleon_payroll_rule" name="Payroll Rules"
+    <menuitem id="menu_cleon_payroll_rule" name="Rules &amp; Components"
               parent="menu_cleon_payroll_config" action="action_cleon_payroll_rule" sequence="20"/>
     <menuitem id="menu_cleon_payroll_category" name="Rule Categories"
               parent="menu_cleon_payroll_config" action="action_cleon_payroll_category" sequence="30"/>

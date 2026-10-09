@@ -84,7 +84,7 @@ class HRJobRecruitmentRequest(models.Model):
 				   states={'done':[('readonly', True)]},
 				   required=False
 				   )
-	years_of_experience = fields.Char('Years of Experience')
+	years_of_experience = fields.Char('Min. Years of Experience', default=1)
 	reason = fields.Text('Reason',
 			 help='Please explain why you request to recruit more employee(s) for your department',
 			 states={'confirmed': [('readonly', True)],

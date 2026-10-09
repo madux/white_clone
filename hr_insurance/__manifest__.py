@@ -44,6 +44,8 @@
             'hr_insurance/static/src/css/hr_insurance.css',
             'hr_insurance/static/src/css/hmo_market_place.css',
             'hr_insurance/static/src/css/qms_css.css',
+            'hr_insurance/static/src/component/many2manylist.js',
+            'hr_insurance/static/src/component/many2manylist.xml',
             # 'hr_insurance/static/src/css/qms_css.css',
             # 'hr_administration/static/src/js/dashboard.js',
         ],

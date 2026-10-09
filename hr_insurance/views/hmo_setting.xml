@@ -48,66 +48,145 @@
         <field name="arch" type="xml">
             <form string="HMO Setting" class="o_qms_form">
                 <!-- ══ STATUS BAR ══ -->
-                <div class="qms-card">
-                    <div class="qms-card-header">
-                        <div class="qms-card-icon">
-                            <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        </div>
-                        <span class="qms-card-title">Setting Details</span>
-                    </div>
-                    <div class="ash-card-body">
-                        <group>
-                            <group col="4">
-                                <field name="name" class="pink-text" readonly="0"/> 
-                            </group>
+                <div class="o_hr_dashboard_layout">
 
-                            <group>
-                                <field name="sequence" required="1"/>
-                                <field name="active" widget="boolean_toggle"/>
-                                <field name="eligibilty_ids" widget="many2many_tags"/>
-                                <field name="hmo_ids" widget="many2many_tags"/>
-                            </group>
-                        </group>
-                    </div>
-                    <!-- <div class="ash-card-body text-sm">
-                        <span class="qms-card-title">Eligibility</span>
-                        <notebook> 
-                            <page string="📋 Eligibility" name="eligibilty_ids">
-                                <div class="qms-card" style="margin-bottom:0;">
-                                    <div class="qms-card-header">
-                                        <div class="qms-card-icon" style="background:#DC3545;">
-                                            <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                                        </div>
-                                        <span class="qms-card-title">Eligibility</span>
-                                    </div>
-                                    <div class="qms-card-body" style="padding:0;">
-                                        <field name="eligibilty_ids"
-                                            widget="many2many">
-                                            <tree editable="bottom">
-                                                <field name="name" readonly="0"/> 
-                                            </tree>
-                                        </field>
-                                    </div>
+                    <!-- SIDEBAR -->
+                    <aside class="hd-sidebar">
+                        <nav class="hd-sb-nav">
+                            <div class="hd-nav-label">Main</div>
+
+                            <a href="#" class="hd-nl active">
+                                <i class="fa fa-th-large"/>
+                                Dashboard
+                            </a>
+
+                            <a type="action" name="%(hr_administration.action_view_employee_kanban_custom)d" class="hd-nl">
+                                <i class="fa fa-users"/>
+                                Employees
+                                <span class="hd-nl-badge">24</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-shopping-cart"/>
+                                HMO Marketplace
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-building"/>
+                                Company HMO
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_hospital" class="hd-nl">
+                                <i class="fa fa-h-square"/>
+                                Hospital Listing
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_enrollment" class="hd-nl">
+                                <i class="fa fa-check-circle"/>
+                                Approvals
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_tree_checklist" class="hd-nl">
+                                <i class="fa fa-map-marker"/>
+                                Checklist
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-bar-chart"/>
+                                Reports
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_tree_checklist" class="hd-nl">
+                                <i class="fa fa-cog"/>
+                                Settings
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-list-alt"/>
+                                Audit Logs
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+                        </nav>
+
+                        <div class="hd-sb-footer">
+                            <div class="hd-user-card">
+                                <div class="hd-user-av">HR</div>
+                                <div>
+                                    <div class="hd-user-name">Administrator</div>
+                                    <div class="hd-user-role">HR Administrator</div>
                                 </div>
-                            </page>
-                        </notebook>
-                    </div>
+                            </div>
+                        </div>
 
-                    <div class="ash-card-body text-sm">
-                        <span class="qms-card-title">HMO  Providers</span>
-                        <notebook> 
-                            <page string="📝 HMO Providers details" name="hmo_prov">
-                                <field name="hmo_ids"
-                                        widget="many2many" readonly="0">
-                                    <tree>
-                                        <field name="name"/>
-                                        <field name="email" string="Email" optional="show" readonly="0"/>
-                                        <field name="phone" string="Phone" optional="show" readonly="0"/>
-                                    </tree>
-                                </field>
-                            </page>
-                        </notebook>
-                    </div> -->
+                    </aside>
+                    <div class="qms-card">
+                        <div class="qms-card-header">
+                            <div class="qms-card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <span class="qms-card-title">Setting Details</span>
+                        </div>
+                        <div class="ash-card-body">
+                            <group>
+                                <group>
+                                    <field name="name" class="pink-text" readonly="0"/> 
+                                </group>
+
+                                <group>
+                                    <field name="sequence" required="1"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                    <field name="eligibilty_ids" widget="many2many_tags"/>
+                                    <field name="hmo_ids" widget="many2many_tags"/>
+                                </group>
+                            </group>
+                        </div>
+                        <!-- <div class="ash-card-body text-sm">
+                            <span class="qms-card-title">Eligibility</span>
+                            <notebook> 
+                                <page string="📋 Eligibility" name="eligibilty_ids">
+                                    <div class="qms-card" style="margin-bottom:0;">
+                                        <div class="qms-card-header">
+                                            <div class="qms-card-icon" style="background:#DC3545;">
+                                                <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                            </div>
+                                            <span class="qms-card-title">Eligibility</span>
+                                        </div>
+                                        <div class="qms-card-body" style="padding:0;">
+                                            <field name="eligibilty_ids"
+                                                widget="many2many">
+                                                <tree editable="bottom">
+                                                    <field name="name" readonly="0"/> 
+                                                </tree>
+                                            </field>
+                                        </div>
+                                    </div>
+                                </page>
+                            </notebook>
+                        </div>
+
+                        <div class="ash-card-body text-sm">
+                            <span class="qms-card-title">HMO  Providers</span>
+                            <notebook> 
+                                <page string="📝 HMO Providers details" name="hmo_prov">
+                                    <field name="hmo_ids"
+                                            widget="many2many" readonly="0">
+                                        <tree>
+                                            <field name="name"/>
+                                            <field name="email" string="Email" optional="show" readonly="0"/>
+                                            <field name="phone" string="Phone" optional="show" readonly="0"/>
+                                        </tree>
+                                    </field>
+                                </page>
+                            </notebook>
+                        </div> -->
+                    </div>
                 </div>
             </form>
         </field>

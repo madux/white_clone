@@ -20,7 +20,7 @@
                     </div>
                     <div class="pink-card-body">
                         <group>
-                            <group col="4"> 
+                            <group> 
                                 <field name="name" class="pink-text" placeholder="Housing Allowance"/>
                                 <field name="code" placeholder="HOUSING"/>
                             </group>
@@ -37,7 +37,7 @@
                     <div class="ash-card-body text-sm">
                         <span class="qms-card-title">Condition</span>
                         <group>
-                            <group col="4">
+                            <group>
                                 <field name="condition_select"/>
                                 <field name="condition_range_min" invisible="condition_select != 'range'"/>
                                 <field name="condition_range_max" invisible="condition_select != 'range'"/>
@@ -52,7 +52,7 @@
                     <div class="ash-card-body">
                         <span class="qms-card-title">Amount / Formula</span>
                         <group>
-                            <group col="4">
+                            <group>
                                 <field name="amount_select"/>
                                 <field name="amount_fixed" invisible="amount_select != 'fixed'"/>
                                 <field name="amount_percentage" invisible="amount_select != 'percentage'"/>
@@ -64,7 +64,7 @@
                             <!-- <group invisible="amount_select != 'formula'">
                                 <field name="amount_python_compute" nolabel="1" widget="code" options="{'mode': 'python'}"/>
                             </group> -->
-                            <group col="4" invisible="amount_select != 'formula'">
+                            <group invisible="amount_select != 'formula'">
                             </group>
                             <group>
                                 <!-- <field name="formula_help" nolabel="1" readonly="1" class="text-muted"/> -->

@@ -15,6 +15,9 @@
                 <button class="btn o_cc_btn_pink btn-sm m-4" t-on-click="openCustomWarningForm" type="button">
                     <i class="fa fa-book"/> New Incident
                 </button>
+                <button class="btn o_cc_btn_pink_outline btn-sm" t-on-click="openGrievance" type="button">
+                    <i class="fa fa-magic"/> Grievance
+                </button>
                 <button class="btn o_cc_btn_pink_outline btn-sm" t-on-click="openGuidedTour" type="button">
                     <i class="fa fa-magic"/> Guided Tour
                 </button>
@@ -54,6 +57,11 @@
                     <a class="o_cc_nav_item" t-on-click="openCustomHearings">
                         <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
                         <span class="o_cc_nav_label">Hearings &amp; Decisions</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openGrievance">
+                        <span class="o_cc_nav_icon"><i class="fa fa-gavel"/></span>
+                        <span class="o_cc_nav_label">Grievance</span>
                         <i class="fa fa-chevron-right o_cc_nav_arrow"/>
                     </a>
                     <a class="o_cc_nav_item" t-on-click="openMeasures">

@@ -10,7 +10,7 @@
 
     <!-- Incidents -->
     <menuitem id="menu_hr_warning_all"
-              name="Incidents"
+              name="Displinary &amp; Grievance"
               parent="menu_hr_warning_root"
               sequence="10"
               action="action_hr_warning"
@@ -29,6 +29,47 @@
               action="action_hr_warning_interim_measure"
               sequence="17"
               groups="hr_warning.group_hr_warning_manager,base.group_system,"/>
+    <record id="grievance_management.menu_grievance_root" model="ir.ui.menu">
+        <field name="parent_id" ref="hr_warning.menu_hr_warning_root"/>
+        <field name="sequence">18</field>
+    </record>
+    <record id="hr_warning.menu_hr_warning_all" model="ir.ui.menu">
+        <field name="icon_class">fa fa-warning</field>
+        <field name="category_name">CleonHR-HR Admin</field> 
+    </record>
+    <!-- <menuitem id="warning_menu_grievance_root" 
+    name="Grievances Management" sequence="18"
+    parent="menu_hr_warning_root"/>
+
+    <menuitem id="menu_hr_main_grievance"
+              name="Dashboard"
+              parent="warning_menu_grievance_root"
+              action="grievance_management.action_grievance_dashboard"
+              sequence="1"
+              groups="base.group_user,hr_warning.group_hr_warning_manager,base.group_system,"/>
+
+    <menuitem id="warning_menu_grievance_cases_root" name="Cases"
+              parent="warning_menu_grievance_root" sequence="20"/>
+    <menuitem id="warning_menu_grievance_cases_board" name="Workflow Board"
+              parent="warning_menu_grievance_root" sequence="10"
+              action="grievance_management.action_grievance_case_kanban"/>
+    <menuitem id="warning_menu_grievance_cases_list" name="All Cases"
+              parent="warning_menu_grievance_root" sequence="20"
+              action="grievance_management.action_grievance_case_list"/>
+
+    <menuitem id="warning_menu_grievance_reporting_root" name="Reporting"
+              parent="warning_menu_grievance_root" sequence="30"/>
+
+    <menuitem id="warning_menu_grievance_reporting_monthly" name="Monthly Grievances"
+              parent="menu_grievance_reporting_root" sequence="10"
+              action="action_grievance_dashboard_monthly"/>
+    <menuitem id="warning_menu_grievance_reporting_by_type" name="Grievances by Type"
+              parent="menu_grievance_reporting_root" sequence="20"
+              action="action_grievance_dashboard_by_type"/>
+
+    <menuitem id="warning_menu_grievance_config_root" name="Configuration"
+              parent="menu_grievance_root" sequence="90"
+              groups="grievance_management.group_grievance_manager"/> -->
 
     <menuitem id="menu_hr_warning_case_types1"
               name="Case Types &amp; Categories"

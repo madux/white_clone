@@ -48,7 +48,7 @@ $o-brand-odoo: #e83e8c;
 .o_form_view select {
     border-radius: 6px !important;
     border: none !important;
-    border-bottom: 1px solid #fff7fb !important;
+    border-bottom: 1px solid #c22674 !important;
     transition: 0.3s ease;
     font-weight: 600 !important;
     color: #3D4263 !important;
@@ -506,11 +506,25 @@ $o-brand-odoo: #e83e8c;
     }
 }
 
+// .o_main_navbar,
+//     .o_main_navbar a,
+//     .o_main_navbar .dropdown-toggle.hover{
+//         color: #bdbdbd !important;
+//         background-color: #f874b1 !important;
+//     }
+
+.dropdown-header {
+    font-size: 1rem;
+    color: #f8f7f7 !important;
+    background-color: #ea3181 !important;
+    
+}
+    
 .o_main_navbar,
     .o_main_navbar a,
     .o_main_navbar .dropdown-toggle {
-        color: #ffffff !important;
-        background-color: #ea75ac !important;
+        color: #f8f7f7 !important;
+        background-color: #ea3181 !important;
     }
  
     .o_main_navbar .o_menu_toggle,

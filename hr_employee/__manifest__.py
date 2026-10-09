@@ -37,6 +37,7 @@
         'data/hr_tax_status_data.xml',
         'data/hr_employee_type_data.xml',
         'data/hr_level_data.xml',
+        'data/sequence.xml',
         # 'data/case_type_data.xml',
         # 'data/hr_warning_mail_template.xml',
         'views/branch_view.xml',
@@ -78,6 +79,7 @@
             'hr_employee/static/src/component/organisation_template.js',
             'hr_employee/static/src/component/attendance_clock_widget.xml',
             'hr_employee/static/src/component/attendance_clock_widget.js',
+            
             # 'hr_warning/static/src/component/overwrite_template.xml',
         ],
     },

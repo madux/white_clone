@@ -191,7 +191,9 @@ const MODULES = [
       function updateCount() {
         const n = installed.size;
         document.getElementById('installed-count').textContent = n;
-        document.getElementById('progress-bar').style.width = (n / 15 * 100) + '%';
+        console.log("What are module lenght")
+        document.getElementById('total-app-count').textContent = MODULES.length;
+        document.getElementById('progress-bar').style.width = (n / MODULES.length * 100) + '%';
       }
 
       function showToast(msg) {
@@ -382,6 +384,3 @@ const MODULES = [
   renderModules();
   updateCount();
 })();
-
-      // renderModules();
-      // updateCount();

@@ -21,7 +21,7 @@
                         <span class="o_cc_nav_label">Dashboard</span>
                         <span class="o_cc_nav_badge">2</span>
                     </a>
-                    <a class="o_cc_nav_item" t-on-click="openCustomHearings">
+                    <a class="o_cc_nav_item" t-on-click="openEmployee">
                         <span class="o_cc_nav_icon"><i class="fa fa-users"/></span>
                         <span class="o_cc_nav_label">Employee Profiles</span>
                         <i class="fa fa-users o_cc_nav_arrow"/>
@@ -37,7 +37,7 @@
                         <span class="o_cc_nav_label">Messages</span>
                         <i class="fa fa-comments o_cc_nav_arrow"/>
                     </a>
-                    <a class="o_cc_nav_item" t-on-click="openMeasures">
+                    <a class="o_cc_nav_item" t-on-click="openAnnouncement">
                         <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
                         <span class="o_cc_nav_label">Meeting</span>
                         <i class="fa fa-calendar o_cc_nav_arrow"/>
@@ -49,7 +49,7 @@
                         <i class="fa fa-plane o_cc_nav_arrow"/>
                     </a>
                     
-                    <a class="o_cc_nav_item" t-on-click="openCaseType">
+                    <a class="o_cc_nav_item" t-on-click="openDepartment">
                         <span class="o_cc_nav_icon"><i class="fa fa-building-o"/></span>
                         <span class="o_cc_nav_label">Departments</span>
                         <i class="fa fa-building-o o_cc_nav_arrow"/>

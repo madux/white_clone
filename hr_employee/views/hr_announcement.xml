@@ -125,7 +125,7 @@
                         <!-- <span class="pay-status-warning-icon">⚠</span> -->
                             ✉️<div class="measure-option-title">Send Email Notification</div>
                             <div class="measure-option-subtitle">Notify reciepients via mail when this is published</div>
-                            <field name="send_email_notification" invisible="0" nolabel="1" readonly="is_published == True"/>
+                            <field name="send_email_notification" invisible="0" widget="boolean_toggle" nolabel="1" readonly="is_published == True"/>
                         </div>
                     </group>
 
@@ -133,14 +133,14 @@
                         <div class="measure-option measure-green" colspan="2">
                             🔔<div class="measure-option-title">Send Push Notification</div>
                             <div class="measure-option-subtitle">Push an alert to Mobile App</div>
-                            <field name="send_push_notification" invisible="0" nolabel="1" readonly="is_published == True"/>
+                            <field name="send_push_notification" invisible="0" widget="boolean_toggle" nolabel="1" readonly="is_published == True"/>
                         </div>
                     </group>
                     <group string="" class="measure-type-section" groups="hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_manager,base.group_system">
                         <div class="measure-option measure-yellow" colspan="2">
-                            📁<div class="measure-option-title-yellow">Require acknowledgement</div>
+                            📌<div class="measure-option-title-yellow">Require acknowledgement</div>
                             <div class="measure-option-subtitle">Track who has read and confirmed this announcement</div>
-                            <field name="require_acknowledgement" invisible="0" nolabel="1" readonly="is_published == True"/>
+                            <field name="require_acknowledgement" widget="boolean_toggle" invisible="0" nolabel="1" readonly="is_published == True"/>
                         </div>
                     </group>
                     
@@ -244,7 +244,7 @@
         </field>
     </record>
     <record id="action_hr_core_announcement" model="ir.actions.act_window">
-        <field name="name">🔔 Announcement</field>
+        <field name="name">Announcement</field>
         <field name="res_model">hr.core_announcement</field>
         <field name="view_mode">kanban,tree,form</field>
         <field name="help" type="html">
@@ -255,7 +255,7 @@
         </field>
     </record>
     <menuitem id="menu_hr_core_announcement"
-        name="Announcement"
+        name="🔔 Announcement"
         parent="calendar.mail_menu_calendar"
         sequence="5"
         action="action_hr_core_announcement"

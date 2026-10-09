@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_grievance_type_list" model="ir.ui.view">
+        <field name="name">grievance.type.list</field>
+        <field name="model">grievance.type</field>
+        <field name="arch" type="xml">
+            <tree string="Grievance Types" editable="bottom" js_class="grievance_management_dashboard_list">
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="default_priority" widget="badge"
+                       decoration-danger="default_priority == 'high'"
+                       decoration-warning="default_priority == 'medium'"
+                       decoration-success="default_priority == 'low'"/>
+                <field name="active_case_count" string="Active"/>
+                <field name="is_locked" readonly="1" column_invisible="1"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_grievance_type" model="ir.actions.act_window">
+        <field name="name">Grievance Types</field>
+        <field name="res_model">grievance.type</field>
+        <field name="view_mode">tree</field>
+    </record>
+
+    <!-- Combined "Types &amp; Categories" config screen (screenshot 3) -->
+    <record id="action_grievance_types_categories" model="ir.actions.act_window">
+        <field name="name">Grievance Types &amp; Categories</field>
+        <field name="res_model">grievance.type</field>
+        <field name="view_mode">tree</field>
+    </record>
+</odoo>

@@ -14,6 +14,10 @@ class HrGrade(models.Model):
             string="Min Salary Band",
             copy=False,
         )
+    minimum_salary_band = fields.Float(
+                string="Min Salary Band",
+                copy=False,
+            )
     cash_advance_limit = fields.Float(
             string="Cash Advance limit",
             copy=True,
