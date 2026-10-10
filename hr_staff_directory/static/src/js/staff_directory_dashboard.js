@@ -870,6 +870,149 @@ export class StaffDirectoryDashboard extends Component {
         return top ? { name: top, count: topN } : null;
     }
 
+    get cleonAiInsightCards() {
+        const k = this.smartSearchKpis;
+        const top = this.smartSearchDeptHighlight;
+        const total = k.total || 0;
+        const leavePct = total ? Math.round((k.onLeave / total) * 100) : 0;
+        const remotePct = total ? Math.round((k.remote / total) * 100) : 0;
+        const deptPct = top && total ? Math.round((top.count / total) * 100) : 0;
+        return [
+            {
+                id: 'headcount',
+                label: 'Headcount Trend',
+                value: `+${k.newHires || 0} this month`,
+                color: '#059669',
+                trend: 'up',
+            },
+            {
+                id: 'leave',
+                label: 'Leave Rate',
+                value: `${leavePct}% on leave`,
+                color: '#D97706',
+                trend: 'down',
+            },
+            {
+                id: 'dept',
+                label: 'Dept Concentration',
+                value: top ? `${top.name}: ${deptPct}%` : '—',
+                color: '#2563EB',
+                trend: 'down',
+            },
+            {
+                id: 'remote',
+                label: 'Remote Work',
+                value: `${remotePct}% remote`,
+                color: '#7C3AED',
+                trend: 'up',
+            },
+        ];
+    }
+
+    _cleonRiskTone(metric, value) {
+        if (metric === 'leave') {
+            if (value <= 5) return 'low';
+            if (value <= 15) return 'medium';
+            return 'high';
+        }
+        if (metric === 'open') {
+            // Rounded estimate. A zero still reads as a standing medium watch.
+            if (value <= 3) return 'medium';
+            return 'high';
+        }
+        if (value >= 60) return 'high';
+        if (value >= 35) return 'medium';
+        return 'low';
+    }
+
+    get cleonAiRiskCards() {
+        const k = this.smartSearchKpis;
+        const top = this.smartSearchDeptHighlight;
+        const total = k.total || 0;
+        const leavePct = total ? Math.round((k.onLeave / total) * 100) : 0;
+        const deptPct = top && total ? Math.round((top.count / total) * 100) : 0;
+        const deptName = top ? top.name : 'This view';
+        const tones = {
+            leave: this._cleonRiskTone('leave', leavePct),
+            open: this._cleonRiskTone('open', k.openPos || 0),
+            dept: this._cleonRiskTone('dept', deptPct),
+        };
+        const labels = { low: 'Low', medium: 'Medium', high: 'High' };
+        return [
+            {
+                id: 'leave',
+                title: 'High Leave Rate',
+                tone: tones.leave,
+                badge: labels[tones.leave],
+                body: `${k.onLeave || 0} employees on leave may impact delivery.`,
+            },
+            {
+                id: 'open',
+                title: 'Open Positions',
+                tone: tones.open,
+                badge: labels[tones.open],
+                body: `~${k.openPos || 0} open roles need to be filled to meet demand.`,
+            },
+            {
+                id: 'dept',
+                title: 'Dept Concentration',
+                tone: tones.dept,
+                badge: labels[tones.dept],
+                body: `${deptName} holds ${deptPct}% of headcount.`,
+            },
+        ];
+    }
+
+    get cleonAiRecommendationCards() {
+        const k = this.smartSearchKpis;
+        const top = this.smartSearchDeptHighlight;
+        const deptName = top ? top.name : 'this department';
+        return [
+            {
+                id: 'review',
+                title: 'Review Leave Policies',
+                body: 'Consider reviewing leave approval processes to reduce workforce disruption.',
+                action: 'Review →',
+            },
+            {
+                id: 'roles',
+                title: 'Accelerate Hiring',
+                body: `Fill the ~${k.openPos || 0} open positions to support team growth and delivery capacity.`,
+                action: 'View Roles →',
+            },
+            {
+                id: 'analyze',
+                title: 'Balance Dept Load',
+                body: `Evaluate distributing some ${deptName} workload to reduce concentration risk.`,
+                action: 'Analyze →',
+            },
+            {
+                id: 'hires',
+                title: 'Onboard New Hires',
+                body: `Ensure ${k.newHires || 0} recent hires have proper onboarding and mentorship.`,
+                action: 'View Hires →',
+            },
+        ];
+    }
+
+    onCleonAiRecommendation(id) {
+        if (id === 'review') {
+            this.setSmartSearchTab('calendar');
+            return;
+        }
+        if (id === 'roles') {
+            this.setSmartSearchTab('analytics');
+            return;
+        }
+        if (id === 'analyze') {
+            this.setSmartSearchView('bar');
+            return;
+        }
+        if (id === 'hires') {
+            this.setSmartSearchTab('overview');
+        }
+    }
+
     get smartSearchDeptBars() {
         const people = this.smartSearchPeople;
         const total = people.length || 1;
@@ -2045,9 +2188,6 @@ export class StaffDirectoryDashboard extends Component {
 
     setCleonAiTab(tab) {
         this.state.cleonAiTab = tab;
-        if (tab !== 'summary') {
-            this._ensureCleonAiTabAnswer(tab);
-        }
     }
 
     retryCleonAiTab() {

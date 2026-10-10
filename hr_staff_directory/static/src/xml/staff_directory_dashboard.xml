@@ -514,22 +514,45 @@
                                                         <div class="sdir-ss-cleon-loading">Thinking…</div>
                                                     </t>
                                                 </t>
-                                                <t t-else="">
-                                                    <t t-if="state.cleonAiLoading and !this.cleonAiActiveTabAnswer">
-                                                        <div class="sdir-ss-cleon-loading">Thinking…</div>
-                                                    </t>
-                                                    <t t-elif="this.cleonAiActiveTabAnswer">
-                                                        <div class="sdir-ss-cleon-p sdir-ss-cleon-answer sdir-ss-cleon-md" t-out="this.formatCleonAiMarkdown(this.cleonAiActiveTabAnswer)"/>
-                                                    </t>
-                                                    <t t-elif="this.cleonAiActiveTabError">
-                                                        <p class="sdir-ss-cleon-p sdir-ss-cleon-error" t-esc="this.cleonAiActiveTabError"/>
-                                                        <button type="button" class="sdir-ss-cleon-retry" t-on-click="retryCleonAiTab">
-                                                            Try again
-                                                        </button>
-                                                    </t>
-                                                    <t t-else="">
-                                                        <div class="sdir-ss-cleon-placeholder">Ask CleonAI below to generate this view.</div>
-                                                    </t>
+                                                <t t-elif="state.cleonAiTab === 'insights'">
+                                                    <div class="sdir-ss-cleon-insights">
+                                                        <t t-foreach="this.cleonAiInsightCards" t-as="card" t-key="card.id">
+                                                            <div class="sdir-ss-cleon-insight">
+                                                                <div class="sdir-ss-cleon-insight-head">
+                                                                    <span t-esc="card.label"/>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" t-att-stroke="card.trend === 'down' ? '#EF4444' : '#059669'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" t-att-style="card.trend === 'down' ? 'transform: scaleY(-1)' : ''">
+                                                                        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                                                                        <polyline points="16 7 22 7 22 13"/>
+                                                                    </svg>
+                                                                </div>
+                                                                <div class="sdir-ss-cleon-insight-value" t-att-style="'color:' + card.color" t-esc="card.value"/>
+                                                            </div>
+                                                        </t>
+                                                    </div>
+                                                </t>
+                                                <t t-elif="state.cleonAiTab === 'risks'">
+                                                    <div class="sdir-ss-cleon-risks">
+                                                        <t t-foreach="this.cleonAiRiskCards" t-as="card" t-key="card.id">
+                                                            <div t-att-class="'sdir-ss-cleon-risk sdir-ss-cleon-risk-' + card.tone">
+                                                                <div class="sdir-ss-cleon-risk-head">
+                                                                    <span t-esc="card.title"/>
+                                                                    <span class="sdir-ss-cleon-risk-badge" t-esc="card.badge"/>
+                                                                </div>
+                                                                <p t-esc="card.body"/>
+                                                            </div>
+                                                        </t>
+                                                    </div>
+                                                </t>
+                                                <t t-elif="state.cleonAiTab === 'recommendations'">
+                                                    <div class="sdir-ss-cleon-recs">
+                                                        <t t-foreach="this.cleonAiRecommendationCards" t-as="card" t-key="card.id">
+                                                            <div class="sdir-ss-cleon-rec">
+                                                                <div class="sdir-ss-cleon-rec-title" t-esc="card.title"/>
+                                                                <p t-esc="card.body"/>
+                                                                <button type="button" t-on-click="() => this.onCleonAiRecommendation(card.id)" t-esc="card.action"/>
+                                                            </div>
+                                                        </t>
+                                                    </div>
                                                 </t>
                                             </div>
                                             <div class="sdir-ss-cleon-footer">
