@@ -2283,6 +2283,7 @@ export class StaffDirectoryDashboard extends Component {
             detail.ask = question;
             this.state.cleonAiQuestion = '';
         }
+        detail.mode = 'fullscreen';
         window.dispatchEvent(new CustomEvent('cleon-ai-open', { detail }));
     }
 

@@ -11,7 +11,12 @@
             <h3>CleonAI</h3>
             <p t-esc="state.context?.title || 'Workspace Assistant'"/>
           </div>
-          <button t-on-click="toggle">&#215;</button>
+          <div class="o_cai_header_actions">
+            <button type="button" class="o_cai_expand" title="Expand to full screen" t-on-click="openFullscreen">
+              <i class="fa fa-expand"/>
+            </button>
+            <button type="button" class="o_cai_close" title="Close" t-on-click="toggle">&#215;</button>
+          </div>
         </header>
         <div class="o_cai_body">
           <div t-if="!state.context" class="o_cai_empty">

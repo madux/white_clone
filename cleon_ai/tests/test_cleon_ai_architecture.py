@@ -129,3 +129,32 @@ class TestCleonAiArchitecture(TransactionCase):
         for prompt in [None, 12, "", "x" * 64001]:
             with self.assertRaises(ValidationError):
                 self.gateway.complete_text(prompt)
+
+    def test_14_conversation_threads_are_private_to_their_owner(self):
+        first = self.gateway.ask_assistant("What is our headcount?")
+        second = self.gateway.ask_assistant("Who is on leave?", {"conversation_id": first["conversation_id"]})
+        self.assertEqual(first["conversation_id"], second["conversation_id"])
+        listed = self.gateway.list_conversations()
+        self.assertEqual([row["id"] for row in listed], [first["conversation_id"]])
+        thread = self.gateway.get_conversation(first["conversation_id"])
+        self.assertEqual(
+            [message["text"] for message in thread["messages"] if message["role"] == "user"],
+            ["What is our headcount?", "Who is on leave?"],
+        )
+        other = self.env["res.users"].create({
+            "name": "Cleon Other",
+            "login": "cleon_other_conv",
+            "email": "cleon_other_conv@example.com",
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+        })
+        other_gateway = self.gateway.with_user(other)
+        self.assertEqual(other_gateway.list_conversations(), [])
+        with self.assertRaises(AccessError):
+            other_gateway.get_conversation(first["conversation_id"])
+        with self.assertRaises(AccessError):
+            other_gateway.delete_conversation(first["conversation_id"])
+        with self.assertRaises(AccessError):
+            other_gateway.ask_assistant("Use their thread", {"conversation_id": first["conversation_id"]})
+        self.assertTrue(self.gateway.delete_conversation(first["conversation_id"])["ok"])
+        self.assertFalse(self.env["cleon.ai.interaction"].sudo().browse(second["interaction_id"]).exists())
+        self.assertEqual(self.gateway.list_conversations(), [])

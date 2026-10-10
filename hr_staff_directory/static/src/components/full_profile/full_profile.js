@@ -128,6 +128,7 @@ export class StaffDirectoryFullProfile extends Component {
         const first = (detail.employee_name || 'this person').split(' ')[0];
         const question = (ask || '').trim() || `Summarize ${first}'s profile`;
         detail.ask = question;
+        detail.mode = 'fullscreen';
         window.dispatchEvent(new CustomEvent('cleon-ai-open', { detail }));
     }
 

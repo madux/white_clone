@@ -42,6 +42,9 @@ export class CleonAiAssistant extends Component {
 
         this.openListener = async (event) => {
             const detail = event?.detail || null;
+            if (detail && typeof detail === "object" && detail.mode === "fullscreen") {
+                return;
+            }
             let question = "";
             if (detail && typeof detail === "object") {
                 const context = { ...detail };
@@ -84,6 +87,18 @@ export class CleonAiAssistant extends Component {
         if (this.state.open && this.state.context) {
             await this.refreshSummary();
         }
+    }
+
+    openFullscreen() {
+        const detail = Object.assign({}, this.state.context || {});
+        const draft = (this.state.question || "").trim();
+        detail.mode = "fullscreen";
+        if (draft) {
+            detail.draft = draft;
+        }
+        this.state.open = false;
+        this.state.question = "";
+        window.dispatchEvent(new CustomEvent("cleon-ai-open", { detail }));
     }
 
     async refreshSummary() {

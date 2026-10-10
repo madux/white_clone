@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="cleon_ai.CleonAiFullscreen" owl="1">
+    <div t-if="state.open" class="o_cfs_root" role="dialog" aria-label="Ask Cleon AI">
+      <div class="o_cfs_shell">
+        <aside t-att-class="state.sidebarCollapsed ? 'o_cfs_side is-collapsed' : 'o_cfs_side'">
+          <div class="o_cfs_side_head">
+            <button type="button" class="o_cfs_iconbtn" t-on-click="toggleSidebar" t-att-title="state.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+              <t t-if="state.sidebarCollapsed" t-out="this.icon('chevronRight', 13, '#E91E8C')"/>
+              <t t-else="" t-out="this.icon('chevronLeft', 13, '#E91E8C')"/>
+            </button>
+            <div class="o_cfs_side_title">Recent Conversations</div>
+          </div>
+          <div class="o_cfs_search">
+            <span class="o_cfs_search_icon" t-out="this.icon('search', 12, '#9CA3AF')"/>
+            <input type="search" placeholder="Search conversations…" t-att-value="state.search" t-on-input="onSearchInput"/>
+          </div>
+          <div class="o_cfs_side_body">
+            <div t-if="!filteredConversations.length" class="o_cfs_empty_list">
+              <t t-if="state.search">No matches</t>
+              <t t-else="">No conversations yet</t>
+            </div>
+            <div t-foreach="filteredConversations" t-as="conv" t-key="conv.id"
+                 t-att-class="state.conversationId === conv.id ? 'o_cfs_conv is-on' : 'o_cfs_conv'"
+                 t-on-click="() => this.openConversation(conv.id)">
+              <div class="o_cfs_conv_row">
+                <div class="o_cfs_conv_icon">
+                  <t t-out="this.icon(this.conversationMark(conv).name, 14, this.conversationMark(conv).color)"/>
+                </div>
+                <div class="o_cfs_conv_text">
+                  <div class="o_cfs_conv_top">
+                    <div class="o_cfs_conv_title" t-esc="conv.title"/>
+                    <span class="o_cfs_conv_date" t-esc="this.formatWhen(conv.last_message_at)"/>
+                  </div>
+                  <div class="o_cfs_conv_preview" t-esc="conv.preview"/>
+                </div>
+              </div>
+              <button type="button" class="o_cfs_del" title="Delete conversation" t-on-click="(ev) => this.deleteConversation(conv, ev)">
+                <t t-out="this.icon('trash', 12, '#EF4444')"/>
+              </button>
+            </div>
+          </div>
+          <div class="o_cfs_side_foot">
+            <button type="button" class="o_cfs_new" t-on-click="newConversation">
+              <t t-out="this.icon('plus', 11, '#FFFFFF')"/> New Conversation
+            </button>
+          </div>
+        </aside>
+
+        <section class="o_cfs_main">
+          <header class="o_cfs_top">
+            <div class="o_cfs_logo">
+              <img t-att-src="avatar" alt="Cleon AI"/>
+            </div>
+            <div class="o_cfs_top_copy">
+              <div class="o_cfs_top_title">Ask Cleon AI</div>
+              <div class="o_cfs_online" t-esc="connectedLabel"/>
+            </div>
+            <div class="o_cfs_chips">
+              <span>✓ Understands workforce data</span>
+              <span>✓ Answers 50+ question types</span>
+              <span>✓ Natural conversation</span>
+            </div>
+            <button type="button" class="o_cfs_close" title="Close" t-on-click="close">
+              <t t-out="this.icon('x', 15, '#6B7280')"/>
+            </button>
+          </header>
+
+          <div class="o_cfs_scroll" t-ref="thread">
+            <div t-if="!state.messages.length" class="o_cfs_welcome">
+              <div class="o_cfs_hero">
+                <div class="o_cfs_avatar_wrap">
+                  <div class="o_cfs_avatar_glow">
+                    <div class="o_cfs_avatar_ring">
+                      <img t-att-src="avatar" alt="Cleon AI"/>
+                    </div>
+                  </div>
+                  <span class="o_cfs_star o_cfs_star_a">✦</span>
+                  <span class="o_cfs_star o_cfs_star_b">✦</span>
+                  <span class="o_cfs_star o_cfs_star_c">✦</span>
+                </div>
+                <h2>Welcome to <span class="o_cfs_brand">Ask Cleon AI</span></h2>
+                <p>Your intelligent assistant for workforce insights, organisational analysis, and much more. Ask anything, anytime.</p>
+              </div>
+
+              <div class="o_cfs_pills">
+                <button t-foreach="categories" t-as="cat" t-key="cat.id" type="button"
+                        t-att-class="state.category === cat.id ? 'o_cfs_pill is-on' : 'o_cfs_pill'"
+                        t-on-click="() => this.setCategory(cat.id)">
+                  <t t-out="this.icon(cat.icon, 13, state.category === cat.id ? '#FFFFFF' : '#6B7280')"/>
+                  <span t-esc="cat.label"/>
+                </button>
+              </div>
+
+              <div class="o_cfs_suggest">
+                <div class="o_cfs_suggest_head">
+                  <div>Suggested Questions</div>
+                  <button t-if="hasMoreSuggestions" type="button" class="o_cfs_more" t-on-click="toggleMoreSuggestions">
+                    <t t-if="state.suggestionsExpanded">Show fewer</t>
+                    <t t-else="">View more suggestions</t>
+                    <t t-out="this.icon('arrowRight', 11, '#E91E8C')"/>
+                  </button>
+                </div>
+                <div t-if="visibleSuggestions.length" class="o_cfs_grid">
+                  <button t-foreach="visibleSuggestions" t-as="card" t-key="card.id" type="button"
+                          class="o_cfs_card" t-att-style="'animation-delay:' + (card_index * 0.12) + 's'"
+                          t-on-click="() => this.ask(card.text)">
+                    <div class="o_cfs_card_icon">
+                      <t t-out="this.icon(card.icon, 16, card.color)"/>
+                    </div>
+                    <span t-esc="card.text"/>
+                    <t t-out="this.icon('chevronRight', 13, '#D1D5DB')"/>
+                  </button>
+                </div>
+                <div t-else="" class="o_cfs_empty_list">No suggestions in this category.</div>
+              </div>
+
+              <div class="o_cfs_topics">
+                <span>Try asking about</span>
+                <button t-foreach="topics" t-as="topic" t-key="topic.id" type="button" t-on-click="() => this.useTopic(topic)" t-esc="topic.label"/>
+              </div>
+            </div>
+
+            <div t-else="" class="o_cfs_thread">
+              <div t-foreach="state.messages" t-as="message" t-key="message_index" t-att-class="'o_cfs_msg ' + message.role">
+                <div class="o_cfs_msg_body" t-out="this.formatMessage(message.text)"/>
+                <div t-if="message.role === 'assistant' and message.interaction_id and state.messageFeedback[message.interaction_id] === undefined" class="o_cfs_fb">
+                  <button type="button" title="Helpful" t-on-click="() => this.rateMessage(message.interaction_id, true)">Helpful</button>
+                  <button type="button" title="Not helpful" t-on-click="() => this.rateMessage(message.interaction_id, false)">Not helpful</button>
+                </div>
+                <div t-elif="message.role === 'assistant' and message.interaction_id" class="o_cfs_fb_done">Feedback recorded</div>
+              </div>
+              <div t-if="state.sending" class="o_cfs_msg assistant"><div class="o_cfs_msg_body">Thinking…</div></div>
+            </div>
+          </div>
+
+          <footer class="o_cfs_compose">
+            <div class="o_cfs_box">
+              <div class="o_cfs_tools">
+                <button type="button" title="New conversation" t-on-click="newConversation">
+                  <t t-out="this.icon('plus', 13, '#6B7280')"/>
+                </button>
+                <button type="button" title="Quick prompts" t-on-click="togglePrompts">
+                  <t t-out="this.icon('sparkles', 13, '#7C3AED')"/>
+                </button>
+                <button type="button" title="Workforce context prompt" t-on-click="insertContextPrompt">
+                  <t t-out="this.icon('globe', 13, '#3B82F6')"/>
+                </button>
+              </div>
+              <textarea t-ref="composer" t-model="state.question" t-on-input="onQuestionInput" t-on-keydown="onQuestionKeydown"
+                        rows="1" maxlength="4000" t-att-placeholder="composerPlaceholder"/>
+              <div class="o_cfs_tools">
+                <button type="button" class="o_cfs_mic" title="Voice input is not available yet" disabled="disabled">
+                  <t t-out="this.icon('mic', 14, '#6B7280')"/>
+                </button>
+                <button type="button" class="o_cfs_send" t-att-disabled="!canSend" t-on-click="() => this.ask()">
+                  <t t-out="this.icon('send', 13, canSend ? '#FFFFFF' : '#9CA3AF')"/> Send
+                </button>
+              </div>
+              <div t-if="state.promptsOpen" class="o_cfs_prompts">
+                <button t-foreach="quickPrompts" t-as="prompt" t-key="prompt.id" type="button" t-on-click="() => this.ask(prompt.text)" t-esc="prompt.text"/>
+                <div t-if="!quickPrompts.length" class="o_cfs_empty_list">No prompts for this view.</div>
+              </div>
+            </div>
+            <div class="o_cfs_compose_meta">
+              <div>Smarter People. Stronger Organisations. <span>✦</span></div>
+              <div t-esc="(state.question || '').length + '/4000'"/>
+            </div>
+          </footer>
+        </section>
+
+        <aside class="o_cfs_rail">
+          <div class="o_cfs_rail_brand">
+            <img t-att-src="avatar" alt=""/>
+            <span>Powered by <b>Cleon AI</b></span>
+          </div>
+          <div class="o_cfs_rail_item"><span>✓</span> Understands your workforce data</div>
+          <div class="o_cfs_rail_item"><span>✓</span> Answers 50+ types of questions</div>
+          <div class="o_cfs_rail_item"><span>✓</span> Provides actionable insights</div>
+          <div class="o_cfs_rail_item"><span>✓</span> Supports natural conversation</div>
+          <div class="o_cfs_rail_item"><span>✓</span> Always learning, always improving</div>
+          <div class="o_cfs_rail_foot">Smarter People. Stronger Organisations. ✦</div>
+        </aside>
+      </div>
+    </div>
+  </t>
+</templates>

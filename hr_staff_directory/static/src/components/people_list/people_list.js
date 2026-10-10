@@ -1021,6 +1021,7 @@ export class StaffDirectoryPeopleList extends Component {
                 },
                 top_departments,
                 ask: `Summarize the segment "${name}"`,
+                mode: 'fullscreen',
             },
         }));
     }

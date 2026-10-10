@@ -485,7 +485,9 @@ class CleonAiGateway(models.AbstractModel):
                 "provider": self._provider_state(),
             }
 
-        state = self.get_assistant_state(screen_context)
+        context = dict(screen_context or {})
+        conversation_id = context.pop("conversation_id", None)
+        state = self.get_assistant_state(context)
         provider = state.get("provider") or self._provider_state()
 
         if not provider["configured"] or not provider["live_calls_enabled"]:
@@ -497,28 +499,133 @@ class CleonAiGateway(models.AbstractModel):
                 ),
                 "provider": provider,
             }
-            return self._record_interaction(question, result, screen_context)
+            return self._record_interaction(question, result, context, conversation_id)
 
         try:
-            result = {"answered": True, "message": self._dispatch_provider_text(question, screen_context), "provider": provider}
+            result = {"answered": True, "message": self._dispatch_provider_text(question, context), "provider": provider}
         except ValidationError as error:
             result = {"answered": False, "message": error.args[0], "provider": provider}
-        return self._record_interaction(question, result, screen_context)
+        return self._record_interaction(question, result, context, conversation_id)
 
     @api.model
-    def _record_interaction(self, question, result, screen_context=None):
+    def _clip_text(self, value, limit):
+        text = " ".join((value or "").split())
+        if len(text) <= limit:
+            return text
+        return text[: max(1, limit - 1)].rstrip() + "…"
+
+    @api.model
+    def _own_conversation(self, conversation_id):
+        """Return the caller's conversation, or an empty record when no id is given."""
+        if conversation_id in (None, False, ""):
+            return self.env["cleon.ai.conversation"].sudo().browse()
+        try:
+            conversation_id = int(conversation_id)
+        except (TypeError, ValueError):
+            raise AccessError(_("You can only open your own conversations."))
+        conversation = self.env["cleon.ai.conversation"].sudo().browse(conversation_id).exists()
+        if not conversation:
+            return self.env["cleon.ai.conversation"].sudo().browse()
+        if conversation.user_id != self.env.user or conversation.company_id not in self.env.companies:
+            raise AccessError(_("You can only open your own conversations."))
+        return conversation
+
+    @api.model
+    def list_conversations(self):
+        """Recent conversation threads owned by the current user."""
+        self._check_ai_access()
+        rows = self.env["cleon.ai.conversation"].sudo().search([
+            ("user_id", "=", self.env.user.id),
+            ("company_id", "in", self.env.companies.ids),
+        ], limit=80)
+        return [{
+            "id": row.id,
+            "title": row.title or "",
+            "preview": row.preview or "",
+            "screen": row.screen or "",
+            "last_message_at": fields.Datetime.to_string(row.last_message_at) if row.last_message_at else "",
+        } for row in rows]
+
+    @api.model
+    def get_conversation(self, conversation_id):
+        """Messages of one owned conversation, oldest first."""
+        self._check_ai_access()
+        conversation = self._own_conversation(conversation_id)
+        if not conversation:
+            raise AccessError(_("You can only open your own conversations."))
+        messages = []
+        interactions = conversation.interaction_ids.sorted(key=lambda row: (row.create_date, row.id))
+        for interaction in interactions:
+            messages.append({
+                "role": "user",
+                "text": interaction.question or "",
+                "interaction_id": interaction.id,
+            })
+            messages.append({
+                "role": "assistant",
+                "text": interaction.answer or "",
+                "interaction_id": interaction.id,
+                "answered": bool(interaction.answered),
+            })
+        return {
+            "id": conversation.id,
+            "title": conversation.title or "",
+            "messages": messages,
+        }
+
+    @api.model
+    def delete_conversation(self, conversation_id):
+        """Delete one owned conversation and its interactions."""
+        self._check_ai_access()
+        conversation = self._own_conversation(conversation_id)
+        if not conversation:
+            raise AccessError(_("You can only open your own conversations."))
+        conversation.unlink()
+        return {"ok": True}
+
+    @api.model
+    def _bind_conversation(self, conversation_id, question, context, result):
+        conversation = self._own_conversation(conversation_id)
+        answer = result.get("message") or ""
+        screen = (context or {}).get("screen") or ""
+        now = fields.Datetime.now()
+        values = {
+            "preview": self._clip_text(answer or question, 90),
+            "last_message_at": now,
+            "screen": screen,
+        }
+        if not conversation:
+            conversation = self.env["cleon.ai.conversation"].sudo().create({
+                "company_id": self.env.company.id,
+                "user_id": self.env.user.id,
+                "title": self._clip_text(question, 72) or _("New conversation"),
+                **values,
+            })
+        else:
+            conversation.write(values)
+        return conversation
+
+    @api.model
+    def _record_interaction(self, question, result, screen_context=None, conversation_id=None):
         provider = result.get("provider") or {}
+        context = dict(screen_context or {})
+        if conversation_id is None:
+            conversation_id = context.pop("conversation_id", None)
+        else:
+            context.pop("conversation_id", None)
+        conversation = self._bind_conversation(conversation_id, question, context, result)
         interaction = self.env["cleon.ai.interaction"].sudo().create({
             "company_id": self.env.company.id,
             "user_id": self.env.user.id,
-            "screen": (screen_context or {}).get("screen") or "",
+            "conversation_id": conversation.id,
+            "screen": context.get("screen") or "",
             "question": question,
             "answer": result.get("message") or "",
             "answered": bool(result.get("answered")),
             "provider": provider.get("provider") or "none",
-            "context_data": screen_context or {},
+            "context_data": context,
         })
-        return {**result, "interaction_id": interaction.id}
+        return {**result, "interaction_id": interaction.id, "conversation_id": conversation.id}
 
     @api.model
     def record_interaction_feedback(self, interaction_id, helpful):

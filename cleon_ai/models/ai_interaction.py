@@ -11,6 +11,7 @@ class CleonAiInteraction(models.Model):
 
     company_id = fields.Many2one("res.company", required=True, default=lambda self: self.env.company, index=True, ondelete="cascade")
     user_id = fields.Many2one("res.users", required=True, default=lambda self: self.env.user, index=True, ondelete="cascade")
+    conversation_id = fields.Many2one("cleon.ai.conversation", index=True, ondelete="cascade")
     screen = fields.Char(index=True)
     question = fields.Text(required=True)
     answer = fields.Text(required=True)
@@ -29,6 +30,9 @@ class CleonAiInteraction(models.Model):
             if "leave_ai_conversation_retention_days" in Company._fields:
                 retention = company.leave_ai_conversation_retention_days or 90
             cutoff = fields.Datetime.now() - timedelta(days=max(1, int(retention)))
+            self.env["cleon.ai.conversation"].sudo().search([
+                ("company_id", "=", company.id), ("last_message_at", "<", cutoff),
+            ]).unlink()
             self.sudo().search([
                 ("company_id", "=", company.id), ("create_date", "<", cutoff),
             ]).unlink()
