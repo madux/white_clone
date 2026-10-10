@@ -34,7 +34,7 @@
     <menuitem id="menu_cleon_payroll_structure" name="Pay Structures / Group"
               parent="menu_cleon_payroll_config" action="action_cleon_payroll_structure" sequence="10"/>
     <menuitem id="menu_cleon_payroll_rule" name="Rules &amp; Components"
-              parent="menu_cleon_payroll_config" action="action_cleon_payroll_rule" sequence="20"/>
+              parent="menu_cleon_payroll_config" action="cleon_payroll.action_cleon_payroll_rule" sequence="20"/>
     <menuitem id="menu_cleon_payroll_category" name="Rule Categories"
               parent="menu_cleon_payroll_config" action="action_cleon_payroll_category" sequence="30"/>
     <menuitem id="menu_cleon_payroll_input_type" name="Input Types"

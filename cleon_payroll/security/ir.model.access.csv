@@ -31,3 +31,7 @@ access_cleon_hr_payroll_cycleemployee,cleon.hr_payroll_cycle,model_hr_payroll_cy
 access_cleon_hr_payroll_cyclebaseuser,cleon.hr_payroll_cycle_baseuser,model_hr_payroll_cycle,base.group_user,1,1,0,0
 access_cleon_hr_payroll_cycle_group_payroll_manager,cleon.hr_payroll_cycle_group_payroll_manager,model_hr_payroll_cycle,group_payroll_manager,1,1,1,1
 access_hr_payroll_overtime_rule_manager,cleon.hr_payroll_overtime_rule_manager,model_hr_payroll_overtime_rule,group_payroll_manager,1,1,1,1
+access_cleon_payroll_rule_line_user,cleon.payroll.rule.line user,model_cleon_payroll_rule_line,,1,1,1,1
+access_cleon_payroll_tax_bracket_user,cleon.payroll.tax.bracket user,model_cleon_payroll_tax_bracket,,1,1,1,1
+access_cleon.payroll.tax.explain_user,cleon.payroll.tax.explain user,model_cleon_payroll_tax_explain,,1,1,1,1
+access_cleon.payroll.tax.explain_line_user,cleon.payroll.tax.explain line user,model_cleon_payroll_tax_explain_line,,1,1,1,1
