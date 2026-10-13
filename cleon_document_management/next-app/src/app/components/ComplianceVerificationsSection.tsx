@@ -91,15 +91,6 @@ export default function ComplianceVerificationsSection({
 
   return (
     <div className={embedded ? "space-y-6" : "app-page space-y-6"}>
-      {!embedded ? (
-        <header>
-          <h1 className="text-2xl font-bold text-slate-900">Compliance verifications</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Evidence submitted for compliance policies awaiting your verification.
-          </p>
-        </header>
-      ) : null}
-
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
         <div className="border-b border-slate-100 px-5 py-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">

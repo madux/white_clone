@@ -88,13 +88,6 @@ export default function OrganizationalLegalHoldsPage() {
 
   return (
     <div className="app-page space-y-6 p-4">
-      <header>
-        <h1 className="text-2xl font-bold text-slate-900">Legal holds</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Block destructive actions on organisational folders and documents while a matter is open.
-        </p>
-      </header>
-
       <section className="rounded-xl border border-border bg-white p-4 space-y-3">
         <h2 className="text-sm font-bold text-slate-900">Place hold</h2>
         <div className="grid gap-3 sm:grid-cols-2">

@@ -1,25 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api";
 import { QUERY_KEYS } from "../../../hooks/useDocuments";
 import type { OrganizationalPolicy } from "../../../lib/types";
-import AppSelect from "./AppSelect";
 import BulkFolderActions from "./BulkFolderActions";
 import EmptyState from "./EmptyState";
 import OrganizationalPolicyActions from "./OrganizationalPolicyActions";
 import OrgFolderIcon from "./OrgFolderIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-
-const STATUS_OPTIONS = [
-  { value: "all", label: "All statuses" },
-  { value: "draft", label: "Draft" },
-  { value: "active", label: "Active" },
-  { value: "archived", label: "Archived" },
-];
+import type { OrgPolicyTabFilters } from "../../../lib/orgLibraryFilters";
 
 function statusLabel(status: OrganizationalPolicy["lifecycle_status"]) {
   if (status === "active") return "Active";
@@ -43,23 +36,33 @@ function statusBadgeClass(status: OrganizationalPolicy["lifecycle_status"]) {
 
 export default function OrganizationalPoliciesPanel({
   search,
+  policyFilters,
   viewMode = "list",
   canManageFolders = false,
+  onCategoriesLoaded,
 }: {
   search: string;
+  policyFilters: OrgPolicyTabFilters;
   viewMode?: "list" | "cards";
   canManageFolders?: boolean;
+  onCategoriesLoaded?: (categories: { value: string; label: string }[]) => void;
 }) {
-  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedFolderIds, setSelectedFolderIds] = useState<number[]>([]);
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["organizational-policies", statusFilter, search],
+    queryKey: [
+      "organizational-policies",
+      policyFilters.status,
+      policyFilters.visibility,
+      search,
+    ],
     queryFn: async () => {
       const result = await api.listOrganizationalPolicies({
         search: search.trim() || undefined,
-        status: statusFilter === "all" ? undefined : statusFilter,
+        status: policyFilters.status === "all" ? undefined : policyFilters.status,
+        visibility:
+          policyFilters.visibility === "all" ? undefined : policyFilters.visibility,
       });
       if (!result.success) {
         throw new Error(result.message || "Unable to load policies.");
@@ -68,7 +71,33 @@ export default function OrganizationalPoliciesPanel({
     },
   });
 
-  const items = useMemo(() => query.data ?? [], [query.data]);
+  const items = useMemo(() => {
+    let list = query.data ?? [];
+    if (policyFilters.category !== "all") {
+      list = list.filter((policy) => (policy.category || "") === policyFilters.category);
+    }
+    if (policyFilters.hasDocument === "yes") {
+      list = list.filter((policy) => Boolean(policy.document_id));
+    } else if (policyFilters.hasDocument === "no") {
+      list = list.filter((policy) => !policy.document_id);
+    }
+    return list;
+  }, [policyFilters.category, policyFilters.hasDocument, query.data]);
+
+  useEffect(() => {
+    if (!onCategoriesLoaded || !query.data?.length) return;
+    const values = new Set<string>();
+    for (const policy of query.data) {
+      const category = (policy.category || "").trim();
+      if (category) values.add(category);
+    }
+    onCategoriesLoaded([
+      { value: "all", label: "All categories" },
+      ...[...values]
+        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+        .map((value) => ({ value, label: value })),
+    ]);
+  }, [onCategoriesLoaded, query.data]);
   const visibleFolderIds = useMemo(
     () => items.map((policy) => policy.folder_id),
     [items],
@@ -113,19 +142,9 @@ export default function OrganizationalPoliciesPanel({
 
   return (
     <div className="space-y-4 p-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          Status
-          <AppSelect
-            value={statusFilter}
-            onChange={setStatusFilter}
-            options={STATUS_OPTIONS}
-          />
-        </label>
-        <p className="text-sm text-slate-500">
-          {items.length} {items.length === 1 ? "policy" : "policies"}
-        </p>
-      </div>
+      <p className="text-sm text-slate-500">
+        {items.length} {items.length === 1 ? "policy" : "policies"}
+      </p>
       {canManageFolders && selectedFolderIds.length ? (
         <BulkFolderActions
           selected={selectedFolderIds}

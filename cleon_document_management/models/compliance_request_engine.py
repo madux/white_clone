@@ -372,17 +372,13 @@ class ComplianceRequestEngine(models.Model):
                 and document.document_type_id != task.evidence_document_type_id
             ):
                 raise ValidationError(_("Document type does not match this task."))
-            needs_verify = document.document_type_id.verification_required
             task.write(
                 {
                     "document_id": document.id,
-                    "status": "waiting" if needs_verify else "done",
-                    "completed_at": fields.Datetime.now()
-                    if not needs_verify
-                    else False,
+                    "status": "done",
+                    "completed_at": fields.Datetime.now(),
                 }
             )
-            self._maybe_queue_verification(employee, document)
         elif task_type == "complete_form":
             submission_id = int(payload.get("submission_id") or 0)
             submission = self.env["doc.template.submission"].browse(submission_id).exists()

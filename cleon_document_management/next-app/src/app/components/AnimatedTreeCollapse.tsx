@@ -6,6 +6,8 @@ type Props = {
   open: boolean;
   children: ReactNode;
   className?: string;
+  /** Fired after the close transition finishes and content unmounts. */
+  onExitComplete?: () => void;
 };
 
 /** Smooth expand/collapse for employee file tree sections. */
@@ -13,6 +15,7 @@ export default function AnimatedTreeCollapse({
   open,
   children,
   className = "",
+  onExitComplete,
 }: Props) {
   const [mounted, setMounted] = useState(open);
   const [revealed, setRevealed] = useState(open);
@@ -53,7 +56,10 @@ export default function AnimatedTreeCollapse({
       onTransitionEnd={(event) => {
         if (event.target !== event.currentTarget) return;
         if (event.propertyName !== "grid-template-rows") return;
-        if (!open) setMounted(false);
+        if (!open) {
+          setMounted(false);
+          onExitComplete?.();
+        }
       }}
     >
       <div className="employee-tree-collapse-inner">{children}</div>

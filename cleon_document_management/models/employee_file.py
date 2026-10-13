@@ -107,45 +107,27 @@ class DocEmployeeFile(models.Model):
 
     def serialize_for_api(self, user=None):
         self.ensure_one()
-        employee = self.employee_id
         user = user or self.env.user
+        # Employee file ACL already limits which rows are visible; read EMS
+        # dimensions with sudo so HR officers without hr.employee private ACL
+        # can still browse colleagues they are permitted to see.
+        employee = self.employee_id.sudo()
+        metrics = self.env["doc.employee.files.service"]._serialize_employee_metrics(
+            employee
+        )
         return {
             "id": self.id,
             "employee_id": employee.id,
             "employee_name": employee.name,
             "employee_identification": employee.identification_id or employee.barcode or "",
             "department_id": employee.department_id.id if employee.department_id else False,
-            "department_name": employee.department_id.name if employee.department_id else "",
-            "job_title": employee.job_id.name if employee.job_id else "",
-            "employment_type": (
-                (
-                    getattr(employee, "employment_type_id", False)
-                    or getattr(employee, "employee_type_id", False)
-                ).name
-                if (
-                    getattr(employee, "employment_type_id", False)
-                    or getattr(employee, "employee_type_id", False)
-                )
-                else ""
-            ),
-            "work_location": (
-                (
-                    getattr(employee, "work_location_id", False)
-                    or getattr(employee, "address_id", False)
-                ).name
-                if (
-                    getattr(employee, "work_location_id", False)
-                    or getattr(employee, "address_id", False)
-                )
-                else ""
-            ),
-            "status": "Active" if employee.active else "Inactive",
-            "branch": employee.branch_id.name
-            if getattr(employee, "branch_id", False)
-            else "",
-            "grade": employee.grade_id.name
-            if getattr(employee, "grade_id", False)
-            else "",
+            "department_name": metrics.get("department_name") or "",
+            "job_title": metrics.get("job_title") or "",
+            "employment_type": metrics.get("employment_type") or "",
+            "work_location": metrics.get("work_location") or "",
+            "status": metrics.get("status") or ("Active" if employee.active else "Inactive"),
+            "branch": metrics.get("branch") or "",
+            "grade": metrics.get("grade") or "",
             "document_count": self.document_count,
             "attention_count": self.attention_count,
             "state": self.state,

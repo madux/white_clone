@@ -83,7 +83,9 @@ def post_init_hook(env):
     if "doc.employee.files.role.service" in env:
         env["doc.employee.files.role.service"].ensure_odoo_admin_super_admin_bindings()
     if "doc.document.catalog.service" in env:
-        env["doc.document.catalog.service"].ensure_default_catalog()
+        catalog = env["doc.document.catalog.service"]
+        catalog.migrate_legacy_global_catalog_to_companies()
+        catalog.ensure_all_companies()
     if "doc.notification.catalog.service" in env:
         env["doc.notification.catalog.service"].ensure_default_notification_rules()
     if "doc.approval.workflow.migration" in env:

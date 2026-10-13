@@ -177,13 +177,27 @@ export function countEmployeesInPolicyScope(
   scope: PolicyScopeState,
   targets?: PolicyScopeTargets,
 ): number {
-  const employees = targets?.employees ?? [];
   if (!hasPolicyScopeFilters(scope)) {
-    return employees.length;
+    return 0;
+  }
+  return listEmployeesInPolicyScope(scope, targets).length;
+}
+
+export function listEmployeesInPolicyScope(
+  scope: PolicyScopeState,
+  targets?: PolicyScopeTargets,
+  options?: { allEmployees?: boolean },
+): NonNullable<PolicyScopeTargets["employees"]> {
+  const employees = targets?.employees ?? [];
+  if (options?.allEmployees) {
+    return employees;
+  }
+  if (!hasPolicyScopeFilters(scope)) {
+    return [];
   }
   return employees.filter((employee) =>
     employeeMatchesPolicyScope(employee, scope),
-  ).length;
+  );
 }
 
 export function employeeMatchesPolicyScope(
@@ -224,4 +238,76 @@ export function employeeMatchesPolicyScope(
     return false;
   }
   return true;
+}
+
+export function employeeBelongsToScopeDimension(
+  employee: NonNullable<PolicyScopeTargets["employees"]>[number],
+  key: keyof PolicyScopeState,
+  id: number,
+): boolean {
+  switch (key) {
+    case "department_ids": {
+      const deptId = employee.department_id || false;
+      return Boolean(deptId && deptId === id);
+    }
+    case "grade_ids": {
+      const gradeId = employee.grade_id || false;
+      return Boolean(gradeId && gradeId === id);
+    }
+    case "work_location_ids": {
+      const locId = employee.work_location_id || false;
+      return Boolean(locId && locId === id);
+    }
+    case "employment_type_ids": {
+      const typeId = employee.employment_type_id || false;
+      return Boolean(typeId && typeId === id);
+    }
+    case "branch_ids": {
+      const branchId = employee.branch_id || false;
+      return Boolean(branchId && branchId === id);
+    }
+    default:
+      return false;
+  }
+}
+
+/** Drop one person from scope; keeps everyone else via explicit employee_ids if needed. */
+export function removeEmployeeFromPolicyScope(
+  employeeId: number,
+  scope: PolicyScopeState,
+  targets?: PolicyScopeTargets,
+): PolicyScopeState {
+  if (scope.employee_ids.includes(employeeId)) {
+    const employee_ids = scope.employee_ids.filter((id) => id !== employeeId);
+    if (!employee_ids.length && !hasPolicyScopeFilters({ ...scope, employee_ids })) {
+      return emptyPolicyScope();
+    }
+    return { ...scope, employee_ids };
+  }
+  const matched = listEmployeesInPolicyScope(scope, targets);
+  const remaining = matched
+    .filter((employee) => employee.id !== employeeId)
+    .map((employee) => employee.id);
+  if (!remaining.length) {
+    return emptyPolicyScope();
+  }
+  return {
+    ...emptyPolicyScope(),
+    employee_ids: remaining,
+  };
+}
+
+export function listEmployeesInScopeDimension(
+  key: keyof PolicyScopeState,
+  id: number,
+  targets?: PolicyScopeTargets,
+): NonNullable<PolicyScopeTargets["employees"]> {
+  const employees = targets?.employees ?? [];
+  if (key === "employee_ids") {
+    const match = employees.find((row) => row.id === id);
+    return match ? [match] : [];
+  }
+  return employees.filter((employee) =>
+    employeeBelongsToScopeDimension(employee, key, id),
+  );
 }

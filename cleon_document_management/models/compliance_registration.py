@@ -1,7 +1,14 @@
+import logging
 from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
+
+from odoo.addons.cleon_document_management.models.compliance_run_async import (
+    schedule_compliance_run,
+)
+
+_logger = logging.getLogger(__name__)
 
 MATERIAL_POLICY_FIELDS = frozenset(
     {
@@ -691,17 +698,181 @@ class CompliancePolicy(models.Model):
         )
         return evaluation
 
+    def _evaluation_engine_kind(self):
+        self.ensure_one()
+        if hasattr(self, "_is_retention_policy") and self._is_retention_policy():
+            return "retention"
+        if (
+            hasattr(self, "_is_review_schedule_policy")
+            and self._is_review_schedule_policy()
+        ):
+            return "review"
+        return "standard"
+
+    def _assert_can_start_evaluation(self):
+        self.ensure_one()
+        if self.run_in_progress:
+            raise ValidationError(
+                _("A run is already in progress for policy %s.") % self.name
+            )
+        today = fields.Date.context_today(self)
+        if self.lifecycle_status == "scheduled" and self.effective_date and self.effective_date > today:
+            raise ValidationError(_("This policy is not active yet."))
+        if not self.active or (self.effective_date and self.effective_date > today):
+            raise ValidationError(_("This policy is not active."))
+
+    def _ensure_evaluation_requirement(self):
+        self.ensure_one()
+        Requirement = self.env["doc.compliance.requirement"].sudo()
+        if (
+            not self.requirement_ids
+            and not self._is_compliance_request()
+            and not (
+                hasattr(self, "_is_retention_policy") and self._is_retention_policy()
+            )
+        ):
+            self.auto_requirement_id = Requirement.create(
+                {
+                    "name": self.name,
+                    "policy_id": self.id,
+                    "minimum_documents": self.minimum_documents,
+                    "grace_period_days": self.grace_period_days,
+                    "active": self.active,
+                }
+            )
+
+    def _prepare_evaluation_targets(self):
+        self.ensure_one()
+        targets = self._target_employees()
+        Evaluation = self._sudo_evaluation_env()
+        stale = Evaluation.search(
+            [
+                ("policy_id", "=", self.id),
+                ("employee_id", "not in", targets.ids or [0]),
+            ]
+        )
+        if stale:
+            stale.unlink()
+        return targets, Evaluation
+
+    def _create_evaluation_run(self, run_type="manual", async_mode=False):
+        self.ensure_one()
+        run_type = run_type if run_type in ("manual", "automatic", "audit") else "manual"
+        targets, _evaluation = self._prepare_evaluation_targets()
+        return self.env["doc.compliance.evaluation.run"].sudo().create(
+            {
+                "policy_id": self.id,
+                "run_type": run_type,
+                "evaluated_at": fields.Datetime.now(),
+                "state": "running" if async_mode else "pending",
+                "progress_total": len(targets),
+                "progress_done": 0,
+                "progress_message": _("Preparing evaluation…"),
+            }
+        )
+
+    def _finalize_evaluation_run(self, run, Evaluation):
+        self.ensure_one()
+        evaluations = Evaluation.search([("policy_id", "=", self.id)])
+        run.snapshot_from_evaluations(evaluations)
+        run.write(
+            {
+                "state": "completed",
+                "employee_count": len(evaluations),
+                "compliant_count": len(
+                    evaluations.filtered(lambda item: item.status == "compliant")
+                ),
+                "partial_count": len(
+                    evaluations.filtered(
+                        lambda item: item.status in ("partial", "grace")
+                    )
+                ),
+                "non_compliant_count": len(
+                    evaluations.filtered(lambda item: item.status == "non_compliant")
+                ),
+                "excepted_count": len(
+                    evaluations.filtered(lambda item: item.status == "excepted")
+                ),
+                "progress_done": run.progress_total,
+                "progress_message": _("Run complete"),
+            }
+        )
+        self.write(
+            {
+                "last_run_at": run.evaluated_at,
+                "run_in_progress": False,
+                "run_started_at": False,
+            }
+        )
+        self.action_set_next_run()
+        self.env["doc.compliance.audit.log"].log_event(
+            "run_complete",
+            _("Run completed for %s") % self.name,
+            policy=self,
+            run=run,
+        )
+
+    def _execute_evaluation_run(self, run):
+        self.ensure_one()
+        if not run or run.policy_id != self:
+            raise ValidationError(_("Invalid compliance run."))
+        self._ensure_evaluation_requirement()
+        targets, Evaluation = self._prepare_evaluation_targets()
+        total = len(targets)
+        run.sudo().write(
+            {
+                "progress_total": total,
+                "progress_done": 0,
+                "progress_message": _("Evaluating employees…"),
+            }
+        )
+        if not self.env.context.get("test_mode"):
+            self.env.cr.commit()
+
+        commit_stride = max(1, total // 25) if total else 1
+        for index, employee in enumerate(targets):
+            self.evaluate_employee(employee)
+            done = index + 1
+            if done % commit_stride == 0 or done == total:
+                run.sudo().write(
+                    {
+                        "progress_done": done,
+                        "progress_message": _("%(done)s of %(total)s employees")
+                        % {"done": done, "total": total},
+                    }
+                )
+                if not self.env.context.get("test_mode"):
+                    self.env.cr.commit()
+
+        self._finalize_evaluation_run(run, Evaluation)
+        if not self.env.context.get("test_mode"):
+            self.env.cr.commit()
+
+    def action_begin_manual_evaluation(self, run_type="manual"):
+        self.ensure_one()
+        if self._evaluation_engine_kind() != "standard":
+            raise ValidationError(
+                _("This policy type must be run from the standard evaluator.")
+            )
+        self._assert_can_start_evaluation()
+        self.write(
+            {
+                "run_in_progress": True,
+                "run_started_at": fields.Datetime.now(),
+            }
+        )
+        run = self._create_evaluation_run(run_type=run_type, async_mode=True)
+        schedule_compliance_run(self.env, run.id)
+        return run
+
     def action_evaluate(self, run_type="manual"):
         runs = self.env["doc.compliance.evaluation.run"].sudo()
-        Requirement = self.env["doc.compliance.requirement"].sudo()
         for policy in self:
-            if hasattr(policy, "_is_retention_policy") and policy._is_retention_policy():
-                self.env["doc.compliance.retention.engine"].sudo().run_policy(policy)
+            engine = policy._evaluation_engine_kind()
+            if engine == "retention":
+                policy.env["doc.compliance.retention.engine"].sudo().run_policy(policy)
                 continue
-            if (
-                hasattr(policy, "_is_review_schedule_policy")
-                and policy._is_review_schedule_policy()
-            ):
+            if engine == "review":
                 for employee in policy._target_employees():
                     policy._generate_reviews_for_employee(employee)
                 policy._process_review_states(fields.Date.context_today(policy))
@@ -721,61 +892,12 @@ class CompliancePolicy(models.Model):
                     "run_started_at": fields.Datetime.now(),
                 }
             )
-            if (
-                not policy.requirement_ids
-                and not policy._is_compliance_request()
-                and not (
-                    hasattr(policy, "_is_retention_policy")
-                    and policy._is_retention_policy()
-                )
-            ):
-                policy.auto_requirement_id = Requirement.create(
-                    {
-                        "name": policy.name,
-                        "policy_id": policy.id,
-                        "minimum_documents": policy.minimum_documents,
-                        "grace_period_days": policy.grace_period_days,
-                        "active": policy.active,
-                    }
-                )
-            targets = policy._target_employees()
-            Evaluation = policy._sudo_evaluation_env()
-            stale = Evaluation.search([
-                ("policy_id", "=", policy.id),
-                ("employee_id", "not in", targets.ids or [0]),
-            ])
-            if stale:
-                stale.unlink()
-            run = runs.create({
-                "policy_id": policy.id,
-                "run_type": run_type if run_type in ("manual", "automatic", "audit") else "manual",
-                "evaluated_at": fields.Datetime.now(),
-            })
+            policy._ensure_evaluation_requirement()
+            run = policy._create_evaluation_run(run_type=run_type, async_mode=False)
+            targets, Evaluation = policy._prepare_evaluation_targets()
             for employee in targets:
                 policy.evaluate_employee(employee)
-            evaluations = Evaluation.search([("policy_id", "=", policy.id)])
-            run.snapshot_from_evaluations(evaluations)
-            run.write({
-                "employee_count": len(evaluations),
-                "compliant_count": len(evaluations.filtered(lambda item: item.status == "compliant")),
-                "partial_count": len(evaluations.filtered(lambda item: item.status in ("partial", "grace"))),
-                "non_compliant_count": len(evaluations.filtered(lambda item: item.status == "non_compliant")),
-                "excepted_count": len(evaluations.filtered(lambda item: item.status == "excepted")),
-            })
-            policy.write(
-                {
-                    "last_run_at": run.evaluated_at,
-                    "run_in_progress": False,
-                    "run_started_at": False,
-                }
-            )
-            policy.action_set_next_run()
-            self.env["doc.compliance.audit.log"].log_event(
-                "run_complete",
-                _("Run completed for %s") % policy.name,
-                policy=policy,
-                run=run,
-            )
+            policy._finalize_evaluation_run(run, Evaluation)
             runs |= run
         return runs
 
@@ -986,6 +1108,21 @@ class ComplianceEvaluationRun(models.Model):
         default="manual",
     )
     evaluated_at = fields.Datetime(required=True, index=True)
+    state = fields.Selection(
+        [
+            ("pending", "Pending"),
+            ("running", "Running"),
+            ("completed", "Completed"),
+            ("failed", "Failed"),
+        ],
+        default="completed",
+        required=True,
+        index=True,
+    )
+    progress_total = fields.Integer(default=0)
+    progress_done = fields.Integer(default=0)
+    progress_message = fields.Char()
+    error_message = fields.Text()
     employee_count = fields.Integer(default=0)
     compliant_count = fields.Integer(default=0)
     partial_count = fields.Integer(default=0)

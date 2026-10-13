@@ -40,6 +40,7 @@ export default function OrganizationalNewMenu({
   onCreateRootFolder,
   folderDocuments,
   libraryTab = "folders",
+  chrome = false,
 }: {
   parentFolder?: DocFolder | null;
   folderLocked?: boolean;
@@ -50,6 +51,7 @@ export default function OrganizationalNewMenu({
   folderDocuments?: DocDocument[];
   /** When + New is used on the org library root (no open folder). */
   libraryTab?: OrgLibraryRootTab;
+  chrome?: boolean;
 }) {
   const types = useDocumentTypes();
   const upload = useUploadDocument();
@@ -267,7 +269,7 @@ export default function OrganizationalNewMenu({
 
   return (
     <>
-      <NewMenu groups={groups} />
+      <NewMenu groups={groups} chrome={chrome} />
       {showUpload && folderId ? (
         <DocumentUploadModal
           draftKey={`org-upload-${folderId}`}

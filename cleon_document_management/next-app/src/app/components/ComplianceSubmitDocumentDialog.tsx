@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAppDialog } from "../../../hooks/useAppDialog";
 import { api } from "../../../lib/api";
 import type { MyComplianceInboxItem } from "../../../lib/types";
 import { useSettings } from "../../../hooks/useDocuments";
@@ -20,6 +21,7 @@ export default function ComplianceSubmitDocumentDialog({
   onSubmitted: () => void;
 }) {
   const settings = useSettings();
+  const { showAlert } = useAppDialog();
   const documentTypes = settings.data?.document_types ?? [];
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -55,6 +57,12 @@ export default function ComplianceSubmitDocumentDialog({
           document_id: result.data.id,
         });
       }
+      await showAlert(
+        mode === "resubmit"
+          ? "Your document was resubmitted. Compliance will update in a moment."
+          : "Your document was submitted for compliance review.",
+        { title: "Submitted" },
+      );
       onSubmitted();
       onClose();
     } catch (caught: unknown) {

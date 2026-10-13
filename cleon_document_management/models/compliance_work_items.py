@@ -208,6 +208,11 @@ class ComplianceVerificationItem(models.Model):
             if not item.sla_due_at or not item.policy_id:
                 continue
             policy = item.policy_id
+            if (
+                hasattr(policy, "_is_compliance_request")
+                and policy._is_compliance_request()
+            ):
+                continue
             sla_days = max(policy.verification_sla_days or 3, 1)
             escalate_at = item.sla_due_at + timedelta(days=sla_days)
             if now >= item.sla_due_at and not item.sla_reminder_sent:
@@ -258,6 +263,8 @@ class CompliancePolicyWorkItems(models.AbstractModel):
 
     def _maybe_queue_verification(self, employee, document):
         self.ensure_one()
+        if hasattr(self, "_is_compliance_request") and self._is_compliance_request():
+            return
         document_type = document.document_type_id
         if not document_type.verification_required:
             return
@@ -277,7 +284,8 @@ class CompliancePolicyWorkItems(models.AbstractModel):
         if not original and not verifier_not_found:
             verifier_not_found = True
             verifier_note = _("Verifier not found; routed to HR administrator.")
-        existing = self.env["doc.compliance.verification.item"].search(
+        VerificationItem = self.env["doc.compliance.verification.item"].sudo()
+        existing = VerificationItem.search(
             [
                 ("document_id", "=", document.id),
                 ("status", "=", "pending"),
@@ -287,7 +295,7 @@ class CompliancePolicyWorkItems(models.AbstractModel):
         if existing:
             return
         sla_days = max(self.verification_sla_days or 3, 1)
-        item = self.env["doc.compliance.verification.item"].create(
+        item = VerificationItem.create(
             {
                 "policy_id": self.id,
                 "employee_id": employee.id,

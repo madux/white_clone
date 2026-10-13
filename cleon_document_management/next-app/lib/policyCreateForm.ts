@@ -10,6 +10,7 @@ import {
   emptyPolicyScope,
   type PolicyScopeState,
 } from "./policyScope";
+import { policyTypeUsesVerification } from "./verificationPolicy";
 
 export type PolicyCreateFormState = {
   name: string;
@@ -75,7 +76,7 @@ export function defaultPolicyForm(policyTypeId = ""): PolicyCreateFormState {
     description: "",
     policy_type_id: policyTypeId,
     document_type_ids: [],
-    applies_to: "all",
+    applies_to: "filtered",
     scope: emptyPolicyScope(),
     schedule: "monthly",
     custom_schedule_days: "30",
@@ -116,14 +117,19 @@ export function defaultPolicyForm(policyTypeId = ""): PolicyCreateFormState {
   };
 }
 
-export function buildCreatePolicyPayload(form: PolicyCreateFormState) {
+export function buildCreatePolicyPayload(
+  form: PolicyCreateFormState,
+  typeCode = "",
+) {
   const scopePayload =
     form.applies_to === "all"
       ? { ...buildScopePayload(emptyPolicyScope()), applies_to: "all" as const }
       : buildScopePayload(form.scope);
 
+  const { verified_by, verification_sla_days, ...formRest } = form;
+
   return {
-    ...form,
+    ...formRest,
     policy_type_id: Number(form.policy_type_id),
     applies_to: scopePayload.applies_to,
     document_type_ids: form.document_type_ids,
@@ -166,7 +172,11 @@ export function buildCreatePolicyPayload(form: PolicyCreateFormState) {
     review_completion_minimum: form.review_completion_minimum,
     review_overdue_mode: form.review_overdue_mode,
     review_milestones: form.review_milestones,
-    verified_by: form.verified_by || "hr_admin",
-    verification_sla_days: form.verification_sla_days || 3,
+    ...(policyTypeUsesVerification(typeCode)
+      ? {
+          verified_by: verified_by || "hr_admin",
+          verification_sla_days: verification_sla_days || 3,
+        }
+      : {}),
   };
 }

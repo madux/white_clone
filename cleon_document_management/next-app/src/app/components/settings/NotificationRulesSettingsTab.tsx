@@ -8,6 +8,8 @@ import {
 } from "../../../../lib/dmsContractsApi";
 import { useToast } from "../../../../hooks/useToast";
 import { PinkSwitch } from "../PinkSwitch";
+import GeneralEmailDeliveryPanel from "./GeneralEmailDeliveryPanel";
+import { SettingsFieldHelp } from "../EmployeeFilesOrganizingDimensionsSettings";
 
 const MODULE_LABELS: Record<string, string> = {
   employee_files: "Employee Files",
@@ -34,6 +36,94 @@ const MODULE_ORDER = [
 ];
 
 type SidePanel = (typeof MODULE_ORDER)[number] | "delivery_log";
+
+function NotificationRuleCard({
+  rule,
+  busy,
+  showModule,
+  onPersist,
+}: {
+  rule: NotificationRuleRow;
+  busy: boolean;
+  showModule: boolean;
+  onPersist: (
+    rule: NotificationRuleRow,
+    patch: Partial<NotificationRuleRow>,
+  ) => void;
+}) {
+  const readOnly = rule.compliance_read_only;
+
+  return (
+    <li
+      className={`rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5 sm:py-5 ${
+        busy ? "opacity-60" : ""
+      }`}
+    >
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] lg:items-center lg:gap-6">
+        <div className="min-w-0 space-y-1">
+          {showModule ? (
+            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+              {MODULE_LABELS[rule.module] || rule.module}
+            </p>
+          ) : null}
+          <p className="flex items-start gap-2 text-sm font-semibold leading-snug text-slate-900">
+            {rule.required ? (
+              <Lock
+                className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
+                aria-label="Required"
+              />
+            ) : null}
+            <span>{rule.event_label || rule.name}</span>
+          </p>
+          <p className="text-sm leading-relaxed text-slate-600 lg:hidden">
+            {readOnly ? "Per policy in Compliance" : rule.who_is_told}
+          </p>
+        </div>
+
+        <p className="hidden text-sm leading-relaxed text-slate-600 lg:block">
+          {readOnly ? "Per policy in Compliance" : rule.who_is_told}
+        </p>
+
+        <div className="flex flex-wrap items-center gap-6 border-t border-slate-100 pt-4 lg:border-0 lg:pt-0">
+          <label className="flex min-w-[5.5rem] flex-col items-start gap-2 sm:items-center">
+            <span className="text-xs font-semibold text-slate-500">In-app</span>
+            {readOnly ? (
+              <span className="text-sm text-slate-400">—</span>
+            ) : (
+              <PinkSwitch
+                size="sm"
+                label={`Enable ${rule.event_label}`}
+                checked={rule.active}
+                disabled={rule.required || busy}
+                onCheckedChange={(active) => onPersist(rule, { active })}
+              />
+            )}
+          </label>
+          <label className="flex min-w-[5.5rem] flex-col items-start gap-2 sm:items-center">
+            <span className="text-xs font-semibold text-slate-500">Email</span>
+            {readOnly ? (
+              <span className="text-sm text-slate-400">—</span>
+            ) : (
+              <PinkSwitch
+                size="sm"
+                label={`Email for ${rule.event_label}`}
+                checked={rule.channel_email}
+                disabled={
+                  busy ||
+                  !rule.active ||
+                  (rule.required && rule.channel_email)
+                }
+                onCheckedChange={(channel_email) =>
+                  onPersist(rule, { channel_email })
+                }
+              />
+            )}
+          </label>
+        </div>
+      </div>
+    </li>
+  );
+}
 
 export default function NotificationRulesSettingsTab() {
   const { showToast } = useToast();
@@ -130,217 +220,167 @@ export default function NotificationRulesSettingsTab() {
       : MODULE_LABELS[activePanel] || activePanel;
 
   return (
-    <div className="flex max-w-6xl flex-col gap-4 lg:min-h-[min(70vh,640px)] lg:flex-row lg:gap-0">
-      <nav
-        className="lg:w-52 lg:shrink-0 lg:border-r lg:border-slate-200 lg:pr-4"
-        aria-label="Notification modules"
-      >
-        <p className="mb-3 hidden text-xs text-slate-500 lg:block">
-          Pick a module — one section at a time. In-app is on when enabled; email
-          is optional. Changes apply immediately.
-        </p>
-        <ul className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-          {MODULE_ORDER.map((moduleKey) => {
-            const active = !showSearchResults && activePanel === moduleKey;
-            const count = countsByModule.get(moduleKey) || 0;
-            return (
-              <li key={moduleKey} className="shrink-0 lg:shrink">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearch("");
-                    setActivePanel(moduleKey);
-                  }}
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition lg:px-3 lg:py-2.5 ${
-                    active
-                      ? "bg-pink-50 text-brand-pink"
-                      : "text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  <span className="block truncate">{MODULE_LABELS[moduleKey]}</span>
-                  <span className="text-[10px] font-normal text-slate-400">
-                    {count} events
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-          <li className="shrink-0 border-t border-slate-100 pt-2 lg:mt-2">
-            <button
-              type="button"
-              onClick={() => {
-                setSearch("");
-                setActivePanel("delivery_log");
-              }}
-              className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
-                activePanel === "delivery_log" && !showSearchResults
-                  ? "bg-pink-50 text-brand-pink"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              <ScrollText className="h-4 w-4 shrink-0 opacity-70" />
-              Delivery log
-            </button>
-          </li>
-        </ul>
-      </nav>
+    <div className="mx-auto flex max-w-6xl flex-col gap-10">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+        <nav
+          className="lg:w-56 lg:shrink-0 lg:rounded-xl lg:border lg:border-slate-200 lg:bg-slate-50/50 lg:p-4"
+          aria-label="Notification modules"
+        >
+          <div className="mb-4 flex justify-end lg:justify-start">
+            <SettingsFieldHelp
+              label="Notification rules"
+              text="Choose a module. In-app notifications follow the On toggle; email is optional. Changes save immediately."
+            />
+          </div>
+          <ul className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
+            {MODULE_ORDER.map((moduleKey) => {
+              const active = !showSearchResults && activePanel === moduleKey;
+              const count = countsByModule.get(moduleKey) || 0;
+              return (
+                <li key={moduleKey} className="shrink-0 lg:shrink">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch("");
+                      setActivePanel(moduleKey);
+                    }}
+                    className={`w-full rounded-xl px-4 py-3 text-left transition ${
+                      active
+                        ? "bg-white text-brand-pink shadow-sm ring-1 ring-brand-pink/25 lg:bg-white"
+                        : "text-slate-700 hover:bg-white/80 lg:hover:bg-white"
+                    }`}
+                  >
+                    <span className="block text-sm font-semibold">
+                      {MODULE_LABELS[moduleKey]}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      {count} event{count === 1 ? "" : "s"}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+            <li className="shrink-0 border-t border-slate-200 pt-3 lg:mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setActivePanel("delivery_log");
+                }}
+                className={`flex w-full items-center gap-2.5 rounded-xl px-4 py-3 text-left transition ${
+                  activePanel === "delivery_log" && !showSearchResults
+                    ? "bg-white text-brand-pink shadow-sm ring-1 ring-brand-pink/25"
+                    : "text-slate-700 hover:bg-white/80 lg:hover:bg-white"
+                }`}
+              >
+                <ScrollText className="h-4 w-4 shrink-0 opacity-70" />
+                <span className="text-sm font-semibold">Delivery log</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
 
-      <div className="min-w-0 flex-1 lg:pl-6">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">
-              {showSearchResults ? "Search results" : panelTitle}
-            </h2>
-            {activePanel === "compliance" && !showSearchResults ? (
-              <p className="mt-0.5 text-xs text-slate-500">
-                Read-only here — configure per policy in Compliance.
-              </p>
-            ) : activePanel !== "delivery_log" && !showSearchResults ? (
-              <p className="mt-0.5 text-xs text-slate-500">
-                Reminders at 09:00 (General tab).
-              </p>
+        <div className="min-w-0 flex-1 space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              {showSearchResults ? (
+                <span className="text-sm font-semibold text-slate-700">Search results</span>
+              ) : (
+                <SettingsFieldHelp
+                  label={panelTitle}
+                  text={
+                    activePanel === "compliance"
+                      ? "Read-only here — configure per policy in Compliance."
+                      : activePanel === "delivery_log"
+                        ? "Recent notification deliveries across channels."
+                        : "Scheduled reminders run at 09:00 (see General settings)."
+                  }
+                />
+              )}
+            </div>
+            {activePanel !== "delivery_log" ? (
+              <input
+                className="field w-full sm:max-w-xs"
+                placeholder="Search all events…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                aria-label="Search notification events"
+              />
             ) : null}
           </div>
-          {activePanel !== "delivery_log" ? (
-            <input
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm sm:max-w-xs"
-              placeholder="Search all events…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          ) : null}
-        </div>
 
-        {activePanel === "delivery_log" && !showSearchResults ? (
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-            {deliveryLog.length === 0 ? (
-              <p className="p-6 text-sm text-slate-500">No deliveries logged yet.</p>
-            ) : (
-              <div className="max-h-[min(60vh,520px)] overflow-auto">
-                <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-slate-50 text-left text-slate-500">
-                    <tr>
-                      <th className="px-4 py-2 font-semibold">Time</th>
-                      <th className="px-4 py-2 font-semibold">Event</th>
-                      <th className="px-4 py-2 font-semibold">Recipient</th>
-                      <th className="px-4 py-2 font-semibold">Channel</th>
-                      <th className="px-4 py-2 font-semibold">State</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {deliveryLog.slice(0, 50).map((row) => (
-                      <tr key={row.id} className="border-t border-slate-100">
-                        <td className="px-4 py-2 text-slate-500 whitespace-nowrap">
-                          {row.created_at}
-                        </td>
-                        <td className="px-4 py-2">{row.event_type}</td>
-                        <td className="px-4 py-2">{row.recipient_name}</td>
-                        <td className="px-4 py-2">{row.channel}</td>
-                        <td className="px-4 py-2">{row.state}</td>
+          {activePanel === "delivery_log" && !showSearchResults ? (
+            <div className="app-table-well app-page-body overflow-hidden rounded-xl">
+              {deliveryLog.length === 0 ? (
+                <p className="py-12 text-center text-sm text-slate-500">
+                  No deliveries logged yet.
+                </p>
+              ) : (
+                <div className="max-h-[min(65vh,560px)] overflow-auto">
+                  <table className="ef-table min-w-[640px] text-left text-sm">
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>Event</th>
+                        <th>Recipient</th>
+                        <th>Channel</th>
+                        <th>State</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-            {tableRules.length === 0 ? (
-              <p className="p-6 text-sm text-slate-500">No events match your search.</p>
-            ) : (
-              <div className="max-h-[min(60vh,520px)] overflow-auto">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50 text-left text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                    <tr>
-                      {showSearchResults ? (
-                        <th className="px-4 py-2.5 w-28">Module</th>
-                      ) : null}
-                      <th className="px-4 py-2.5">Event</th>
-                      <th className="hidden px-4 py-2.5 md:table-cell">Who is told</th>
-                      <th className="px-4 py-2.5 w-16 text-center">On</th>
-                      <th className="px-4 py-2.5 w-16 text-center">Email</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tableRules.map((rule) => {
-                      const readOnly = rule.compliance_read_only;
-                      const busy = pendingIds.has(rule.id);
-                      return (
-                        <tr
-                          key={rule.id}
-                          className={`border-t border-slate-100 ${
-                            busy ? "opacity-50" : ""
-                          }`}
-                        >
-                          {showSearchResults ? (
-                            <td className="px-4 py-2.5 text-xs text-slate-500">
-                              {MODULE_LABELS[rule.module] || rule.module}
-                            </td>
-                          ) : null}
-                          <td className="px-4 py-2.5">
-                            <span className="inline-flex items-center gap-1.5 font-medium text-slate-800">
-                              {rule.required ? (
-                                <Lock
-                                  className="h-3.5 w-3.5 shrink-0 text-slate-400"
-                                  aria-label="Required"
-                                />
-                              ) : null}
-                              {rule.event_label || rule.name}
-                            </span>
-                            <span className="mt-0.5 block text-xs text-slate-500 md:hidden">
-                              {rule.who_is_told}
-                            </span>
+                    </thead>
+                    <tbody>
+                      {deliveryLog.slice(0, 50).map((row) => (
+                        <tr key={row.id}>
+                          <td className="whitespace-nowrap text-slate-500">
+                            {row.created_at}
                           </td>
-                          <td className="hidden px-4 py-2.5 text-slate-600 md:table-cell">
-                            {readOnly
-                              ? "Per policy in Compliance"
-                              : rule.who_is_told}
-                          </td>
-                          <td className="px-4 py-2.5 text-center">
-                            {readOnly ? (
-                              <span className="text-xs text-slate-400">—</span>
-                            ) : (
-                              <PinkSwitch
-                                size="sm"
-                                label={`Enable ${rule.event_label}`}
-                                checked={rule.active}
-                                disabled={rule.required || busy}
-                                onCheckedChange={(active) =>
-                                  persistRule(rule, { active })
-                                }
-                              />
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5 text-center">
-                            {readOnly ? (
-                              <span className="text-xs text-slate-400">—</span>
-                            ) : (
-                              <PinkSwitch
-                                size="sm"
-                                label={`Email for ${rule.event_label}`}
-                                checked={rule.channel_email}
-                                disabled={
-                                  busy ||
-                                  !rule.active ||
-                                  (rule.required && rule.channel_email)
-                                }
-                                onCheckedChange={(channel_email) =>
-                                  persistRule(rule, { channel_email })
-                                }
-                              />
-                            )}
-                          </td>
+                          <td>{row.event_type}</td>
+                          <td>{row.recipient_name}</td>
+                          <td>{row.channel}</td>
+                          <td>{row.state}</td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {tableRules.length > 0 ? (
+                <div
+                  className="hidden gap-6 px-1 text-xs font-bold uppercase tracking-wide text-slate-500 lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] lg:px-2"
+                  aria-hidden
+                >
+                  <span>Event</span>
+                  <span>Who is told</span>
+                  <span className="text-right pr-2">Notifications</span>
+                </div>
+              ) : null}
+              {tableRules.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-14 text-center">
+                  <p className="text-sm text-slate-500">
+                    No events match your search.
+                  </p>
+                </div>
+              ) : (
+                <ul className="flex max-h-[min(65vh,560px)] flex-col gap-3 overflow-y-auto pr-1">
+                  {tableRules.map((rule) => (
+                    <NotificationRuleCard
+                      key={rule.id}
+                      rule={rule}
+                      busy={pendingIds.has(rule.id)}
+                      showModule={showSearchResults}
+                      onPersist={persistRule}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      <GeneralEmailDeliveryPanel />
     </div>
   );
 }

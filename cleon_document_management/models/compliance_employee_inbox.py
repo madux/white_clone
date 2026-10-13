@@ -43,6 +43,38 @@ class ComplianceEmployeeInbox(models.AbstractModel):
         return documents[0]
 
     @api.model
+    def _verified_document_count(self, employee, document_type):
+        if not document_type:
+            return 0
+        engine = self.env["doc.compliance.engine"]
+        documents = engine._current_documents(employee, document_type)
+        verified = self.env["doc.document"]
+        for document in documents:
+            if engine._document_is_verified(document, document_type):
+                verified |= document
+        return len(verified)
+
+    @api.model
+    def _latest_rejected_document(self, employee, document_type):
+        if not employee or not document_type:
+            return self.env["doc.document"]
+        return (
+            self.env["doc.document"]
+            .sudo()
+            .search(
+                [
+                    ("employee_id", "=", employee.id),
+                    ("document_type_id", "=", document_type.id),
+                    ("active", "=", True),
+                    ("deleted_at", "=", False),
+                    ("approval_state", "=", "rejected"),
+                ],
+                order="write_date desc, create_date desc",
+                limit=1,
+            )
+        )
+
+    @api.model
     def _line_tab_and_action(self, line, evaluation, today):
         policy = evaluation.policy_id
         compliance_status = line.compliance_status or ""
@@ -104,16 +136,47 @@ class ComplianceEmployeeInbox(models.AbstractModel):
         policy = evaluation.policy_id
         requirement = line.requirement_id
         document = self._primary_document_for_line(line)
-        submission = self._document_submission_meta(document, employee)
-        tab, primary_action, status_label = self._line_tab_and_action(
-            line, evaluation, today
+        document_type = line.document_type_id
+        required = max(line.required_count or 0, 1)
+        rejected_doc = self._latest_rejected_document(employee, document_type)
+        verified_count = self._verified_document_count(employee, document_type)
+        newest = (
+            self.env["doc.document"]
+            .sudo()
+            .search(
+                [
+                    ("employee_id", "=", employee.id),
+                    ("document_type_id", "=", document_type.id),
+                    ("active", "=", True),
+                    ("deleted_at", "=", False),
+                ],
+                order="write_date desc, id desc",
+                limit=1,
+            )
         )
-        rejection_message = ""
-        if line.reason_code == "rejected" or (
-            primary_action == "resubmit" and line.reason_message
+        if (
+            newest
+            and newest.approval_state != "rejected"
+            and newest.state != "rejected"
         ):
-            rejection_message = line.reason_message or _("Rejected")
-            status_label = status_label or _("Rejected: %s") % rejection_message
+            rejected_doc = self.env["doc.document"]
+        if rejected_doc and verified_count < required:
+            document = rejected_doc
+            tab = "todo"
+            primary_action = "resubmit"
+            rejection_message = rejected_doc.rejection_reason or _("Rejected")
+            status_label = _("Rejected: %s") % rejection_message
+        else:
+            tab, primary_action, status_label = self._line_tab_and_action(
+                line, evaluation, today
+            )
+            rejection_message = ""
+            if line.reason_code == "rejected" or (
+                primary_action == "resubmit" and line.reason_message
+            ):
+                rejection_message = line.reason_message or _("Rejected")
+                status_label = status_label or _("Rejected: %s") % rejection_message
+        submission = self._document_submission_meta(document, employee)
 
         waiting_label = ""
         if tab == "waiting":
@@ -126,6 +189,8 @@ class ComplianceEmployeeInbox(models.AbstractModel):
 
         title = line.document_type_id.name or requirement.name or policy.name
         compliance_status = line.compliance_status or line.status
+        if primary_action == "resubmit":
+            compliance_status = "at_risk"
         return {
             "id": "line-%s" % line.id,
             "kind": "document_requirement",
@@ -257,6 +322,9 @@ class ComplianceEmployeeInbox(models.AbstractModel):
 
     @api.model
     def build_for_employee(self, employee):
+        # Self-service inbox: related policy/requirement rows use employee-scoped record rules.
+        self = self.sudo()
+        employee = employee.sudo()
         today = fields.Date.context_today(self)
         evaluations = self.env["doc.compliance.evaluation"].search(
             [("employee_id", "=", employee.id)],
@@ -331,6 +399,8 @@ class ComplianceEmployeeInbox(models.AbstractModel):
 
     @api.model
     def get_item_detail(self, employee, kind, record_id):
+        self = self.sudo()
+        employee = employee.sudo()
         if kind == "document_requirement":
             line = self.env["doc.compliance.evaluation.line"].browse(int(record_id)).exists()
             if not line or line.evaluation_id.employee_id != employee:

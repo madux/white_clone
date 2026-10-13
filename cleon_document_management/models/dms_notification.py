@@ -491,18 +491,16 @@ class DocNotificationService(models.AbstractModel):
 
     @api.model
     def _next_digest_datetime(self, company):
-        tz_name = (
-            self.env["ir.config_parameter"]
-            .sudo()
-            .get_param("cleon_document_management.org_timezone", "UTC")
-            or "UTC"
-        )
+        general = self.env["doc.dms.general.service"]
+        calendar = self.env["doc.dms.working.calendar.service"]
+        tz_name = general.get_timezone(company)
+        hour, minute = calendar.digest_time_parts(company)
         try:
             import pytz
 
             tz = pytz.timezone(tz_name)
             now = datetime.now(tz)
-            target = now.replace(hour=9, minute=0, second=0, microsecond=0)
+            target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
             if now >= target:
                 target = target + timedelta(days=1)
             return fields.Datetime.to_string(target.astimezone(pytz.UTC).replace(tzinfo=None))

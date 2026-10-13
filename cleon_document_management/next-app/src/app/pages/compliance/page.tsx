@@ -1,13 +1,13 @@
-"use client";
-
+import ComplianceGate from "@/app/components/ComplianceGate";
+import CompliancePage from "@/app/components/CompliancePage";
 import { Suspense } from "react";
-import ComplianceRedirectPage from "./ComplianceRedirectPage";
 
-/** Legacy route — compliance lives under Employee Files. */
 export default function ComplianceRoute() {
   return (
-    <Suspense fallback={null}>
-      <ComplianceRedirectPage />
-    </Suspense>
+    <ComplianceGate>
+      <Suspense fallback={null}>
+        <CompliancePage />
+      </Suspense>
+    </ComplianceGate>
   );
 }

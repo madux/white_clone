@@ -1,3 +1,9 @@
+import {
+  clearSessionFormDraft,
+  readSessionFormDraft,
+  writeSessionFormDraft,
+} from "./sessionFormDraft";
+
 export type DocumentUploadDraft = {
   files: File[];
   typeIds: string[];
@@ -7,16 +13,23 @@ export type DocumentUploadDraft = {
   bulkTypeId: string;
 };
 
-const drafts = new Map<string, DocumentUploadDraft>();
+type PersistedDocumentUploadDraft = Omit<DocumentUploadDraft, "files">;
+
+function storageId(key: string) {
+  return `upload/${key}`;
+}
 
 export function readDocumentUploadDraft(key: string): DocumentUploadDraft | undefined {
-  return drafts.get(key);
+  const saved = readSessionFormDraft<PersistedDocumentUploadDraft>(storageId(key));
+  if (!saved) return undefined;
+  return { ...saved, files: [] };
 }
 
 export function writeDocumentUploadDraft(key: string, draft: DocumentUploadDraft) {
-  drafts.set(key, draft);
+  const { files: _files, ...persisted } = draft;
+  writeSessionFormDraft(storageId(key), persisted);
 }
 
 export function clearDocumentUploadDraft(key: string) {
-  drafts.delete(key);
+  clearSessionFormDraft(storageId(key));
 }

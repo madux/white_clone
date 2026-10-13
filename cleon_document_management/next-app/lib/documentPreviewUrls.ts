@@ -8,14 +8,22 @@ export function odooAppOrigin(): string {
 
 export function documentPreviewUrl(
   documentId: number,
-  options?: { variant?: "default" | "current" | "pending" },
+  options?: {
+    variant?: "default" | "current" | "pending";
+    auditSource?: string;
+  },
 ): string {
   const base = `${odooAppOrigin()}/document-management/document/${documentId}/preview`;
+  const params = new URLSearchParams();
   const variant = options?.variant;
   if (variant && variant !== "default") {
-    return `${base}?variant=${variant}`;
+    params.set("variant", variant);
   }
-  return base;
+  if (options?.auditSource) {
+    params.set("audit_source", options.auditSource);
+  }
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
 }
 
 export function documentVersionPreviewUrl(versionId: number): string {

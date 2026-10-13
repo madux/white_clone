@@ -13,7 +13,6 @@ from odoo.addons.cleon_document_management.controllers.document_actions import (
 )
 from odoo.addons.cleon_document_management.controllers.document_automation_api import (
     LIBRARY_ORGANIZATIONAL,
-    automation_hub_for_library,
     handle_document_automation,
 )
 from odoo.addons.cleon_document_management.models import organizational_openrouter
@@ -1636,6 +1635,63 @@ class OrganizationalFilesController(http.Controller):
         }
 
     @http.route(
+        "/api/organizational/documents-index",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def documents_index(self, **kwargs):
+        perm = self._perm()
+        user = request.env.user
+        perm.require_org_library(user)
+        search = (kwargs.get("search") or kwargs.get("query") or "").strip()
+        limit = max(1, min(int(kwargs.get("limit") or 500), 1000))
+        offset = max(0, int(kwargs.get("offset") or 0))
+        domain = [
+            ("folder_id.folder_type", "=", "organizational"),
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("folder_id.active", "=", True),
+            ("folder_id.deleted_at", "=", False),
+            ("folder_id.distribution_status", "=", "active"),
+        ]
+        if search:
+            domain = expression.AND(
+                [
+                    domain,
+                    [
+                        "|",
+                        "|",
+                        ("name", "ilike", search),
+                        ("document_type_id.name", "ilike", search),
+                        ("folder_id.folder_name", "ilike", search),
+                    ],
+                ]
+            )
+        Document = request.env["doc.document"]
+        documents = Document.search(domain, order="write_date desc")
+        visible = documents.filtered(
+            lambda document: document.folder_id._user_can_access(user)
+            and document._organizational_user_can_access(user)
+        )
+        page = visible[offset : offset + limit]
+        return {
+            "success": True,
+            "data": {
+                "items": [
+                    document.serialize_for_api(
+                        user,
+                        favorite=user in document.favorite_user_ids,
+                        pinned=user in document.pinned_user_ids,
+                    )
+                    for document in page
+                ],
+                "total_count": len(visible),
+            },
+        }
+
+    @http.route(
         "/api/organizational/search",
         type="json",
         auth="user",
@@ -1712,20 +1768,6 @@ class OrganizationalFilesController(http.Controller):
                 "total_count": Assignment.search_count(domain),
             },
         }
-
-    @http.route(
-        "/api/organizational/automation-hub",
-        type="json",
-        auth="user",
-        methods=["POST"],
-        csrf=False,
-    )
-    def automation_hub(self, **kwargs):
-        return automation_hub_for_library(
-            request.env,
-            request.env.user,
-            LIBRARY_ORGANIZATIONAL,
-        )
 
     @http.route(
         "/api/organizational/audit-export",

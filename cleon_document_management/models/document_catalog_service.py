@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
 
-# Global Master Spec V2 — suggested categories & types (appendix + Payroll UI).
+# Default document categories and types shipped with CleonHR Document Management.
 DEFAULT_CATALOG = [
     {
         "code": "identification_documents",
@@ -217,15 +217,25 @@ class DocDocumentCatalogService(models.AbstractModel):
     _description = "Default document category & type catalogue"
 
     @api.model
+    def _company(self, company=None):
+        return company or self.env.company
+
+    @api.model
+    def category_domain(self, company=None):
+        company = self._company(company)
+        return [("company_id", "=", company.id)]
+
+    @api.model
     def ensure_default_catalog(self, company=None):
-        """Seed the global catalogue once (shared across companies)."""
+        """Ensure the default category and type catalogue exists for this company."""
+        company = self._company(company)
         Category = self.env["doc.document.category"].sudo()
         Type = self.env["doc.document.type"].sudo()
         created_categories = 0
         created_types = 0
         for entry in DEFAULT_CATALOG:
             category = Category.search(
-                [("company_id", "=", False), ("code", "=", entry["code"])],
+                [("company_id", "=", company.id), ("code", "=", entry["code"])],
                 limit=1,
             )
             if not category:
@@ -236,7 +246,7 @@ class DocDocumentCatalogService(models.AbstractModel):
                         "description": entry.get("description") or "",
                         "sequence": entry.get("sequence", 10),
                         "is_catalog_default": True,
-                        "company_id": False,
+                        "company_id": company.id,
                         "active": True,
                     }
                 )
@@ -253,7 +263,7 @@ class DocDocumentCatalogService(models.AbstractModel):
                     continue
                 Type.create(self._type_values(category, type_def))
                 created_types += 1
-        self._link_orphan_types()
+        self._link_orphan_types(company)
         return {
             "categories_created": created_categories,
             "types_created": created_types,
@@ -271,7 +281,9 @@ class DocDocumentCatalogService(models.AbstractModel):
             "enable_versioning": True,
             "expiry_applicable": expires,
             "expires_rule": "yes" if expires else "no",
-            "require_issue_date": bool(type_def.get("require_issue_date")) if expires else False,
+            "require_issue_date": bool(type_def.get("require_issue_date"))
+            if expires
+            else False,
             "expiry_reminder_days": int(type_def.get("expiry_reminder_days") or 60),
             "require_upload_approval": False,
         }
@@ -284,14 +296,17 @@ class DocDocumentCatalogService(models.AbstractModel):
         return "other"
 
     @api.model
-    def _link_orphan_types(self):
+    def _link_orphan_types(self, company=None):
+        company = self._company(company)
         Category = self.env["doc.document.category"].sudo()
         Type = self.env["doc.document.type"].sudo()
         categories_by_code = {
             item.code: item
-            for item in Category.search([("company_id", "=", False)])
+            for item in Category.search([("company_id", "=", company.id)])
         }
         other = categories_by_code.get("other_documents")
+        if not categories_by_code:
+            return
         for document_type in Type.search([("category_id", "=", False)]):
             code = LEGACY_SELECTION_TO_CATEGORY_CODE.get(
                 document_type.category or "other", "other_documents"
@@ -302,4 +317,25 @@ class DocDocumentCatalogService(models.AbstractModel):
 
     @api.model
     def ensure_all_companies(self):
-        return self.ensure_default_catalog()
+        totals = {"categories_created": 0, "types_created": 0}
+        for company in self.env["res.company"].sudo().search([]):
+            result = self.ensure_default_catalog(company)
+            totals["categories_created"] += result["categories_created"]
+            totals["types_created"] += result["types_created"]
+        return totals
+
+    @api.model
+    def migrate_legacy_global_catalog_to_companies(self):
+        """One-time: copy missing per-company rows when only company_id=False data exists."""
+        Category = self.env["doc.document.category"].sudo()
+        legacy = Category.search([("company_id", "=", False)])
+        if not legacy:
+            return {"migrated": False}
+        for company in self.env["res.company"].sudo().search([]):
+            has_company_catalog = Category.search_count(
+                [("company_id", "=", company.id), ("is_catalog_default", "=", True)]
+            )
+            if has_company_catalog >= len(DEFAULT_CATALOG):
+                continue
+            self.ensure_default_catalog(company)
+        return {"migrated": True}

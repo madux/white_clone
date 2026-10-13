@@ -339,7 +339,7 @@ export default function DocumentTypeFormDialog({
   return (
     <ModalDialog
       title={isEdit ? "Edit document type" : "Add document type"}
-      description="Category and type catalogue (global spec): expiry metadata only. Approval and retention live under Settings tabs."
+      description="Set expiry and metadata for this document type. Approval and retention are configured under Settings."
       onClose={onClose}
       size="lg"
       zIndex={zIndex}

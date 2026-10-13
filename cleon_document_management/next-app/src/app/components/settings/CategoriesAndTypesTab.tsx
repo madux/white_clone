@@ -3,6 +3,7 @@
 import { ChevronRight, FolderOpen, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import AppToolbar from "../AppToolbar";
+import { SettingsFieldHelp } from "../EmployeeFilesOrganizingDimensionsSettings";
 import EmptyState from "../EmptyState";
 import StatusPill from "../StatusPill";
 import ListPagination from "../ListPagination";
@@ -31,6 +32,8 @@ type DocumentCategory = {
   active?: boolean;
   is_catalog_default?: boolean;
 };
+
+const CATALOG_PAGE_SIZE = 5;
 
 export default function CategoriesAndTypesTab() {
   const query = useSettings();
@@ -78,6 +81,12 @@ export default function CategoriesAndTypesTab() {
     });
   }, [categories, search, types]);
 
+  const categoryPaging = useClientPagination(
+    filteredCategories,
+    `categories:${search}:${filteredCategories.length}`,
+    CATALOG_PAGE_SIZE,
+  );
+
   const selectedCategory =
     categories.find((item) => item.id === selectedCategoryId) ?? null;
 
@@ -92,7 +101,8 @@ export default function CategoriesAndTypesTab() {
 
   const typePaging = useClientPagination(
     categoryTypes,
-    `${selectedCategoryId}:${categoryTypes.length}`,
+    `types:${selectedCategoryId}:${categoryTypes.length}`,
+    CATALOG_PAGE_SIZE,
   );
 
   const openTypeForm = (item?: Record<string, unknown>) => {
@@ -155,16 +165,16 @@ export default function CategoriesAndTypesTab() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-600">
-        Category → document type catalogue used across Employee Files,
-        Organisational Files, Compliance, and Document Intelligence. Default
-        categories and types from the product spec are created automatically.
-      </p>
-
       <AppToolbar
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder="Search categories and types"
+        leading={
+          <SettingsFieldHelp
+            label="Categories and types"
+            text="Categories group document types used across Employee Files, Organisational Files, Compliance, and Document Intelligence. Standard categories and types are created for your organisation automatically; add or edit them here as needed."
+          />
+        }
         actions={
           <button
             type="button"
@@ -187,8 +197,9 @@ export default function CategoriesAndTypesTab() {
               description="Default catalogue will appear after module upgrade."
             />
           ) : (
+            <>
             <ul className="flex flex-col gap-2">
-              {filteredCategories.map((category) => {
+              {categoryPaging.items.map((category) => {
                 const active = category.id === selectedCategoryId;
                 const count =
                   category.type_count ??
@@ -237,10 +248,17 @@ export default function CategoriesAndTypesTab() {
                 );
               })}
             </ul>
+            <ListPagination
+              page={categoryPaging.page}
+              pageSize={categoryPaging.pageSize}
+              total={categoryPaging.total}
+              onPageChange={categoryPaging.setPage}
+            />
+            </>
           )}
         </section>
 
-        <section className="app-table-well app-page-body min-h-[320px]">
+        <section className="app-table-well app-page-body min-h-[320px] rounded-xl">
           {!selectedCategory ? (
             <EmptyState
               title="Select a category"
@@ -248,9 +266,9 @@ export default function CategoriesAndTypesTab() {
             />
           ) : (
             <>
-              <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">
+              <div className="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-slate-100 pb-5">
+                <div className="min-w-0">
+                  <h3 className="text-lg font-bold text-slate-900">
                     {selectedCategory.name}
                   </h3>
                   {selectedCategory.description ? (
@@ -258,11 +276,14 @@ export default function CategoriesAndTypesTab() {
                       {selectedCategory.description}
                     </p>
                   ) : null}
+                  <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+                    Document types
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => openTypeForm()}
-                  className="app-btn app-btn-primary"
+                  className="app-btn app-btn-secondary shrink-0"
                 >
                   <Plus className="h-4 w-4" /> Add type
                 </button>
@@ -276,7 +297,7 @@ export default function CategoriesAndTypesTab() {
                     <button
                       type="button"
                       onClick={() => openTypeForm()}
-                      className="app-btn app-btn-primary"
+                      className="app-btn app-btn-secondary"
                     >
                       Add type
                     </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Trash2, Workflow } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   documentAutomations,
@@ -242,8 +242,7 @@ export default function AutomationRuleEditor({
           <div className="flex flex-wrap justify-between gap-2">
             <Button
               type="button"
-              variant="outline"
-              className="text-red-600 hover:text-red-700"
+              variant="destructive"
               onClick={() => void deleteRule()}
             >
               <Trash2 className="mr-1 h-4 w-4" aria-hidden />
@@ -271,11 +270,8 @@ export default function AutomationRuleEditor({
         </p>
       ) : (
         <div className="space-y-6">
-          <section className="rounded-xl border border-pink-100 bg-pink-50/40 p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <Workflow className="h-4 w-4 text-brand-pink" aria-hidden />
-              <h3 className="text-sm font-semibold text-slate-900">Configuration</h3>
-            </div>
+          <section className="rounded-lg border border-border bg-muted/20 p-4">
+            <h3 className="mb-3 text-sm font-semibold text-slate-900">Configuration</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5 text-sm sm:col-span-2">
                 <span className="font-medium text-slate-700">Rule name</span>

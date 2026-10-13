@@ -2,8 +2,7 @@
 
 import { Eye, FileText, Pencil, Play, Power, PowerOff, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
-import ComplianceRequestScheduleFields from "./ComplianceRequestScheduleFields";
-import ComplianceRequestTaskList from "./ComplianceRequestTaskList";
+import ComplianceRequestRequirementsSection from "./ComplianceRequestRequirementsSection";
 import {
   useDeletePolicy,
   useDocumentTypes,
@@ -15,6 +14,7 @@ import {
 import { api } from "../../../lib/api";
 import { canImportDocumentAsPolicy } from "../../../lib/policyDocumentName";
 import { useAppDialog } from "../../../hooks/useAppDialog";
+import { useComplianceRunToast } from "../../../hooks/useComplianceRunToast";
 import ModalDialog from "./ModalDialog";
 import ComplianceRuleSourceUploadModal from "./ComplianceRuleSourceUploadModal";
 import ComplianceDocumentTypeMultiSelect from "./ComplianceDocumentTypeMultiSelect";
@@ -42,6 +42,7 @@ import type { DocumentType } from "../../../lib/types";
 import ComplianceRetentionFields from "./ComplianceRetentionFields";
 import ComplianceReviewScheduleFields from "./ComplianceReviewScheduleFields";
 import ComplianceVerificationFields from "./ComplianceVerificationFields";
+import { policyTypeUsesVerification } from "../../../lib/verificationPolicy";
 import {
   REVIEW_COMPLETION_LABELS,
   REVIEW_REVIEWER_LABELS,
@@ -90,6 +91,7 @@ export default function ComplianceRuleActions({
   const documentTypes = useDocumentTypes();
   const policies = usePolicies();
   const { showAlert, showConfirm } = useAppDialog();
+  const { runPolicyEvaluation } = useComplianceRunToast();
   const [form, setForm] = useState({
     name: policy.name,
     description: policy.description || "",
@@ -262,8 +264,12 @@ export default function ComplianceRuleActions({
         review_completion_minimum: form.review_completion_minimum,
         review_overdue_mode: form.review_overdue_mode,
         review_milestones: form.review_milestones,
-        verified_by: form.verified_by,
-        verification_sla_days: form.verification_sla_days,
+        ...(policyTypeUsesVerification(typeCode)
+          ? {
+              verified_by: form.verified_by,
+              verification_sla_days: form.verification_sla_days,
+            }
+          : {}),
       });
     } catch (error: any) {
       setError(error?.message || "Failed to save rule.");
@@ -272,10 +278,7 @@ export default function ComplianceRuleActions({
     setMode(null);
   };
   const run = async () => {
-    const result = await evaluate.mutateAsync(policy.id);
-    await showAlert(result.message || "Rule check completed.", {
-      title: "Rule check",
-    });
+    await runPolicyEvaluation(policy.name, () => evaluate.mutateAsync(policy.id));
   };
   const toggleActive = async () => {
     const nextActive = !policy.active;
@@ -806,72 +809,30 @@ export default function ComplianceRuleActions({
                 )}
 
                 {typeCode === "compliance_request" && (
-                  <>
-                    <ComplianceRequestTaskList
-                      tasks={form.request_tasks}
-                      onChange={(request_tasks) =>
-                        setForm({ ...form, request_tasks })
-                      }
-                      documentTypes={allDocumentTypes}
-                      linkableContext={{
-                        policyId: policy.id,
-                        applies_to: form.applies_to,
-                        scope: form.scope,
-                      }}
-                      forms={formTemplates}
-                    />
-                    <ComplianceRequestScheduleFields
-                      schedule={{
-                        request_trigger: form.request_trigger,
-                        request_start_date: form.request_start_date,
-                        repeat_every_months: form.repeat_every_months,
-                        tasks_needed_mode: form.tasks_needed_mode,
-                        tasks_needed_minimum: form.tasks_needed_minimum,
-                        reopen_on_content_change: form.reopen_on_content_change,
-                      }}
-                      onChange={(schedule) => setForm({ ...form, ...schedule })}
-                      dueDays={form.due_days}
-                      gracePeriodDays={form.grace_period_days}
-                      reminderDays={form.reminder_frequency_days}
-                      onDueDaysChange={(due_days) =>
-                        setForm({ ...form, due_days })
-                      }
-                      onGraceChange={(grace_period_days) =>
-                        setForm({ ...form, grace_period_days })
-                      }
-                      onReminderChange={(reminder_frequency_days) =>
-                        setForm({ ...form, reminder_frequency_days })
-                      }
-                    />
-                    <label className="sm:col-span-2">
-                      <span className="label">Who follows up?</span>
-                      <ThemedSelect
-                        value={String(form.assigned_reviewer_id || "")}
-                        onChange={(val) =>
-                          setForm({ ...form, assigned_reviewer_id: val })
-                        }
-                        placeholder="Select HR contact"
-                        options={(targets?.users || []).map((u: any) => ({
-                          value: String(u.id),
-                          label: u.name,
-                        }))}
-                      />
-                    </label>
-                  </>
+                  <ComplianceRequestRequirementsSection
+                    form={form as PolicyCreateFormState}
+                    setForm={setForm as (next: PolicyCreateFormState) => void}
+                    documentTypes={allDocumentTypes}
+                    linkableContext={{
+                      policyId: policy.id,
+                      applies_to: form.applies_to,
+                      scope: form.scope,
+                    }}
+                    forms={formTemplates}
+                    targets={targets}
+                  />
                 )}
 
                 {typeCode === "retention" ? (
                   <ComplianceRetentionFields form={form as any} setForm={setForm as any} />
                 ) : null}
 
-                {typeCode !== "review_schedule" ? (
-                  <ComplianceVerificationFields
-                    form={form as PolicyCreateFormState}
-                    setForm={setForm as (next: PolicyCreateFormState) => void}
-                    typeCode={typeCode}
-                    documentTypes={allDocumentTypes}
-                  />
-                ) : null}
+                <ComplianceVerificationFields
+                  form={form as PolicyCreateFormState}
+                  setForm={setForm as (next: PolicyCreateFormState) => void}
+                  typeCode={typeCode}
+                  documentTypes={allDocumentTypes}
+                />
 
                 {typeCode === "review_schedule" ? (
                   <ComplianceReviewScheduleFields
@@ -901,7 +862,6 @@ export default function ComplianceRuleActions({
                   </div>
                 ) : null}
                 <div className="sm:col-span-2">
-                  <span className="label">Applies to</span>
                   <PolicyAudienceFilters
                     scope={form.scope}
                     targets={targets}

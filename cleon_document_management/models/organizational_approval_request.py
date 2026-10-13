@@ -40,6 +40,20 @@ class DocOrganizationalApprovalRequest(models.Model):
         index=True,
     )
     approver_id = fields.Many2one("res.users", ondelete="set null")
+    assigned_approver_ids = fields.Many2many(
+        "res.users",
+        "doc_org_approval_assigned_user_rel",
+        "request_id",
+        "user_id",
+        string="Assigned approvers",
+    )
+    fallback_approver_ids = fields.Many2many(
+        "res.users",
+        "doc_org_approval_fallback_user_rel",
+        "request_id",
+        "user_id",
+        string="Fallback approvers",
+    )
     delegated_from_id = fields.Many2one("res.users", ondelete="set null")
     decision_note = fields.Text()
     due_at = fields.Datetime(index=True)

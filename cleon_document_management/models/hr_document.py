@@ -577,6 +577,7 @@ class Document(models.Model):
                 Automation.search([("document_id", "in", self.ids)]).execute(
                     "document_rejected"
                 )
+                self.env["doc.compliance.policy"].sudo()._evaluate_documents(self)
             if {"name", "description", "folder_id"}.intersection(vals):
                 Automation.search([("document_id", "in", self.ids)]).execute(
                     "document_updated"
@@ -750,16 +751,22 @@ class Document(models.Model):
 
     def _create_version_snapshot(self, change_note=""):
         """Persist the current attachment as a version before replacing it."""
-        Version = self.env["doc.document.version"]
-        created = Version.browse()
+        created = self.env["doc.document.version"].browse()
         for document in self:
             if not document.attachment_id:
                 continue
+            if not self.env.su and not (
+                document._user_can_replace_file()
+                or document.pending_attachment_id
+            ):
+                raise AccessError(
+                    _("You do not have permission to version this document.")
+                )
             next_number = max(document.version_ids.mapped("version_number") or [0]) + 1
-            attachment_copy = document.attachment_id.copy(
+            attachment_copy = document.attachment_id.sudo().copy(
                 {"name": document.attachment_id.name}
             )
-            version = Version.create(
+            version = self.env["doc.document.version"].sudo().create(
                 {
                     "document_id": document.id,
                     "version_number": next_number,
@@ -769,7 +776,7 @@ class Document(models.Model):
                     "change_note": change_note,
                 }
             )
-            attachment_copy.write(
+            attachment_copy.sudo().write(
                 {"res_model": version._name, "res_id": version.id}
             )
             created |= version
@@ -819,12 +826,58 @@ class Document(models.Model):
     def _resolve_approval_requirements(self):
         """Return (require_approval, approvers, approval_flow) from global workflow settings."""
         self.ensure_one()
-        config = self.env["doc.approval.workflow.service"].get_upload_approval_config()
+        service = self.env["doc.approval.workflow.service"]
+        config = service.get_upload_approval_config()
+        require = bool(config["require_upload_approval"])
+        approvers = config["approvers"]
+        if require:
+            requester = self.env.user
+            approvers = service.get_upload_approvers_for_document(self, requester)
+            if not approvers:
+                approvers = service.resolve_fallback_users(requester)
+            if not approvers:
+                require = False
         return (
-            bool(config["require_upload_approval"]),
-            config["approvers"],
+            require,
+            approvers,
             config["approval_flow"] or "any",
         )
+
+    def action_request_upload_approval(self):
+        """Employee self-service: send a draft or rejected file for manager review."""
+        self.ensure_one()
+        if self.state not in ("draft", "rejected"):
+            raise UserError(
+                _("Only draft or rejected documents can be submitted for approval.")
+            )
+        if self.approval_ids.filtered(lambda approval: approval.state == "pending"):
+            raise UserError(_("This document is already waiting for approval."))
+
+        requester = self.employee_id.user_id or self.owner_id or self.env.user
+        service = self.env["doc.approval.workflow.service"]
+        approvers = service.get_upload_approvers_for_document(self, requester)
+        if not approvers:
+            approvers = service.resolve_fallback_users(requester)
+        if not approvers:
+            approvers = self.env.ref(
+                "cleon_document_management.group_document_admin"
+            ).users
+        approvers = approvers.filtered("active")
+        if not approvers:
+            raise UserError(
+                _("No document administrator is available to review this document.")
+            )
+        approvers = approvers.filtered(lambda user: user.id != requester.id)
+        if not approvers:
+            approvers = self.env.ref(
+                "cleon_document_management.group_document_admin"
+            ).users.filtered("active")
+        flow = (
+            self._get_effective_approval_flow()
+            if service.is_enabled()
+            else "any"
+        )
+        self._start_upload_approval(approvers, flow)
 
     def _start_upload_approval(self, approvers, approval_flow):
         self.ensure_one()
@@ -1007,6 +1060,9 @@ class Document(models.Model):
             "pending_attachment_id": attachment.id,
             "pending_change_note": change_note or _("Uploaded new version"),
             "name": filename or self.name,
+            "rejection_reason": False,
+            "review_decision_unread": False,
+            "last_review_decision": False,
         }
         if description is not None:
             pending_vals["pending_description"] = description
@@ -1083,7 +1139,16 @@ class Document(models.Model):
             write_vals["description"] = description
         if issue_date:
             write_vals["issue_date"] = issue_date
+        if self.state == "rejected" or self.approval_state == "rejected":
+            write_vals.update(
+                {
+                    "rejection_reason": False,
+                    "review_decision_unread": False,
+                    "last_review_decision": False,
+                }
+            )
         self.sudo().write(write_vals)
+        self._apply_upload_approval_workflow()
         self._log_organizational_audit(
             "replace",
             _("Uploaded new file version"),

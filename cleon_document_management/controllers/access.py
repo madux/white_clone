@@ -65,6 +65,19 @@ def user_can_access_workspace_activity(user, env=None):
     )
 
 
+def _tenant_modules():
+    return request.env["doc.dms.tenant.modules.service"]
+
+
+def tenant_module_enabled(module_key):
+    return _tenant_modules().module_enabled(module_key)
+
+
+def require_tenant_module(module_key):
+    if not tenant_module_enabled(module_key):
+        raise AccessError(_("This module is not enabled for your organization."))
+
+
 def require_document_manager():
     if not user_is_document_manager(request.env.user):
         raise AccessError(_("Employee Files access is required."))
@@ -135,6 +148,7 @@ def settings_panel_access_message():
 
 
 def require_compliance_manage():
+    require_tenant_module("compliance")
     user = request.env.user
     if not (
         _dms().user_has_dms_permission(user, "compliance_manage_policies")
@@ -144,6 +158,7 @@ def require_compliance_manage():
 
 
 def require_compliance_view():
+    require_tenant_module("compliance")
     user = request.env.user
     if not (
         _dms().user_has_dms_permission(user, "compliance_view")
@@ -152,7 +167,25 @@ def require_compliance_view():
         raise AccessError(_("Compliance access is required."))
 
 
+def user_can_list_full_compliance_targets(user, env=None):
+    """Company-wide audience lists for compliance policy scope pickers."""
+    env = env or getattr(user, "env", None) or request.env
+    dms = _dms(env)
+    if dms.user_is_odoo_break_glass_admin(user):
+        return True
+    if user.has_group(GROUP_DOCUMENT_MANAGER) or user.has_group(GROUP_DOCUMENT_ADMIN):
+        return True
+    if dms.user_has_dms_permission(user, "compliance_manage_policies"):
+        return True
+    if dms.user_has_dms_permission(user, "compliance_manage_exceptions"):
+        return True
+    if dms.user_has_dms_permission(user, "manage_org_tenant_config"):
+        return True
+    return False
+
+
 def require_compliance_export():
+    require_tenant_module("compliance")
     user = request.env.user
     if not (
         _dms().user_has_dms_permission(user, "compliance_export")
@@ -162,6 +195,7 @@ def require_compliance_export():
 
 
 def require_compliance_run():
+    require_tenant_module("compliance")
     user = request.env.user
     if not (
         _dms().user_has_dms_permission(user, "compliance_run_evaluations")

@@ -88,6 +88,15 @@ export function useDocuments(
   });
 }
 
+export function useOrganizationalDocumentsIndex(search: string, enabled = true) {
+  const term = search.trim();
+  return useQuery({
+    queryKey: ["organizational-documents-index", term],
+    queryFn: () => api.listOrganizationalDocumentsIndex({ search: term || undefined }),
+    enabled,
+  });
+}
+
 export function useMyDocuments() {
   return useQuery({
     queryKey: ["documents", "mine"],
@@ -123,6 +132,7 @@ export function useMyCompliance() {
   return useQuery({
     queryKey: QUERY_KEYS.myCompliance,
     queryFn: () => api.getMyCompliance().then((result) => result.data),
+    retry: 1,
   });
 }
 

@@ -90,6 +90,11 @@ const employeeArea: DmsPermissionArea = {
           description: "Add new files or replace existing versions.",
         },
         {
+          key: "ef_upload_without_approval",
+          label: "Upload without approval",
+          description: "Upload without entering the approval queue when workflow is on.",
+        },
+        {
           key: "ef_download",
           label: "Download",
           description: "Download copies of files within scope.",

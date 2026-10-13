@@ -8,6 +8,7 @@ import { ToastProvider } from "../../hooks/useToast";
 import { AppDialogProvider } from "../../hooks/useAppDialog";
 import { FormWindowProvider } from "@/app/components/FormWindowProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import DmsLocaleBootstrap from "@/app/components/DmsLocaleBootstrap";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -30,6 +31,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             <AppDialogProvider>
               <FormWindowProvider>
                 <WorkspaceDelegationProvider>
+                  <DmsLocaleBootstrap />
                   <NavigationHistoryProvider>{children}</NavigationHistoryProvider>
                 </WorkspaceDelegationProvider>
               </FormWindowProvider>

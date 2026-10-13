@@ -9,6 +9,7 @@ from .dms_permission_catalog import (
     ORG_PERMISSION_KEYS,
     dms_permissions_from_api_payload,
     sync_legacy_fields_from_permissions,
+    validate_dms_permissions_map,
 )
 from .organizational_permission_catalog import CANONICAL_ORG_ROLE_TEMPLATE_KEYS as ORG_CANONICAL
 
@@ -88,6 +89,40 @@ class DocEmployeeFilesRoleService(models.AbstractModel):
         return vals
 
     @api.model
+    def _sync_role_lines(self, role, lines_payload):
+        if lines_payload is None:
+            return
+        Line = self.env["doc.employee.files.role.line"]
+        commands = [(5, 0, 0)]
+        for sequence, item in enumerate(lines_payload or []):
+            actions = item.get("actions") or {}
+            commands.append(
+                (
+                    0,
+                    0,
+                    {
+                        "sequence": (sequence + 1) * 10,
+                        "applies_all_categories": bool(
+                            item.get("applies_all_categories")
+                        ),
+                        "document_type_id": item.get("document_type_id") or False,
+                        "category_group": item.get("category_group") or False,
+                        "action_view": bool(actions.get("view")),
+                        "action_upload": bool(actions.get("upload")),
+                        "action_approve": bool(actions.get("approve")),
+                        "action_download": bool(actions.get("download")),
+                        "action_archive": bool(actions.get("archive")),
+                        "action_delete": bool(actions.get("delete")),
+                        "action_export": bool(actions.get("export")),
+                        "action_manage_settings": bool(
+                            actions.get("manage_settings")
+                        ),
+                    },
+                )
+            )
+        role.write({"line_ids": commands})
+
+    @api.model
     def _vals_from_custom_payload(self, payload):
         name = (payload.get("name") or "").strip()
         if not name:
@@ -96,6 +131,7 @@ class DocEmployeeFilesRoleService(models.AbstractModel):
         if scope not in ("own_team", "department", "all"):
             raise UserError(_("Select a valid employee scope."))
         dms_map = dms_permissions_from_api_payload(payload.get("dms_permissions") or {})
+        validate_dms_permissions_map(dms_map)
         vals = {
             "name": name,
             "description": payload.get("description") or "",
@@ -177,21 +213,48 @@ class DocEmployeeFilesRoleService(models.AbstractModel):
                 }
             )
             role = Role.with_context(allow_employee_files_role_create=True).create(vals)
+            self._sync_role_lines(role, payload.get("lines"))
+            emitter = self.env.get("doc.audit.emitter.service")
+            if emitter:
+                perms = dict(role.get_dms_permissions_dict())
+                changes = [
+                    {"field": key, "before": "", "after": str(value)}
+                    for key, value in perms.items()
+                    if value
+                ]
+                emitter.log_settings_changes(
+                    role,
+                    _("Users & Roles"),
+                    _("Settings → Users & Roles → %s") % role.name,
+                    changes,
+                    action="role_created",
+                )
             return role.serialize_for_api()
 
         role = Role.browse(int(role_id))
         if not role or role.company_id != self.env.company:
             raise UserError(_("Role not found."))
 
+        emitter = self.env.get("doc.audit.emitter.service")
         if self._is_canonical_role(role):
-            scope = payload.get("employee_scope") or role.employee_scope
-            if scope not in ("own_team", "department", "all"):
-                raise UserError(_("Select a valid employee scope."))
-            role.write({"employee_scope": scope})
-            return role.serialize_for_api()
+            raise UserError(
+                _("System roles are read-only. Clone this role to customise permissions.")
+            )
 
+        before_perms = dict(role.get_dms_permissions_dict())
         vals = self._vals_from_custom_payload(payload)
         role.write(vals)
+        self._sync_role_lines(role, payload.get("lines"))
+        if emitter:
+            after_perms = dict(role.get_dms_permissions_dict())
+            changes = emitter.diff_dict(before_perms, after_perms)
+            emitter.log_settings_changes(
+                role,
+                _("Users & Roles"),
+                _("Settings → Users & Roles → %s") % role.name,
+                changes,
+                action="role_permission_changed",
+            )
         return role.serialize_for_api()
 
     @api.model
@@ -211,8 +274,88 @@ class DocEmployeeFilesRoleService(models.AbstractModel):
             raise UserError(_("Role not found."))
         if self._is_canonical_role(role):
             raise UserError(_("Standard roles cannot be deleted."))
+        user_count = len(role.user_ids.filtered(lambda user: user.active))
+        if user_count:
+            raise UserError(
+                _("Move these %(count)s users to another role first.")
+                % {"count": user_count}
+            )
         role.unlink()
         return True
+
+    @api.model
+    def clone_role(self, role_id):
+        self._require_author()
+        Role = self._role_model()
+        source = Role.browse(int(role_id))
+        if not source or source.company_id != self.env.company:
+            raise UserError(_("Role not found."))
+        base_name = _("Copy of %s") % source.name
+        name = base_name
+        suffix = 2
+        while Role.search_count(
+            [("company_id", "=", self.env.company.id), ("name", "=", name)]
+        ):
+            name = "%s (%s)" % (base_name, suffix)
+            suffix += 1
+        perms = dict(source.get_dms_permissions_dict())
+        vals = {
+            "name": name,
+            "description": source.description or "",
+            "active": True,
+            "employee_scope": source.employee_scope,
+            "company_id": self.env.company.id,
+            "role_template_key": "custom",
+            "is_system_template": False,
+            "is_readonly_template": False,
+            **self._vals_from_dms_permissions(perms),
+        }
+        role = Role.with_context(allow_employee_files_role_create=True).create(vals)
+        line_commands = []
+        for line in source.line_ids:
+            line_commands.append(
+                (
+                    0,
+                    0,
+                    {
+                        "sequence": line.sequence,
+                        "applies_all_categories": line.applies_all_categories,
+                        "document_type_id": line.document_type_id.id,
+                        "category_group": line.category_group,
+                        "action_view": line.action_view,
+                        "action_upload": line.action_upload,
+                        "action_approve": line.action_approve,
+                        "action_download": line.action_download,
+                        "action_archive": line.action_archive,
+                        "action_delete": line.action_delete,
+                        "action_export": line.action_export,
+                        "action_manage_settings": line.action_manage_settings,
+                    },
+                )
+            )
+        if line_commands:
+            role.write({"line_ids": line_commands})
+        emitter = self.env.get("doc.audit.emitter.service")
+        if emitter:
+            emitter.section31(
+                "role_created",
+                role,
+                _("Cloned from %s") % source.name,
+                module="settings",
+            )
+        return role.serialize_for_api()
+
+    @api.model
+    def roles_editor_context(self):
+        self._require_author()
+        settings = self.env["doc.dms.settings.read.service"].build_payload()
+        modules = settings.get("modules") or {}
+        return {
+            "modules_enabled": modules,
+            "approval_workflow_active": bool(
+                (settings.get("approval_workflow") or {}).get("enabled")
+            ),
+        }
 
     @api.model
     def list_members(self, search="", limit=10, offset=0, page=None, page_size=None):
@@ -266,7 +409,27 @@ class DocEmployeeFilesRoleService(models.AbstractModel):
         roles = self._role_model().browse([int(rid) for rid in role_ids or []])
         assignable = self._search_assignable_roles()
         roles = roles.filtered(lambda role: role in assignable)
+        before_ids = set(user.employee_files_role_ids.ids)
+        after_ids = set(roles.ids)
         user.write({"employee_files_role_ids": [(6, 0, roles.ids)]})
+        emitter = self.env.get("doc.audit.emitter.service")
+        if emitter:
+            for role_id in after_ids - before_ids:
+                role = self._role_model().browse(role_id)
+                emitter.section31(
+                    "role_assigned",
+                    user,
+                    _("Assigned role %s") % role.name,
+                    module="settings",
+                )
+            for role_id in before_ids - after_ids:
+                role = self._role_model().browse(role_id)
+                emitter.section31(
+                    "role_removed",
+                    user,
+                    _("Removed role %s") % role.name,
+                    module="settings",
+                )
         employee = user.employee_id
         return self._serialize_member(
             employee if employee else self.env["hr.employee"],

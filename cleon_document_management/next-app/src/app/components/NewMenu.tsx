@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import AppChromePrimaryButton from "./AppChromePrimaryButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,12 +34,16 @@ export default function NewMenu({
   groups,
   label = "New",
   disabled,
+  chrome = false,
 }: {
   items?: NewMenuItem[];
   groups?: NewMenuGroup[];
   label?: string;
   disabled?: boolean;
+  /** Match global header search height and corner radius. */
+  chrome?: boolean;
 }) {
+  const TriggerButton = chrome ? AppChromePrimaryButton : Button;
   const grouped = groups?.filter((group) => group.items.length) ?? [];
   const flat = grouped.length
     ? grouped.flatMap((group) => group.items)
@@ -48,11 +53,12 @@ export default function NewMenu({
   if (enabled.length === 1 && enabled.length === flat.length && grouped.length <= 1) {
     const only = enabled[0];
     const Icon = only.icon ?? Plus;
+    const buttonLabel = label === "New" ? only.label : label;
     return (
-      <Button disabled={disabled} onClick={only.onSelect}>
-        <Icon data-icon="inline-start" />
-        {label}
-      </Button>
+      <TriggerButton disabled={disabled} onClick={only.onSelect}>
+        <Icon {...(chrome ? {} : { "data-icon": "inline-start" })} />
+        {buttonLabel}
+      </TriggerButton>
     );
   }
   return (
@@ -60,10 +66,10 @@ export default function NewMenu({
       <DropdownMenuTrigger
         disabled={disabled}
         render={
-          <Button>
-            <Plus data-icon="inline-start" />
+          <TriggerButton type="button">
+            <Plus {...(chrome ? {} : { "data-icon": "inline-start" })} />
             {label}
-          </Button>
+          </TriggerButton>
         }
       />
       <DropdownMenuContent align="end" className="min-w-56">

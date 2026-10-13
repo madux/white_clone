@@ -258,7 +258,7 @@ class CompliancePolicyVersioning(models.AbstractModel):
     def _sync_assignments_for_employee(self, employee, line_payload, requirement, document_type):
         self.ensure_one()
         version = self._ensure_current_version()
-        Assignment = self.env["doc.compliance.assignment"]
+        Assignment = self.env["doc.compliance.assignment"].sudo()
         assignment = Assignment.search(
             [
                 ("policy_id", "=", self.id),

@@ -1,12 +1,13 @@
 export const MY_WORKSPACE_PATH = "/pages/my-workspace";
 
-/** Global spec WS-01 primary tabs */
+/** My Workspace primary tabs */
 export type WorkspaceTabId =
   | "todo"
   | "documents"
   | "policies"
   | "requests"
-  | "activity";
+  | "activity"
+  | "sharing";
 
 /** Legacy tab ids mapped via redirects */
 export type LegacyWorkspaceTabId =
@@ -19,7 +20,9 @@ export type LegacyWorkspaceTabId =
   | "reviews"
   | "scheduled-reviews"
   | "team"
-  | "documents";
+  | "documents"
+  | "sharing"
+  | "remote-access";
 
 export const WORKSPACE_SPEC_TAB_IDS: WorkspaceTabId[] = [
   "todo",
@@ -27,6 +30,7 @@ export const WORKSPACE_SPEC_TAB_IDS: WorkspaceTabId[] = [
   "policies",
   "requests",
   "activity",
+  "sharing",
 ];
 
 export function isWorkspacePath(path: string) {
@@ -60,6 +64,8 @@ export function resolveWorkspaceTab(
       return "requests";
     case "activity":
       return "activity";
+    case "sharing":
+      return "sharing";
     case "review-queue":
     case "approvals":
     case "verifications":
@@ -77,7 +83,7 @@ export function resolveWorkspaceTab(
 }
 
 export function myWorkspaceHref(
-  tab: WorkspaceTabId | LegacyWorkspaceTabId,
+  tab: WorkspaceTabId | LegacyWorkspaceTabId | "remote-access",
   extra?: Record<string, string | undefined | null>,
 ) {
   const params = new URLSearchParams();
@@ -101,6 +107,8 @@ export function myWorkspaceHref(
   } else if (tab === "team") {
     params.set("tab", "todo");
     params.set("kind", "team");
+  } else if (tab === "sharing" || tab === "remote-access") {
+    params.set("tab", "sharing");
   } else {
     params.set("tab", tab);
   }
@@ -127,21 +135,26 @@ export function mapLegacyDocumentsParams(search: URLSearchParams) {
   } else if (tab === "quick-access") {
     next.set("tab", "documents");
     next.set("scope", "quick-access");
-  } else if (
-    tab === "shared" ||
-    tab === "files" ||
-    tab === "outstanding" ||
-    tab === "needs_ack"
-  ) {
+  } else if (tab === "remote-access" || tab === "sharing") {
+    next.set("tab", "sharing");
+  } else if (tab === "needs_ack") {
+    next.set("tab", "documents");
+    next.set("scope", "shared");
+    next.set("ack", "needs");
+  } else if (tab === "shared" || tab === "files" || tab === "outstanding") {
     next.set("tab", "documents");
     next.set("scope", tab);
+  } else if (search.get("scope") === "needs_ack") {
+    next.set("tab", "documents");
+    next.set("scope", "shared");
+    next.set("ack", "needs");
   } else if (search.get("scope")) {
     next.set("tab", "documents");
     next.set("scope", search.get("scope") || "");
   } else if (tab) {
     next.set("tab", tab);
   }
-  ["doc", "upload", "guide", "type", "lifecycle", "kind"].forEach((key) => {
+  ["doc", "upload", "guide", "type", "lifecycle", "kind", "ack"].forEach((key) => {
     const value = search.get(key);
     if (value) next.set(key, value);
   });

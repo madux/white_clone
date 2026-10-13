@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_dms_audit_export" model="ir.cron">
+        <field name="name">DMS: process audit export jobs</field>
+        <field name="model_id" ref="model_doc_audit_export_job"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_process_pending()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="numbercall">-1</field>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="ir_cron_dms_audit_integrity" model="ir.cron">
+        <field name="name">DMS: verify audit integrity chain</field>
+        <field name="model_id" ref="model_doc_audit_query_service"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_verify_integrity()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

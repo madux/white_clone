@@ -65,7 +65,7 @@ class ComplianceEngine(models.AbstractModel):
                 ("document_type_id", "=", document_type.id),
                 ("active", "=", True),
                 ("deleted_at", "=", False),
-                ("state", "in", ["approved", "signed", "pending"]),
+                ("state", "in", ["approved", "signed", "pending", "rejected"]),
             ],
             order="write_date desc",
         )
@@ -77,6 +77,8 @@ class ComplianceEngine(models.AbstractModel):
             if service.document_pending_verification(document):
                 return False
             return service.document_has_approved_verification(document)
+        if document.approval_state == "rejected" or document.state == "rejected":
+            return False
         workflow = self.env["doc.approval.workflow.service"].get_upload_approval_config()
         if not workflow["require_upload_approval"]:
             return True
@@ -85,8 +87,6 @@ class ComplianceEngine(models.AbstractModel):
             "signed",
         ):
             return True
-        if document.approval_state == "rejected":
-            return False
         return document.approval_state in ("pending", "submitted") or document.state == "pending"
 
     @api.model

@@ -48,6 +48,14 @@ class DocumentFolderDownloadController(http.Controller):
                     )
         output.seek(0)
         filename = f"{safe_filename(employee.name)}.zip"
+        emitter = request.env.get("doc.audit.emitter.service")
+        if emitter:
+            emitter.section31(
+                "export_report",
+                employee,
+                _("Employee files export"),
+                details="employee_id=%s" % employee_id,
+            )
         return request.make_response(
             output.getvalue(),
             headers=[
@@ -119,6 +127,13 @@ class DocumentFolderDownloadController(http.Controller):
         output.seek(0)
 
         filename = f"{safe_filename(folder.folder_name)}.zip"
+        emitter = request.env.get("doc.audit.emitter.service")
+        if emitter:
+            emitter.section31(
+                "export_report",
+                folder,
+                _("Folder export %s") % folder.folder_name,
+            )
 
         return request.make_response(
             output.getvalue(),

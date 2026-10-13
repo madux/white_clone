@@ -30,14 +30,6 @@ type SettingsTab =
   | "custom_groups"
   | "excluded_employees";
 
-function SectionHeading({ title }: { title: string }) {
-  return (
-    <h2 className="mb-1 text-base font-semibold tracking-tight text-[var(--ink)]">
-      {title}
-    </h2>
-  );
-}
-
 function SettingRow({
   label,
   help,
@@ -185,7 +177,6 @@ export default function EmployeeFilesSettingsPanel({
         >
           {config.data?.setup_complete ? (
             <section className="px-6 pt-5 pb-2">
-              <SectionHeading title="Organizing dimensions" />
               <EmployeeFilesOrganizingDimensionsSettings
                 organizingDimensions={values.organizing_dimensions ?? []}
                 subOrganizingDimension={values.sub_organizing_dimension ?? "none"}
@@ -200,7 +191,6 @@ export default function EmployeeFilesSettingsPanel({
           ) : null}
 
           <section className="px-6 pt-5 pb-2">
-            <SectionHeading title="People" />
             <SettingRow
               label="Inactive employees"
               help="Keep folders for people who have left."
@@ -243,7 +233,6 @@ export default function EmployeeFilesSettingsPanel({
 
           {!hideGlobalUploadRules ? (
             <section className="px-6 pt-5 pb-2">
-              <SectionHeading title="Uploads" />
               <SettingRow
                 label="Duplicates"
                 help="What happens if a similar file already exists."
@@ -330,7 +319,6 @@ export default function EmployeeFilesSettingsPanel({
             </section>
           ) : (
             <section className="px-6 pt-5 pb-2">
-              <SectionHeading title="Display" />
               <SettingRow
                 label="Folder names"
                 help="Show the full name or the code."

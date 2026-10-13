@@ -1,7 +1,8 @@
 "use client";
 
-import RemoteAccessPage from "@/app/components/RemoteAccessPage";
+import QueryRedirect from "@/app/components/QueryRedirect";
+import { myWorkspaceHref } from "../../../../lib/workspaceRoutes";
 
 export default function RemoteAccessRoute() {
-  return <RemoteAccessPage />;
+  return <QueryRedirect href={() => myWorkspaceHref("sharing")} />;
 }

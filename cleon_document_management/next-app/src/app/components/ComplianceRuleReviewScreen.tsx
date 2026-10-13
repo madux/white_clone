@@ -5,7 +5,11 @@ import { formatFieldLabel } from "../../../lib/formatLabel";
 import type { PolicyCreateFormState, PolicyReviewMeta } from "../../../lib/policyCreateForm";
 import { validatePolicyCreateForm } from "../../../lib/policyCreateValidation";
 import type { DocumentType } from "../../../lib/types";
-import { VERIFIED_BY_LABELS, approverHandoffTypes } from "../../../lib/verificationPolicy";
+import {
+  VERIFIED_BY_LABELS,
+  approverHandoffTypes,
+  policyTypeUsesVerification,
+} from "../../../lib/verificationPolicy";
 import ApproverHandoffNotice from "./ApproverHandoffNotice";
 
 type ComplianceRuleReviewScreenProps = {
@@ -160,19 +164,21 @@ export default function ComplianceRuleReviewScreen({
             />
           </>
         )}
-        {typeCode !== "review_schedule" ? (
+        {policyTypeUsesVerification(typeCode) ? (
           <ReviewRow
             label="Verified by"
             value={`${VERIFIED_BY_LABELS[form.verified_by] || VERIFIED_BY_LABELS.hr_admin} · ${form.verification_sla_days} day SLA`}
           />
         ) : null}
       </dl>
-      <ApproverHandoffNotice
-        types={handoffTypes}
-        verifiedBy={form.verified_by}
-        entityName={entityName}
-        className="mt-3"
-      />
+      {policyTypeUsesVerification(typeCode) ? (
+        <ApproverHandoffNotice
+          types={handoffTypes}
+          verifiedBy={form.verified_by}
+          entityName={entityName}
+          className="mt-3"
+        />
+      ) : null}
       {validation.warnings.length ? (
         <ul className="mt-3 space-y-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           {validation.warnings.map((warning) => (

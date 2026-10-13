@@ -100,6 +100,10 @@ class DocEmployeeFilesRoleLine(models.Model):
                     raise ValidationError(
                         _("View must be enabled before other actions on a category row.")
                     )
+            if line.action_delete and not line.action_upload:
+                raise ValidationError(
+                    _("Delete needs Edit (upload) on the same category row.")
+                )
 
     def write(self, vals):
         if vals.get("action_view") is False:

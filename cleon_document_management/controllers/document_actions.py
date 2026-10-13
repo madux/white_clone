@@ -574,11 +574,25 @@ class DocumentActions(http.Controller):
                 )
             except UserError as error:
                 return {"success": False, "message": error.args[0]}
+            emitter = request.env.get("doc.audit.emitter.service")
+            if emitter:
+                emitter.section31(
+                    "document_copied",
+                    copy,
+                    copy.name,
+                )
             return {
                 "success": True,
                 "data": copy.serialize_for_api(request.env.user),
             }
         elif action == "print":
+            emitter = request.env.get("doc.audit.emitter.service")
+            if emitter:
+                emitter.section31(
+                    "document_printed",
+                    document,
+                    document.name,
+                )
             return {
                 "success": True,
                 "data": {

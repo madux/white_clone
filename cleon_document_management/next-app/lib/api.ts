@@ -602,12 +602,16 @@ export const api = {
       message?: string;
     }>("/api/check-upload-conflicts", payload),
 
-  requestDocumentApproval: (id: number) => {
-    return rpc<{
+  requestDocumentApproval: async (id: number) => {
+    const result = await rpc<{
       success: boolean;
       data: { id: number; state: string; approval_state: string };
       message?: string;
     }>("/api/my-documents/request-approval", { id });
+    if (result?.success === false) {
+      throw new Error(result.message || "Could not submit for approval.");
+    }
+    return result;
   },
 
   updateDocument: (payload: { id: number; [key: string]: any }) =>
@@ -984,13 +988,6 @@ export const api = {
       data: { items: Record<string, unknown>[]; total_count: number };
     }>("/api/organizational/policy-assignments", payload),
 
-  organizationalAutomationHub: () =>
-    rpc<{
-      success: boolean;
-      message?: string;
-      data: { items: Record<string, unknown>[] };
-    }>("/api/organizational/automation-hub", {}),
-
   organizationalAuditExport: (payload: {
     res_model: string;
     res_id: number;
@@ -1355,10 +1352,48 @@ export const api = {
     }),
 
   evaluatePolicy: (policyId: number) =>
-    rpc<{ success: boolean; data: any[]; run?: any; message?: string }>(
-      `/api/compliance/policies/${policyId}/evaluate`,
-      {},
-    ).then(unwrapCompliance),
+    rpc<{
+      success: boolean;
+      async?: boolean;
+      run_id?: number;
+      data?: any[];
+      run?: {
+        id: number;
+        state?: string;
+        progress_total?: number;
+        progress_done?: number;
+        progress_percent?: number;
+        progress_message?: string;
+        error_message?: string;
+      };
+      message?: string;
+    }>(`/api/compliance/policies/${policyId}/evaluate`, {}).then(unwrapCompliance),
+
+  getComplianceRunProgress: (runId: number) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: {
+        id: number;
+        state: string;
+        progress_total: number;
+        progress_done: number;
+        progress_percent: number;
+        progress_message: string;
+        error_message?: string;
+        policy_id: number;
+        policy: string;
+        employee_count?: number;
+        compliant_count?: number;
+        non_compliant_count?: number;
+        partial_count?: number;
+      };
+    }>(`/api/compliance/runs/${runId}/progress`, {})
+      .then(unwrapCompliance)
+      .then((result) => ({
+        ...result.data,
+        message: result.message,
+      })),
 
   complianceRunPreflight: (policyId: number) =>
     rpc<{
@@ -1648,6 +1683,23 @@ export const api = {
       role_id: roleId,
     }),
 
+  cloneEmployeeFilesRole: (roleId: number) =>
+    rpc<{ success: boolean; data: import("./types").EmployeeFilesRole }>(
+      "/api/employee-files/roles/clone",
+      { role_id: roleId },
+    ).then((result) => result.data),
+
+  getEmployeeFilesRoleEditorContext: () =>
+    rpc<{ success: boolean; data: import("./types").RoleEditorContext }>(
+      "/api/employee-files/roles/editor-context",
+    ).then((result) => result.data),
+
+  getEffectivePermissions: (userId: number) =>
+    rpc<{ success: boolean; data: import("./types").EffectivePermissionsDetail }>(
+      "/api/employee-files/roles/effective-permissions",
+      { user_id: userId },
+    ).then((result) => result.data),
+
   getEmployeeFilesRoleMembers: (search = "", page = 1, pageSize = 10) =>
     rpc<{ success: boolean; data: import("./types").EmployeeFilesRoleMembersPayload }>(
       "/api/employee-files/roles/members",
@@ -1767,6 +1819,12 @@ export const api = {
         storage: { used_bytes: number; quota_bytes: number; quota_gb: number };
       };
     }>("/api/organizational/library-home", {}).then((result) => result.data),
+
+  listOrganizationalDocumentsIndex: (payload: { search?: string; limit?: number }) =>
+    rpc<{
+      success: boolean;
+      data: { items: import("./types").DocDocument[]; total_count: number };
+    }>("/api/organizational/documents-index", payload).then((result) => result.data),
 
   listOrganizationalRetentionReview: () =>
     rpc<{ success: boolean; data: import("./types").DocDocument[] }>(

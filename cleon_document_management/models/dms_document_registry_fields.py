@@ -14,7 +14,8 @@ class DocDocumentRegistryFields(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        records._sync_registry_metadata()
+        if not self.env.context.get("skip_registry_sync"):
+            records._sync_registry_metadata()
         return records
 
     def write(self, vals):

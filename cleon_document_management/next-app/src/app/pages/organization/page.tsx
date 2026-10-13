@@ -1,4 +1,4 @@
-import DocumentListPage from "@/app/components/DocumentListPage";
+import OrganizationalFilesPage from "@/app/components/OrganizationalFilesPage";
 import OrganizationalLibraryGate from "@/app/components/OrganizationalLibraryGate";
 import { Suspense } from "react";
 
@@ -6,7 +6,7 @@ export default function OrganizationFilesPage() {
   return (
     <OrganizationalLibraryGate>
       <Suspense fallback={null}>
-        <DocumentListPage kind="organization" />
+        <OrganizationalFilesPage />
       </Suspense>
     </OrganizationalLibraryGate>
   );

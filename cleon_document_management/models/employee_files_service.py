@@ -1027,6 +1027,16 @@ class DocEmployeeFilesService(models.AbstractModel):
             self._resolve_integration_failed_issues(
                 employee, config.company_id.id
             )
+        emitter = self.env.get("doc.audit.emitter.service")
+        if emitter and employee_file:
+            if linked or attention:
+                emitter.section31(
+                    "ef_ingestion_succeeded" if linked else "ef_ingestion_failed",
+                    employee_file,
+                    _("Ingested %s document(s), %s issue(s)") % (linked, attention),
+                    module="employee_files",
+                    result="success" if linked and not attention else "failed",
+                )
         return linked, attention
 
     @api.model

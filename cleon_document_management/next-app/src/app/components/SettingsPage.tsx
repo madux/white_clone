@@ -21,6 +21,7 @@ import {
   Bell,
   Mail,
 } from "lucide-react";
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import AppToolbar from "./AppToolbar";
 import EmptyState from "./EmptyState";
@@ -46,7 +47,9 @@ import DocumentTypeFormDialog, {
   emptyDocumentTypeForm,
   type DocumentTypeFormValues,
 } from "./DocumentTypeForm";
-import RolesPage from "./RolesPage";
+import UsersRolesSettingsTab from "./settings/UsersRolesSettingsTab";
+import { useTenantModules } from "../../../hooks/useTenantModules";
+import { isTenantModuleEnabled } from "../../../lib/tenantModuleCatalog";
 import EmployeeFilesSettingsPanel from "./EmployeeFilesSettingsPanel";
 import RetentionSettingsPanel from "./RetentionSettingsPanel";
 import GeneralSettingsTab from "./settings/GeneralSettingsTab";
@@ -182,6 +185,17 @@ export default function SettingsPage() {
     currentUser.data?.is_super_admin === true ||
     currentUser.data?.is_document_admin === true ||
     currentUser.data?.is_admin === true;
+  const { modules: tenantModules } = useTenantModules();
+
+  const settingsSectionTenantKey: Partial<
+    Record<(typeof specSections)[number]["id"], string>
+  > = {
+    triggers: "triggers_alerts",
+    signatures: "signatures",
+    cleonai: "cleonai",
+    retention: "retention_legal_hold",
+    approval_workflow: "approval_workflow",
+  };
 
   const visibleSections = useMemo(() => {
     const term = settingsFind.trim().toLowerCase();
@@ -189,11 +203,16 @@ export default function SettingsPage() {
     if (!canManageRoles) {
       tabs = tabs.filter((item) => item.id !== "users_roles");
     }
+    tabs = tabs.filter((item) => {
+      const tenantKey = settingsSectionTenantKey[item.id];
+      if (!tenantKey) return true;
+      return isTenantModuleEnabled(tenantModules, tenantKey);
+    });
     if (term) {
       tabs = tabs.filter((item) => item.label.toLowerCase().includes(term));
     }
     return tabs;
-  }, [canManageRoles, settingsFind]);
+  }, [canManageRoles, settingsFind, tenantModules]);
 
   type SpecSectionId = (typeof specSections)[number]["id"];
 
@@ -257,25 +276,26 @@ export default function SettingsPage() {
   }, [guideSection]);
 
   useEffect(() => {
-    if (requestedSection === "roles" && canManageRoles) {
-      setSection("users_roles");
+    if (!requestedSection) return;
+
+    const aliases: Record<string, SectionId> = {
+      roles: "users_roles",
+      employee_files: "modules",
+      organizational_files: "modules",
+      access: "types",
+      retention_compliance: "retention",
+      lifecycle: "retention",
+      "approval-workflow": "approval_workflow",
+    };
+
+    let target: SectionId | null = aliases[requestedSection] ?? null;
+    if (!target && sectionById.has(requestedSection)) {
+      target = requestedSection as SectionId;
     }
-    if (requestedSection === "employee_files" || requestedSection === "organizational_files") {
-      setSection("modules");
-    }
-    if (requestedSection === "access") {
-      setSection("types");
-    }
-    if (
-      requestedSection === "retention_compliance" ||
-      requestedSection === "lifecycle"
-    ) {
-      setSection("retention");
-    }
-    if (requestedSection === "approval-workflow" || requestedSection === "approval_workflow") {
-      setSection("approval_workflow");
-    }
-  }, [requestedSection, canManageRoles]);
+    if (!target) return;
+    if (target === "users_roles" && !canManageRoles) return;
+    setSection(target);
+  }, [requestedSection, canManageRoles, sectionById]);
 
   const values = settings ?? query.data?.settings ?? fallbackSettings;
   const documentTypes = query.data?.document_types ?? [];
@@ -340,10 +360,6 @@ export default function SettingsPage() {
 
   const isDocAdmin = currentUser.data?.is_document_admin === true;
 
-  const activeSectionLabel = isSpecSection(section)
-    ? (sectionById.get(section)?.label ?? "Settings")
-    : "Settings";
-
   return (
     <div className="app-page">
         {query.isError && (
@@ -380,14 +396,17 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <header className="app-page-header border-b border-slate-200 pb-5">
-          <div>
-            <h1>Settings</h1>
-            <p>Manage your workspace, documents, workflows, and integrations.</p>
-          </div>
-        </header>
+        <div className="flex justify-end border-b border-slate-200 pb-4">
+          <Link
+            href="/pages/audit-trail"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            <History className="h-4 w-4 text-slate-400" />
+            Change history
+          </Link>
+        </div>
 
-        <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start">
+        <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-start">
           <SettingsSidebar
             groups={sidebarGroups}
             activeId={section}
@@ -397,15 +416,12 @@ export default function SettingsPage() {
             activeEmphasis={guideSection === section}
           />
           <div className="min-w-0 flex-1">
-            <h2 className="mb-6 border-b border-slate-200 pb-4 text-lg font-semibold text-slate-900">
-              {activeSectionLabel}
-            </h2>
             {query.isLoading ? (
               <LoadingState />
             ) : section === "general" ? (
               <GeneralSettingsTab />
             ) : section === "users_roles" ? (
-              <RolesPage embedded />
+              <UsersRolesSettingsTab embedded />
             ) : section === "approval_workflow" ? (
               <ApprovalWorkflowSettingsTab />
             ) : section === "notification_rules" ? (
@@ -440,7 +456,7 @@ export default function SettingsPage() {
             ) : section === "organizational_files" ? (
               <ModulesSettingsTab />
             ) : section === "roles" ? (
-              <RolesPage embedded />
+              <UsersRolesSettingsTab embedded />
             ) : section === "retention_compliance" ? (
               <RetentionSettingsPanel documentTypes={documentTypes} />
             ) : section === "onboarding" ? (
@@ -539,9 +555,9 @@ function Types({
           }
           action={
             total === 0 ? (
-              <button type="button" onClick={() => edit()} className="app-btn app-btn-primary">
-                Create first type
-              </button>
+              <p className="text-sm text-slate-500">
+                Use Add type next to the search bar to create your first type.
+              </p>
             ) : null
           }
         />

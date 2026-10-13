@@ -16,7 +16,7 @@ class DocDocumentCategory(models.Model):
     active = fields.Boolean(default=True)
     is_catalog_default = fields.Boolean(
         default=False,
-        help="Shipped with the product; seeded on every company.",
+        help="Standard catalogue entry; created automatically for each organisation.",
     )
     company_id = fields.Many2one(
         "res.company",
@@ -31,9 +31,9 @@ class DocDocumentCategory(models.Model):
 
     _sql_constraints = [
         (
-            "doc_document_category_code_uniq",
-            "unique(code)",
-            "Category code must be unique.",
+            "doc_document_category_code_company_uniq",
+            "unique(company_id, code)",
+            "Category code must be unique per company.",
         ),
     ]
 

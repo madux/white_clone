@@ -108,6 +108,13 @@ export default function OrganizationalCreatePolicyFlow({
     return match?.code ?? "";
   }, [types.data, aiPolicyTypeId]);
 
+  const policyTypeCode = useMemo(() => {
+    const match = (types.data ?? []).find(
+      (item) => String(item.id) === policyForm.policy_type_id,
+    );
+    return match?.code ?? "";
+  }, [types.data, policyForm.policy_type_id]);
+
   const aiSelectableDocumentTypes = useMemo(
     () =>
       documentTypesForCompliancePolicy(
@@ -154,7 +161,9 @@ export default function OrganizationalCreatePolicyFlow({
     event.preventDefault();
     setPolicySubmitError("");
     try {
-      await createPolicy.mutateAsync(buildCreatePolicyPayload(policyForm));
+      await createPolicy.mutateAsync(
+        buildCreatePolicyPayload(policyForm, policyTypeCode),
+      );
       await showAlert(
         "Policy saved as draft. Activate it in Compliance when ready.",
         { title: "Draft created" },

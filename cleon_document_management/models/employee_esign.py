@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class DocDocumentSignatureRequest(models.Model):
@@ -47,8 +47,24 @@ class DocDocumentSignatureRequest(models.Model):
         self.write({"provider": config.esign_provider or "stub"})
         return True
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        emitter = self.env.get("doc.audit.emitter.service")
+        if emitter:
+            for request in records:
+                emitter.log_signature_state(request, request.state or "requested")
+        return records
+
     def write(self, vals):
+        previous = {record.id: record.state for record in self}
         result = super().write(vals)
+        if "state" in vals:
+            emitter = self.env.get("doc.audit.emitter.service")
+            if emitter:
+                for request in self:
+                    if previous.get(request.id) != request.state:
+                        emitter.log_signature_state(request, request.state)
         if vals.get("state") == "completed":
             Automation = self.env["doc.document.automation"]
             for request in self:

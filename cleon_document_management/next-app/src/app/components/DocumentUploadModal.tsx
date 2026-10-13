@@ -128,9 +128,15 @@ export default function DocumentUploadModal({
 
   const typeOptions = useMemo(
     () =>
-      allDocumentTypes.map((type) => ({ value: String(type.id), label: type.name })),
+      allDocumentTypes.map((type) => ({
+        value: String(type.id),
+        label: type.name || `Type #${type.id}`,
+      })),
     [allDocumentTypes],
   );
+
+  const labelForTypeId = (id: string) =>
+    typeOptions.find((option) => option.value === String(id))?.label || "";
 
   const openNewTypeDialog = (fileIndex: number) => {
     setNewTypeError("");
@@ -333,7 +339,11 @@ export default function DocumentUploadModal({
                       <span className="label">Document type</span>
                       {lockedTypeId ? (
                         <p className="mt-1 truncate text-sm font-medium">
-                          {lockedTypeLabel || typeOptions.find((option) => option.value === typeId)?.label}
+                          {labelForTypeId(typeId) ||
+                            (lockedTypeLabel && !/^\d+$/.test(lockedTypeLabel.trim())
+                              ? lockedTypeLabel
+                              : "") ||
+                            "Document type"}
                         </p>
                       ) : (
                         <div className="mt-1 flex items-end gap-2">

@@ -27,17 +27,6 @@ type SettingsShape = {
 
 type OrgSettingsTab = "general" | "company_owned" | "approvals";
 
-function SectionHeading({ title, description }: { title: string; description?: string }) {
-  return (
-    <div className="mb-3">
-      <h2 className="text-base font-semibold tracking-tight text-[var(--ink)]">{title}</h2>
-      {description ? (
-        <p className="mt-1 text-sm text-slate-600">{description}</p>
-      ) : null}
-    </div>
-  );
-}
-
 function SettingRow({
   label,
   help,
@@ -209,13 +198,9 @@ export default function OrganizationalFilesSettingsPanel({
       >
         {tab === "general" ? (
           <section className="px-6 pt-5 pb-2">
-            <SectionHeading
-              title="Default visibility"
-              description="Pre-selects visibility when someone creates a new organisational folder. Creators can still change it before saving unless a parent folder restricts options."
-            />
             <SettingRow
               label="New folders"
-              help="Default audience for folders created in the organisational library."
+              help="Pre-selects visibility when someone creates a new organisational folder. Creators can still change it before saving unless a parent folder restricts options."
               top
             >
               <div className="space-y-2">
@@ -251,10 +236,6 @@ export default function OrganizationalFilesSettingsPanel({
 
         {tab === "company_owned" ? (
           <section className="px-6 pt-5 pb-2">
-            <SectionHeading
-              title="Company-owned access"
-              description="Users who can see folders and files marked company owned, in addition to the uploader and administrators. Document and platform administrators always retain access."
-            />
             <SettingRow label="Search users" help="Filter the list of eligible approvers and admins.">
               <input
                 value={delegateSearch}
@@ -265,7 +246,7 @@ export default function OrganizationalFilesSettingsPanel({
             </SettingRow>
             <SettingRow
               label="Delegates"
-              help="Selected users can access company-owned organisational content."
+              help="Users who can see folders and files marked company owned, in addition to the uploader and administrators. Document and platform administrators always retain access."
               top
             >
               <div className="space-y-3">
@@ -308,59 +289,14 @@ export default function OrganizationalFilesSettingsPanel({
 
         {tab === "approvals" ? (
           <section className="px-6 pt-5 pb-2">
-            <SectionHeading
-              title="Approval workflow"
-              description="SLA, reminders, escalation, and temporary delegation for gated folder and document actions."
-            />
-            <SettingRow
-              label="SLA"
-              help="Hours before a pending organisational approval is considered overdue."
-            >
-              <HoursInput
-                value={values.org_approval_sla_hours ?? 48}
-                min={1}
-                onChange={(hours) =>
-                  onChange({ org_approval_sla_hours: hours > 0 ? hours : 48 })
-                }
-              />
-            </SettingRow>
-            <SettingRow
-              label="Reminder"
-              help="Send a reminder this many hours before the SLA due time."
-            >
-              <HoursInput
-                value={values.org_approval_reminder_hours_before_sla ?? 6}
-                onChange={(hours) =>
-                  onChange({
-                    org_approval_reminder_hours_before_sla: Math.max(0, hours),
-                  })
-                }
-              />
-            </SettingRow>
-            <SettingRow
-              label="Escalation"
-              help="User notified when SLA is breached. Leave default to use the platform error escalation contact."
-            >
-              <ThemedSelect
-                className="field max-w-md"
-                ariaLabel="Escalation approver"
-                value={
-                  values.org_approval_escalation_user_id
-                    ? String(values.org_approval_escalation_user_id)
-                    : "__unset__"
-                }
-                onChange={(next) =>
-                  onChange({
-                    org_approval_escalation_user_id:
-                      next && next !== "__unset__" ? Number(next) : false,
-                  })
-                }
-                options={[
-                  { value: "__unset__", label: "Default (error escalation user)" },
-                  ...approverSelectOptions,
-                ]}
-              />
-            </SettingRow>
+            <p className="mb-4 text-sm text-slate-600">
+              <a
+                href="/pages/settings?section=approval_workflow"
+                className="font-semibold text-primary hover:underline"
+              >
+                Open Approval Workflow settings
+              </a>
+            </p>
             <SettingRow
               label="Delegate"
               help="Temporarily route approvals to another user (optional)."

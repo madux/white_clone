@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useCurrentUser } from "../../../hooks/useDocuments";
 import { api } from "../../../lib/api";
 import { useAppDialog } from "../../../hooks/useAppDialog";
 import SystemAdminOnly from "./SystemAdminOnly";
@@ -14,20 +13,12 @@ import { Button } from "@/components/ui/button";
 type Connector = { provider: string; label: string; connected: boolean };
 
 export default function SuperAdminPage() {
-  const user = useCurrentUser();
   const [section, setSection] = useState("roles");
 
   return (
     <SystemAdminOnly>
       <div className="app-page space-y-6">
         <LibraryBreadcrumb items={[{ label: "Super Admin" }]} />
-        <header>
-          <h1 className="text-2xl font-bold">Super Admin</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Tenant-level controls for roles, modules, storage, integrations, and audit.
-            Signed in as {user.data?.name || "administrator"}.
-          </p>
-        </header>
         <SectionTabs
           level="page"
           ariaLabel="Super admin sections"

@@ -103,6 +103,21 @@ class ComplianceVerificationService(models.AbstractModel):
                 )
                 if waiting.cycle_id:
                     waiting.policy_id._sync_request_cycle_state(waiting.cycle_id)
+            emitter = self.env.get("doc.audit.emitter.service")
+            if emitter:
+                emitter.section31(
+                    "ef_verification_result",
+                    document,
+                    _("Verification approved"),
+                    details="item_id=%s" % item.id,
+                    module="employee_files",
+                )
+                emitter.section31(
+                    "compliance_returned_from_verification",
+                    item.policy_id or document,
+                    _("Verification approved"),
+                    module="compliance",
+                )
 
     def reject_items(self, items, user, reason_code, note=""):
         if not reason_code:
@@ -140,6 +155,16 @@ class ComplianceVerificationService(models.AbstractModel):
                 ],
                 limit=1,
             )
+            emitter = self.env.get("doc.audit.emitter.service")
+            if emitter:
+                emitter.section31(
+                    "ef_verification_result",
+                    document,
+                    _("Verification rejected"),
+                    details=message,
+                    module="employee_files",
+                    result="denied",
+                )
             if waiting:
                 waiting.write(
                     {

@@ -46,9 +46,6 @@ export default function SearchResultsPage() {
     <div className="app-page space-y-4">
       <header className="app-page-header">
         <h1>Results for &ldquo;{query}&rdquo;</h1>
-        <p className="text-sm text-slate-600">
-          {loading ? "Searching…" : `${total} results you can open`}
-        </p>
       </header>
       <ul className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
         {items.map((item) => (
@@ -63,6 +60,9 @@ export default function SearchResultsPage() {
             <Link
               href={documentViewHref({ id: item.document_id }, isManager)}
               className="text-xs font-bold text-brand-pink"
+              onClick={() => {
+                void dmsContractsApi.auditLogView(item.document_id, "search_result");
+              }}
             >
               Open
             </Link>

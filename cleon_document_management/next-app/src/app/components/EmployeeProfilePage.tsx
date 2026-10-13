@@ -53,7 +53,6 @@ import SectionTabs from "./SectionTabs";
 import StatusPill from "./StatusPill";
 import { formatStatusLabel } from "../../../lib/formatLabel";
 import LibraryBreadcrumb from "./LibraryBreadcrumb";
-import NewMenu from "./NewMenu";
 import AppSelect from "./AppSelect";
 import {
   useEmployeeFileActivity,
@@ -230,6 +229,31 @@ export default function EmployeeProfilePage() {
       setAssignedPolicies(result.data?.items ?? []);
     });
   }, [employeeId, profileTab]);
+
+  useEffect(() => {
+    if (params.get("upload") !== "1") return;
+    if (profileTab !== "documents") {
+      setProfileTab("documents");
+      const nextParams = new URLSearchParams(params.toString());
+      nextParams.set("tab", "documents");
+      router.replace(`/pages/employee/profile?${nextParams.toString()}`, {
+        scroll: false,
+      });
+      return;
+    }
+    setUploadError("");
+    setShowUpload(true);
+    const nextParams = new URLSearchParams(params.toString());
+    nextParams.delete("upload");
+    const query = nextParams.toString();
+    router.replace(
+      query
+        ? `/pages/employee/profile?${query}`
+        : "/pages/employee/profile",
+      { scroll: false },
+    );
+  }, [params, profileTab, router]);
+
   const visibleIds = groupedEmployeeDocuments.map((group) => group.primary.id);
   const allSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
@@ -431,18 +455,6 @@ export default function EmployeeProfilePage() {
           </div>
           <div className="flex items-center gap-3">
             <StatusPill label={statusLabel} />
-            <NewMenu
-              items={[
-                {
-                  label: "File upload",
-                  icon: FilePlus2,
-                  onSelect: () => {
-                    setUploadError("");
-                    setShowUpload(true);
-                  },
-                },
-              ]}
-            />
           </div>
         </div>
         <div className="mt-6 border-t border-slate-100 pt-5">
@@ -494,20 +506,6 @@ export default function EmployeeProfilePage() {
         showDepartmentFilter={false}
         totalCount={employeeDocuments.length}
         filteredCount={filteredEmployeeDocuments.length}
-        actions={
-          <NewMenu
-            items={[
-              {
-                label: "File upload",
-                icon: FilePlus2,
-                onSelect: () => {
-                  setUploadError("");
-                  setShowUpload(true);
-                },
-              },
-            ]}
-          />
-        }
       />
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="px-5 pt-4">

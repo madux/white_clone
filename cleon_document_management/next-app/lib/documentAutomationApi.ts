@@ -15,15 +15,3 @@ export function documentAutomations(
     payload,
   );
 }
-
-export function documentAutomationHub(library: AutomationLibrary) {
-  const path =
-    library === "employee"
-      ? "/api/employee-files/automation-hub"
-      : "/api/organizational/automation-hub";
-  return rpc<{
-    success: boolean;
-    message?: string;
-    data?: { items?: unknown[]; can_manage?: boolean };
-  }>(path, {});
-}

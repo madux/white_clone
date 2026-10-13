@@ -43,6 +43,7 @@ export type DmsPermissionsMap = Partial<
     | "view_workspace_activity"
     | "ef_view"
     | "ef_upload"
+    | "ef_upload_without_approval"
     | "ef_approve"
     | "ef_download"
     | "ef_archive"
@@ -192,6 +193,22 @@ export interface User {
   employee_files_permissions?: EmployeeFilesPermissions;
   organizational_files_permissions?: OrganizationalFilesPermissions;
   workspace_access?: WorkspaceAccessMe;
+  tenant_modules?: Partial<
+    Record<
+      | "employee_files"
+      | "organizational_files"
+      | "templates_forms"
+      | "compliance"
+      | "document_intelligence"
+      | "signatures"
+      | "audit_trail"
+      | "approval_workflow"
+      | "triggers_alerts"
+      | "retention_legal_hold"
+      | "cleonai",
+      boolean
+    >
+  >;
 }
 
 export interface EmployeeFilesRoleLine {
@@ -292,6 +309,31 @@ export interface EmployeeFilesRoleMembersPayload {
   total?: number;
   page?: number;
   page_size?: number;
+}
+
+export interface RoleEditorContext {
+  modules_enabled: Record<string, boolean>;
+  approval_workflow_active: boolean;
+}
+
+export interface EffectivePermissionGrant {
+  module: string;
+  summary: string;
+  scope: EmployeeFilesRole["employee_scope"];
+  role_name: string;
+  role_id: number;
+}
+
+export interface EffectivePermissionUnreachable {
+  label: string;
+  reason: string;
+}
+
+export interface EffectivePermissionsDetail {
+  user_id: number;
+  user_name: string;
+  grants: EffectivePermissionGrant[];
+  unreachable: EffectivePermissionUnreachable[];
 }
 
 export interface EmployeeFilesDocumentTypeOption {

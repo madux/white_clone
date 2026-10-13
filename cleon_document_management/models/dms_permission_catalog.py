@@ -12,6 +12,7 @@ MODULE_ACCESS_KEYS = (
 EF_PERMISSION_KEYS = (
     "ef_view",
     "ef_upload",
+    "ef_upload_without_approval",
     "ef_approve",
     "ef_download",
     "ef_archive",
@@ -20,6 +21,16 @@ EF_PERMISSION_KEYS = (
     "ef_manage_ef_settings",
     "ef_automate",
 )
+
+WITHOUT_APPROVAL_REQUIRES = {
+    "create_folder_without_approval": "create_folder",
+    "upload_without_approval": "upload_link_import_scan",
+    "edit_without_approval": "edit_rename_description_colour",
+    "replace_version_without_approval": "replace_version",
+    "move_without_approval": "move",
+    "delete_without_approval": "delete",
+    "ef_upload_without_approval": "ef_upload",
+}
 
 COMPLIANCE_PERMISSION_KEYS = (
     "compliance_view",
@@ -91,6 +102,17 @@ DMS_PERMISSION_KEYS = (
     *SETTINGS_PERMISSION_KEYS,
     *ORG_PERMISSION_KEYS,
 )
+
+EF_CHILD_KEYS = tuple(key for key in EF_PERMISSION_KEYS if key != "ef_view")
+
+MODULE_VIEW_PARENT = {
+    "view_employee_files": EF_CHILD_KEYS,
+    "view_org_files": tuple(
+        key for key in ORG_PERMISSION_KEYS if key not in ("view_org_files", "is_super_admin")
+    ),
+    "view_compliance": COMPLIANCE_PERMISSION_KEYS,
+    "view_templates_forms": TEMPLATES_PERMISSION_KEYS,
+}
 
 ROLE_TEMPLATE_KEYS = (
     "super_admin",
@@ -206,6 +228,47 @@ def dms_permissions_from_api_payload(raw):
         if key in raw:
             merged[key] = bool(raw.get(key))
     return merged
+
+
+def validate_dms_permissions_map(perms):
+    """Enforce parent/child permission rules (ROLEP-04, RB-07, ROLEP-06)."""
+    from odoo import _
+    from odoo.exceptions import UserError
+
+    def fail(message):
+        raise UserError(message)
+
+    perms = perms or {}
+    for child, parent in WITHOUT_APPROVAL_REQUIRES.items():
+        if perms.get(child) and not perms.get(parent):
+            fail(
+                _("%(child)s needs %(parent)s on the same module and scope.")
+                % {
+                    "child": child.replace("_", " ").title(),
+                    "parent": parent.replace("_", " ").title(),
+                }
+            )
+
+    for view_key, children in MODULE_VIEW_PARENT.items():
+        if not perms.get(view_key):
+            for child in children:
+                if child in perms and perms.get(child):
+                    label = child.replace("_", " ").title()
+                    fail(
+                        _("%(action)s needs View on the same module and scope.")
+                        % {"action": label}
+                    )
+
+    if perms.get("ef_delete"):
+        if not perms.get("ef_view"):
+            fail(_("Delete needs View on the same module and scope."))
+        if not perms.get("ef_upload"):
+            fail(_("Delete needs Edit (upload) and View on employee files."))
+
+    if perms.get("delete") and not perms.get("view_org_files"):
+        fail(_("Delete needs View on the same module and scope."))
+
+    return True
 
 
 def empty_org_permissions():

@@ -15,6 +15,60 @@ class DocEmployeeFilesConfig(models.Model):
     )
 
     setup_complete = fields.Boolean(default=False)
+
+    approval_workflow_enabled = fields.Boolean(
+        string="Require approval (global workflow)",
+        default=False,
+        help="When on, gated document actions wait for an approver unless the user may act without approval.",
+    )
+    approval_default_approver_mode = fields.Selection(
+        [
+            ("line_manager", "Line manager"),
+            ("folder_owner", "Folder owner"),
+            ("role", "Role"),
+            ("specific_users", "Specific people"),
+        ],
+        default="line_manager",
+        required=True,
+    )
+    approval_default_role_id = fields.Many2one(
+        "doc.employee.files.role",
+        string="Default approver role",
+        ondelete="set null",
+    )
+    approval_default_user_ids = fields.Many2many(
+        "res.users",
+        "doc_employee_files_config_approval_user_rel",
+        "config_id",
+        "user_id",
+        string="Default approver people",
+    )
+    approval_respond_working_days = fields.Integer(
+        string="Approver working days",
+        default=2,
+    )
+    approval_fallback_mode = fields.Selection(
+        [
+            ("default_hr_admin", "HR Admin (default)"),
+            ("role", "Role"),
+            ("specific_users", "Specific people"),
+        ],
+        default="default_hr_admin",
+        required=True,
+    )
+    approval_fallback_role_id = fields.Many2one(
+        "doc.employee.files.role",
+        string="Fallback approver role",
+        ondelete="set null",
+    )
+    approval_fallback_user_ids = fields.Many2many(
+        "res.users",
+        "doc_employee_files_config_approval_fallback_rel",
+        "config_id",
+        "user_id",
+        string="Fallback approver people",
+    )
+
     org_approval_sla_hours = fields.Integer(
         string="Organisational approval SLA (hours)",
         default=48,
@@ -202,6 +256,8 @@ class DocEmployeeFilesConfig(models.Model):
         config = self.search([("company_id", "=", company.id)], limit=1)
         if not config:
             config = self.create({"company_id": company.id})
+            if "doc.document.catalog.service" in self.env:
+                self.env["doc.document.catalog.service"].ensure_default_catalog(company)
         return config
 
     def get_organizing_dimensions(self):

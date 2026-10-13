@@ -155,6 +155,10 @@ def main(env):
         _unlink_all(env, "doc.compliance.lifecycle.request")
         _unlink_all(env, "doc.compliance.notification.log")
 
+    _unlink_all(env, "doc.notification.delivery")
+    _unlink_all(env, "doc.notification")
+    _unlink_all(env, "doc.organizational.approval.request")
+
     _unlink_all(env, "doc.document.signature.request")
     _unlink_all(env, "doc.document.relation")
     _unlink_all(env, "doc.document.acknowledgement")

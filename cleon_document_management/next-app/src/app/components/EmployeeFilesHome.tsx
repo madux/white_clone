@@ -9,8 +9,7 @@ import {
   useEmployeeFilesHomeStats,
   useEmployeeFileSummaries,
 } from "../../../hooks/useEmployeeFiles";
-import { useCurrentUser, useDocumentTypes } from "../../../hooks/useDocuments";
-import CompliancePage from "./CompliancePage";
+import { useDocumentTypes } from "../../../hooks/useDocuments";
 import SectionTabs from "./SectionTabs";
 import EmployeeFilesGroupExplorer from "./EmployeeFilesGroupExplorer";
 import EmployeeFilesBrowseToolbar from "./EmployeeFilesBrowseToolbar";
@@ -30,16 +29,14 @@ import {
 import type { DocDocument } from "../../../lib/types";
 import { documentPreviewUrl } from "../../../lib/documentPreviewUrls";
 import DocumentViewerDialog from "./DocumentViewerDialog";
-import EmployeeFilesAutomationAdminLink from "./EmployeeFilesAutomationAdminLink";
 
 type HomeView = "groups" | "employees" | "documents";
-type WorkspaceTab = "browse" | "issues" | "compliance";
+type WorkspaceTab = "browse" | "issues";
 
 const DOCUMENT_PAGE_SIZE = 25;
 
 function workspaceTabFromParam(value: string | null): WorkspaceTab {
   if (value === "issues") return "issues";
-  if (value === "compliance") return "compliance";
   return "browse";
 }
 
@@ -55,13 +52,8 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 export default function EmployeeFilesHome() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentUser = useCurrentUser();
-  const canManageCompliance = currentUser.data?.is_document_admin === true;
   const rawTab = searchParams.get("tab");
-  const workspaceTab =
-    rawTab === "compliance" && !canManageCompliance
-      ? "browse"
-      : workspaceTabFromParam(rawTab);
+  const workspaceTab = workspaceTabFromParam(rawTab);
   const config = useEmployeeFilesConfig();
   const stats = useEmployeeFilesHomeStats();
   const documentTypes = useDocumentTypes();
@@ -154,6 +146,13 @@ export default function EmployeeFilesHome() {
     const tab = searchParams.get("tab");
     if (tab === "pending-approvals" || tab === "pending") {
       router.replace("/pages/my-workspace?tab=review-queue&section=employee");
+      return;
+    }
+    if (tab === "compliance") {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("tab");
+      const query = params.toString();
+      router.replace(query ? `/pages/compliance?${query}` : "/pages/compliance");
     }
   }, [searchParams, router]);
 
@@ -184,26 +183,15 @@ export default function EmployeeFilesHome() {
   ]);
 
   const setWorkspaceTab = (tab: WorkspaceTab) => {
-    if (tab === "compliance" && !canManageCompliance) return;
     if (tab === "browse") {
       router.push("/pages/employee");
       return;
     }
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
-    if (tab !== "compliance") {
-      params.delete("rule");
-      params.delete("policy");
-    }
     const query = params.toString();
     router.push(query ? `/pages/employee?${query}` : "/pages/employee");
   };
-
-  useEffect(() => {
-    if (rawTab === "compliance" && !canManageCompliance && !currentUser.isPending) {
-      router.replace("/pages/employee");
-    }
-  }, [canManageCompliance, currentUser.isPending, rawTab, router]);
 
   useEffect(() => {
     const value = searchParams.get("view");
@@ -255,13 +243,8 @@ export default function EmployeeFilesHome() {
             label: "Issues",
             count: attention > 0 ? attention : undefined,
           },
-          ...(canManageCompliance
-            ? [{ id: "compliance" as const, label: "Compliance" }]
-            : []),
         ]}
       />
-
-      {workspaceTab === "compliance" ? <CompliancePage embedded /> : null}
 
       {workspaceTab === "issues" ? (
         <EmployeeFilesIssuesPage embedded />
@@ -269,7 +252,6 @@ export default function EmployeeFilesHome() {
 
       {workspaceTab === "browse" ? (
         <>
-          <EmployeeFilesAutomationAdminLink />
           {stats.data ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               {[

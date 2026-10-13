@@ -1,6 +1,5 @@
 "use client";
 
-import { FolderPlus, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { documentViewHref, approvalInboxHref } from "../../../lib/documentLinks";
@@ -15,7 +14,6 @@ import { formatDocumentDate } from "../../../lib/formatDocumentDate";
 import { reviewQueueHref } from "../../../lib/reviewQueue";
 import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
 import LibraryFileTable, { type LibraryFileRow } from "./LibraryFileTable";
-import NewMenu from "./NewMenu";
 import StatusPill from "./StatusPill";
 import { Button } from "@/components/ui/button";
 
@@ -127,21 +125,6 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <LibraryBreadcrumbSafe />
-        <NewMenu
-          items={[
-            {
-              label: "Folder",
-              icon: FolderPlus,
-              onSelect: () => router.push("/pages/organization?create=1"),
-            },
-            {
-              label: "File upload",
-              icon: Upload,
-              onSelect: () =>
-                router.push(myWorkspaceHref("documents", { upload: "1" })),
-            },
-          ]}
-        />
       </div>
 
       {stats.isError ? (
@@ -186,10 +169,5 @@ export default function Dashboard() {
 }
 
 function LibraryBreadcrumbSafe() {
-  return (
-    <div>
-      <h1 className="text-lg font-semibold">Home</h1>
-      <p className="text-sm text-muted-foreground">Suggested files and recent activity</p>
-    </div>
-  );
+  return null;
 }

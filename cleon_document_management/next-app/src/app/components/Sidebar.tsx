@@ -12,7 +12,6 @@ import {
   Settings,
   Briefcase,
   X,
-  KeyRound,
   History,
 } from "lucide-react";
 import Link from "next/link";
@@ -20,8 +19,8 @@ import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   canAccessDmsSettings,
+  canViewComplianceModule,
   canViewTemplatesModule,
-  userIsSuperAdmin,
 } from "../../../lib/dmsAccess";
 import {
   canAccessEmployeeFilesAdmin,
@@ -31,7 +30,13 @@ import { canAccessOrgLibrary } from "../../../lib/organizationalFilesAccess";
 import { canApproveOrgRequests } from "../../../lib/organizationalFilesAccess";
 import { reviewQueueHref } from "../../../lib/reviewQueue";
 import { isWorkspacePath, myWorkspaceHref } from "../../../lib/workspaceRoutes";
+import { canViewAuditTrail } from "../../../lib/dmsAccess";
 import { useCurrentUser } from "../../../hooks/useDocuments";
+import { useTenantModules } from "../../../hooks/useTenantModules";
+import {
+  isNavModuleEnabled,
+  isTenantModuleEnabled,
+} from "../../../lib/tenantModuleCatalog";
 import { useWorkspaceDelegationOptional } from "../../../lib/workspaceDelegation";
 
 type NavLink = {
@@ -40,6 +45,7 @@ type NavLink = {
   icon: any;
   moduleKey?: string | null;
   badge?: number;
+  iconOnly?: boolean;
 };
 type NavGroup = { id: string; label: string; links: NavLink[] };
 
@@ -50,12 +56,12 @@ const NAV_MODULE_BY_NAME: Record<string, string | null> = {
   "Organizational Files": "organizational_files",
   "Templates & Forms": "templates_forms",
   "Document Intelligence": "document_intelligence",
+  Compliance: "compliance_admin",
   "My Compliance": "self_service_compliance",
   "My Team": "self_service_team",
   Approvals: "self_service_approvals",
   "Scheduled reviews": "self_service_reviews",
   Settings: "settings",
-  "Remote access": null,
 };
 
 export default function Sidebar() {
@@ -64,13 +70,13 @@ export default function Sidebar() {
   const delegation = useWorkspaceDelegationOptional();
   const pendingInvites =
     currentUser.data?.workspace_access?.pending_invite_count ?? 0;
-  const isSuperAdmin = userIsSuperAdmin(currentUser.data);
-  const isAppAdmin =
-    isSuperAdmin || currentUser.data?.is_admin === true;
   const canSettings = canAccessDmsSettings(currentUser.data);
+  const canCompliance = canViewComplianceModule(currentUser.data);
   const canTemplates = canViewTemplatesModule(currentUser.data);
   const canEmployeeFiles = canAccessEmployeeFilesAdmin(currentUser.data);
   const canOrgFiles = canAccessOrgLibrary(currentUser.data);
+  const canAuditTrail = canViewAuditTrail(currentUser.data);
+  const { modules: tenantModules } = useTenantModules();
   const [mobileOpen, setMobileOpen] = useState(false);
   const routePath =
     pathname?.replace(/^\/document-management(?=\/|$)/, "") || "/";
@@ -81,22 +87,31 @@ export default function Sidebar() {
       name: "My Workspace",
       link: "/pages/my-workspace",
       icon: Briefcase,
+      badge: pendingInvites > 0 ? pendingInvites : undefined,
     };
-    const beforeIntelligence: NavLink[] = [
+    const documentIntelligence: NavLink = {
+      name: "Document Intelligence",
+      link: "/pages/document-intelligence",
+      icon: Brain,
+      moduleKey: "document_intelligence",
+    };
+    const primary: NavLink[] = [
       ...(showHome
         ? [{ name: "Home", link: "/pages/dashboard", icon: LayoutDashboard }]
         : []),
-      ...(canEmployeeFiles
+      myWorkspace,
+      ...(canEmployeeFiles && isTenantModuleEnabled(tenantModules, "employee_files")
         ? [{ name: "Employee Files", link: "/pages/employee", icon: Users }]
         : []),
-      ...(canOrgFiles
+      ...(canOrgFiles && isTenantModuleEnabled(tenantModules, "organizational_files")
         ? [
             {
               name: "Organizational Files",
               link: "/pages/organization",
               icon: Building2,
             },
-            ...(canTemplates
+            ...(canTemplates &&
+            isTenantModuleEnabled(tenantModules, "templates_forms")
               ? [
                   {
                     name: "Templates & Forms",
@@ -107,36 +122,47 @@ export default function Sidebar() {
               : []),
           ]
         : []),
+      ...(canCompliance && isTenantModuleEnabled(tenantModules, "compliance")
+        ? [
+            {
+              name: "Compliance",
+              link: "/pages/compliance",
+              icon: ShieldCheck,
+              moduleKey: "compliance_admin",
+            },
+          ]
+        : []),
+      ...(isTenantModuleEnabled(tenantModules, "document_intelligence")
+        ? [documentIntelligence]
+        : []),
     ];
-    const documentIntelligence: NavLink = {
-      name: "Document Intelligence",
-      link: "/pages/document-intelligence",
-      icon: Brain,
-    };
-    const primary: NavLink[] = isAppAdmin
-      ? [...beforeIntelligence, myWorkspace, documentIntelligence]
-      : [myWorkspace, ...beforeIntelligence, documentIntelligence];
     const admin: NavLink[] = [
       ...(canSettings
-        ? [{ name: "Settings", link: "/pages/settings", icon: Settings }]
+        ? [
+            {
+              name: "Settings",
+              link: "/pages/settings",
+              icon: Settings,
+              iconOnly: true,
+            },
+          ]
         : []),
-      ...(isAppAdmin
-        ? [{ name: "Audit Trail", link: "/pages/audit-trail", icon: History }]
+      ...(canAuditTrail && isTenantModuleEnabled(tenantModules, "audit_trail")
+        ? [
+            {
+              name: "Audit Trail",
+              link: "/pages/audit-trail",
+              icon: History,
+              moduleKey: "audit_trail",
+            },
+          ]
         : []),
     ];
     const user = currentUser.data;
     const showSelfService =
       !canEmployeeFiles || user?.is_document_manager !== true;
-    const remoteAccess: NavLink = {
-      name: "Remote access",
-      link: "/pages/remote-access",
-      icon: KeyRound,
-      moduleKey: null,
-      badge: pendingInvites > 0 ? pendingInvites : undefined,
-    };
     const selfService: NavLink[] = showSelfService
       ? [
-          remoteAccess,
           {
             name: "My Compliance",
             link: "/pages/my-compliance",
@@ -149,8 +175,8 @@ export default function Sidebar() {
             icon: Users,
             moduleKey: "self_service_team",
           },
-          ...(canApproveEmployeeDocuments(user) ||
-          canApproveOrgRequests(user)
+          ...(isTenantModuleEnabled(tenantModules, "approval_workflow") &&
+          (canApproveEmployeeDocuments(user) || canApproveOrgRequests(user))
             ? [
                 {
                   name: "Approvals",
@@ -167,31 +193,36 @@ export default function Sidebar() {
             moduleKey: "self_service_reviews",
           },
         ]
-      : [remoteAccess];
-    const filterRemote = (links: NavLink[]) => {
-      if (!delegation?.isRemoteMode) return links;
-      const allowed = new Set(delegation.moduleKeys);
-      return links.filter((item) => {
+      : [];
+    const filterNavLinks = (links: NavLink[]) => {
+      const tenantFiltered = links.filter((item) => {
         const key =
           item.moduleKey ?? NAV_MODULE_BY_NAME[item.name] ?? undefined;
-        if (item.name === "Remote access") return false;
+        if (key === null || key === undefined) return true;
+        return isNavModuleEnabled(tenantModules, key);
+      });
+      if (!delegation?.isRemoteMode) return tenantFiltered;
+      const allowed = new Set(delegation.moduleKeys);
+      return tenantFiltered.filter((item) => {
+        const key =
+          item.moduleKey ?? NAV_MODULE_BY_NAME[item.name] ?? undefined;
         if (key === null) return true;
         return key ? allowed.has(key) : false;
       });
     };
     return [
-      { id: "primary", label: "Workspace", links: filterRemote(primary) },
+      { id: "primary", label: "Workspace", links: filterNavLinks(primary) },
       ...(selfService.length
         ? [
             {
               id: "self-service",
               label: "Self-Service",
-              links: filterRemote(selfService),
+              links: filterNavLinks(selfService),
             },
           ]
         : []),
       ...(admin.length
-        ? [{ id: "admin", label: "Admin", links: filterRemote(admin) }]
+        ? [{ id: "admin", label: "Admin", links: filterNavLinks(admin) }]
         : []),
     ];
   }, [
@@ -199,15 +230,18 @@ export default function Sidebar() {
     canOrgFiles,
     canTemplates,
     canSettings,
-    isAppAdmin,
+    canCompliance,
+    canAuditTrail,
     currentUser.data,
     delegation?.isRemoteMode,
     delegation?.moduleKeys,
     pendingInvites,
+    tenantModules,
   ]);
 
-  const renderLink = (item: NavLink) => {
+  const renderLink = (item: NavLink, options?: { showLabel?: boolean }) => {
     const Icon = item.icon;
+    const showLabel = options?.showLabel ?? !item.iconOnly;
     const isActive =
       item.name === "Home"
         ? routePath.startsWith("/pages/dashboard") ||
@@ -215,15 +249,14 @@ export default function Sidebar() {
         : item.name === "My Workspace"
           ? isWorkspacePath(routePath) &&
             !routePath.startsWith("/pages/my-compliance")
-            : item.name === "Remote access"
-              ? routePath.startsWith("/pages/remote-access")
-              : item.name === "My Compliance"
+          : item.name === "Compliance"
+            ? routePath.startsWith("/pages/compliance")
+            : item.name === "My Compliance"
             ? routePath.startsWith("/pages/my-compliance") ||
               (routePath.startsWith("/pages/my-workspace") &&
                 routePath.includes("tab=compliance"))
             : item.name === "Employee Files"
-            ? routePath.startsWith("/pages/employee") ||
-              routePath.startsWith("/pages/compliance")
+            ? routePath.startsWith("/pages/employee")
             : item.name === "Approval requests"
               ? routePath.startsWith("/pages/approvals") ||
                 routePath.startsWith("/pages/organization/approvals")
@@ -239,18 +272,22 @@ export default function Sidebar() {
         key={item.name}
         href={item.link}
         aria-current={isActive ? "page" : undefined}
+        aria-label={!showLabel ? item.name : undefined}
+        title={!showLabel ? item.name : undefined}
         onClick={() => setMobileOpen(false)}
-        className={`app-nav-link ${isActive ? "is-active" : ""}`}
+        className={`app-nav-link ${item.iconOnly && !showLabel ? "is-icon-only" : ""} ${isActive ? "is-active" : ""}`}
       >
         <Icon className="h-4 w-4 shrink-0" />
-        <span className="flex flex-1 items-center justify-between gap-2">
-          <span>{item.name}</span>
-          {item.badge ? (
-            <span className="rounded-full bg-brand-pink px-2 py-0.5 text-[10px] font-bold text-white">
-              {item.badge}
-            </span>
-          ) : null}
-        </span>
+        {showLabel ? (
+          <span className="flex flex-1 items-center justify-between gap-2">
+            <span>{item.name}</span>
+            {item.badge ? (
+              <span className="rounded-full bg-brand-pink px-2 py-0.5 text-[10px] font-bold text-white">
+                {item.badge}
+              </span>
+            ) : null}
+          </span>
+        ) : null}
       </Link>
     );
   };
@@ -261,7 +298,7 @@ export default function Sidebar() {
         {groups.map((group, index) => (
           <div key={group.id} className="app-nav-cluster">
             {index > 0 ? <span className="app-nav-divider" aria-hidden /> : null}
-            {group.links.map(renderLink)}
+            {group.links.map((item) => renderLink(item))}
           </div>
         ))}
       </div>
@@ -280,7 +317,7 @@ export default function Sidebar() {
             {groups.map((group) => (
               <div key={group.id} className="app-nav-drawer-group">
                 <p>{group.label}</p>
-                {group.links.map(renderLink)}
+                {group.links.map((item) => renderLink(item, { showLabel: true }))}
               </div>
             ))}
           </div>

@@ -9,6 +9,51 @@ export type PolicyValidationResult = {
   warnings: string[];
 };
 
+export type PolicyWizardStep = "basics" | "audience" | "requirements" | "timing";
+
+function wizardStepForMissingField(message: string): PolicyWizardStep {
+  const lower = message.toLowerCase();
+  if (message.endsWith(" name")) {
+    return "basics";
+  }
+  // "Rule type" / "Policy type" only — not "…document type".
+  if (
+    message.endsWith(" type") &&
+    !lower.includes("document type")
+  ) {
+    return "basics";
+  }
+  if (message.startsWith("Audience")) {
+    return "audience";
+  }
+  if (
+    message === "Effective date" ||
+    message.startsWith("Copies needed")
+  ) {
+    return "timing";
+  }
+  return "requirements";
+}
+
+export function validatePolicyWizardStep(
+  step: PolicyWizardStep,
+  form: PolicyCreateFormState,
+  typeCode: string,
+  reviewMeta?: PolicyReviewMeta,
+  entity: "rule" | "policy" = "rule",
+): string | null {
+  const { missingFields } = validatePolicyCreateForm(
+    form,
+    typeCode,
+    reviewMeta,
+    entity,
+  );
+  const forStep = missingFields.filter(
+    (field) => wizardStepForMissingField(field) === step,
+  );
+  return forStep[0] ?? null;
+}
+
 export function validatePolicyCreateForm(
   form: PolicyCreateFormState,
   typeCode: string,

@@ -51,7 +51,7 @@ class DocRegistryService(models.AbstractModel):
             }
             if document.linked_template_document_id:
                 values["registry_template_id"] = document.linked_template_document_id.id
-            document.sudo().write(values)
+            document.sudo().with_context(skip_registry_sync=True).write(values)
 
     @api.model
     def _permission_domain(self, user):
@@ -134,6 +134,16 @@ class DocRegistryService(models.AbstractModel):
         records = Document.search(domain, limit=page_size, offset=offset, order="write_date desc")
         records = self._filter_accessible(records, user)
         items = [self._serialize_registry_entry(doc) for doc in records]
+        if term:
+            emitter = self.env.get("doc.audit.emitter.service")
+            if emitter:
+                emitter.section31(
+                    "search_executed",
+                    self.env.company,
+                    _("Search: %s") % term[:120],
+                    details="results=%s" % len(items),
+                    module="workspace",
+                )
         return {
             "items": items,
             "total": total,
@@ -143,18 +153,30 @@ class DocRegistryService(models.AbstractModel):
         }
 
     @api.model
-    def get_document(self, document_id):
+    def get_document(self, document_id, audit_source=None):
         document = self.env["doc.document"].browse(int(document_id)).exists()
         if not document:
             return None
+        emitter = self.env.get("doc.audit.emitter.service")
         allowed = self._filter_accessible(document, self.env.user)
         if not allowed:
-            self.env["doc.object.audit"].sudo().log(
-                document,
-                "registry_access_denied",
-                "Registry get_document refused",
-            )
+            if emitter:
+                emitter.log_document_access_denied(
+                    document,
+                    source=audit_source or "registry",
+                    reason="registry_get refused",
+                )
+            else:
+                self.env["doc.object.audit"].sudo().log(
+                    document,
+                    "registry_access_denied",
+                    "Registry get_document refused",
+                    result="denied",
+                )
             return None
+        if audit_source in ("search_preview", "search_result"):
+            if emitter:
+                emitter.log_document_view(document, source=audit_source)
         return self._serialize_registry_entry(document, include_actions=True)
 
     @api.model

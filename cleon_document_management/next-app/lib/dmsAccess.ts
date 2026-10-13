@@ -48,3 +48,7 @@ export function canViewTemplatesModule(user?: User | null): boolean {
     userHasDmsPermission(user, "templates_view")
   );
 }
+
+export function canViewAuditTrail(user?: User | null): boolean {
+  return userHasDmsPermission(user, "view_audit_activity");
+}

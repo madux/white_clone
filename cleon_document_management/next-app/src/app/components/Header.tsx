@@ -21,6 +21,7 @@ import { groupMetricResults } from "./EmployeeMetricPicker";
 import BackButton from "./BackButton";
 import Sidebar from "./Sidebar";
 import NotificationCentrePanel from "./NotificationCentrePanel";
+import HeaderPrimaryAction from "./HeaderPrimaryAction";
 
 function UserWidget() {
   const { data: user, isPending, isError } = useCurrentUser();
@@ -249,7 +250,7 @@ export default function Header() {
         .map((policy) => ({
           label: policy.name,
           detail: "Compliance rule",
-          href: `/pages/employee?tab=compliance&rule=${policy.id}`,
+          href: `/pages/compliance?rule=${policy.id}`,
           kind: "Policy",
         })),
       ...(!isDocumentManager
@@ -369,6 +370,8 @@ export default function Header() {
               </div>
             )}
           </div>
+
+          <HeaderPrimaryAction />
         </div>
 
         {/* Actions & Profile */}
@@ -377,7 +380,7 @@ export default function Header() {
             type="button"
             onClick={() => setNotificationsOpen((open) => !open)}
             aria-label="Open notifications"
-            className={`relative rounded-xl p-2.5 text-slate-400 transition hover:bg-white hover:text-brand-pink ${
+            className={`app-chrome-icon-btn relative ${
               guideTarget === "notifications" || guideTarget === "approval-inbox"
                 ? "guide-emphasis"
                 : ""

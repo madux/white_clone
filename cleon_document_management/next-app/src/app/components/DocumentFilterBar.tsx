@@ -52,6 +52,7 @@ interface DocumentFilterBarProps {
   totalCount?: number;
   filteredCount?: number;
   actions?: ReactNode;
+  primaryAction?: ReactNode;
   leading?: ReactNode;
   extras?: ReactNode;
 }
@@ -108,9 +109,11 @@ export default function DocumentFilterBar({
   totalCount,
   filteredCount,
   actions,
+  primaryAction,
   leading,
   extras,
-}: DocumentFilterBarProps) {
+  hideSearch = false,
+}: DocumentFilterBarProps & { hideSearch?: boolean }) {
   const [expanded, setExpanded] = React.useState(false);
 
   const hasActiveFilters =
@@ -146,30 +149,14 @@ export default function DocumentFilterBar({
 
   return (
     <AppToolbar
-      search={filters.search}
-      onSearchChange={(value) => updateFilter("search", value)}
+      search={hideSearch ? undefined : filters.search}
+      onSearchChange={
+        hideSearch ? undefined : (value) => updateFilter("search", value)
+      }
       searchPlaceholder="Search documents by name, type, department, or keyword..."
+      primaryAction={primaryAction}
       extras={
         <>
-          <div className="w-48">
-            <ThemedSelect
-              value={filters.documentType}
-              onChange={(val) => updateFilter("documentType", val)}
-              placeholder="Document type"
-              options={[
-                { value: "all", label: "All document types" },
-                ...availableTypes.map((t) => ({ value: String(t.id), label: t.name })),
-              ]}
-            />
-          </div>
-          <div className="w-40">
-            <ThemedSelect
-              value={filters.status}
-              onChange={(val) => updateFilter("status", val)}
-              placeholder="Status"
-              options={STATUS_OPTIONS}
-            />
-          </div>
           <Button
             type="button"
             variant="outline"
@@ -202,6 +189,21 @@ export default function DocumentFilterBar({
         <>
           {expanded ? (
             <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <ThemedSelect
+                value={filters.documentType}
+                onChange={(val) => updateFilter("documentType", val)}
+                placeholder="Document type"
+                options={[
+                  { value: "all", label: "All document types" },
+                  ...availableTypes.map((t) => ({ value: String(t.id), label: t.name })),
+                ]}
+              />
+              <ThemedSelect
+                value={filters.status}
+                onChange={(val) => updateFilter("status", val)}
+                placeholder="Status"
+                options={STATUS_OPTIONS}
+              />
               {showDepartmentFilter ? (
                 <ThemedSelect
                   value={filters.department}

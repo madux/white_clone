@@ -12,6 +12,13 @@ export const VERIFIED_BY_OPTIONS = Object.entries(VERIFIED_BY_LABELS).map(
   ([value, label]) => ({ value, label }),
 );
 
+/** Policy types that do not use document verification / verifier SLA settings. */
+export function policyTypeUsesVerification(typeCode: string): boolean {
+  return (
+    typeCode !== "review_schedule" && typeCode !== "compliance_request"
+  );
+}
+
 const VERIFIER_PHRASES: Record<string, string> = {
   line_manager: "each employee's line manager",
   hr_admin: "an HR administrator",
@@ -45,14 +52,10 @@ export function approverHandoffTypes(
   ) {
     return [];
   }
-  const ids = new Set<number>(
-    typeCode === "compliance_request"
-      ? form.request_tasks
-          .filter((task) => task.task_type === "upload_evidence")
-          .map((task) => Number(task.evidence_document_type_id || 0))
-          .filter(Boolean)
-      : form.document_type_ids,
-  );
+  if (typeCode === "compliance_request") {
+    return [];
+  }
+  const ids = new Set<number>(form.document_type_ids);
   return documentTypes.filter(
     (type) =>
       ids.has(type.id) &&

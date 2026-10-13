@@ -2,7 +2,8 @@
 
 import { AlertCircle, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useMyCompliance } from "../../../hooks/useDocuments";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS, useMyCompliance } from "../../../hooks/useDocuments";
 import type {
   MyComplianceInboxItem,
   MyComplianceInboxTab,
@@ -61,6 +62,7 @@ export default function MyCompliancePage({
 }: {
   embedded?: boolean;
 }) {
+  const queryClient = useQueryClient();
   const compliance = useMyCompliance();
   const data = compliance.data;
   const [tab, setTab] = useState<MyComplianceInboxTab>("todo");
@@ -116,13 +118,7 @@ export default function MyCompliancePage({
         </div>
       )}
 
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">My Compliance</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            What you need to submit, acknowledge, or renew to stay compliant.
-          </p>
-        </div>
+      <header className="flex flex-wrap items-center justify-end gap-3">
         <StatusPill
           label={overallStatusLabel(data?.overall_status)}
           tone={
@@ -288,7 +284,11 @@ export default function MyCompliancePage({
           item={submitItem.item}
           mode={submitItem.mode}
           onClose={() => setSubmitItem(null)}
-          onSubmitted={() => compliance.refetch()}
+          onSubmitted={() => {
+            void compliance.refetch();
+            void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.myCompliance });
+            void queryClient.invalidateQueries({ queryKey: ["dms", "work-items"] });
+          }}
         />
       ) : null}
 

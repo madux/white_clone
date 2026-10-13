@@ -81,17 +81,39 @@ class DocOrganizationalApprovalService(models.AbstractModel):
     def submit_or_block(self, user, action_key, payload, name=None):
         if not self.user_may_request_action(user, action_key):
             raise AccessError(_("You do not have permission for this action."))
+        workflow = self.env["doc.approval.workflow.service"]
+        if not workflow.is_enabled():
+            return {"execute": True, "request": None}
         if self.user_can_execute_without_approval(user, action_key):
             return {"execute": True, "request": None}
         Request = self.env["doc.organizational.approval.request"]
-        config = self._config()
-        sla_hours = int(config.org_approval_sla_hours or 48)
-        due_at = fields.Datetime.now() + timedelta(hours=sla_hours)
         label = ACTION_LABELS.get(action_key, action_key)
         payload = dict(payload or {})
         document_id = payload.get("document_id")
         folder_id = payload.get("folder_id") or payload.get("parent_id")
-        request = Request.create(
+        Folder = self.env["doc.folder"]
+        Document = self.env["doc.document"]
+        folder = Folder.browse(int(folder_id or 0)).exists() if folder_id else Folder
+        document = (
+            Document.browse(int(document_id or 0)).exists() if document_id else Document
+        )
+        if not folder and document:
+            folder = document.folder_id
+        category = False
+        if document and document.document_type_id:
+            category = document.document_type_id.category_id
+        approvers = workflow.resolve_approver_users(
+            user,
+            folder=folder or False,
+            document=document or False,
+            category=category,
+        )
+        fallback = workflow.resolve_fallback_users(user)
+        if not approvers:
+            approvers = fallback
+        working_days = workflow.respond_working_days()
+        due_at = workflow.add_working_days(fields.Datetime.now(), working_days)
+        request = Request.with_context(audit_suppress_approval_create=True).create(
             {
                 "name": name or _("%s approval") % label,
                 "action_key": action_key,
@@ -99,8 +121,10 @@ class DocOrganizationalApprovalService(models.AbstractModel):
                 "company_id": user.company_id.id,
                 "due_at": due_at,
                 "payload_json": json.dumps(payload),
-                "folder_id": folder_id or False,
-                "document_id": document_id or False,
+                "folder_id": folder.id if folder else False,
+                "document_id": document.id if document else False,
+                "assigned_approver_ids": [(6, 0, approvers.ids)],
+                "fallback_approver_ids": [(6, 0, fallback.ids)],
             }
         )
         return {"execute": False, "request": request}
@@ -127,10 +151,24 @@ class DocOrganizationalApprovalService(models.AbstractModel):
     ):
         user = self.env.user
         perm = self._perm()
+        workflow = self.env["doc.approval.workflow.service"]
         is_approver = perm.user_can_approve_org_requests(
             user
         ) or perm.user_is_platform_admin(user)
-        if is_approver:
+        if workflow.is_enabled():
+            domain = [
+                ("company_id", "=", user.company_id.id),
+                "|",
+                "|",
+                ("requested_by_id", "=", user.id),
+                ("assigned_approver_ids", "in", user.id),
+                "&",
+                ("escalated_at", "!=", False),
+                ("fallback_approver_ids", "in", user.id),
+            ]
+            if perm.user_is_platform_admin(user):
+                domain = [("company_id", "=", user.company_id.id)]
+        elif is_approver:
             domain = [("company_id", "=", user.company_id.id)]
         else:
             domain = [("requested_by_id", "=", user.id)]
@@ -162,14 +200,23 @@ class DocOrganizationalApprovalService(models.AbstractModel):
             user
         ):
             raise UserError(_("You cannot approve your own request."))
+        workflow = self.env["doc.approval.workflow.service"]
         delegate = self._active_delegate_for(request.requested_by_id)
         escalation = self._escalation_approver()
-        if not (
-            self._perm().user_can_approve_org_requests(user)
-            or self._perm().user_is_platform_admin(user)
+        may_decide = (
+            self._perm().user_is_platform_admin(user)
             or (delegate and delegate.id == user.id)
-            or (request.escalated_at and escalation and escalation.id == user.id)
-        ):
+        )
+        if workflow.is_enabled():
+            if request.escalated_at:
+                may_decide = may_decide or user in request.fallback_approver_ids
+            else:
+                may_decide = may_decide or user in request.assigned_approver_ids
+        else:
+            may_decide = may_decide or self._perm().user_can_approve_org_requests(user)
+            if request.escalated_at and escalation:
+                may_decide = may_decide or escalation.id == user.id
+        if not may_decide:
             raise AccessError(_("You cannot decide this approval request."))
 
     @api.model
@@ -465,8 +512,7 @@ class DocOrganizationalApprovalService(models.AbstractModel):
     @api.model
     def cron_sla_reminders(self):
         now = fields.Datetime.now()
-        config = self._config()
-        reminder_hours = int(config.org_approval_reminder_hours_before_sla or 6)
+        workflow = self.env["doc.approval.workflow.service"]
         pending = self.env["doc.organizational.approval.request"].search(
             [
                 ("state", "=", "pending"),
@@ -475,7 +521,10 @@ class DocOrganizationalApprovalService(models.AbstractModel):
             ]
         )
         for request in pending:
-            if request.due_at and request.due_at - timedelta(hours=reminder_hours) <= now:
+            if not request.due_at or not request.create_date:
+                continue
+            midpoint = request.create_date + (request.due_at - request.create_date) / 2
+            if midpoint <= now:
                 request.reminded_at = now
         overdue = self.env["doc.organizational.approval.request"].search(
             [
@@ -485,6 +534,16 @@ class DocOrganizationalApprovalService(models.AbstractModel):
                 ("escalated_at", "=", False),
             ]
         )
-        escalation_user = self._escalation_approver()
         for request in overdue:
             request.escalated_at = now
+            if workflow.is_enabled() and request.fallback_approver_ids:
+                self.env["doc.notification.service"].notify(
+                    "appr.past_deadline",
+                    _("Approval past deadline"),
+                    {
+                        "res_model": "doc.organizational.approval.request",
+                        "res_id": request.id,
+                        "user_ids": request.fallback_approver_ids.ids,
+                        "title": request.name,
+                    },
+                )

@@ -51,6 +51,7 @@ import {
   canManageOrgFolders,
   canUploadOrgDocuments,
 } from "../../../lib/organizationalFilesAccess";
+import { canViewComplianceModule } from "../../../lib/dmsAccess";
 import BulkFolderActions from "./BulkFolderActions";
 import FolderPickerDialog from "./FolderPickerDialog";
 import { folderIdsWithDescendants } from "./FolderTreePicker";
@@ -276,37 +277,15 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
             />
           }
           actions={
-            <>
-              {kind === "employee" && currentUser.data?.is_document_admin === true ? (
-                <Button
-                  variant="outline"
-                  render={<Link href="/pages/employee?tab=compliance" />}
-                >
-                  <ShieldCheck data-icon="inline-start" />
-                  Compliance
-                </Button>
-              ) : null}
-              {isOrganizationPage &&
-              (canCreateFolder || canCreateOrgPolicy(currentUser.data)) ? (
-                <OrganizationalNewMenu
-                  canUpload={canUploadOrg}
-                  canCreateFolder={canCreateFolder}
-                  canCreatePolicy={canCreateOrgPolicy(currentUser.data)}
-                  libraryTab={orgSectionTab}
-                  onCreateRootFolder={() => setShowCreateFolder(true)}
-                />
-              ) : canCreateFolder ? (
-                <NewMenu
-                  items={[
-                    {
-                      label: "Folder",
-                      icon: FolderPlus,
-                      onSelect: () => setShowCreateFolder(true),
-                    },
-                  ]}
-                />
-              ) : null}
-            </>
+            kind === "employee" && canViewComplianceModule(currentUser.data) ? (
+              <Button
+                variant="outline"
+                render={<Link href="/pages/compliance" />}
+              >
+                <ShieldCheck data-icon="inline-start" />
+                Compliance
+              </Button>
+            ) : null
           }
           footer={
             showFilters && !isEmployeePage ? (
@@ -413,6 +392,12 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
         {isOrganizationPage && orgSectionTab === "policies" ? (
           <OrganizationalPoliciesPanel
             search={search}
+            policyFilters={{
+              status: "all",
+              visibility: "all",
+              category: "all",
+              hasDocument: "all",
+            }}
             viewMode={viewMode}
             canManageFolders={
               currentUser.data?.is_document_manager === true ||
@@ -562,34 +547,14 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
             description={
               visibleFolders.length === 0
                 ? isEmployeePage
-                  ? "Create a folder to group employee files and documents."
-                  : "Create a folder to publish policies and shared documents."
+                  ? "Use + New in the header to create a folder."
+                  : "Use + New in the header to create a folder or policy."
                 : search.trim()
                   ? "Try a different search term."
                   : "Clear filters to see all folders."
             }
             action={
-              visibleFolders.length === 0 && canCreateFolder ? (
-                isOrganizationPage ? (
-                  <OrganizationalNewMenu
-                    canUpload={canUploadOrg}
-                    canCreateFolder={canCreateFolder}
-                    canCreatePolicy={canCreateOrgPolicy(currentUser.data)}
-                    libraryTab={orgSectionTab}
-                    onCreateRootFolder={() => setShowCreateFolder(true)}
-                  />
-                ) : (
-                <NewMenu
-                  items={[
-                    {
-                      label: "Folder",
-                      icon: FolderPlus,
-                      onSelect: () => setShowCreateFolder(true),
-                    },
-                  ]}
-                />
-                )
-              ) : search.trim() || complianceFilter !== "all" ? (
+              search.trim() || complianceFilter !== "all" ? (
                 <button
                   type="button"
                   onClick={() => {

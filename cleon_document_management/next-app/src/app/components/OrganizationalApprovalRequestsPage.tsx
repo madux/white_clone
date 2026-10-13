@@ -207,15 +207,6 @@ export default function OrganizationalApprovalRequestsPage({
 
   return (
     <div className={embedded ? "space-y-3" : "space-y-4 p-4"}>
-      {!embedded ? (
-        <header>
-          <h1 className="text-lg font-semibold">Approval requests</h1>
-          <p className="text-sm text-muted-foreground">
-            Organisational actions submitted when “without approval” is not granted.
-          </p>
-        </header>
-      ) : null}
-
       <SectionTabs
         ariaLabel="Approval status"
         level="nested"

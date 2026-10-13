@@ -74,13 +74,6 @@ export default function ApprovalRequestsPage({
 
   return (
     <div className="app-page space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold text-slate-900">Approval requests</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Review employee file uploads and organisational change requests in one place.
-        </p>
-      </header>
-
       {tabItems.length > 1 ? (
         <SectionTabs
           ariaLabel="Approval types"

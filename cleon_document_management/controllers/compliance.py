@@ -12,6 +12,7 @@ from .access import (
     require_compliance_run,
     require_compliance_view,
     require_document_admin,
+    user_can_list_full_compliance_targets,
 )
 from .workspace_delegation import effective_employee, effective_user, workspace_ctx
 
@@ -35,7 +36,10 @@ class ComplianceController(http.Controller):
 
     @staticmethod
     def _policy_data(policy):
-        return {
+        type_code = (
+            policy.policy_type_id.code if policy.policy_type_id else ""
+        )
+        data = {
             "id": policy.id,
             "name": policy.name,
             "description": policy.description or "",
@@ -65,8 +69,6 @@ class ComplianceController(http.Controller):
                 policy.retention_action_mode
             ),
             "retention_owner_notice_days": policy.retention_owner_notice_days or 0,
-            "verified_by": policy.verified_by or "",
-            "verification_sla_days": policy.verification_sla_days,
             "run_in_progress": bool(policy.run_in_progress),
             "current_version_id": policy.current_version_id.id
             if policy.current_version_id
@@ -126,6 +128,10 @@ class ComplianceController(http.Controller):
                 }
             ),
         }
+        if type_code != "compliance_request":
+            data["verified_by"] = policy.verified_by or ""
+            data["verification_sla_days"] = policy.verification_sla_days
+        return data
 
     @staticmethod
     def _policy_type_code(env, policy_type_id):
@@ -294,6 +300,8 @@ class ComplianceController(http.Controller):
         if type_code == "compliance_request":
             values["document_type_ids"] = [fields.Command.clear()]
             values.update(ComplianceController._request_policy_values(kwargs))
+            values.pop("verified_by", None)
+            values.pop("verification_sla_days", None)
         elif type_code == "review_schedule":
             values["document_type_ids"] = [fields.Command.clear()]
             values.update(ComplianceController._review_policy_values(kwargs))
@@ -346,6 +354,9 @@ class ComplianceController(http.Controller):
     @staticmethod
     def _run_data(run):
         policy = run.policy_id
+        total = run.progress_total or 0
+        done = run.progress_done or 0
+        percent = round((done * 100.0) / total) if total else 0
         return {
             "id": run.id,
             "policy_id": policy.id,
@@ -353,6 +364,12 @@ class ComplianceController(http.Controller):
             "policy_allow_waiver": policy.allow_waiver,
             "run_type": run.run_type,
             "evaluated_at": str(run.evaluated_at or ""),
+            "state": run.state or "completed",
+            "progress_total": total,
+            "progress_done": done,
+            "progress_message": run.progress_message or "",
+            "progress_percent": percent,
+            "error_message": run.error_message or "",
             "employee_count": run.employee_count,
             "compliant_count": run.compliant_count,
             "partial_count": run.partial_count,
@@ -446,21 +463,39 @@ class ComplianceController(http.Controller):
     )
     def compliance_targets(self, **kwargs):
         """Return named records used by policy scope selectors and HR auditor/reviewer fields."""
-        is_manager = request.env.user.has_group(
-            "cleon_document_management.group_document_manager"
+        user = request.env.user
+        list_all = user_can_list_full_compliance_targets(user)
+        employee = user.employee_id
+        company = user.company_id
+        company_clause = [("company_id", "in", [False, company.id])] if company else []
+        Employee = request.env["hr.employee"]
+        employee_domain = (
+            [("active", "=", True)] + company_clause
+            if list_all
+            else [("id", "=", employee.id or 0)]
         )
-        employee = request.env.user.employee_id
-        employees = request.env["hr.employee"].search(
-            [("active", "=", True)] if is_manager else [("id", "=", employee.id or 0)],
-            order="name",
+        employees = (
+            Employee.sudo().search(employee_domain, order="name")
+            if list_all
+            else Employee.search(employee_domain, order="name")
         )
-        departments = request.env["hr.department"].search(
-            [] if is_manager else [("id", "=", employee.department_id.id or 0)],
-            order="name",
+        Department = request.env["hr.department"]
+        department_domain = (
+            company_clause if list_all else [("id", "=", employee.department_id.id or 0)]
         )
-        grades = request.env["hr.grade"].search(
-            [] if is_manager else [("id", "=", employee.grade_id.id or 0)],
-            order="name",
+        departments = (
+            Department.sudo().search(department_domain, order="name")
+            if list_all
+            else Department.search(department_domain, order="name")
+        )
+        Grade = request.env["hr.grade"]
+        grade_domain = (
+            [] if list_all else [("id", "=", employee.grade_id.id or 0)]
+        )
+        grades = (
+            Grade.sudo().search(grade_domain, order="name")
+            if list_all
+            else Grade.search(grade_domain, order="name")
         )
         manager_group = request.env.ref(
             "cleon_document_management.group_document_manager", raise_if_not_found=False
@@ -958,17 +993,80 @@ class ComplianceController(http.Controller):
         if not policy:
             return {"success": False, "message": "Policy not found."}
         if policy.run_in_progress:
+            active_run = request.env["doc.compliance.evaluation.run"].search(
+                [
+                    ("policy_id", "=", policy.id),
+                    ("state", "=", "running"),
+                ],
+                order="id desc",
+                limit=1,
+            )
+            if active_run:
+                return {
+                    "success": True,
+                    "async": True,
+                    "run_id": active_run.id,
+                    "message": _("Compliance run already in progress."),
+                    "run": self._run_data(active_run),
+                }
             return {
                 "success": False,
                 "message": "A run is already in progress for this policy.",
+            }
+        if policy._evaluation_engine_kind() == "standard":
+            run = policy.action_begin_manual_evaluation(run_type="manual")
+            return {
+                "success": True,
+                "async": True,
+                "run_id": run.id,
+                "message": _("Compliance run started."),
+                "run": self._run_data(run),
             }
         runs = policy.action_evaluate(run_type="manual")
         evaluations = policy.evaluation_ids if runs else request.env["doc.compliance.evaluation"]
         return {
             "success": True,
-            "message": "Policy is not active yet; no evaluation was run." if not runs else "Policy check completed.",
+            "async": False,
+            "message": "Policy is not active yet; no evaluation was run."
+            if not runs
+            else "Policy check completed.",
             "data": [self._evaluation_data(item) for item in evaluations],
             "run": self._run_data(runs[-1]) if runs else None,
+        }
+
+    @http.route(
+        "/api/compliance/runs/<int:run_id>/progress",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def compliance_run_progress(self, run_id, **kwargs):
+        try:
+            require_compliance_run()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        run = request.env["doc.compliance.evaluation.run"].browse(run_id).exists()
+        if not run:
+            return {"success": False, "message": "Run not found."}
+        payload = self._run_data(run)
+        message = "Policy check completed."
+        if run.state == "failed":
+            message = run.error_message or "Compliance run failed."
+        elif run.state != "completed":
+            message = run.progress_message or _("Compliance run in progress.")
+        elif run.employee_count:
+            message = _(
+                "Evaluated %(count)s employees (%(compliant)s compliant, %(issues)s need attention)."
+            ) % {
+                "count": run.employee_count,
+                "compliant": run.compliant_count,
+                "issues": run.non_compliant_count + run.partial_count,
+            }
+        return {
+            "success": True,
+            "message": message,
+            "data": payload,
         }
 
     @http.route(
@@ -2096,7 +2194,7 @@ class ComplianceController(http.Controller):
         record_id = record_id or kwargs.get("record_id") or kwargs.get("id")
         if not kind or not record_id:
             return {"success": False, "message": "kind and record_id are required."}
-        Inbox = request.env["doc.compliance.employee.inbox"]
+        Inbox = request.env["doc.compliance.employee.inbox"].sudo()
         try:
             data = Inbox.get_item_detail(employee, kind, int(record_id))
         except AccessError as error:
@@ -2118,7 +2216,7 @@ class ComplianceController(http.Controller):
         employee = effective_employee(ctx)
         if not employee:
             return {"success": True, "data": []}
-        tasks = request.env["doc.compliance.task"].search(
+        tasks = request.env["doc.compliance.task"].sudo().search(
             [
                 ("employee_id", "=", employee.id),
                 ("cycle_id.state", "=", "open"),

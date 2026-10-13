@@ -2,7 +2,11 @@
 
 import type { PolicyCreateFormState } from "../../../lib/policyCreateForm";
 import type { DocumentType } from "../../../lib/types";
-import { VERIFIED_BY_OPTIONS, approverHandoffTypes } from "../../../lib/verificationPolicy";
+import {
+  VERIFIED_BY_OPTIONS,
+  approverHandoffTypes,
+  policyTypeUsesVerification,
+} from "../../../lib/verificationPolicy";
 import ApproverHandoffNotice from "./ApproverHandoffNotice";
 import ThemedSelect from "./ThemedSelect";
 
@@ -19,6 +23,9 @@ export default function ComplianceVerificationFields({
   documentTypes?: DocumentType[];
   entityName?: "rule" | "policy";
 }) {
+  if (!policyTypeUsesVerification(typeCode)) {
+    return null;
+  }
   const handoffTypes = approverHandoffTypes(form, typeCode, documentTypes);
   return (
     <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">

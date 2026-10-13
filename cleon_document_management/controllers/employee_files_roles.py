@@ -41,6 +41,46 @@ class EmployeeFilesRolesController(http.Controller):
         return {"success": True}
 
     @http.route(
+        "/api/employee-files/roles/clone",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def clone_role(self, role_id=None, **kwargs):
+        service = request.env["doc.employee.files.role.service"]
+        rid = role_id or kwargs.get("id")
+        return {"success": True, "data": service.clone_role(rid)}
+
+    @http.route(
+        "/api/employee-files/roles/editor-context",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def editor_context(self, **kwargs):
+        service = request.env["doc.employee.files.role.service"]
+        return {"success": True, "data": service.roles_editor_context()}
+
+    @http.route(
+        "/api/employee-files/roles/effective-permissions",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def effective_permissions(self, user_id=None, **kwargs):
+        service = request.env["doc.employee.files.role.service"]
+        service._require_author()
+        uid = user_id or kwargs.get("user_id")
+        dms = request.env["doc.dms.permission"]
+        return {
+            "success": True,
+            "data": dms.effective_permissions_detail(int(uid)),
+        }
+
+    @http.route(
         "/api/employee-files/roles/members",
         type="json",
         auth="user",

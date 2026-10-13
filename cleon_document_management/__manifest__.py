@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CLEON DOCUMENT MANAGEMENT",
-    "version": "17.0.1.43.2",
+    "version": "17.0.1.44.13",
     "category": "CleonHR Document Management",
     "sequence": -1,
     "summary": "CLEON DOCUMENT MANAGEMENT",
@@ -29,6 +29,7 @@
         "data/workspace_modules.xml",
         "data/workspace_access_cron.xml",
         "data/notification_cron.xml",
+        "data/dms_audit_cron.xml",
     ],
     "assets": {
         "web.assets_backend": [

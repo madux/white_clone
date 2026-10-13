@@ -48,6 +48,10 @@ class DocEmployeeFilesPermission(models.AbstractModel):
 
     @api.model
     def user_can_access_ef_home(self, user):
+        if not self.env["doc.dms.tenant.modules.service"].module_enabled(
+            "employee_files"
+        ):
+            return False
         return self._dms().user_has_dms_permission(user, "view_employee_files")
 
     @api.model

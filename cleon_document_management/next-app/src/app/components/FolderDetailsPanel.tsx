@@ -44,6 +44,7 @@ export default function FolderDetailsPanel({
   acknowledgementPercent,
   acknowledgementPending,
   onClose,
+  variant = "slideOver",
 }: {
   folderId: number;
   folderName: string;
@@ -61,10 +62,13 @@ export default function FolderDetailsPanel({
   retentionPeriod?: string;
   acknowledgementPercent?: number | null;
   acknowledgementPending?: number;
-  onClose: () => void;
+  onClose?: () => void;
+  variant?: "slideOver" | "inline";
 }) {
   const folders = useFolders();
-  const [tab, setTab] = useState<"details" | "activity">("details");
+  const [tab, setTab] = useState<"details" | "activity" | "access" | "related">(
+    "details",
+  );
   const [auditRows, setAuditRows] = useState<any[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
 
@@ -134,14 +138,25 @@ export default function FolderDetailsPanel({
       .finally(() => setAuditLoading(false));
   }, [folderId, organizational, tab]);
 
-  return (
-    <SlideOver title={folderName} onClose={onClose}>
-      <div className="px-5 pt-3">
+  const tabItems = [
+    { id: "details" as const, label: "Details" },
+    ...(organizational
+      ? [
+          { id: "activity" as const, label: "Activity" },
+          { id: "access" as const, label: "Access" },
+          {
+            id: "related" as const,
+            label: `Related (${itemCount})`,
+          },
+        ]
+      : []),
+  ];
+
+  const body = (
+    <>
+      <div className={variant === "inline" ? "px-4 pt-3" : "px-5 pt-3"}>
         <SectionTabs
-          items={[
-            { id: "details", label: "Details" },
-            ...(organizational ? [{ id: "activity" as const, label: "Activity" }] : []),
-          ]}
+          items={tabItems}
           value={tab}
           onChange={setTab}
           level="nested"
@@ -235,8 +250,12 @@ export default function FolderDetailsPanel({
             <dd className="font-medium text-slate-900">
               {formatDocumentDate(merged.last_modified)}
             </dd>
-            <dt className="text-slate-500">Folder ID</dt>
-            <dd className="font-medium text-slate-900">{folderId}</dd>
+            {variant === "slideOver" ? (
+              <>
+                <dt className="text-slate-500">Folder ID</dt>
+                <dd className="font-medium text-slate-900">{folderId}</dd>
+              </>
+            ) : null}
             {merged.description ? (
               <>
                 <dt className="text-slate-500">Description</dt>
@@ -299,6 +318,43 @@ export default function FolderDetailsPanel({
           )}
         </div>
       ) : null}
+      {tab === "access" && organizational ? (
+        <div className="px-5 py-4 text-sm text-slate-700">
+          <p className="font-medium text-slate-900">Who can access this folder</p>
+          <p className="mt-2">
+            {merged.access_scope
+              ? formatFieldLabel(merged.access_scope)
+              : "Inherited from parent or library defaults."}
+          </p>
+          {merged.require_upload_approval ? (
+            <p className="mt-3 text-xs text-slate-500">
+              Uploads require approval (
+              {approvalFlowLabel((merged.approval_flow || "any") as ApprovalFlow)}
+              ).
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      {tab === "related" && organizational ? (
+        <div className="px-5 py-4 text-sm text-slate-600">
+          <p>
+            This folder contains{" "}
+            <span className="font-semibold text-slate-900">{itemCount}</span>{" "}
+            items (subfolders and documents). Open the grid to browse or use Quick
+            actions to add content.
+          </p>
+        </div>
+      ) : null}
+    </>
+  );
+
+  if (variant === "inline") {
+    return <div className="min-h-0 overflow-y-auto">{body}</div>;
+  }
+
+  return (
+    <SlideOver title={folderName} onClose={onClose ?? (() => undefined)}>
+      {body}
     </SlideOver>
   );
 }

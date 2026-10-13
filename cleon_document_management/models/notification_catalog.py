@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""NS-00 default notification events (Global Master Spec)."""
+"""Default notification events for CleonHR Document Management."""
 
 from odoo import api, models
 

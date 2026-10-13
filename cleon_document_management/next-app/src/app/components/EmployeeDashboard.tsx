@@ -65,11 +65,7 @@ export default function EmployeeDashboard({
 
   return (
     <div className="space-y-5">
-      <div className="app-page-header">
-        <div>
-          <h1>Home</h1>
-          <p>Your documents, outstanding uploads, and recent files.</p>
-        </div>
+      <div className="flex justify-end">
         <Link
           href={myWorkspaceHref("documents", { upload: "1" })}
           className="app-btn app-btn-primary"

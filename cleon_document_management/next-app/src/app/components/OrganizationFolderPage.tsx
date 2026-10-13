@@ -55,6 +55,7 @@ import StatusPill from "./StatusPill";
 import { Button } from "@/components/ui/button";
 import { sortLibraryFileRows } from "../../../lib/libraryTableSort";
 import { isOrgDocumentLinkedToPolicy } from "../../../lib/policyDocumentName";
+import ViewToggle from "./ViewToggle";
 
 function folderKindLabel(kind?: string) {
   if (kind === "project") return "Project";
@@ -63,10 +64,28 @@ function folderKindLabel(kind?: string) {
   return "Folder";
 }
 
-export default function OrganizationFolderPage() {
+type ViewMode = "list" | "cards";
+
+export default function OrganizationFolderPage({
+  embedded = false,
+  folderId: folderIdProp,
+  viewMode: viewModeProp,
+  onViewModeChange,
+  onNavigateToFolder,
+  contentSearch = "",
+  onContentSearchChange,
+}: {
+  embedded?: boolean;
+  folderId?: number;
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
+  onNavigateToFolder?: (folderId: number) => void;
+  contentSearch?: string;
+  onContentSearchChange?: (value: string) => void;
+} = {}) {
   const params = useSearchParams();
   const router = useRouter();
-  const folderId = Number(params.get("folder"));
+  const folderId = folderIdProp ?? Number(params.get("folder") || 0);
   const folders = useFolders();
   const documents = useDocuments(folderId || undefined, true);
   const types = useDocumentTypes();
@@ -90,6 +109,9 @@ export default function OrganizationFolderPage() {
   });
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTER_STATE);
   const [librarySortKey, setLibrarySortKey] = useState("name asc");
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>("cards");
+  const viewMode = viewModeProp ?? internalViewMode;
+  const setViewMode = onViewModeChange ?? setInternalViewMode;
   const [viewing, setViewing] = useState<any>(null);
   const [selectedFolderIds, setSelectedFolderIds] = useState<number[]>([]);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<number[]>([]);
@@ -119,7 +141,14 @@ export default function OrganizationFolderPage() {
     if (match) setViewing(match);
   }, [documents.data, params]);
 
-  const query = filters.search.trim().toLowerCase();
+  useEffect(() => {
+    if (!embedded) return;
+    setFilters((current) =>
+      current.search === contentSearch ? current : { ...current, search: contentSearch },
+    );
+  }, [contentSearch, embedded]);
+
+  const query = (contentSearch || filters.search).trim().toLowerCase();
   const visibleChildFolders = childFolders.filter((item) => {
     if (!query) return true;
     return `${item.folder_name} ${item.description || ""}`.toLowerCase().includes(query);
@@ -164,7 +193,10 @@ export default function OrganizationFolderPage() {
       folderKind: item.folder_kind,
       name: item.folder_name,
       subtitle: `${folderKindLabel(item.folder_kind)}${item.collection_code ? ` · ${item.collection_code}` : ""} · ${itemCount} items`,
-      href: `/pages/organization/folder?folder=${item.id}`,
+      href: onNavigateToFolder
+        ? undefined
+        : `/pages/organization/folder?folder=${item.id}`,
+      onOpen: onNavigateToFolder ? () => onNavigateToFolder(item.id) : undefined,
       extra: item.locked ? (
         <Lock className="size-3.5 text-muted-foreground" />
       ) : null,
@@ -307,30 +339,42 @@ export default function OrganizationFolderPage() {
     librarySortKey,
   );
 
-  return (
-    <div className="app-page space-y-6">
-      <div className="flex min-w-0 items-center gap-3">
-        {folder ? (
-          <OrgFolderIcon
-            className="h-10 w-10 shrink-0"
-            folderKind={folder.folder_kind}
-            hasContent={
-              (documents.data?.length ?? 0) > 0 || visibleChildFolders.length > 0
-            }
-            documents={documents.data ?? []}
-          />
-        ) : null}
-        <LibraryBreadcrumb
-          items={[
-            { label: "Organizational Files", href: "/pages/organization" },
-            {
-              label: folder?.collection_code
-                ? `${folder.folder_name} (${folder.collection_code})`
-                : folder?.folder_name || "Folder",
-            },
-          ]}
-        />
+  if (embedded && !folderId) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 text-sm text-slate-500">
+        Select a folder from the tree to browse contents.
       </div>
+    );
+  }
+
+  const folderPathLabel = folder?.folder_name || "Folder";
+
+  return (
+    <div className={embedded ? "flex min-h-0 flex-1 flex-col" : "app-page space-y-6"}>
+      {!embedded ? (
+        <div className="flex min-w-0 items-center gap-3">
+          {folder ? (
+            <OrgFolderIcon
+              className="h-10 w-10 shrink-0"
+              folderKind={folder.folder_kind}
+              hasContent={
+                (documents.data?.length ?? 0) > 0 || visibleChildFolders.length > 0
+              }
+              documents={documents.data ?? []}
+            />
+          ) : null}
+          <LibraryBreadcrumb
+            items={[
+              { label: "Organizational Files", href: "/pages/organization" },
+              {
+                label: folder?.collection_code
+                  ? `${folder.folder_name} (${folder.collection_code})`
+                  : folderPathLabel,
+              },
+            ]}
+          />
+        </div>
+      ) : null}
       {folder?.folder_kind === "policy" &&
       policyRegistry.data?.lifecycle_status === "draft" &&
       canManagePolicy ? (
@@ -347,7 +391,49 @@ export default function OrganizationFolderPage() {
           />
         </div>
       ) : null}
-      <section className="app-table-well app-page-body">
+      <section
+        className={
+          embedded
+            ? "flex min-h-0 flex-1 flex-col bg-white"
+            : "app-table-well app-page-body"
+        }
+      >
+        {embedded ? (
+          <DocumentFilterBar
+            hideSearch
+            filters={filters}
+            onChange={(next) => {
+              setFilters(next);
+              onContentSearchChange?.(next.search);
+            }}
+            availableTypes={types.data ?? []}
+            showDepartmentFilter={false}
+            showOrgPolicyFilter
+            totalCount={(documents.data?.length ?? 0) + childFolders.length}
+            filteredCount={mixedRows.length}
+            leading={
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-900">{folderPathLabel}</p>
+                <p className="text-xs text-slate-500">{mixedRows.length} items</p>
+              </div>
+            }
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <ViewToggle
+                  value={viewMode === "cards" ? "card" : "list"}
+                  onChange={(value) => setViewMode(value === "card" ? "cards" : "list")}
+                  ariaLabel="Folder contents view"
+                />
+                {canViewArchived ? (
+                  <Button variant="outline" render={<Link href={myWorkspaceHref("archived")} />}>
+                    Archived
+                  </Button>
+                ) : null}
+              </div>
+            }
+          />
+        ) : null}
+        {!embedded ? (
         <DocumentFilterBar
           filters={filters}
           onChange={setFilters}
@@ -358,24 +444,15 @@ export default function OrganizationFolderPage() {
           filteredCount={mixedRows.length}
           extras={null}
           actions={
-            <>
-              {canViewArchived ? (
-                <Button variant="outline" render={<Link href={myWorkspaceHref("archived")} />}>
-                  Archived
-                </Button>
-              ) : null}
-              <OrganizationalNewMenu
-                parentFolder={folder}
-                folderLocked={folderLocked}
-                canUpload={canUploadHere}
-                canCreateFolder={canCreateFolder && !folderLocked}
-                canCreatePolicy={canCreateOrgPolicy(currentUser.data)}
-                folderDocuments={documents.data ?? []}
-              />
-            </>
+            canViewArchived ? (
+              <Button variant="outline" render={<Link href={myWorkspaceHref("archived")} />}>
+                Archived
+              </Button>
+            ) : null
           }
         />
-        <div className="space-y-2">
+        ) : null}
+        <div className="space-y-2 px-4 pt-2">
           <BulkFolderActions
             selected={selectedFolderIds}
             onClear={() => setSelectedFolderIds([])}
@@ -394,6 +471,7 @@ export default function OrganizationFolderPage() {
             onMove={folderLocked ? undefined : () => setMovingIds(selectedDocumentIds)}
           />
         </div>
+        {viewMode === "list" || !embedded ? (
         <LibraryFileTable
           rows={mixedRows}
           sortKey={librarySortKey}
@@ -413,23 +491,46 @@ export default function OrganizationFolderPage() {
             folder?.folder_kind === "policy" ? "No policy documents yet" : "This folder is empty"
           }
           emptyDescription={
-            folder?.folder_kind === "policy"
-              ? "Use + New to upload, add from the library, or create a custom policy file."
-              : "Upload a document, add a link, or create a subfolder."
+            embedded
+              ? folder?.folder_kind === "policy"
+                ? "Use + New in the header to upload, link, or create policy documents."
+                : "Use + New in the header to upload, link, or create a subfolder."
+              : folder?.folder_kind === "policy"
+                ? "Use + New to upload, add from the library, or create a custom policy file."
+                : "Upload a document, add a link, or create a subfolder."
           }
-          emptyAction={
-            canUploadHere || canCreateFolder ? (
-              <OrganizationalNewMenu
-                parentFolder={folder}
-                folderLocked={folderLocked}
-                canUpload={canUploadHere}
-                canCreateFolder={canCreateFolder && !folderLocked}
-                canCreatePolicy={canCreateOrgPolicy(currentUser.data)}
-                folderDocuments={documents.data ?? []}
-              />
-            ) : undefined
-          }
+          emptyAction={undefined}
         />
+        ) : (
+          <div className="grid gap-4 overflow-y-auto p-4 sm:grid-cols-2 xl:grid-cols-3">
+            {mixedRows.map((row) => (
+              <article
+                key={row.id}
+                className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-brand-pink/30 hover:shadow-md"
+              >
+                {row.href ? (
+                  <Link href={row.href} className="block">
+                    <p className="font-semibold text-slate-900">{row.name}</p>
+                    {row.subtitle ? (
+                      <p className="mt-1 text-xs text-slate-500">{row.subtitle}</p>
+                    ) : null}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    className="block w-full text-left"
+                    onClick={row.onOpen}
+                  >
+                    <p className="font-semibold text-slate-900">{row.name}</p>
+                    {row.subtitle ? (
+                      <p className="mt-1 text-xs text-slate-500">{row.subtitle}</p>
+                    ) : null}
+                  </button>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
       </section>
       {viewing && (
         <DocumentViewerDialog

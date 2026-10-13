@@ -11,6 +11,7 @@ from odoo import fields, http
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.http import request
 
+from .access import require_tenant_module
 from ..models.template import validate_upload
 
 RATE_WINDOW_SECONDS = 60
@@ -40,6 +41,8 @@ class TemplatesFormsController(http.Controller):
         return {"success": False, "message": message}
 
     def _require_manager(self):
+        require_tenant_module("templates_forms")
+        require_tenant_module("organizational_files")
         if not self._is_manager():
             raise AccessError("You are not allowed to manage templates and forms.")
 
@@ -789,6 +792,15 @@ class TemplatesFormsController(http.Controller):
         if payload.get("expires", 0) < time.time():
             return request.not_found()
         fmt = kwargs.get("format") or "csv"
+        emitter = request.env.get("doc.audit.emitter.service")
+        if emitter:
+            emitter.section31(
+                "export_report",
+                request.env.company,
+                _("Templates & Forms export"),
+                details="format=%s" % fmt,
+                module="templates_forms",
+            )
         if fmt == "html":
             return request.make_response(
                 payload["html"],

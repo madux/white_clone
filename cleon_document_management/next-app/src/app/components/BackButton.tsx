@@ -31,7 +31,7 @@ export default function BackButton({
       title={backLabel ? `Return to ${backLabel}` : "Go back"}
       className={
         variant === "header"
-          ? `inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-pink-200 hover:bg-pink-50 hover:text-brand-text ${className}`
+          ? `app-chrome-back-btn ${className}`
           : `${backButtonChromeClassName} ${className}`
       }
     >

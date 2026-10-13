@@ -14,6 +14,7 @@ export default function AppToolbar({
   search,
   onSearchChange,
   searchPlaceholder = "Search",
+  primaryAction,
   extras,
   toggle,
   actions,
@@ -23,6 +24,8 @@ export default function AppToolbar({
   search?: string;
   onSearchChange?: (value: string) => void;
   searchPlaceholder?: string;
+  /** Primary control shown immediately beside search (e.g. + New). */
+  primaryAction?: ReactNode;
   extras?: ReactNode;
   toggle?: ReactNode;
   actions?: ReactNode;
@@ -33,27 +36,34 @@ export default function AppToolbar({
       <div className="app-toolbar-row">
         {leading ? <div className="app-toolbar-leading">{leading}</div> : null}
         {onSearchChange ? (
-          <InputGroup className="app-toolbar-search max-w-[420px]">
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
-            <InputGroupInput
-              value={search ?? ""}
-              onChange={(event) => onSearchChange(event.target.value)}
-              placeholder={searchPlaceholder}
-            />
-            {search ? (
-              <InputGroupAddon align="inline-end">
-                <InputGroupButton
-                  size="icon-xs"
-                  aria-label="Clear search"
-                  onClick={() => onSearchChange("")}
-                >
-                  <X />
-                </InputGroupButton>
+          <div className="app-toolbar-search-cluster flex min-w-0 flex-wrap items-center gap-3">
+            <InputGroup className="app-toolbar-search max-w-[420px]">
+              <InputGroupAddon>
+                <Search />
               </InputGroupAddon>
+              <InputGroupInput
+                value={search ?? ""}
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder={searchPlaceholder}
+              />
+              {search ? (
+                <InputGroupAddon align="inline-end">
+                  <InputGroupButton
+                    size="icon-xs"
+                    aria-label="Clear search"
+                    onClick={() => onSearchChange("")}
+                  >
+                    <X />
+                  </InputGroupButton>
+                </InputGroupAddon>
+              ) : null}
+            </InputGroup>
+            {primaryAction ? (
+              <div className="app-toolbar-primary-action shrink-0">{primaryAction}</div>
             ) : null}
-          </InputGroup>
+          </div>
+        ) : primaryAction ? (
+          <div className="app-toolbar-primary-action shrink-0">{primaryAction}</div>
         ) : null}
         {extras ? <div className="app-toolbar-extras">{extras}</div> : null}
         {toggle ? <div className="app-toolbar-toggle">{toggle}</div> : null}

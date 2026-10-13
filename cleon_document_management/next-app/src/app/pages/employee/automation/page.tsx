@@ -1,9 +1,5 @@
-import DocumentAutomationHubPage from "@/app/components/DocumentAutomationHubPage";
+import { redirect } from "next/navigation";
 
 export default function EmployeeAutomationPage() {
-  return (
-    <main>
-      <DocumentAutomationHubPage library="employee" />
-    </main>
-  );
+  redirect("/pages/employee");
 }

@@ -1,21 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, UserCheck, Workflow } from "lucide-react";
+import { ChevronRight, UserCheck } from "lucide-react";
 
 const links = [
   {
-    href: "/pages/organization/automation",
-    title: "Automation hub",
-    description:
-      "Browse document automation rules, run history, and lifecycle notifications.",
-    icon: Workflow,
-    accent: "bg-gradient-to-r from-brand-text to-brand-pink",
-  },
-  {
     href: "/pages/organization/policy-assignments",
     title: "Policy assignments",
-    description: "Track which employees have organisational policies assigned to their file.",
+    description:
+      "Track which employees have organisational policies assigned to their file.",
     icon: UserCheck,
     accent: "bg-emerald-600",
   },

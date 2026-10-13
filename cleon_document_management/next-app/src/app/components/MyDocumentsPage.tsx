@@ -16,7 +16,7 @@ import {
   Upload,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -60,13 +60,13 @@ import { FileTypeIcon } from "./FileTypeIcon";
 import EmptyState from "./EmptyState";
 import AppToolbar from "./AppToolbar";
 import PersonalDocumentTree from "./PersonalDocumentTree";
-import NewMenu from "./NewMenu";
 import LibraryBreadcrumb from "./LibraryBreadcrumb";
 import { documentPreviewUrl } from "../../../lib/documentPreviewUrls";
 
-type Tab = "files" | "shared" | "outstanding" | "needs_ack";
+type Tab = "files" | "shared" | "outstanding";
+type SharedAckFilter = "all" | "needs_ack";
 const DEFAULT_TAB_KEY = "cleon-doc-default-tab";
-const VALID_TABS: Tab[] = ["files", "shared", "outstanding", "needs_ack"];
+const VALID_TABS: Tab[] = ["files", "shared", "outstanding"];
 
 function FolderNameLabel({
   name,
@@ -315,14 +315,16 @@ export default function MyDocumentsPage({
   const pendingUploads = useMyPendingUploads();
   const updateOnboarding = useUpdateOnboarding();
   const params = useSearchParams();
+  const pathname = usePathname();
   const router = useRouter();
   const guideTarget = params.get("guide");
   const acknowledge = useAcknowledgeDocument();
   const upload = useUploadMyDocument();
   const requestApproval = useRequestDocumentApproval();
-  const { showConfirm } = useAppDialog();
+  const { showAlert, showConfirm } = useAppDialog();
   const documentTypes = useDocumentTypes();
   const [tab, setTab] = useState<Tab>("files");
+  const [sharedAckFilter, setSharedAckFilter] = useState<SharedAckFilter>("all");
   const [ackMessage, setAckMessage] = useState("");
   const [ackError, setAckError] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
@@ -342,18 +344,28 @@ export default function MyDocumentsPage({
   const [uploadError, setUploadError] = useState("");
   const [docFilters, setDocFilters] = useState<FilterState>(INITIAL_FILTER_STATE);
   useEffect(() => {
-    if (params.get("upload") === "1") setShowUpload(true);
+    if (params.get("upload") === "1") {
+      setUploadRequirement(null);
+      setUploadError("");
+      setShowUpload(true);
+      const next = new URLSearchParams(params.toString());
+      next.delete("upload");
+      const query = next.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    }
     const scope = params.get("scope") || params.get("tab");
-    if (scope === "shared") {
+    if (scope === "shared" || scope === "needs_ack") {
       setTab("shared");
+      setSharedAckFilter(
+        scope === "needs_ack" || params.get("ack") === "needs"
+          ? "needs_ack"
+          : "all",
+      );
       return;
     }
     if (scope === "outstanding") {
       setTab("outstanding");
-      return;
-    }
-    if (scope === "needs_ack") {
-      setTab("needs_ack");
+      setSharedAckFilter("all");
       return;
     }
     if (scope === "files") {
@@ -369,6 +381,11 @@ export default function MyDocumentsPage({
       return;
     }
     const saved = localStorage.getItem(DEFAULT_TAB_KEY);
+    if (saved === "needs_ack") {
+      setTab("shared");
+      setSharedAckFilter("needs_ack");
+      return;
+    }
     if (saved && VALID_TABS.includes(saved as Tab)) {
       setTab(saved as Tab);
     }
@@ -402,6 +419,34 @@ export default function MyDocumentsPage({
   const setPage = (next: Tab) => {
     setTab(next);
     setSearch("");
+    if (next !== "shared") {
+      setSharedAckFilter("all");
+    }
+    const nextParams = new URLSearchParams(params.toString());
+    if (next === "files") {
+      nextParams.delete("scope");
+      nextParams.delete("ack");
+    } else if (next === "shared") {
+      nextParams.set("scope", "shared");
+    } else if (next === "outstanding") {
+      nextParams.set("scope", "outstanding");
+      nextParams.delete("ack");
+    }
+    const query = nextParams.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
+  const setSharedAckFilterAndUrl = (filter: SharedAckFilter) => {
+    setSharedAckFilter(filter);
+    const next = new URLSearchParams(params.toString());
+    next.set("scope", "shared");
+    if (filter === "needs_ack") {
+      next.set("ack", "needs");
+    } else {
+      next.delete("ack");
+    }
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
   };
   const pendingStatusById = Object.fromEntries(
     (pendingUploads.data?.items ?? []).map((item) => [item.id, item.status_label]),
@@ -525,9 +570,42 @@ export default function MyDocumentsPage({
           { id: "files", label: "My files", count: myFiles.length },
           { id: "outstanding", label: "Outstanding", count: outstanding.length },
           { id: "shared", label: "Shared", count: shared.length },
-          { id: "needs_ack", label: "Needs acknowledgement", count: needsAckCount },
         ]}
       />
+      {tab === "shared" ? (
+        <div
+          className="flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label="Shared documents filter"
+        >
+          <span className="text-xs font-semibold text-slate-500">Show</span>
+          <button
+            type="button"
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+              sharedAckFilter === "all"
+                ? "bg-brand-pink/15 text-brand-pink ring-1 ring-brand-pink/30"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+            aria-pressed={sharedAckFilter === "all"}
+            onClick={() => setSharedAckFilterAndUrl("all")}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+              sharedAckFilter === "needs_ack"
+                ? "bg-brand-pink/15 text-brand-pink ring-1 ring-brand-pink/30"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+            aria-pressed={sharedAckFilter === "needs_ack"}
+            onClick={() => setSharedAckFilterAndUrl("needs_ack")}
+          >
+            Needs acknowledgement
+            {needsAckCount > 0 ? ` (${needsAckCount})` : ""}
+          </button>
+        </div>
+      ) : null}
       {tab === "files" ? (
         <DocumentFilterBar
           filters={docFilters}
@@ -536,42 +614,12 @@ export default function MyDocumentsPage({
           showDepartmentFilter={false}
           totalCount={myFiles.length}
           filteredCount={filteredMyFiles.length}
-          actions={
-            <NewMenu
-              items={[
-                {
-                  label: "File upload",
-                  icon: Upload,
-                  onSelect: () => {
-                    setUploadRequirement(null);
-                    setUploadError("");
-                    setShowUpload(true);
-                  },
-                },
-              ]}
-            />
-          }
         />
       ) : (
         <AppToolbar
           search={search}
           onSearchChange={setSearch}
           searchPlaceholder="Search documents..."
-          actions={
-            <NewMenu
-              items={[
-                {
-                  label: "File upload",
-                  icon: Upload,
-                  onSelect: () => {
-                    setUploadRequirement(null);
-                    setUploadError("");
-                    setShowUpload(true);
-                  },
-                },
-              ]}
-            />
-          }
         />
       )}
       {workspace.isLoading && (
@@ -588,7 +636,7 @@ export default function MyDocumentsPage({
       )}
       {!workspace.isLoading && (
       <>
-      {(tab === "files" || tab === "shared" || tab === "outstanding" || tab === "needs_ack") && (
+      {(tab === "files" || tab === "shared" || tab === "outstanding") && (
         <section className="app-table-well app-page-body">
           {tab === "files" ? (
             <PersonalDocumentTree
@@ -607,12 +655,24 @@ export default function MyDocumentsPage({
               onUpdate={setUpdatingDocument}
               onRequestApproval={async (document) => {
                 if (
-                  await showConfirm(
+                  !(await showConfirm(
                     `Send "${document.name}" to an administrator for review?`,
                     { title: "Request review", confirmLabel: "Send" },
-                  )
+                  ))
                 ) {
+                  return;
+                }
+                try {
                   await requestApproval.mutateAsync(document.id);
+                  await showAlert(
+                    "Your document was sent for review. Administrators will see it in the approval inbox.",
+                    { title: "Submitted for review" },
+                  );
+                } catch (error: any) {
+                  await showAlert(
+                    error?.message || "Could not submit this document for approval.",
+                    { title: "Request failed" },
+                  );
                 }
               }}
             />
@@ -624,20 +684,33 @@ export default function MyDocumentsPage({
                   : shared
               }
               search={search}
-              shared={tab === "shared" || tab === "needs_ack"}
+              shared={tab === "shared"}
               readOnly={tab === "outstanding"}
               guideTarget={guideTarget || undefined}
-              sharedAckFilter={tab === "needs_ack" ? "needs_ack" : "all"}
+              sharedAckFilter={tab === "shared" ? sharedAckFilter : "all"}
               pendingStatusById={pendingStatusById}
               onView={setViewing}
               onRequestApproval={async (document) => {
                 if (
-                  await showConfirm(
+                  !(await showConfirm(
                     `Send "${document.name}" to an administrator for review?`,
                     { title: "Request review", confirmLabel: "Send" },
-                  )
-                )
+                  ))
+                ) {
+                  return;
+                }
+                try {
                   await requestApproval.mutateAsync(document.id);
+                  await showAlert(
+                    "Your document was sent for review. Administrators will see it in the approval inbox.",
+                    { title: "Submitted for review" },
+                  );
+                } catch (error: any) {
+                  await showAlert(
+                    error?.message || "Could not submit this document for approval.",
+                    { title: "Request failed" },
+                  );
+                }
               }}
               onUploadOutstanding={(document) => {
                 setUploadRequirement(document);

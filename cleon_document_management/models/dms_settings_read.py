@@ -10,64 +10,25 @@ class DocDmsSettingsReadService(models.AbstractModel):
     def build_payload(self):
         params = self.env["ir.config_parameter"].sudo()
         config = self.env["doc.employee.files.config"].get_for_company()
+        company = self.env.company
+        catalog = self.env["doc.document.catalog.service"]
+        catalog.ensure_default_catalog(company)
+        category_domain = catalog.category_domain(company)
         categories = self.env["doc.document.category"].search(
-            [], order="sequence, name"
+            category_domain, order="sequence, name"
         )
         types = self.env["doc.document.type"].with_context(active_test=False).search(
-            [], order="sequence, name"
+            [("category_id", "in", categories.ids)],
+            order="sequence, name",
         )
         retention_rules = self.env["doc.retention.policy"].search([])
         return {
             "version": "v1",
             "generated_at": fields.Datetime.to_string(fields.Datetime.now()),
-            "general": {
-                "platform_name": self.env.company.name,
-                "timezone": self.env.company.partner_id.tz or "UTC",
-                "recycle_bin_retention_days": int(
-                    params.get_param(
-                        "cleon_document_management.recycle_bin_retention_days", "30"
-                    )
-                ),
-                "mail_smtp_host": params.get_param(
-                    "cleon_document_management.mail_smtp_host", ""
-                ),
-                "mail_smtp_port": params.get_param(
-                    "cleon_document_management.mail_smtp_port", "587"
-                ),
-                "mail_from_address": params.get_param(
-                    "cleon_document_management.mail_from_address", ""
-                ),
-                "mail_from_name": params.get_param(
-                    "cleon_document_management.mail_from_name", ""
-                ),
-            },
-            "approval_workflow": {
-                "enabled": params.get_param(
-                    "cleon_document_management.approval_workflow_enabled", "0"
-                )
-                == "1",
-                "default_require_upload_approval": params.get_param(
-                    "cleon_document_management.default_require_upload_approval", "0"
-                )
-                == "1",
-                "default_approval_flow": params.get_param(
-                    "cleon_document_management.default_approval_flow", "any"
-                ),
-                "default_approver_ids": [
-                    int(value)
-                    for value in params.get_param(
-                        "cleon_document_management.default_approver_ids", ""
-                    ).split(",")
-                    if value.isdigit()
-                ],
-                "org_approval_delegate_user_id": config.org_approval_delegate_user_id.id
-                or False,
-                "org_approval_delegate_until": fields.Datetime.to_string(
-                    config.org_approval_delegate_until
-                )
-                if config.org_approval_delegate_until
-                else False,
-            },
+            "general": self._general_payload(params),
+            "approval_workflow": self.env[
+                "doc.approval.workflow.service"
+            ].settings_payload(),
             "files_and_uploads": {
                 "max_file_size_mb": config.max_file_size_mb or 25,
                 "allowed_extensions": config.allowed_file_types or "",
@@ -86,14 +47,22 @@ class DocDmsSettingsReadService(models.AbstractModel):
                 ),
             },
             "notification_rules": self._notification_rules_payload(),
-            "modules": {
-                "employee_files": True,
-                "organizational_files": True,
-                "compliance": True,
-                "document_intelligence": True,
-            },
+            "modules": self.env[
+                "doc.dms.tenant.modules.service"
+            ].read_modules(company),
             "registry_index": self.env["doc.registry.service"].index_status(),
         }
+
+    @api.model
+    def _general_payload(self, params):
+        payload = self.env["doc.dms.general.service"].build_general_payload()
+        payload["platform_name"] = payload.get("organisation_name")
+        payload["recycle_bin_retention_days"] = int(
+            params.get_param(
+                "cleon_document_management.recycle_bin_retention_days", "30"
+            )
+        )
+        return payload
 
     @api.model
     def _notification_rules_payload(self):

@@ -1,3 +1,4 @@
+import functools
 import json
 from odoo import api, http
 from odoo.exceptions import AccessError, UserError, ValidationError
@@ -1626,3 +1627,28 @@ class DocumentIntelligenceController(http.Controller):
                 for document in documents
             ],
         }
+
+
+def _wrap_document_intelligence_tenant_guard(controller_cls):
+    """Block JSON routes when Document Intelligence is disabled for the tenant."""
+    for name, attr in list(controller_cls.__dict__.items()):
+        if name.startswith("_") or not callable(attr):
+            continue
+        if not getattr(attr, "routing", None):
+            continue
+
+        @functools.wraps(attr)
+        def wrapped(self, *args, _method=attr, **kwargs):
+            enabled = request.env["doc.dms.tenant.modules.service"].module_enabled(
+                "document_intelligence"
+            )
+            if not enabled:
+                return self._deny(
+                    "Document Intelligence is not enabled for your organization."
+                )
+            return _method(self, *args, **kwargs)
+
+        setattr(controller_cls, name, wrapped)
+
+
+_wrap_document_intelligence_tenant_guard(DocumentIntelligenceController)

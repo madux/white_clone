@@ -37,6 +37,19 @@ import {
   toggleTableSortKey,
 } from "../../../lib/tableSortKey";
 
+/** Shared column grid for parent + nested subgroup tables (must match). */
+function GroupExplorerColgroup() {
+  return (
+    <colgroup>
+      <col className="ef-group-col-toggle" />
+      <col className="ef-group-col-name" />
+      <col className="ef-group-col-people" />
+      <col className="ef-group-col-files" />
+      <col className="ef-group-col-status" />
+    </colgroup>
+  );
+}
+
 function memberQueryOptions(
   folderId: number,
   search: string,
@@ -306,7 +319,8 @@ export default function EmployeeFilesGroupExplorer({
 
   return (
     <>
-    <Table data-no-sort="true">
+    <Table className="ef-group-explorer-table" data-no-sort="true">
+      <GroupExplorerColgroup />
       <TableHeader>
         <TableRow>
           <TableHead className="w-10" />
@@ -419,6 +433,37 @@ export default function EmployeeFilesGroupExplorer({
   );
 }
 
+function GroupExplorerNestedRow({
+  open,
+  children,
+}: {
+  open: boolean;
+  children: React.ReactNode;
+}) {
+  const [rowVisible, setRowVisible] = useState(open);
+
+  useEffect(() => {
+    if (open) setRowVisible(true);
+  }, [open]);
+
+  return (
+    <TableRow
+      className={`app-nested-row border-0${rowVisible ? "" : " hidden"}`}
+      aria-hidden={!rowVisible}
+    >
+      <TableCell colSpan={5} className="p-0">
+        <AnimatedTreeCollapse
+          open={open}
+          className="employee-tree-children"
+          onExitComplete={() => setRowVisible(false)}
+        >
+          {children}
+        </AnimatedTreeCollapse>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 function GroupRows({
   group,
   childrenGroups,
@@ -436,6 +481,7 @@ function GroupRows({
   onMemberSortChange,
   depth,
   open,
+  nestedInSubgroup = false,
 }: {
   group: EmployeeFileGroup;
   childrenGroups: EmployeeFileGroup[];
@@ -456,6 +502,7 @@ function GroupRows({
   onMemberSortChange?: (order: string) => void;
   depth: number;
   open: boolean;
+  nestedInSubgroup?: boolean;
 }) {
   const hasChildren = childrenGroups.length > 0;
   const members = membersByFolderId.get(group.id);
@@ -465,6 +512,7 @@ function GroupRows({
   return (
     <>
       <TableRow
+        className={nestedInSubgroup ? "ef-subgroup-row" : undefined}
         onPointerEnter={() => {
           if (!hasChildren) onPrefetch(group.id);
         }}
@@ -481,11 +529,17 @@ function GroupRows({
             />
           </button>
         </TableCell>
-        <TableCell>
+        <TableCell
+          className="ef-group-col-name-cell"
+          style={
+            nestedInSubgroup && depth > 0
+              ? { paddingLeft: 8 + Math.min(depth, 4) * 12 }
+              : undefined
+          }
+        >
           <Link
             href={`/pages/employee/group?id=${group.id}`}
             className="inline-flex items-center gap-2 font-medium text-foreground hover:text-brand-pink"
-            style={{ paddingLeft: depth * 12 }}
           >
             <OrgFolderIcon
               className={DMS_FOLDER_ICON_CLASS}
@@ -496,13 +550,13 @@ function GroupRows({
             {group.name}
           </Link>
         </TableCell>
-        <TableCell className="text-muted-foreground">
+        <TableCell className="ef-group-col-people-cell text-muted-foreground">
           {group.employee_count} people
         </TableCell>
-        <TableCell className="text-muted-foreground">
+        <TableCell className="ef-group-col-files-cell text-muted-foreground">
           {group.document_count} files
         </TableCell>
-        <TableCell>
+        <TableCell className="ef-group-col-status-cell">
           <StatusPill
             label={
               group.attention_count
@@ -512,15 +566,14 @@ function GroupRows({
           />
         </TableCell>
       </TableRow>
-      <TableRow
-        className={`app-nested-row border-0${open ? "" : " hidden"}`}
-        aria-hidden={!open}
-      >
-        <TableCell colSpan={5} className="p-0">
-          <AnimatedTreeCollapse open={open} className="employee-tree-children">
-            {hasChildren ? (
-              <div className="group-member-panel">
-                <table className="dms-table w-full text-sm" data-no-sort="true">
+      {hasChildren ? (
+        <GroupExplorerNestedRow open={open}>
+              <div className="group-member-panel ef-subgroup-panel">
+                <table
+                  className="dms-table ef-group-explorer-table ef-subgroup-table w-full text-sm"
+                  data-no-sort="true"
+                >
+                  <GroupExplorerColgroup />
                   <tbody>
                     {childrenGroups.map((child) => (
                       <GroupRows
@@ -540,13 +593,17 @@ function GroupRows({
                         memberSort={memberSort}
                         onMemberSortChange={onMemberSortChange}
                         depth={depth + 1}
+                        nestedInSubgroup
                         open={Boolean(expandedFolders[child.id])}
                       />
                     ))}
                   </tbody>
                 </table>
               </div>
-            ) : (
+        </GroupExplorerNestedRow>
+      ) : null}
+      {!hasChildren ? (
+        <GroupExplorerNestedRow open={open}>
               <div className="group-member-panel">
                 <SortableTable className="w-full text-sm" managedSort>
                   <thead>
@@ -673,10 +730,8 @@ function GroupRows({
                   </div>
                 ) : null}
               </div>
-            )}
-          </AnimatedTreeCollapse>
-        </TableCell>
-      </TableRow>
+        </GroupExplorerNestedRow>
+      ) : null}
     </>
   );
 }

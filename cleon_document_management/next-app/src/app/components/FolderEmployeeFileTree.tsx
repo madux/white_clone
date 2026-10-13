@@ -280,13 +280,14 @@ export default function FolderEmployeeFileTree({
         const memberList = employeeMemberLists?.[folder.id];
 
         return (
-          <div
-            className="employee-tree-folder"
-            key={folder.id}
-            style={depth > 0 ? { marginLeft: `${depth * 20}px` } : undefined}
-          >
+          <div className="employee-tree-folder" key={folder.id}>
             {showFolderHeader ? (
-            <div className="employee-tree-row employee-tree-row-folder">
+            <div
+              className="employee-tree-row employee-tree-row-folder"
+              style={
+                depth > 0 ? { paddingLeft: `${depth * 20 + 14}px` } : undefined
+              }
+            >
               {onToggleFolderSelected ? (
                 <input
                   type="checkbox"

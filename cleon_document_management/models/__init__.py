@@ -18,6 +18,8 @@ from . import document_version
 from . import share_link
 from . import hr_employee
 from . import res_users
+from . import res_company
+from . import dms_tenant_modules
 from . import intelligence_profile
 from . import intelligence_dataset
 from . import intelligence_record
@@ -60,6 +62,7 @@ from . import organizational_retention_service
 from . import organizational_openrouter
 from . import folder_lock_audit
 from . import organizational_library
+from . import doc_object_audit
 from . import organizational_policy
 from . import compliance_request
 from . import compliance_request_content
@@ -79,7 +82,17 @@ from . import ir_http_workspace
 from . import notification_catalog
 from . import dms_notification
 from . import dms_registry
+from . import dms_audit_catalog
+from . import dms_audit_emitter
+from . import dms_audit_bridges
+from . import dms_audit_hooks
+from . import doc_audit_export_job
 from . import dms_audit_query
+from . import dms_public_holiday
+from . import dms_working_calendar
+from . import dms_storage_usage
+from . import dms_general_service
+from . import dms_work_items_service
 from . import dms_settings_read
 from . import dms_approval_workflow_config
 from . import dms_document_registry_fields

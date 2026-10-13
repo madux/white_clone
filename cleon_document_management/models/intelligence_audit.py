@@ -85,7 +85,11 @@ class IntelligenceAuditEvent(models.Model):
                 target.display_name if hasattr(target, "display_name") else str(target.id)
             )
             values["target_name"] = (name or "")[:255]
-        return self.sudo().create(values)
+        event = self.sudo().create(values)
+        emitter = self.env.get("doc.audit.emitter.service")
+        if emitter:
+            emitter.mirror_intelligence_event(event)
+        return event
 
     @api.model
     def log_dataset(

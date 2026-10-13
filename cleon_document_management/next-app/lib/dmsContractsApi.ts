@@ -1,9 +1,39 @@
 import { rpc } from "./api";
 
+export type ApprovalWorkflowExceptionRow = {
+  id: number;
+  scope: "folder" | "category";
+  folder_id: number | false;
+  category_id: number | false;
+  approver_mode: string;
+  role_id: number | false;
+  user_ids: number[];
+  applies_to_label?: string;
+  who_approves_label?: string;
+};
+
+export type ApprovalWorkflowSettings = {
+  require_approval: boolean;
+  default_approver_mode: string;
+  default_role_id: number | false;
+  default_user_ids: number[];
+  respond_working_days: number;
+  fallback_mode: string;
+  fallback_role_id: number | false;
+  fallback_user_ids: number[];
+  exceptions: ApprovalWorkflowExceptionRow[];
+  options: {
+    roles: { id: number; name: string }[];
+    users: { id: number; name: string; email?: string }[];
+    folders: { id: number; name: string; path?: string }[];
+    categories: { id: number; name: string }[];
+  };
+};
+
 export type DmsSettingsRead = {
   version: string;
   general: Record<string, unknown>;
-  approval_workflow: Record<string, unknown>;
+  approval_workflow: ApprovalWorkflowSettings;
   files_and_uploads: Record<string, unknown>;
   document_types: unknown[];
   retention_summary: Record<string, unknown>;
@@ -63,11 +93,75 @@ export const dmsContractsApi = {
       module ? { module } : {},
     ),
 
-  auditQuery: (filters?: Record<string, unknown>, page = 1) =>
-    rpc<{ success: boolean; data: { items: unknown[]; total: number } }>(
-      "/api/dms/audit/query",
-      { filters: filters || {}, page, page_size: 50 },
-    ),
+  auditQuery: (filters?: Record<string, unknown>, page = 1, pageSize = 50) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: { items: unknown[]; total: number; page: number; page_size: number };
+    }>("/api/dms/audit/query", {
+      filters: filters || {},
+      page,
+      page_size: pageSize,
+    }),
+
+  auditMeta: () =>
+    rpc<{
+      success: boolean;
+      data: {
+        allowed: boolean;
+        can_export?: boolean;
+        modules?: { value: string; label: string }[];
+        timezone?: string;
+      };
+    }>("/api/dms/audit/meta", {}),
+
+  auditMetrics: (filters?: Record<string, unknown>) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: {
+        events_in_period?: number;
+        access_denied?: number;
+        access_denied_people?: number;
+        settings_changes?: number;
+        exports?: number;
+      };
+    }>("/api/dms/audit/metrics", { filters: filters || {} }),
+
+  auditExport: (filters?: Record<string, unknown>) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: {
+        async?: boolean;
+        job_id?: number;
+        filename?: string;
+        content?: string;
+        row_count?: number;
+        message?: string;
+      };
+    }>("/api/dms/audit/export", { filters: filters || {} }),
+
+  auditExportJob: (jobId: number) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: {
+        id: number;
+        state: string;
+        row_count: number;
+        filename: string;
+        error_message?: string;
+        download_ready?: boolean;
+        content?: string;
+      };
+    }>("/api/dms/audit/export-job", { job_id: jobId }),
+
+  auditLogView: (documentId: number, source = "search_result") =>
+    rpc<{ success: boolean; message?: string }>("/api/dms/audit/log-view", {
+      document_id: documentId,
+      source,
+    }),
 
   auditEvent: (id: number) =>
     rpc<{ success: boolean; data: Record<string, unknown> }>(
@@ -75,11 +169,11 @@ export const dmsContractsApi = {
       { id },
     ),
 
-  workItems: () =>
+  workItems: (search = "") =>
     rpc<{
       success: boolean;
-      data: { items: unknown[]; total: number; source?: string };
-    }>("/api/dms/work-items", {}),
+      data: import("./workspaceWorkItems").WorkspaceWorkItemsPayload;
+    }>("/api/dms/work-items", { search }),
 
   notificationInbox: (limit = 50, tab: "all" | "unread" = "all") =>
     rpc<{
@@ -133,9 +227,44 @@ export const dmsContractsApi = {
       to_email: toEmail,
     }),
 
-  approvalWorkflowSave: (enabled: boolean) =>
-    rpc<{ success: boolean }>("/api/dms/approval-workflow/save", { enabled }),
+  approvalWorkflowSave: (payload: Record<string, unknown> | { enabled: boolean }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data?: ApprovalWorkflowSettings;
+    }>("/api/dms/approval-workflow/save", payload),
 
   generalSave: (payload: Record<string, unknown>) =>
-    rpc<{ success: boolean }>("/api/dms/general/save", payload),
+    rpc<{ success: boolean; message?: string }>("/api/dms/general/save", payload),
+
+  tenantModulesSave: (modules: Record<string, boolean>) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data?: { modules: Record<string, boolean>; notes: string[] };
+    }>("/api/dms/modules/save", { modules }),
+
+  generalHolidaysList: (year: number) =>
+    rpc<{ success: boolean; message?: string; year?: number; holidays?: unknown[] }>(
+      "/api/dms/general/holidays/list",
+      { year },
+    ),
+
+  generalHolidaySave: (payload: Record<string, unknown>) =>
+    rpc<{ success: boolean; message?: string; holidays?: unknown[] }>(
+      "/api/dms/general/holiday/save",
+      payload,
+    ),
+
+  generalHolidayDelete: (payload: { id: number }) =>
+    rpc<{ success: boolean; message?: string; holidays?: unknown[] }>(
+      "/api/dms/general/holiday/delete",
+      payload,
+    ),
+
+  generalHolidaysCopyLastYear: (payload: { year: number }) =>
+    rpc<{ success: boolean; message?: string; holidays?: unknown[] }>(
+      "/api/dms/general/holidays/copy-last-year",
+      payload,
+    ),
 };

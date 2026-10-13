@@ -87,6 +87,10 @@ class DocOrganizationalFilesPermission(models.AbstractModel):
 
     @api.model
     def user_can_access_org_library(self, user):
+        if not self.env["doc.dms.tenant.modules.service"].module_enabled(
+            "organizational_files"
+        ):
+            return False
         if not self.user_has_dms_access(user):
             return False
         return self.user_has_org_permission(user, "view_org_files")

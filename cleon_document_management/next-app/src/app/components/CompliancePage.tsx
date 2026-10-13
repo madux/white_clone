@@ -11,20 +11,26 @@ import {
   RotateCcw,
   ToggleLeft,
   Trash2,
-  Loader2,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import ComplianceRequestScheduleFields from "./ComplianceRequestScheduleFields";
-import ComplianceRequestTaskList from "./ComplianceRequestTaskList";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import ComplianceRequestRequirementsSection from "./ComplianceRequestRequirementsSection";
 import { formatFieldLabel, formatStatusLabel } from "../../../lib/formatLabel";
 import {
   buildCreatePolicyPayload,
-  defaultPolicyForm,
   type PolicyCreateFormState,
-  type PolicyReviewMeta,
 } from "../../../lib/policyCreateForm";
-import { validatePolicyCreateForm } from "../../../lib/policyCreateValidation";
+import {
+  validatePolicyCreateForm,
+  validatePolicyWizardStep,
+  type PolicyWizardStep,
+} from "../../../lib/policyCreateValidation";
+import { complianceRuleCreatePath } from "../../../lib/complianceRuleCreatePath";
+import {
+  clearSessionFormDraft,
+  readSessionFormDraft,
+  writeSessionFormDraft,
+} from "../../../lib/sessionFormDraft";
 import { TASK_TYPE_LABELS } from "../../../lib/complianceRequestTasks";
 import {
   coerceEffectiveDate,
@@ -33,7 +39,6 @@ import {
   coercePolicyEventTrigger,
   coercePolicySchedule,
 } from "../../../lib/policyFieldCoercion";
-import { proposalToForm, reviewMetaFromProposal } from "../../../lib/policyProposal";
 import {
   emptyPolicyScope,
   formatPolicyScopeSummary,
@@ -47,7 +52,6 @@ import {
   useApproveException,
   useDeactivateException,
   useDeleteException,
-  useCreatePolicy,
   useDeletePolicy,
   useDocumentTypes,
   useEvaluatePolicy,
@@ -59,6 +63,7 @@ import {
   usePolicyTypes,
 } from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
+import { useComplianceRunToast } from "../../../hooks/useComplianceRunToast";
 import { api } from "../../../lib/api";
 import BulkActionBar from "./BulkActionBar";
 import ComplianceRuleActions from "./ComplianceRuleActions";
@@ -91,11 +96,35 @@ import {
 } from "@/components/ui/input-group";
 
 type Tab = "rules" | "exceptions" | "history" | "reports";
-const AI_BRIEF_CHIPS = [
-  { label: "Who it applies to", text: "Applies to all employees." },
-  { label: "What's required", text: "Staff must complete the required documents." },
-  { label: "When it starts", text: "Takes effect from the activation date." },
+const RULE_WIZARD_STEPS = [
+  "Basics",
+  "Audience",
+  "Requirements",
+  "Timing",
+  "Review",
+] as const;
+const RULE_WIZARD_STEP_KEYS: PolicyWizardStep[] = [
+  "basics",
+  "audience",
+  "requirements",
+  "timing",
 ];
+const COMPLIANCE_EXCEPTION_FORM_DRAFT_KEY = "compliance/exception-form";
+
+type ComplianceExceptionFormState = {
+  employee_ids: number[];
+  policy_id: string;
+  reason: string;
+  valid_until: string;
+};
+
+const emptyExceptionForm = (): ComplianceExceptionFormState => ({
+  employee_ids: [],
+  policy_id: "",
+  reason: "",
+  valid_until: "",
+});
+
 const schedules = [
   "manual",
   "one_time",
@@ -112,21 +141,11 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showConfirm, showAlert } = useAppDialog();
+  const { runPolicyEvaluation, runManyPolicyEvaluations } = useComplianceRunToast();
   const [tab, setTab] = useState<Tab>("rules");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [policyPath, setPolicyPath] = useState<"chooser" | "ai" | null>(null);
-  const [aiName, setAiName] = useState("");
-  const [aiDescription, setAiDescription] = useState("");
-  const [aiPolicyTypeId, setAiPolicyTypeId] = useState("");
-  const [aiDocumentTypeIds, setAiDocumentTypeIds] = useState<number[]>([]);
-  const [aiPending, setAiPending] = useState(false);
   const [reviewPolicyId, setReviewPolicyId] = useState<number | null>(null);
-  const [policySubmitError, setPolicySubmitError] = useState("");
-  const [policyReviewMeta, setPolicyReviewMeta] = useState<PolicyReviewMeta | undefined>();
-  const [policyFormInitialStep, setPolicyFormInitialStep] = useState<
-    "configure" | "review"
-  >("configure");
   const [running, setRunning] = useState(false);
   const policies = usePolicies();
   const exceptions = useExceptions();
@@ -134,7 +153,6 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
   const types = usePolicyTypes();
   const documents = useDocumentTypes();
   const targets = useComplianceTargets();
-  const createPolicy = useCreatePolicy();
   const createException = useCreateException();
   const evaluate = useEvaluatePolicy();
   const deletePolicy = useDeletePolicy();
@@ -145,78 +163,20 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
   const rejectException = useRejectException();
   const deactivateException = useDeactivateException();
   const deleteException = useDeleteException();
-  const [policyForm, setPolicyForm] = useState(() => defaultPolicyForm(""));
-
   useEffect(() => {
-    if (!policyForm.policy_type_id && types.data && types.data.length > 0) {
-      setPolicyForm((prev) => ({
-        ...prev,
-        policy_type_id: String(types.data[0].id),
-      }));
-    }
-  }, [types.data, policyForm.policy_type_id]);
-
-  useEffect(() => {
-    if (!aiPolicyTypeId && types.data && types.data.length > 0) {
-      setAiPolicyTypeId(String(types.data[0].id));
-    }
-  }, [types.data, aiPolicyTypeId]);
-
-  const aiPolicyTypeCode = useMemo(() => {
-    const match = (types.data ?? []).find(
-      (item) => String(item.id) === aiPolicyTypeId,
-    );
-    return match?.code ?? "";
-  }, [types.data, aiPolicyTypeId]);
-
-  const aiSelectableDocumentTypes = useMemo(
-    () =>
-      documentTypesForCompliancePolicy(
-        aiPolicyTypeCode,
-        documents.data ?? [],
-      ),
-    [aiPolicyTypeCode, documents.data],
-  );
-
-  useEffect(() => {
-    if (!documents.data?.length) return;
-    const pruned = pruneDocumentTypeIdsForPolicy(
-      aiPolicyTypeCode,
-      aiDocumentTypeIds,
-      documents.data,
-    );
-    if (pruned.length !== aiDocumentTypeIds.length) {
-      setAiDocumentTypeIds(pruned);
+    if (searchParams.get("create") !== "1") return;
+    setTab("rules");
+    const path = searchParams.get("path");
+    if (path === "ai") {
+      router.replace(complianceRuleCreatePath("ai"));
       return;
     }
-    if (aiDocumentTypeIds.length) return;
-    const first = aiSelectableDocumentTypes[0];
-    if (first) setAiDocumentTypeIds([first.id]);
-  }, [
-    aiDocumentTypeIds,
-    aiPolicyTypeCode,
-    aiSelectableDocumentTypes,
-    documents.data,
-  ]);
-
-  useEffect(() => {
-    if (searchParams.get("create") === "1") {
-      setTab("rules");
-      const path = searchParams.get("path");
-      if (path === "ai") {
-        setPolicyPath("ai");
-        setShowForm(false);
-      } else if (path === "wizard" || path === "scratch") {
-        setPolicyPath(null);
-        setPolicyFormInitialStep("configure");
-        setPolicyReviewMeta(undefined);
-        setShowForm(true);
-      } else {
-        setPolicyPath("chooser");
-        setShowForm(false);
-      }
+    if (path === "wizard" || path === "scratch") {
+      router.replace(complianceRuleCreatePath("wizard"));
+      return;
     }
-  }, [searchParams]);
+    router.replace(complianceRuleCreatePath());
+  }, [searchParams, router]);
 
   useEffect(() => {
     const ruleId = Number(
@@ -228,12 +188,22 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
     }
   }, [searchParams]);
 
-  const [exceptionForm, setExceptionForm] = useState({
-    employee_ids: [] as number[],
-    policy_id: "",
-    reason: "",
-    valid_until: "",
-  });
+  const [exceptionForm, setExceptionForm] = useState<ComplianceExceptionFormState>(
+    emptyExceptionForm,
+  );
+  const exceptionDraftHydrated = useRef(false);
+
+  useEffect(() => {
+    if (!exceptionDraftHydrated.current) {
+      exceptionDraftHydrated.current = true;
+      const saved = readSessionFormDraft<ComplianceExceptionFormState>(
+        COMPLIANCE_EXCEPTION_FORM_DRAFT_KEY,
+      );
+      if (saved) setExceptionForm(saved);
+      return;
+    }
+    writeSessionFormDraft(COMPLIANCE_EXCEPTION_FORM_DRAFT_KEY, exceptionForm);
+  }, [exceptionForm]);
   const displayedPolicies = (policies.data ?? []).filter((item) =>
     item.name.toLowerCase().includes(search.toLowerCase()),
   );
@@ -242,26 +212,6 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
-  const submitPolicy = async (event: FormEvent) => {
-    event.preventDefault();
-    setPolicySubmitError("");
-    try {
-      await createPolicy.mutateAsync(buildCreatePolicyPayload(policyForm));
-    } catch (error: any) {
-      setPolicySubmitError(error?.message || "Failed to create rule.");
-      return;
-    }
-    await showAlert(
-      "Rule saved as draft. Activate it in Compliance when ready.",
-      { title: "Draft created" },
-    );
-    setShowForm(false);
-    setPolicyReviewMeta(undefined);
-    setPolicyFormInitialStep("configure");
-    setPolicyForm(
-      defaultPolicyForm(types.data?.[0]?.id ? String(types.data[0].id) : ""),
-    );
-  };
   const submitException = async (event: FormEvent) => {
     event.preventDefault();
     if (!exceptionForm.employee_ids.length) return;
@@ -272,12 +222,8 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
       valid_until: exceptionForm.valid_until,
     });
     setShowForm(false);
-    setExceptionForm({
-      employee_ids: [],
-      policy_id: "",
-      reason: "",
-      valid_until: "",
-    });
+    clearSessionFormDraft(COMPLIANCE_EXCEPTION_FORM_DRAFT_KEY);
+    setExceptionForm(emptyExceptionForm());
   };
   const runCheck = async () => {
     const runnable = (policies.data ?? []).filter(policyCanRun);
@@ -298,67 +244,10 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
     if (!confirmed) return;
     setRunning(true);
     try {
-      await evaluate.mutateAsync(target.id);
+      await runPolicyEvaluation(target.name, () => evaluate.mutateAsync(target.id));
     } finally {
       setRunning(false);
     }
-  };
-
-  const runAiDraft = async () => {
-    const title = aiName.trim();
-    if (!title) {
-      await showAlert("Enter a rule name.", { title: "Create with AI" });
-      return;
-    }
-    setAiPending(true);
-    try {
-      const result = await api.proposePolicyFromAi({
-        name: title,
-        description: aiDescription,
-        policy_type_id: aiPolicyTypeId ? Number(aiPolicyTypeId) : undefined,
-        document_type_ids: aiDocumentTypeIds,
-      });
-      if (!result.success || !result.data) {
-        await showAlert(result.message || "Unable to draft this rule.", {
-          title: "Create with AI",
-        });
-        return;
-      }
-      setPolicyForm(
-        proposalToForm(result.data, {
-          ...defaultPolicyForm(
-            types.data?.[0]?.id ? String(types.data[0].id) : "",
-          ),
-          document_type_ids: aiDocumentTypeIds,
-        }),
-      );
-      setPolicyReviewMeta(reviewMetaFromProposal(result.data));
-      setPolicyFormInitialStep("review");
-      setAiName("");
-      setAiDescription("");
-      setAiDocumentTypeIds([]);
-      setPolicyPath(null);
-      setShowForm(true);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to draft this rule.";
-      await showAlert(
-        /timeout/i.test(message)
-          ? "The AI draft took too long. Try again."
-          : message,
-        { title: "Create with AI" },
-      );
-    } finally {
-      setAiPending(false);
-    }
-  };
-
-  const appendAiBrief = (fragment: string) => {
-    setAiDescription((current) => {
-      const trimmed = current.trim();
-      if (trimmed.includes(fragment.trim())) return current;
-      return trimmed ? `${trimmed} ${fragment}` : fragment;
-    });
   };
 
   return (
@@ -381,13 +270,11 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
           <button
             type="button"
             onClick={() => {
-              setPolicySubmitError("");
               if (tab === "exceptions") {
                 setShowForm(true);
                 return;
               }
-              setPolicyPath("chooser");
-              setShowForm(false);
+              router.push(complianceRuleCreatePath());
             }}
             disabled={tab === "history" || tab === "reports"}
             className="app-btn app-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
@@ -456,9 +343,12 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
                 onClick={async () => {
                   setBulkRunning(true);
                   try {
-                    for (const id of selectedPolicyIds) {
-                      await evaluate.mutateAsync(id);
-                    }
+                    const selected = (policies.data ?? []).filter((policy) =>
+                      selectedPolicyIds.includes(policy.id),
+                    );
+                    await runManyPolicyEvaluations(selected, (id) =>
+                      evaluate.mutateAsync(id),
+                    );
                     setSelectedPolicyIds([]);
                   } finally {
                     setBulkRunning(false);
@@ -641,176 +531,16 @@ export default function CompliancePage({ embedded = false }: { embedded?: boolea
         )}
         {tab === "reports" && <ComplianceReportsPanel />}
       </section>
-      {showForm &&
-        (tab === "exceptions" ? (
-          <ExceptionForm
-            form={exceptionForm}
-            setForm={setExceptionForm}
-            employees={targets.data?.employees ?? []}
-            policies={policies.data ?? []}
-            pending={createException.isPending}
-            onClose={() => setShowForm(false)}
-            onSubmit={submitException}
-          />
-        ) : (
-          <PolicyForm
-            form={policyForm}
-            setForm={setPolicyForm}
-            types={types.data ?? []}
-            documents={documents.data ?? []}
-            targets={targets.data}
-            pending={createPolicy.isPending}
-            submitError={policySubmitError}
-            initialStep={policyFormInitialStep}
-            reviewMeta={policyReviewMeta}
-            onClose={() => {
-              setPolicySubmitError("");
-              setPolicyReviewMeta(undefined);
-              setPolicyFormInitialStep("configure");
-              setShowForm(false);
-            }}
-            onSubmit={submitPolicy}
-          />
-        ))}
-      {tab !== "exceptions" && policyPath === "chooser" ? (
-        <ModalDialog
-          title="New rule"
-          eyebrow="Choose how to start"
-          onClose={() => setPolicyPath(null)}
-          size="md"
-        >
-          <div className="grid gap-2">
-            <button
-              type="button"
-              className="rounded-xl border border-slate-200 px-4 py-3 text-left hover:border-brand-pink"
-              onClick={() => {
-                setPolicySubmitError("");
-                setPolicyReviewMeta(undefined);
-                setPolicyFormInitialStep("configure");
-                setPolicyForm(
-                  defaultPolicyForm(
-                    types.data?.[0]?.id ? String(types.data[0].id) : "",
-                  ),
-                );
-                setPolicyPath(null);
-                setShowForm(true);
-              }}
-            >
-              <strong>Rule wizard</strong>
-              <p className="text-sm text-muted-foreground">
-                Step through type, scope, documents, and schedule, then review.
-              </p>
-            </button>
-            <button
-              type="button"
-              className="rounded-xl border border-slate-200 px-4 py-3 text-left hover:border-brand-pink"
-              onClick={() => setPolicyPath("ai")}
-            >
-              <strong>Create with AI</strong>
-              <p className="text-sm text-muted-foreground">
-                Describe what you need; AI proposes fields for your review.
-              </p>
-            </button>
-          </div>
-        </ModalDialog>
-      ) : null}
-      {policyPath === "ai" ? (
-        <ModalDialog
-          title="Create with AI"
-          eyebrow="New rule"
-          onClose={() => {
-            if (!aiPending) setPolicyPath("chooser");
-          }}
-          size="md"
-        >
-          {aiPending ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-brand-pink" />
-              <p className="text-sm font-semibold text-slate-700">Drafting rule…</p>
-              <p className="text-xs text-muted-foreground">
-                This can take a little while. Keep this window open.
-              </p>
-            </div>
-          ) : (
-            <>
-              <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                AI writes a short description and saves this as a <strong>Draft</strong>.
-                Activate it when it looks right.
-              </p>
-              <label className="mt-4 block space-y-1 text-sm">
-                <span className="font-semibold">Rule name</span>
-                <input
-                  className="field"
-                  value={aiName}
-                  onChange={(event) => setAiName(event.target.value)}
-                  placeholder="Remote work, Code of conduct…"
-                />
-              </label>
-              <label className="mt-3 block space-y-1 text-sm">
-                <span className="font-semibold">What should it cover?</span>
-                <textarea
-                  className="field min-h-24"
-                  value={aiDescription}
-                  onChange={(event) => setAiDescription(event.target.value)}
-                  placeholder="Optional: who it applies to, what is required, when it starts"
-                />
-              </label>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {AI_BRIEF_CHIPS.map((chip) => (
-                  <button
-                    key={chip.label}
-                    type="button"
-                    className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-brand-pink hover:text-brand-pink"
-                    onClick={() => appendAiBrief(chip.text)}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <label className="block space-y-1 text-sm">
-                  <span className="font-semibold">Rule type</span>
-                  <ThemedSelect
-                    value={aiPolicyTypeId}
-                    onChange={setAiPolicyTypeId}
-                    placeholder="Select type"
-                    options={(types.data ?? []).map((item) => ({
-                      value: String(item.id),
-                      label: item.name,
-                    }))}
-                  />
-                </label>
-                <div className="block space-y-1 text-sm sm:col-span-2">
-                  <span className="font-semibold">Required documents</span>
-                  <ComplianceDocumentTypeMultiSelect
-                    types={aiSelectableDocumentTypes}
-                    selected={aiDocumentTypeIds}
-                    onChange={setAiDocumentTypeIds}
-                    placeholder="Select document types"
-                    expiryTypesOnly={aiPolicyTypeCode === "renewable_document"}
-                  />
-                </div>
-              </div>
-              <div className="mt-5 flex justify-end gap-2">
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => setPolicyPath("chooser")}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="primary-button"
-                  disabled={!aiName.trim()}
-                  onClick={() => void runAiDraft()}
-                >
-                  Generate draft
-                </button>
-              </div>
-            </>
-          )}
-        </ModalDialog>
+      {showForm && tab === "exceptions" ? (
+        <ExceptionForm
+          form={exceptionForm}
+          setForm={setExceptionForm}
+          employees={targets.data?.employees ?? []}
+          policies={policies.data ?? []}
+          pending={createException.isPending}
+          onClose={() => setShowForm(false)}
+          onSubmit={submitException}
+        />
       ) : null}
     </div>
   );
@@ -1389,17 +1119,32 @@ export function PolicyForm({
   onImportComplete,
   organizationalMode,
   initialStep = "configure",
+  initialWizardStep = 0,
+  onWizardStateChange,
   reviewMeta,
   importDocumentId,
+  presentation = "modal",
 }: any) {
+  const isPage = presentation === "page" && !organizationalMode;
   const [step, setStep] = useState<"configure" | "review">(initialStep);
+  const [wizardStep, setWizardStep] = useState<number>(initialWizardStep);
   const [formError, setFormError] = useState("");
   const [importPending, setImportPending] = useState(false);
   const [formTemplates, setFormTemplates] = useState<{ id: number; name: string }[]>([]);
+  const entityName = organizationalMode ? "policy" : "rule";
 
   useEffect(() => {
     setStep(initialStep);
   }, [initialStep]);
+
+  useEffect(() => {
+    setWizardStep(initialWizardStep);
+  }, [initialWizardStep]);
+
+  useEffect(() => {
+    if (!isPage || !onWizardStateChange) return;
+    onWizardStateChange({ wizardStep, step });
+  }, [isPage, onWizardStateChange, wizardStep, step]);
 
   useEffect(() => {
     setForm((prev: PolicyCreateFormState) => {
@@ -1452,8 +1197,8 @@ export function PolicyForm({
   }, [typeCode]);
 
   const submit = (event: FormEvent) => {
+    event.preventDefault();
     if (!form.policy_type_id) {
-      event.preventDefault();
       setFormError(
         organizationalMode ? "Please select a policy type." : "Please select a rule type.",
       );
@@ -1466,8 +1211,35 @@ export function PolicyForm({
       organizationalMode ? "policy" : "rule",
     );
     if (!validation.canConfirm && step === "review") {
-      event.preventDefault();
       setFormError(validation.missingFields[0] || "Complete required fields.");
+      return;
+    }
+    if (step === "configure" && isPage) {
+      const stepKey = RULE_WIZARD_STEP_KEYS[wizardStep];
+      const stepError = validatePolicyWizardStep(
+        stepKey,
+        form,
+        typeCode,
+        reviewMeta,
+        organizationalMode ? "policy" : "rule",
+      );
+      if (stepError) {
+        setFormError(stepError);
+        return;
+      }
+      if (wizardStep < RULE_WIZARD_STEP_KEYS.length - 1) {
+        setFormError("");
+        setWizardStep((value) => value + 1);
+        return;
+      }
+      if (!validation.canConfirm) {
+        setFormError(
+          validation.missingFields[0] || "Complete required fields.",
+        );
+        return;
+      }
+      setFormError("");
+      setStep("review");
       return;
     }
     if (step === "configure") {
@@ -1478,20 +1250,17 @@ export function PolicyForm({
         organizationalMode ? "policy" : "rule",
       );
       if (!configureValidation.canConfirm) {
-        event.preventDefault();
         setFormError(
           configureValidation.missingFields[0] || "Complete required fields.",
         );
         return;
       }
     } else if (typeCode !== "compliance_request" && !form.document_type_ids.length) {
-      event.preventDefault();
       setFormError("Select at least one required document type.");
       return;
     }
     setFormError("");
     if (step === "configure") {
-      event.preventDefault();
       setStep("review");
       return;
     }
@@ -1506,25 +1275,67 @@ export function PolicyForm({
     form,
     step === "review" && typeCode === "retention",
   );
+  const showBasics = !isPage || wizardStep === 0;
+  const showAudience = !isPage || wizardStep === 1;
+  const showRequirements = !isPage || wizardStep === 2;
+  const showTiming = !isPage || wizardStep === 3;
+  const pageStepIndex = step === "review" ? 4 : wizardStep;
 
-  return (
-    <ModalDialog
-      title={
-        step === "configure"
-          ? organizationalMode
-            ? "Create policy"
-            : "Rule wizard"
-          : organizationalMode
-            ? "Review policy"
-            : "Review rule"
+  const reviewScreen = (
+    <ComplianceRuleReviewScreen
+      form={form}
+      typeName={selectedType?.name || ""}
+      typeCode={typeCode}
+      documentTypeNames={selectedDocumentTypes.map((item: any) => item.name)}
+      documentTypes={allDocumentTypes}
+      scopeLabels={scopeLabels}
+      retentionPreview={retentionPreview}
+      reviewMeta={reviewMeta}
+      submitError={submitError || formError}
+      pending={pending || importPending}
+      entityName={entityName}
+      confirmLabel={importDocumentId ? "Confirm import" : "Confirm"}
+      onBack={() => {
+        setStep("configure");
+        if (isPage) setWizardStep(3);
+      }}
+      onConfirm={() =>
+        void (async () => {
+          if (importDocumentId) {
+            setImportPending(true);
+            try {
+              const result = await api.confirmPolicyImport(
+                importDocumentId,
+                buildCreatePolicyPayload(form, typeCode),
+              );
+              if (!result.success) {
+                throw new Error(result.message || "Import failed.");
+              }
+              onImportComplete?.();
+              onClose();
+            } catch (error: unknown) {
+              setFormError(
+                error instanceof Error ? error.message : "Import failed.",
+              );
+            } finally {
+              setImportPending(false);
+            }
+            return;
+          }
+          submit({ preventDefault: () => undefined } as FormEvent);
+        })()
       }
-      eyebrow={organizationalMode ? "New policy" : "New rule"}
-      onClose={onClose}
-      size="xl"
-      zIndex={organizationalMode ? 110 : 50}
+    />
+  );
+
+  const configureForm = (
+    <form
+      id="compliance-policy-wizard-form"
+      onSubmit={submit}
+      className="grid gap-3 sm:grid-cols-2"
     >
-      {step === "configure" ? (
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
+      {showBasics ? (
+        <>
         <Field label={organizationalMode ? "Policy name" : "Rule name"}>
           <input
             required
@@ -1565,7 +1376,10 @@ export function PolicyForm({
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </Field>
-        <Field label="Applies to" full>
+        </>
+      ) : null}
+      {showAudience ? (
+        <div className="sm:col-span-2">
           <PolicyAudienceFilters
             scope={form.scope}
             targets={targets}
@@ -1585,8 +1399,11 @@ export function PolicyForm({
               })
             }
           />
-        </Field>
+        </div>
+      ) : null}
 
+      {showRequirements ? (
+        <>
         {typeCode === "review_schedule" ? (
           <ComplianceReviewScheduleFields
             form={form}
@@ -1603,66 +1420,26 @@ export function PolicyForm({
           />
         )}
 
-        {typeCode !== "review_schedule" ? (
-          <ComplianceVerificationFields
-            form={form}
-            setForm={setForm}
-            typeCode={typeCode}
-            documentTypes={allDocumentTypes}
-            entityName={organizationalMode ? "policy" : "rule"}
-          />
-        ) : null}
+        <ComplianceVerificationFields
+          form={form}
+          setForm={setForm}
+          typeCode={typeCode}
+          documentTypes={allDocumentTypes}
+          entityName={entityName}
+        />
 
         {typeCode === "compliance_request" ? (
-          <>
-            <ComplianceRequestTaskList
-              tasks={form.request_tasks}
-              onChange={(request_tasks) => setForm({ ...form, request_tasks })}
-              documentTypes={allDocumentTypes}
-              linkableContext={{
-                applies_to: form.applies_to,
-                scope: form.scope,
-              }}
-              forms={formTemplates}
-            />
-            <ComplianceRequestScheduleFields
-              schedule={{
-                request_trigger: form.request_trigger,
-                request_start_date: form.request_start_date,
-                repeat_every_months: form.repeat_every_months,
-                tasks_needed_mode: form.tasks_needed_mode as
-                  | "all_required"
-                  | "any_required"
-                  | "minimum_count",
-                tasks_needed_minimum: form.tasks_needed_minimum,
-                reopen_on_content_change: form.reopen_on_content_change,
-              }}
-              onChange={(schedule) => setForm({ ...form, ...schedule })}
-              dueDays={form.due_days}
-              gracePeriodDays={form.grace_period_days}
-              reminderDays={form.reminder_frequency_days}
-              onDueDaysChange={(due_days) => setForm({ ...form, due_days })}
-              onGraceChange={(grace_period_days) =>
-                setForm({ ...form, grace_period_days })
-              }
-              onReminderChange={(reminder_frequency_days) =>
-                setForm({ ...form, reminder_frequency_days })
-              }
-            />
-            <Field label="Who follows up?" full>
-              <ThemedSelect
-                value={String(form.assigned_reviewer_id || "")}
-                onChange={(val) =>
-                  setForm({ ...form, assigned_reviewer_id: val })
-                }
-                placeholder="Select HR contact"
-                options={(targets?.users || []).map((u: any) => ({
-                  value: String(u.id),
-                  label: u.name,
-                }))}
-              />
-            </Field>
-          </>
+          <ComplianceRequestRequirementsSection
+            form={form}
+            setForm={setForm}
+            documentTypes={allDocumentTypes}
+            linkableContext={{
+              applies_to: form.applies_to,
+              scope: form.scope,
+            }}
+            forms={formTemplates}
+            targets={targets}
+          />
         ) : typeCode !== "review_schedule" ? (
           <div className="sm:col-span-2">
             <span className="label">Required documents</span>
@@ -1681,6 +1458,11 @@ export function PolicyForm({
             />
           </div>
         ) : null}
+        </>
+      ) : null}
+
+      {showTiming ? (
+        <>
         <Field label="Schedule">
           <ThemedSelect
             value={form.schedule}
@@ -1737,11 +1519,14 @@ export function PolicyForm({
             />
           </Field>
         ) : null}
-        {(formError || submitError) && (
-          <p className="sm:col-span-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-            {formError || submitError}
-          </p>
-        )}
+        </>
+      ) : null}
+      {(formError || submitError) && (
+        <p className="sm:col-span-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+          {formError || submitError}
+        </p>
+      )}
+      {!isPage ? (
         <div className="flex justify-end gap-3 border-t border-slate-100 pt-3 sm:col-span-2">
           <button
             type="button"
@@ -1750,56 +1535,95 @@ export function PolicyForm({
           >
             Cancel
           </button>
-          <button
-            className="app-btn app-btn-primary"
-          >
-            Review
-          </button>
+          <button className="app-btn app-btn-primary">Review</button>
         </div>
-      </form>
-      ) : (
-        <ComplianceRuleReviewScreen
-          form={form}
-          typeName={selectedType?.name || ""}
-          typeCode={typeCode}
-          documentTypeNames={selectedDocumentTypes.map((item: any) => item.name)}
-          documentTypes={allDocumentTypes}
-          scopeLabels={scopeLabels}
-          retentionPreview={retentionPreview}
-          reviewMeta={reviewMeta}
-          submitError={submitError || formError}
-          pending={pending || importPending}
-          entityName={organizationalMode ? "policy" : "rule"}
-          confirmLabel={importDocumentId ? "Confirm import" : "Confirm"}
-          onBack={() => setStep("configure")}
-          onConfirm={() =>
-            void (async () => {
-              if (importDocumentId) {
-                setImportPending(true);
-                try {
-                  const result = await api.confirmPolicyImport(
-                    importDocumentId,
-                    buildCreatePolicyPayload(form),
-                  );
-                  if (!result.success) {
-                    throw new Error(result.message || "Import failed.");
-                  }
-                  onImportComplete?.();
-                  onClose();
-                } catch (error: unknown) {
-                  setFormError(
-                    error instanceof Error ? error.message : "Import failed.",
-                  );
-                } finally {
-                  setImportPending(false);
-                }
-                return;
-              }
-              submit({ preventDefault: () => undefined } as FormEvent);
-            })()
-          }
-        />
-      )}
+      ) : null}
+    </form>
+  );
+
+  if (isPage) {
+    return (
+      <div className="app-page min-h-full w-full space-y-8 pb-10">
+        <h1 className="text-3xl font-medium text-slate-900">
+          {step === "review" ? "Review rule" : "Rule wizard"}
+        </h1>
+
+        <ol className="grid gap-2 sm:grid-cols-5">
+          {RULE_WIZARD_STEPS.map((label, index) => (
+            <li
+              key={label}
+              className={`rounded-xl border px-3 py-2 text-xs font-bold ${
+                index === pageStepIndex
+                  ? "border-brand-pink bg-pink-50 text-brand-text"
+                  : index < pageStepIndex
+                    ? "border-slate-200 bg-white text-slate-700"
+                    : "border-slate-100 bg-slate-50 text-slate-400"
+              }`}
+            >
+              {index + 1}. {label}
+            </li>
+          ))}
+        </ol>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-6">
+          {step === "configure" ? configureForm : reviewScreen}
+        </section>
+
+        {step === "configure" ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+              >
+                Cancel
+              </button>
+              {wizardStep > 0 ? (
+                <button
+                  type="button"
+                  className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+                  onClick={() => {
+                    setFormError("");
+                    setWizardStep((value) => value - 1);
+                  }}
+                >
+                  Back
+                </button>
+              ) : null}
+            </div>
+            <button
+              type="submit"
+              form="compliance-policy-wizard-form"
+              className="inline-flex rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2 text-sm font-semibold text-white"
+            >
+              {wizardStep < RULE_WIZARD_STEP_KEYS.length - 1
+                ? "Continue"
+                : "Review"}
+            </button>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <ModalDialog
+      title={
+        step === "configure"
+          ? organizationalMode
+            ? "Create policy"
+            : "Rule wizard"
+          : organizationalMode
+            ? "Review policy"
+            : "Review rule"
+      }
+      eyebrow={organizationalMode ? "New policy" : "New rule"}
+      onClose={onClose}
+      size="xl"
+      zIndex={organizationalMode ? 110 : 50}
+    >
+      {step === "configure" ? configureForm : reviewScreen}
     </ModalDialog>
   );
 }

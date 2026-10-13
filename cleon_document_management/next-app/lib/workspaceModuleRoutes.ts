@@ -38,7 +38,9 @@ export function moduleKeyForPath(pathname: string): string | null {
               path.includes("tab=approvals") ||
               path.includes("tab=verifications")
             ? "self_service_approvals"
-            : "my_workspace";
+            : path.includes("tab=sharing")
+              ? "my_workspace"
+              : "my_workspace";
     return tab;
   }
   return null;

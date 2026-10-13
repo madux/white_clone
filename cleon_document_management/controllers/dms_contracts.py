@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import http
+from odoo.exceptions import ValidationError
 from odoo.http import request
 
 from odoo.addons.cleon_document_management.controllers.workspace_delegation import (
@@ -48,7 +49,10 @@ class DmsContractsController(http.Controller):
     def registry_get(self, **kwargs):
         workspace_ctx(kwargs)
         document_id = kwargs.get("document_id") or kwargs.get("id")
-        entry = request.env["doc.registry.service"].get_document(document_id)
+        entry = request.env["doc.registry.service"].get_document(
+            document_id,
+            audit_source=kwargs.get("audit_source"),
+        )
         if not entry:
             return {"success": False, "message": "Not found"}
         return {"success": True, "contract": "C6", "data": entry}
@@ -98,12 +102,92 @@ class DmsContractsController(http.Controller):
     )
     def audit_query(self, **kwargs):
         workspace_ctx(kwargs)
-        data = request.env["doc.audit.query.service"].query(
-            filters=kwargs.get("filters") or {},
-            page=kwargs.get("page") or 1,
-            page_size=kwargs.get("page_size") or 50,
-        )
+        service = request.env["doc.audit.query.service"]
+        try:
+            data = service.query(
+                filters=kwargs.get("filters") or {},
+                page=kwargs.get("page") or 1,
+                page_size=kwargs.get("page_size") or 50,
+            )
+        except Exception as exc:
+            return {"success": False, "message": str(exc)}
         return {"success": True, "contract": "C7", "data": data}
+
+    @http.route(
+        "/api/dms/audit/meta",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def audit_meta(self, **kwargs):
+        workspace_ctx(kwargs)
+        data = request.env["doc.audit.query.service"].meta()
+        return {"success": True, "contract": "C7", "data": data}
+
+    @http.route(
+        "/api/dms/audit/metrics",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def audit_metrics(self, **kwargs):
+        workspace_ctx(kwargs)
+        service = request.env["doc.audit.query.service"]
+        try:
+            data = service.metrics(filters=kwargs.get("filters") or {})
+        except Exception as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True, "contract": "C7", "data": data}
+
+    @http.route(
+        "/api/dms/audit/export",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def audit_export(self, **kwargs):
+        workspace_ctx(kwargs)
+        service = request.env["doc.audit.query.service"]
+        try:
+            data = service.export_rows(filters=kwargs.get("filters") or {})
+        except Exception as exc:
+            return {"success": False, "message": str(exc)}
+        return {"success": True, "contract": "C7", "data": data}
+
+    @http.route(
+        "/api/dms/audit/export-job",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def audit_export_job(self, **kwargs):
+        workspace_ctx(kwargs)
+        job_id = kwargs.get("job_id") or kwargs.get("id")
+        data = request.env["doc.audit.query.service"].get_export_job(job_id)
+        if not data:
+            return {"success": False, "message": "Not found"}
+        return {"success": True, "contract": "C7", "data": data}
+
+    @http.route(
+        "/api/dms/audit/log-view",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def audit_log_view(self, **kwargs):
+        workspace_ctx(kwargs)
+        document_id = kwargs.get("document_id") or kwargs.get("id")
+        source = kwargs.get("source") or "search_preview"
+        service = request.env["doc.registry.service"]
+        entry = service.get_document(document_id, audit_source=source)
+        if not entry:
+            return {"success": False, "message": "Not found or access denied"}
+        return {"success": True, "data": entry}
 
     @http.route(
         "/api/dms/audit/event",
@@ -233,6 +317,22 @@ class DmsContractsController(http.Controller):
         Pref = request.env["doc.notification.user.preference"]
         pref = Pref.get_or_create_for_user(request.env.user)
         if kwargs.get("save"):
+            emitter = request.env.get("doc.audit.emitter.service")
+            before = (
+                {
+                    "digest_enabled": pref.digest_enabled,
+                    "email_signatures": pref.email_signatures,
+                    "email_documents": pref.email_documents,
+                    "email_approvals": pref.email_approvals,
+                    "email_organizational": pref.email_organizational,
+                    "email_templates": pref.email_templates,
+                    "email_compliance": pref.email_compliance,
+                    "email_alerts": pref.email_alerts,
+                    "email_platform": pref.email_platform,
+                }
+                if emitter
+                else {}
+            )
             updates = {}
             if "digest_enabled" in kwargs:
                 updates["digest_enabled"] = bool(kwargs.get("digest_enabled"))
@@ -256,6 +356,25 @@ class DmsContractsController(http.Controller):
                     updates[field_name] = bool(groups[code])
             if updates:
                 pref.sudo().write(updates)
+            if emitter and updates:
+                after = {
+                    "digest_enabled": pref.digest_enabled,
+                    "email_signatures": pref.email_signatures,
+                    "email_documents": pref.email_documents,
+                    "email_approvals": pref.email_approvals,
+                    "email_organizational": pref.email_organizational,
+                    "email_templates": pref.email_templates,
+                    "email_compliance": pref.email_compliance,
+                    "email_alerts": pref.email_alerts,
+                    "email_platform": pref.email_platform,
+                }
+                changes = emitter.diff_dict(before, after)
+                emitter.log_settings_changes(
+                    pref,
+                    "Notification preferences",
+                    "Settings → Notifications → My preferences",
+                    changes,
+                )
         return {"success": True, "data": pref.serialize_for_api()}
 
     @http.route(
@@ -275,6 +394,8 @@ class DmsContractsController(http.Controller):
         Rule = request.env["doc.notification.rule"].sudo()
         rules = kwargs.get("rules") or []
         updated = 0
+        emitter = request.env.get("doc.audit.emitter.service")
+        corr = emitter.new_correlation_id("notify") if emitter else None
         for item in rules:
             rule_id = item.get("id")
             if not rule_id:
@@ -284,6 +405,12 @@ class DmsContractsController(http.Controller):
                 continue
             if rule.compliance_read_only:
                 continue
+            before = {
+                "active": rule.active,
+                "channel_email": rule.channel_email,
+                "who_is_told": rule.who_is_told,
+                "recipient_mode": rule.recipient_mode,
+            }
             vals = {"is_customized": True}
             if "active" in item and (not rule.required or is_super):
                 vals["active"] = bool(item["active"])
@@ -299,6 +426,22 @@ class DmsContractsController(http.Controller):
             if "user_ids" in item and is_super:
                 vals["user_ids"] = [(6, 0, item["user_ids"] or [])]
             rule.write(vals)
+            if emitter:
+                after = {
+                    "active": rule.active,
+                    "channel_email": rule.channel_email,
+                    "who_is_told": rule.who_is_told,
+                    "recipient_mode": rule.recipient_mode,
+                }
+                changes = emitter.diff_dict(before, after)
+                if changes:
+                    emitter.log_settings_changes(
+                        rule,
+                        "Notification Rules",
+                        "Settings → Notification Rules → %s" % (rule.name or rule.event_type),
+                        changes,
+                        correlation_id=corr,
+                    )
             updated += 1
         return {"success": True, "updated": updated}
 
@@ -362,10 +505,15 @@ class DmsContractsController(http.Controller):
         csrf=False,
     )
     def work_items_stub(self, **kwargs):
-        """C5 consumer hook — returns empty until Mike's work-item feed is live."""
-        workspace_ctx(kwargs)
+        """C5 unified My Workspace to-do feed."""
+        from odoo.addons.cleon_document_management.controllers.workspace_delegation import (
+            effective_employee,
+            effective_user,
+        )
+
+        ctx = workspace_ctx(kwargs)
         employee_id = kwargs.get("employeeId") or kwargs.get("employee_id")
-        user = request.env.user
+        user = effective_user(ctx)
         if employee_id and str(employee_id).isdigit():
             employee = request.env["hr.employee"].browse(int(employee_id))
             if employee.exists() and employee.user_id != user:
@@ -374,10 +522,140 @@ class DmsContractsController(http.Controller):
                     "message": "Forbidden",
                     "contract": "C5",
                 }
+        employee = effective_employee(ctx)
+        search = kwargs.get("search") or kwargs.get("q") or ""
+        payload = request.env["doc.dms.work.items.service"].build_for_user(
+            user, employee=employee, search=search
+        )
         return {
             "success": True,
             "contract": "C5",
-            "data": {"items": [], "total": 0, "source": "pending_developer_b"},
+            "data": payload,
+        }
+
+    def _require_general_admin(self):
+        workspace_ctx({})
+        if not request.env.user.has_group(
+            "cleon_document_management.group_document_admin"
+        ):
+            return {"success": False, "message": "Access denied."}
+        return None
+
+    @http.route(
+        "/api/dms/general/holidays/list",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def dms_general_holidays_list(self, **kwargs):
+        workspace_ctx(kwargs)
+        denied = self._require_general_admin()
+        if denied:
+            return denied
+        year = kwargs.get("year")
+        if not year:
+            from odoo import fields
+
+            year = fields.Date.context_today(request.env.user).year
+        Holiday = request.env["doc.dms.public.holiday"]
+        return {
+            "success": True,
+            "year": int(year),
+            "holidays": Holiday.serialize_list(request.env.company, int(year)),
+        }
+
+    @http.route(
+        "/api/dms/general/holiday/save",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def dms_general_holiday_save(self, **kwargs):
+        workspace_ctx(kwargs)
+        denied = self._require_general_admin()
+        if denied:
+            return denied
+        Holiday = request.env["doc.dms.public.holiday"]
+        name = (kwargs.get("name") or "").strip()
+        holiday_date = kwargs.get("date") or kwargs.get("holiday_date")
+        if not name or not holiday_date:
+            return {"success": False, "message": "Name and date are required."}
+        vals = {
+            "name": name,
+            "holiday_date": holiday_date,
+            "company_id": request.env.company.id,
+        }
+        holiday_id = kwargs.get("id")
+        if holiday_id:
+            row = Holiday.browse(int(holiday_id))
+            if not row.exists() or row.company_id != request.env.company:
+                return {"success": False, "message": "Holiday not found."}
+            row.write(vals)
+        else:
+            Holiday.create(vals)
+        year = kwargs.get("year")
+        if not year and holiday_date:
+            year = int(str(holiday_date)[:4])
+        return {
+            "success": True,
+            "holidays": Holiday.serialize_list(request.env.company, year),
+        }
+
+    @http.route(
+        "/api/dms/general/holiday/delete",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def dms_general_holiday_delete(self, **kwargs):
+        workspace_ctx(kwargs)
+        denied = self._require_general_admin()
+        if denied:
+            return denied
+        holiday_id = kwargs.get("id")
+        if not holiday_id:
+            return {"success": False, "message": "Holiday id is required."}
+        row = request.env["doc.dms.public.holiday"].browse(int(holiday_id))
+        if not row.exists() or row.company_id != request.env.company:
+            return {"success": False, "message": "Holiday not found."}
+        year = row.year
+        row.unlink()
+        return {
+            "success": True,
+            "holidays": request.env["doc.dms.public.holiday"].serialize_list(
+                request.env.company, year
+            ),
+        }
+
+    @http.route(
+        "/api/dms/general/holidays/copy-last-year",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def dms_general_holidays_copy_last_year(self, **kwargs):
+        workspace_ctx(kwargs)
+        denied = self._require_general_admin()
+        if denied:
+            return denied
+        year = kwargs.get("year")
+        if not year:
+            return {"success": False, "message": "Target year is required."}
+        try:
+            request.env["doc.dms.public.holiday"].copy_from_last_year(
+                request.env.company, int(year)
+            )
+        except ValidationError as error:
+            return {"success": False, "message": str(error)}
+        return {
+            "success": True,
+            "holidays": request.env["doc.dms.public.holiday"].serialize_list(
+                request.env.company, int(year)
+            ),
         }
 
     @http.route(
@@ -389,35 +667,35 @@ class DmsContractsController(http.Controller):
     )
     def dms_general_save(self, **kwargs):
         workspace_ctx(kwargs)
-        if not request.env.user.has_group(
-            "cleon_document_management.group_document_admin"
-        ):
-            return {"success": False, "message": "Access denied."}
-        params = request.env["ir.config_parameter"].sudo()
-        if "mail_smtp_host" in kwargs:
-            params.set_param(
-                "cleon_document_management.mail_smtp_host",
-                kwargs.get("mail_smtp_host") or "",
-            )
-        if "mail_smtp_port" in kwargs:
-            params.set_param(
-                "cleon_document_management.mail_smtp_port",
-                str(kwargs.get("mail_smtp_port") or 587),
-            )
-        if "mail_from_address" in kwargs:
-            params.set_param(
-                "cleon_document_management.mail_from_address",
-                kwargs.get("mail_from_address") or "",
-            )
-        if "mail_from_name" in kwargs:
-            params.set_param(
-                "cleon_document_management.mail_from_name",
-                kwargs.get("mail_from_name") or "",
-            )
-        if "org_timezone" in kwargs:
-            params.set_param(
-                "cleon_document_management.org_timezone",
-                kwargs.get("org_timezone") or "UTC",
+        denied = self._require_general_admin()
+        if denied:
+            return denied
+        service = request.env["doc.dms.general.service"]
+        emitter = request.env.get("doc.audit.emitter.service")
+        audit_keys = [
+            "timezone",
+            "date_format",
+            "language",
+            "working_weekdays",
+            "reminder_digest_time",
+        ]
+        before = (
+            {key: service.build_general_payload().get(key) for key in audit_keys}
+            if emitter
+            else {}
+        )
+        try:
+            service.save_general(kwargs)
+        except ValidationError as error:
+            return {"success": False, "message": str(error)}
+        if emitter:
+            after = {key: service.build_general_payload().get(key) for key in audit_keys}
+            changes = emitter.diff_dict(before, after, audit_keys)
+            emitter.log_settings_changes(
+                request.env.company,
+                "General",
+                "Settings → General",
+                changes,
             )
         return {"success": True}
 
@@ -430,19 +708,43 @@ class DmsContractsController(http.Controller):
     )
     def approval_workflow_save(self, **kwargs):
         workspace_ctx(kwargs)
-        if not request.env.user.has_group(
-            "cleon_document_management.group_document_admin"
-        ):
-            return {"success": False, "message": "Access denied."}
-        params = request.env["ir.config_parameter"].sudo()
-        if "enabled" in kwargs:
+        service = request.env["doc.approval.workflow.service"]
+        if "enabled" in kwargs and len(kwargs) == 1:
             enabled = bool(kwargs.get("enabled"))
-            params.set_param(
-                "cleon_document_management.approval_workflow_enabled",
-                "1" if enabled else "0",
-            )
+            config = request.env["doc.employee.files.config"].get_for_company().sudo()
+            config.approval_workflow_enabled = enabled
+            service._sync_legacy_enabled_param(enabled)
             if enabled:
                 request.env[
                     "doc.approval.workflow.migration"
-                ].clear_type_level_approval_config()
-        return {"success": True}
+                ].clear_type_level_approval_config(deactivate_exceptions=False)
+            return {"success": True}
+        return service.save_settings(kwargs)
+
+    @http.route(
+        "/api/dms/modules/save",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def dms_modules_save(self, **kwargs):
+        workspace_ctx(kwargs)
+        denied = self._require_general_admin()
+        if denied:
+            return denied
+        modules = kwargs.get("modules")
+        if modules is None and isinstance(kwargs.get("payload"), dict):
+            modules = kwargs["payload"].get("modules")
+        service = request.env["doc.dms.tenant.modules.service"]
+        try:
+            result = service.write_modules(modules or {})
+        except ValidationError as error:
+            return {"success": False, "message": str(error)}
+        return {
+            "success": True,
+            "data": {
+                "modules": result["modules"],
+                "notes": result.get("notes") or [],
+            },
+        }

@@ -154,7 +154,7 @@ export default function ComplianceRunDetailPage() {
       <div className="app-page">
         <p className="text-sm text-red-600">No run selected.</p>
         <Link
-          href="/pages/employee?tab=compliance"
+          href="/pages/compliance"
           className="mt-4 inline-flex text-sm font-semibold text-brand-pink"
         >
           Back to compliance
@@ -168,7 +168,7 @@ export default function ComplianceRunDetailPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link
-            href="/pages/employee?tab=compliance"
+            href="/pages/compliance"
             className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-brand-pink"
           >
             <ArrowLeft className="h-4 w-4" />

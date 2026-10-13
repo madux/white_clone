@@ -14,6 +14,7 @@ import {
   serializeAllowedFileTypes,
 } from "../../../../lib/employeeFileDimensions";
 import type { EmployeeFilesConfig } from "../../../../lib/types";
+import { SettingsFieldHelp } from "../EmployeeFilesOrganizingDimensionsSettings";
 
 export default function FilesUploadsSettingsTab() {
   const config = useEmployeeFilesConfig();
@@ -48,11 +49,6 @@ export default function FilesUploadsSettingsTab() {
 
   return (
     <div className="max-w-2xl space-y-4">
-      <p className="text-sm text-slate-600">
-        These rules apply on every upload path in Document Management (Employee
-        Files, Organisational Files, and shared upload flows).
-      </p>
-
       <form
         className="rounded-2xl border border-slate-200 bg-white p-5"
         onSubmit={(event) => {
@@ -60,6 +56,12 @@ export default function FilesUploadsSettingsTab() {
           void onSave();
         }}
       >
+        <div className="mb-4 flex justify-end">
+          <SettingsFieldHelp
+            label="Upload rules"
+            text="These rules apply on every upload path in Document Management (Employee Files, Organisational Files, and shared upload flows)."
+          />
+        </div>
         <div className="space-y-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">

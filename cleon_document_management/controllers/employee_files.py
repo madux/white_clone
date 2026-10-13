@@ -9,7 +9,6 @@ from odoo.http import request, content_disposition
 
 from odoo.addons.cleon_document_management.controllers.document_automation_api import (
     LIBRARY_EMPLOYEE,
-    automation_hub_for_library,
     handle_document_automation,
 )
 
@@ -98,6 +97,12 @@ class EmployeeFilesController(http.Controller):
         prior = {key: config[key] for key in reconcile_flags}
         prior_dims = config.get_organizing_dimensions()
         prior_sub = config.sub_organizing_dimension
+        emitter = request.env.get("doc.audit.emitter.service")
+        snapshot_keys = list(writable) + [
+            "error_escalation_user_id",
+            "sub_organizing_dimension",
+        ]
+        before = emitter.snapshot_record(config, snapshot_keys) if emitter else {}
         if values:
             config.write(values)
         if "organizing_dimensions" in kwargs:
@@ -118,6 +123,18 @@ class EmployeeFilesController(http.Controller):
             )
         ):
             self._service().reconcile_all_employees_from_ems(config.company_id)
+        if emitter:
+            after = emitter.snapshot_record(config, snapshot_keys)
+            if "organizing_dimensions" in kwargs:
+                before["organizing_dimensions"] = prior_dims
+                after["organizing_dimensions"] = config.get_organizing_dimensions()
+            changes = emitter.diff_dict(before, after)
+            emitter.log_settings_changes(
+                config,
+                "Employee Files",
+                "Settings → Employee Files",
+                changes,
+            )
         return {"success": True, "data": config.serialize_for_api()}
 
     @http.route(
@@ -1115,16 +1132,3 @@ class EmployeeFilesController(http.Controller):
             kwargs,
         )
 
-    @http.route(
-        "/api/employee-files/automation-hub",
-        type="json",
-        auth="user",
-        methods=["POST"],
-        csrf=False,
-    )
-    def automation_hub(self, **kwargs):
-        return automation_hub_for_library(
-            request.env,
-            request.env.user,
-            LIBRARY_EMPLOYEE,
-        )

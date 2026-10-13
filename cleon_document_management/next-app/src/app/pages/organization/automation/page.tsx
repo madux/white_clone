@@ -1,9 +1,5 @@
-import DocumentAutomationHubPage from "@/app/components/DocumentAutomationHubPage";
+import { redirect } from "next/navigation";
 
 export default function OrganizationAutomationPage() {
-  return (
-    <main>
-      <DocumentAutomationHubPage library="organizational" />
-    </main>
-  );
+  redirect("/pages/organization");
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { cn } from "cn";
 import {
   Select,
@@ -37,19 +38,19 @@ export default function AppSelect({
   disabled?: boolean;
   emptyLabel?: string;
 }) {
-  const items = [
-    { label: placeholder, value: null as string | null },
-    ...options.map((option) => ({
-      label: option.label,
-      value: option.value,
-      disabled: option.disabled,
-    })),
-  ];
+  const items = useMemo(
+    () =>
+      options.map((option) => ({
+        value: String(option.value),
+        label: option.label,
+      })),
+    [options],
+  );
 
   return (
     <Select
+      value={value ? String(value) : null}
       items={items}
-      value={value || null}
       onValueChange={(next) => onChange(next == null ? "" : String(next))}
       disabled={disabled}
     >
@@ -60,9 +61,13 @@ export default function AppSelect({
         )}
         aria-label={ariaLabel}
       >
-        <SelectValue />
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent alignItemWithTrigger side="bottom" className="min-w-(--anchor-width)">
+      <SelectContent
+        alignItemWithTrigger={false}
+        side="bottom"
+        className="min-w-(--anchor-width)"
+      >
         {options.length === 0 ? (
           <p className="px-3 py-4 text-sm text-muted-foreground">{emptyLabel}</p>
         ) : (

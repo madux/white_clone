@@ -134,14 +134,7 @@ export default function MyTeamCompliancePage({
 
   return (
     <div className={embedded ? "space-y-6" : "app-page space-y-6"}>
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">My Team</h1>
-          <p className="mt-1 max-w-xl text-sm text-slate-500">
-            Direct reports only — see who is compliant and what still needs action
-            across assigned policies.
-          </p>
-        </div>
+      <header className="flex flex-wrap items-center justify-end gap-4">
         {attention > 0 ? (
           <div
             className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900"

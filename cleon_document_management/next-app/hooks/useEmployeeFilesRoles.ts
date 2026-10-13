@@ -64,3 +64,29 @@ export function useAssignEmployeeFilesRoles() {
     },
   });
 }
+
+export function useCloneEmployeeFilesRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (roleId: number) => api.cloneEmployeeFilesRole(roleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: baseKey });
+    },
+  });
+}
+
+export function useEmployeeFilesRoleEditorContext(enabled = true) {
+  return useQuery({
+    queryKey: [...baseKey, "editor-context"],
+    queryFn: api.getEmployeeFilesRoleEditorContext,
+    enabled,
+  });
+}
+
+export function useEffectivePermissions(userId: number | null) {
+  return useQuery({
+    queryKey: [...baseKey, "effective", userId],
+    queryFn: () => api.getEffectivePermissions(userId!),
+    enabled: userId != null,
+  });
+}

@@ -1,13 +1,13 @@
-import AdminOnly from "@/app/components/AdminOnly";
+import ComplianceGate from "@/app/components/ComplianceGate";
 import ComplianceRunDetailPage from "@/app/components/ComplianceRunDetailPage";
 import { Suspense } from "react";
 
 export default function ComplianceRunRoute() {
   return (
-    <AdminOnly>
+    <ComplianceGate>
       <Suspense fallback={null}>
         <ComplianceRunDetailPage />
       </Suspense>
-    </AdminOnly>
+    </ComplianceGate>
   );
 }

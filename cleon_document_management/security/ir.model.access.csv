@@ -27,7 +27,7 @@ access_doc_folder_share_link_user,doc.folder.share.link user,model_doc_folder_sh
 access_doc_folder_share_link_manager,doc.folder.share.link manager,model_doc_folder_share_link,cleon_document_management.group_document_manager,1,1,1,1
 access_doc_folder_share_link_admin,doc.folder.share.link admin,model_doc_folder_share_link,cleon_document_management.group_document_admin,1,1,1,1
 
-access_doc_document_version_user,doc.document.version user,model_doc_document_version,cleon_document_management.group_document_user,1,0,0,0
+access_doc_document_version_user,doc.document.version user,model_doc_document_version,cleon_document_management.group_document_user,1,1,0,0
 access_doc_document_version_manager,doc.document.version manager,model_doc_document_version,cleon_document_management.group_document_manager,1,1,1,1
 access_doc_document_version_admin,doc.document.version admin,model_doc_document_version,cleon_document_management.group_document_admin,1,1,1,1
 
@@ -236,6 +236,11 @@ access_doc_folder_lock_audit_manager,doc.folder.lock.audit manager,model_doc_fol
 access_doc_folder_lock_audit_admin,doc.folder.lock.audit admin,model_doc_folder_lock_audit,cleon_document_management.group_document_admin,1,1,1,1
 access_doc_object_audit_user,doc.object.audit user,model_doc_object_audit,cleon_document_management.group_document_user,1,1,1,0
 access_doc_object_audit_admin,doc.object.audit admin,model_doc_object_audit,cleon_document_management.group_document_admin,1,1,1,1
+access_doc_audit_export_job_user,doc.audit.export.job user,model_doc_audit_export_job,cleon_document_management.group_document_user,1,0,0,0
+access_doc_audit_export_job_admin,doc.audit.export.job admin,model_doc_audit_export_job,cleon_document_management.group_document_admin,1,1,1,1
+
+access_doc_dms_public_holiday_user,doc.dms.public.holiday user,model_doc_dms_public_holiday,cleon_document_management.group_document_user,1,0,0,0
+access_doc_dms_public_holiday_admin,doc.dms.public.holiday admin,model_doc_dms_public_holiday,cleon_document_management.group_document_admin,1,1,1,1
 access_doc_organizational_connector_user,doc.organizational.connector user,model_doc_organizational_connector,cleon_document_management.group_document_user,1,0,0,0
 access_doc_organizational_connector_admin,doc.organizational.connector admin,model_doc_organizational_connector,cleon_document_management.group_document_admin,1,1,1,1
 access_doc_organizational_oauth_state_user,doc.organizational.oauth.state user,model_doc_organizational_oauth_state,cleon_document_management.group_document_user,1,1,1,1

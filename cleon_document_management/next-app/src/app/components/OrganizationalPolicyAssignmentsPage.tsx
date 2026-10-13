@@ -53,13 +53,6 @@ export default function OrganizationalPolicyAssignmentsPage() {
           { label: "Policy assignments" },
         ]}
       />
-      <header className="px-4">
-        <h1 className="text-lg font-semibold">Policy assignments</h1>
-        <p className="text-sm text-muted-foreground">
-          Organisational policies assigned to employee files. Assign from a policy document menu
-          or compliance workflows.
-        </p>
-      </header>
       <section className="app-page-body mx-4 overflow-hidden rounded-xl border border-slate-200">
         {loading ? (
           <EmptyState title="Loading assignments…" loading />

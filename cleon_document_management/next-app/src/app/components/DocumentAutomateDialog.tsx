@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Loader2, Workflow, Zap } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   documentAutomations,
@@ -200,19 +200,12 @@ export default function DocumentAutomateDialog({
       >
         <div className="box-border w-full max-w-full min-w-0 space-y-5 overflow-x-hidden">
           <section
-            className="box-border w-full max-w-full overflow-hidden rounded-2xl border border-pink-100 bg-gradient-to-br from-pink-50/90 to-white p-3 sm:p-4"
+            className="box-border w-full max-w-full overflow-hidden rounded-lg border border-border bg-muted/20 p-4"
           >
-            <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-start">
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-sm"
-                aria-hidden
-              >
-                <Workflow className="h-5 w-5" />
-              </span>
-              <div className="min-w-0 w-full flex-1 basis-0 overflow-hidden sm:min-w-0">
+            <div className="w-full min-w-0">
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-slate-900">Add rule</h3>
-                  <p className="text-xs leading-snug text-slate-600">
+                  <p className="mt-1 text-xs leading-snug text-muted-foreground">
                     Rules apply only to this document. Pick a condition that matches the trigger
                     and action.
                   </p>
@@ -272,35 +265,22 @@ export default function DocumentAutomateDialog({
                     </div>
                   ) : null}
                 </div>
-                <button
+                <Button
                   type="button"
                   disabled={saving}
                   onClick={() => void createRule()}
-                  className="mt-3 inline-flex w-full max-w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-105 disabled:opacity-60 sm:w-auto"
+                  className="mt-4 w-full sm:w-auto"
                 >
                   {saving ? (
-                    <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
-                  ) : (
-                    <Zap className="h-4 w-4 shrink-0" aria-hidden />
-                  )}
+                    <Loader2 className="animate-spin" aria-hidden />
+                  ) : null}
                   Save rule
-                </button>
-              </div>
+                </Button>
             </div>
           </section>
 
           <section className="box-border w-full max-w-full min-w-0 overflow-hidden">
-            <div className="mb-3 flex min-w-0 items-center gap-2">
-              <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-brand-text to-brand-pink text-white"
-                aria-hidden
-              >
-                <Workflow className="h-4 w-4" />
-              </span>
-              <h3 className="min-w-0 truncate text-sm font-semibold text-slate-900">
-                Active rules
-              </h3>
-            </div>
+            <h3 className="mb-3 text-sm font-semibold text-slate-900">Active rules</h3>
             {loading ? (
               <p className="flex items-center gap-2 text-sm text-slate-500">
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
@@ -328,7 +308,7 @@ export default function DocumentAutomateDialog({
                       <button
                         type="button"
                         onClick={() => setEditingRuleId(item.id)}
-                        className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-pink-200 hover:bg-pink-50/30 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3"
+                        className="flex w-full min-w-0 flex-col gap-3 rounded-lg border border-border bg-background p-3 text-left transition hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3"
                       >
                         <div className="min-w-0 flex-1 overflow-hidden">
                           <p className="flex items-center gap-1 truncate font-semibold text-slate-900">
@@ -354,10 +334,10 @@ export default function DocumentAutomateDialog({
                           onKeyDown={(event) => event.stopPropagation()}
                         >
                           <span
-                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                               active
-                                ? "bg-pink-100 text-brand-text"
-                                : "bg-slate-100 text-slate-600"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground"
                             }`}
                           >
                             {active ? "Active" : "Paused"}

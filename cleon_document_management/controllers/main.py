@@ -303,11 +303,11 @@ def _process_document_upload(
         create_vals["description"] = description
     if employee:
         create_vals["employee_id"] = employee.id
-    document = Document.create(create_vals)
+    document = Document.with_context(audit_suppress_create=True).create(create_vals)
     if folder.folder_type == "organizational":
-        request.env["doc.object.audit"].log(
+        request.env["doc.audit.emitter.service"].section31(
+            "document_uploaded",
             document,
-            "upload",
             _("Uploaded %s") % document.name,
         )
         if not request.env["doc.org.malware.scanner"].process_org_document(document):
@@ -525,11 +525,15 @@ class DocumentUICreation(http.Controller):
         denied = self._settings_denied()
         if denied:
             return denied
+        company = request.env.company
+        catalog = request.env["doc.document.catalog.service"]
+        catalog.ensure_default_catalog(company)
         categories = request.env["doc.document.category"].search(
-            [], order="sequence, name"
+            catalog.category_domain(company), order="sequence, name"
         )
         types = request.env["doc.document.type"].with_context(active_test=False).search(
-            [], order="sequence, name"
+            [("category_id", "in", categories.ids)],
+            order="sequence, name",
         )
         return {
             "success": True,
@@ -572,12 +576,20 @@ class DocumentUICreation(http.Controller):
             "description": (kwargs.get("description") or "").strip(),
             "sequence": int(kwargs.get("sequence") or 10),
             "active": bool(kwargs.get("active", True)),
+            "company_id": request.env.company.id,
         }
         duplicate = Category.search(
-            [("name", "=ilike", name), ("id", "!=", item.id or 0)], limit=1
+            [
+                ("company_id", "=", request.env.company.id),
+                ("name", "=ilike", name),
+                ("id", "!=", item.id or 0),
+            ],
+            limit=1,
         )
         if duplicate:
             return {"success": False, "message": "A category with this name already exists."}
+        emitter = request.env.get("doc.audit.emitter.service")
+        before = emitter.snapshot_record(item, list(values.keys())) if item and emitter else {}
         try:
             if item:
                 item.write(values)
@@ -585,6 +597,16 @@ class DocumentUICreation(http.Controller):
                 item = Category.create(values)
         except ValidationError as error:
             return {"success": False, "message": str(error)}
+        if emitter:
+            after = emitter.snapshot_record(item, list(values.keys()))
+            changes = emitter.diff_dict(before, after, list(values.keys()))
+            emitter.log_settings_changes(
+                item,
+                "Categories & Types",
+                "Settings → Categories & Types → %s" % item.name,
+                changes,
+                action="category_changed",
+            )
         return {"success": True, "data": item.serialize_for_api()}
 
     @http.route(
@@ -659,6 +681,11 @@ class DocumentUICreation(http.Controller):
                 "success": False,
                 "message": "A document type with this name already exists in this category.",
             }
+        emitter = request.env.get("doc.audit.emitter.service")
+        track_keys = [key for key in values.keys() if key not in ("approver_ids",)]
+        before = (
+            emitter.snapshot_record(item, track_keys) if item and emitter else {}
+        )
         try:
             if item:
                 item.write(values)
@@ -666,6 +693,16 @@ class DocumentUICreation(http.Controller):
                 item = model.create(values)
         except ValidationError as error:
             return {"success": False, "message": str(error)}
+        if emitter:
+            after = emitter.snapshot_record(item, track_keys)
+            changes = emitter.diff_dict(before, after, track_keys)
+            emitter.log_settings_changes(
+                item,
+                "Categories & Types",
+                "Settings → Categories & Types → %s" % item.name,
+                changes,
+                action="document_type_changed",
+            )
         return {"success": True, "data": item.serialize_for_api()}
 
     @http.route(
@@ -749,6 +786,24 @@ class DocumentUICreation(http.Controller):
             return {"success": False, "message": "Select a valid approval flow."}
         if retention not in {"1", "3", "5", "7", "10", "permanent"}:
             return {"success": False, "message": "Select a valid default retention period."}
+        emitter = request.env.get("doc.audit.emitter.service")
+        param_keys = [
+            "cleon_document_management.default_require_upload_approval",
+            "cleon_document_management.default_approval_flow",
+            "cleon_document_management.default_retention_period",
+            "cleon_document_management.recycle_bin_retention_days",
+            "cleon_document_management.default_approver_ids",
+        ]
+        params = request.env["ir.config_parameter"].sudo()
+        short_keys = [key.split(".")[-1] for key in param_keys]
+        settings_before = (
+            {
+                short: params.get_param(full, "")
+                for short, full in zip(short_keys, param_keys)
+            }
+            if emitter
+            else {}
+        )
         require_approval = bool(kwargs.get("default_require_upload_approval"))
         approver_ids = [int(value) for value in (kwargs.get("default_approver_ids") or [])]
         approver_ids = request.env["res.users"].browse(approver_ids).exists().ids
@@ -864,6 +919,18 @@ class DocumentUICreation(http.Controller):
             )
         if org_approval_values:
             config.write(org_approval_values)
+        if emitter:
+            settings_after = {
+                short: params.get_param(full, "")
+                for short, full in zip(short_keys, param_keys)
+            }
+            changes = emitter.diff_dict(settings_before, settings_after, short_keys)
+            emitter.log_settings_changes(
+                request.env.company,
+                "Retention & lifecycle",
+                "Settings → Retention & lifecycle",
+                changes,
+            )
         return {"success": True, "data": self._settings_values()}
 
     @http.route(
@@ -1894,7 +1961,7 @@ class DocumentUICreation(http.Controller):
         )
 
     def _finalize_compliance_upload(self, employee, document, policy_id=None):
-        Policy = request.env["doc.compliance.policy"]
+        Policy = request.env["doc.compliance.policy"].sudo()
         policies = Policy.browse([int(policy_id)]) if policy_id else Policy.search(
             [("active", "=", True)]
         )
@@ -1933,12 +2000,9 @@ class DocumentUICreation(http.Controller):
                 },
                 status=400,
             )
+        line = request.env["doc.compliance.evaluation.line"]
         if evaluation_line_id:
-            line = (
-                request.env["doc.compliance.evaluation.line"]
-                .browse(int(evaluation_line_id))
-                .exists()
-            )
+            line = line.browse(int(evaluation_line_id)).exists()
             if not line or line.evaluation_id.employee_id != employee:
                 return request.make_json_response(
                     {"success": False, "message": "Invalid compliance requirement."},
@@ -2025,6 +2089,16 @@ class DocumentUICreation(http.Controller):
                 if not replace_id:
                     replace_raw = request.httprequest.form.get("replace_document_id")
                     replace_id = int(replace_raw) if replace_raw else None
+                if not replace_id and employee:
+                    conflict = Document.find_upload_conflict(employee, document_type)
+                    if conflict:
+                        replace_id = conflict.id
+                if not replace_id and evaluation_line_id and line:
+                    linked = line.document_ids.sorted(
+                        key=lambda item: item.write_date or "", reverse=True
+                    )[:1]
+                    if linked:
+                        replace_id = linked.id
                 change_note = change_notes[index] if index < len(change_notes) else ""
                 allow_flag = allow_separate[index] if index < len(allow_separate) else False
                 documents |= _process_document_upload(
@@ -2227,58 +2301,27 @@ class DocumentUICreation(http.Controller):
         csrf=False,
     )
     def request_my_document_approval(self, id=None, **kwargs):
-        """Submit an employee-owned draft to the document administrators."""
+        """Submit an employee-owned draft or rejected upload for manager review."""
         document = request.env["doc.document"].browse(int(id or 0)).exists()
-        if (
-            not document
-            or document.owner_id != request.env.user
-            or document.employee_id != request.env.user.employee_id
-        ):
+        user = request.env.user
+        employee = user.employee_id
+        can_request = bool(
+            document
+            and (
+                document.owner_id == user
+                or (employee and document.employee_id == employee)
+                or document.employee_id.user_id == user
+            )
+        )
+        if not can_request:
             return {
                 "success": False,
                 "message": "You can only request approval for your own employee documents.",
             }
-        if document.state not in ("draft", "rejected"):
-            return {
-                "success": False,
-                "message": "Only draft or rejected documents can be submitted for approval.",
-            }
-        approval_model = request.env["doc.document.approval"].sudo()
-        approval_model.search([("document_id", "=", document.id)]).unlink()
-        approvers = request.env.ref(
-            "cleon_document_management.group_document_admin"
-        ).users.filtered(lambda user: user != request.env.user)
-        if not approvers:
-            approvers = request.env.ref(
-                "cleon_document_management.group_document_admin"
-            ).users
-        if not approvers:
-            return {
-                "success": False,
-                "message": "No document administrator is available to review this document.",
-            }
-        document.sudo().write(
-            {
-                "state": "processing",
-                "approval_state": "pending",
-                "approval_ids": [
-                    fields.Command.create(
-                        {
-                            "approver_id": approver.id,
-                            "sequence": sequence,
-                            "state": "pending" if sequence == 1 else "waiting",
-                        }
-                    )
-                    for sequence, approver in enumerate(approvers, start=1)
-                ],
-            }
-        )
-        document.sudo().message_post(
-            body=_("%s submitted %s for review.")
-            % (request.env.user.name, document.name),
-            partner_ids=approvers.mapped("partner_id").ids,
-            subtype_xmlid="mail.mt_note",
-        )
+        try:
+            document.action_request_upload_approval()
+        except UserError as error:
+            return {"success": False, "message": str(error)}
         return {
             "success": True,
             "data": {
@@ -2593,7 +2636,8 @@ class DocumentUICreation(http.Controller):
                     },
                 },
             }
-        evaluations = request.env["doc.compliance.evaluation"].search(
+        compliance_env = request.env["doc.compliance.evaluation"].sudo()
+        evaluations = compliance_env.search(
             [("employee_id", "=", employee.id)],
             order="evaluated_at desc",
         )
@@ -2637,8 +2681,8 @@ class DocumentUICreation(http.Controller):
                     "lines": lines,
                 }
             )
-        inbox_payload = request.env["doc.compliance.employee.inbox"].build_for_employee(
-            employee
+        inbox_payload = (
+            request.env["doc.compliance.employee.inbox"].sudo().build_for_employee(employee)
         )
         inbox = inbox_payload["inbox"]
         summary = {
@@ -2653,7 +2697,7 @@ class DocumentUICreation(http.Controller):
             ),
             "outstanding_count": len(outstanding),
         }
-        open_tasks = request.env["doc.compliance.task"].search(
+        open_tasks = request.env["doc.compliance.task"].sudo().search(
             [
                 ("employee_id", "=", employee.id),
                 ("cycle_id.state", "=", "open"),
@@ -2748,10 +2792,18 @@ class DocumentUICreation(http.Controller):
         doc = request.env["doc.document"].browse(doc_id).exists()
         if not doc or not doc.attachment_id:
             return request.not_found()
+        audit_source = request.httprequest.args.get("audit_source")
+        emitter = request.env.get("doc.audit.emitter.service")
         try:
             doc.assert_organizational_user_can_access(request.env.user)
         except AccessError:
+            if emitter and audit_source == "search_preview":
+                emitter.log_document_access_denied(
+                    doc, source="search_preview", reason="preview refused"
+                )
             return request.not_found()
+        if emitter and audit_source == "search_preview":
+            emitter.log_document_view(doc, source="search_preview")
         variant = request.httprequest.args.get("variant")
         if variant == "current":
             attachment = doc.attachment_id
@@ -3015,6 +3067,13 @@ class DocumentUICreation(http.Controller):
         except AccessError:
             return request.not_found()
         attachment = doc.attachment_id
+        emitter = request.env.get("doc.audit.emitter.service")
+        if emitter:
+            emitter.section31(
+                "document_downloaded",
+                doc,
+                _("Downloaded %s") % doc.name,
+            )
         return request.make_response(
             _attachment_bytes(attachment),
             headers=[

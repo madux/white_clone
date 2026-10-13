@@ -74,6 +74,7 @@ export default function LibraryFileTable({
   showDescription = false,
   showDocuments = false,
   documentsColumnLabel = "Documents",
+  descriptionColumnLabel = "Description",
   nameLabel = "Name",
   pageSize = EMPLOYEE_FILE_LIST_PAGE_SIZE,
   sortKey,
@@ -94,6 +95,7 @@ export default function LibraryFileTable({
   showDescription?: boolean;
   showDocuments?: boolean;
   documentsColumnLabel?: string;
+  descriptionColumnLabel?: string;
   nameLabel?: string;
   pageSize?: number;
   sortKey?: string;
@@ -168,7 +170,11 @@ export default function LibraryFileTable({
           ) : null}
           <SortHead field="name" label={nameLabel} />
           {showDescription ? (
-            <SortHead field="description" label="Description" className="dms-col-description" />
+            <SortHead
+              field="description"
+              label={descriptionColumnLabel}
+              className="dms-col-description"
+            />
           ) : null}
           {showDocuments ? (
             <SortHead

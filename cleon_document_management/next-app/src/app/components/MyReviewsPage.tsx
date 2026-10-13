@@ -39,14 +39,6 @@ export default function MyReviewsPage({
 
   return (
     <div className={embedded ? "space-y-6" : "app-page space-y-6"}>
-      <header>
-        <h1 className="text-2xl font-bold text-slate-900">Scheduled reviews</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Policy-driven employee review milestones assigned to you as line manager, HR,
-          or policy owner.
-        </p>
-      </header>
-
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
         <div className="border-b border-slate-100 px-5 py-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">

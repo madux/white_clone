@@ -213,6 +213,9 @@ class NextAppController(http.Controller):
                         "pending_invite_count": access.pending_invite_count(user),
                         "active_grant": active,
                     },
+                    "tenant_modules": request.env[
+                        "doc.dms.tenant.modules.service"
+                    ].read_modules(user.company_id),
                 },
             }
         except Exception as e:

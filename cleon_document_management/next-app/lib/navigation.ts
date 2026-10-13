@@ -36,14 +36,12 @@ export function getNavigationLabel(
   }
   if (route === "/pages/approvals") return "Approvals";
   if (route === "/pages/employee/issues") return "Issues";
-  if (route === "/pages/employee/automation") return "Automation hub";
   if (route.startsWith("/pages/organization/folder")) return "Organizational folder";
   if (route.startsWith("/pages/organization/policy-editor")) return "Policy editor";
   if (route === "/pages/organization") return "Organizational Files";
   if (route === "/pages/organization/approvals") return "Approvals";
   if (route === "/pages/organization/retention") return "Retention review";
   if (route === "/pages/organization/legal-holds") return "Legal holds";
-  if (route === "/pages/organization/automation") return "Automation hub";
   if (route === "/pages/organization/policy-assignments") return "Policy assignments";
   if (route === "/pages/pending-uploads") return "Approvals";
   if (route === "/pages/recycle-bin" || (route === "/pages/my-workspace" && searchParams?.get("tab") === "recycle")) return "Recycle Bin";
@@ -62,18 +60,21 @@ export function getNavigationLabel(
     }
     if (tab === "reviews" || tab === "scheduled-reviews") return "Scheduled reviews";
     if (tab === "team") return "My Team";
+    if (tab === "sharing") return "Workspace sharing";
     return "My Workspace";
   }
   if (route === "/pages/my-verifications") return "Approvals";
-  if (route === "/pages/remote-access") return "Remote access";
+  if (route === "/pages/remote-access") return "Workspace sharing";
   if (route === "/pages/my-compliance") return "My Compliance";
   if (route === "/pages/my-reviews") return "Scheduled reviews";
   if (route === "/pages/my-team") return "My Team";
   if (route === "/pages/quick-access") return "Quick Access";
   if (route === "/pages/archived") return "Archived Documents";
   if (route === "/pages/compliance") return "Compliance";
+  if (route.startsWith("/pages/compliance/rules/new")) return "New rule";
   if (route.startsWith("/pages/compliance/run")) return "Compliance run";
   if (route === "/pages/settings") return "Settings";
+  if (route === "/pages/audit-trail") return "Audit Trail";
   if (route === "/pages/super-admin") return "Super Admin";
   if (route.startsWith("/pages/document-intelligence/datasets/new")) {
     return searchParams?.get("id") ? "Edit dataset" : "New dataset";

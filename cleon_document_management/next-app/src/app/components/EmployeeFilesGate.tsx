@@ -3,8 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useCurrentUser } from "../../../hooks/useDocuments";
+import { tenantModulesFromUser } from "../../../hooks/useTenantModules";
 import { canAccessEmployeeFilesAdmin } from "../../../lib/employeeFilesAccess";
 import { canAccessOrgLibrary } from "../../../lib/organizationalFilesAccess";
+import { isTenantModuleEnabled } from "../../../lib/tenantModuleCatalog";
 
 export default function EmployeeFilesGate({
   children,
@@ -13,13 +15,17 @@ export default function EmployeeFilesGate({
 }) {
   const user = useCurrentUser();
   const router = useRouter();
-  const allowed = canAccessEmployeeFilesAdmin(user.data);
+  const allowed =
+    canAccessEmployeeFilesAdmin(user.data) &&
+    isTenantModuleEnabled(tenantModulesFromUser(user.data), "employee_files");
 
   useEffect(() => {
     if (user.isPending || allowed) return;
-    router.replace(
-      canAccessOrgLibrary(user.data) ? "/pages/organization" : "/pages/my-workspace",
-    );
+    const modules = tenantModulesFromUser(user.data);
+    const orgRoute =
+      canAccessOrgLibrary(user.data) &&
+      isTenantModuleEnabled(modules, "organizational_files");
+    router.replace(orgRoute ? "/pages/organization" : "/pages/my-workspace");
   }, [allowed, router, user.data, user.isPending]);
 
   if (user.isPending || !allowed) {

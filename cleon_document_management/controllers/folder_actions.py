@@ -346,6 +346,19 @@ class DocumentFolderActions(http.Controller):
             source.write({"employee_ids": [fields.Command.unlink(employee.id) for employee in employees]})
         except Exception as error:
             return {"success": False, "message": str(error)}
+        emitter = request.env.get("doc.audit.emitter.service")
+        if emitter:
+            for employee in employees:
+                ef = request.env["doc.employee.file"].search(
+                    [("employee_id", "=", employee.id)], limit=1
+                )
+                anchor = ef or employee
+                emitter.section31(
+                    "ef_employee_moved",
+                    anchor,
+                    _("Moved to %s") % destination.folder_name,
+                    module="employee_files",
+                )
         return {
             "success": True,
             "message": f"Moved {len(employees)} employee(s) to {destination.folder_name}.",

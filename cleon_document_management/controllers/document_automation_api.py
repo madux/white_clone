@@ -232,12 +232,3 @@ def handle_document_automation(env, user, library, document_id, kwargs):
     return {"success": True, "data": {"items": [rule.serialize_for_api() for rule in rules]}}
 
 
-def automation_hub_for_library(env, user, library):
-    return {
-        "success": False,
-        "code": "AUTOMATION_HUB_REMOVED",
-        "message": (
-            "The automation rule hub was removed (global spec GL-05). "
-            "Use per-document Lifecycle and Settings → Notification Rules."
-        ),
-    }
