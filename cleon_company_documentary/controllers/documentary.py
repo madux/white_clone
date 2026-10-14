@@ -15,7 +15,7 @@ _logger = logging.getLogger(__name__)
 
 MANAGER_GROUP = "cleon_company_documentary.group_company_documentary_manager"
 ADMIN_GROUP = "cleon_company_documentary.group_company_documentary_admin"
-ALLOWED_MIME_TYPES = {"video/mp4", "video/webm", "video/quicktime"}
+ALLOWED_MIME_TYPES = {"video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"}
 PART_SIZE = 8 * 1024 * 1024
 
 
@@ -53,12 +53,14 @@ class CompanyDocumentaryController(http.Controller):
             raise AccessError(_("You do not have access to this documentary folder."))
         return folder
 
-    def _media(self, media_id, edit=False):
+    def _media(self, media_id, edit=False, employee_safe=False):
         media = request.env["company.documentary.media"].sudo().browse(_int(media_id)).exists()
         if not media or media.company_id != self._user().company_id:
-            raise UserError(_("Documentary video not found."))
+            raise UserError(_("This documentary is not available."))
         allowed = media._user_can_edit(self._user()) if edit else media._user_can_view(self._user())
         if not allowed:
+            if employee_safe or not self._is_manager():
+                raise UserError(_("This documentary is not available."))
             raise AccessError(_("You do not have access to this documentary video."))
         return media
 
@@ -78,6 +80,7 @@ class CompanyDocumentaryController(http.Controller):
             "id": folder.id,
             "name": folder.name,
             "description": folder.description or "",
+            "color": folder.color or "#E91E8C",
             "parent_id": folder.parent_id.id or False,
             "company_id": folder.company_id.id,
             "owner_id": folder.owner_id.id,
@@ -93,18 +96,24 @@ class CompanyDocumentaryController(http.Controller):
             "can_edit": folder._user_can_edit(user),
             "is_pinned": user in folder.pinned_user_ids,
             "favorite": user in folder.favorite_user_ids,
+            "updated_at": folder.write_date,
         }
 
     @staticmethod
     def _settings_data(company):
         return {
             "require_upload_approval": company.documentary_require_upload_approval,
-            "default_mandatory": company.documentary_default_mandatory,
-            "default_comments_enabled": company.documentary_default_comments_enabled,
-            "default_allow_download": company.documentary_default_allow_download,
-            "default_completion_threshold": company.documentary_default_completion_threshold,
-            "deleted_retention_days": company.documentary_deleted_retention_days,
-            "auto_transcription": company.documentary_auto_transcription,
+            "department_restrictions": company.documentary_department_restrictions,
+            "employee_download": company.documentary_employee_download,
+            "external_sharing": company.documentary_external_sharing,
+            "max_upload_mb": company.documentary_max_upload_mb,
+            "storage_quota_gb": company.documentary_storage_quota_gb,
+            "default_resolution": company.documentary_default_resolution,
+            "restore_window_days": company.documentary_restore_window_days,
+            "retention_years": company.documentary_retention_years,
+            "auto_archive_months": company.documentary_auto_archive_months,
+            "disposition_review": company.documentary_disposition_review,
+            "compliance_analytics": company.documentary_compliance_analytics,
         }
 
     def _comment_data(self, comment):
@@ -126,12 +135,18 @@ class CompanyDocumentaryController(http.Controller):
             ("media_id", "=", media.id),
             ("user_id", "=", user.id),
         ], limit=1)
-        retention_days = media.company_id.documentary_deleted_retention_days or 365
-        purge_date = False
-        if media.deleted_at:
-            purge_date = fields.Datetime.to_string(
-                fields.Datetime.from_string(media.deleted_at) + timedelta(days=retention_days)
-            )
+        purge_date = media.purge_date or False
+        legacy_approval = {
+            "draft": "draft",
+            "processing": "draft",
+            "processing_failed": "draft",
+            "pending_review": "pending",
+            "returned": "rejected",
+            "approved": "approved",
+            "published": "approved",
+            "archived": "approved",
+            "deleted": "draft",
+        }.get(media.status, "draft")
         return {
             "id": media.id,
             "title": media.name,
@@ -152,13 +167,17 @@ class CompanyDocumentaryController(http.Controller):
             "tags": media.tag_ids.mapped("name"),
             "download_allowed": media._user_can_download(user),
             "mandatory": media.mandatory,
+            "is_hero": bool(media.is_hero),
             "completion_threshold": media.completion_threshold,
-            "comments_enabled": media.comments_enabled,
+            "status": media.status,
+            "category": media.category,
+            "keywords": media.keywords or "",
+            "is_internal_only": media.is_internal_only,
+            "resolution": media.resolution or "",
+            "codec": media.codec or "",
             "scope_mode": media.scope_mode,
             "access_scope": media.access_scope,
             "department_ids": media.department_ids.ids,
-            "grade_ids": media.grade_ids.ids,
-            "employee_ids": media.employee_ids.ids,
             "subtitles": [{
                 "id": subtitle.id,
                 "name": subtitle.name,
@@ -167,20 +186,29 @@ class CompanyDocumentaryController(http.Controller):
                 "is_default": subtitle.is_default,
             } for subtitle in media.subtitle_ids.filtered("active")],
             "favorite": user in media.favorite_user_ids,
-            "like_count": media.like_count,
-            "liked_by_me": bool(request.env["company.documentary.like"].sudo().search_count([
-                ("media_id", "=", media.id), ("user_id", "=", user.id),
-            ])),
-            "comment_count": media.comment_count,
-            "owner_name": media.owner_id.name,
+            "owner_name": media.uploaded_by.name,
+            "uploader_name": media.uploaded_by.name,
+            "uploader_job_title": (
+                media.uploaded_by.employee_id.job_title
+                if media.uploaded_by.employee_id
+                else ""
+            ),
+            "current_version_number": media.current_version_number,
+            "return_reason": media.return_reason or "",
+            "archive_reason": media.archive_reason or "",
+            "legal_hold": media.legal_hold,
+            "submitted_by_id": media.submitted_by_id.id if media.submitted_by_id else False,
+            "submitted_by_name": media.submitted_by_id.name if media.submitted_by_id else False,
+            "submitted_at": media.submitted_at or False,
+            "review_decided_by_name": media.review_decided_by_id.name if media.review_decided_by_id else False,
             "view_count": media.view_count,
             "unique_viewer_count": media.unique_viewer_count,
             "created_at": media.create_date,
             "updated_at": media.write_date,
             "can_edit": media._user_can_edit(user),
-            "approval_status": media.approval_status,
-            "publish_at": media.publish_at or False,
+            "approval_status": legacy_approval,
             "published_at": media.published_at or False,
+            "published_by_name": media.published_by_id.name if media.published_by_id else False,
             "transcript": media.transcript or "",
             "chapters": media.chapters or [],
             "share_token": media.share_token or False,
@@ -300,10 +328,18 @@ class CompanyDocumentaryController(http.Controller):
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
+    @http.route("/api/company-documentary/media/detail", type="json", auth="user", methods=["POST"], csrf=False)
+    def media_detail(self, id=None, **kwargs):
+        try:
+            media = self._media(id)
+            return {"success": True, "data": self._media_data(media, self._user())}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
     @http.route("/api/company-documentary/media", type="json", auth="user", methods=["POST"], csrf=False)
     def list_media(self, folder_id=None, search="", include_archived=False, recycle_bin=False,
-                   mandatory=None, processing_state=None, approval_status=None,
-                   date_from=None, date_to=None, **kwargs):
+                   mandatory=None, processing_state=None, approval_status=None, status=None,
+                   category=None, date_from=None, date_to=None, **kwargs):
         if recycle_bin:
             if not self._is_manager():
                 return self._error(_("Documentary Manager access is required."))
@@ -319,22 +355,31 @@ class CompanyDocumentaryController(http.Controller):
                 domain.append(("active", "=", True))
                 domain.append(("deleted_at", "=", False))
         if search:
+            term = search.strip()
             domain += [
-                "|", "|",
-                ("name", "ilike", search.strip()),
-                ("original_filename", "ilike", search.strip()),
-                ("tag_ids.name", "ilike", search.strip()),
+                "|", "|", "|", "|",
+                ("name", "ilike", term),
+                ("original_filename", "ilike", term),
+                ("tag_ids.name", "ilike", term),
+                ("keywords", "ilike", term),
+                ("uploaded_by.name", "ilike", term),
             ]
-        if mandatory is not None:
-            domain.append(("mandatory", "=", bool(mandatory)))
+        if status:
+            domain.append(("status", "=", status))
+        if category:
+            domain.append(("category", "=", category))
         if processing_state:
             domain.append(("processing_state", "=", processing_state))
-        if approval_status:
+        if approval_status == "pending":
+            domain.append(("status", "=", "pending_review"))
+        elif approval_status:
             domain.append(("approval_status", "=", approval_status))
         if date_from:
             domain.append(("create_date", ">=", date_from))
         if date_to:
             domain.append(("create_date", "<=", date_to + " 23:59:59"))
+        if mandatory in (True, "true", "1", 1):
+            domain.append(("mandatory", "=", True))
         media = request.env["company.documentary.media"].sudo().search(domain, order="create_date desc")
         if recycle_bin:
             media = media.filtered(lambda item: item._user_can_edit(self._user()))
@@ -424,10 +469,10 @@ class CompanyDocumentaryController(http.Controller):
             provider_upload_id = storage.initiate_multipart(object_key, mime_type)
             total_parts = max(1, math.ceil(size / PART_SIZE))
             company = self._user().company_id
-            require_approval = company.documentary_require_upload_approval
-            publish_at = values.get("publish_at") or False
-            approval_status = "pending" if require_approval else ("scheduled" if publish_at else "approved")
-            media = request.env["company.documentary.media"].sudo().create({
+            max_bytes = (company.documentary_max_upload_mb or 2048) * 1024 * 1024
+            if size > max_bytes:
+                return self._error(_("File exceeds the maximum upload size."))
+            media = request.env["company.documentary.media"].sudo().with_context(lifecycle_write=True).create({
                 "name": (values.get("title") or filename or "Untitled video").strip(),
                 "description": values.get("description") or False,
                 "folder_id": folder.id,
@@ -437,19 +482,18 @@ class CompanyDocumentaryController(http.Controller):
                 "mime_type": mime_type,
                 "file_size": size,
                 "storage_key": object_key,
-                "mandatory": bool(values.get("mandatory", company.documentary_default_mandatory)),
-                "completion_threshold": float(values.get("completion_threshold", company.documentary_default_completion_threshold) or 85),
-                "comments_enabled": bool(values.get("comments_enabled", company.documentary_default_comments_enabled)),
                 "scope_mode": values.get("scope_mode", "inherited"),
-                "access_scope": values.get("access_scope", "employee"),
+                "access_scope": values.get("access_scope", "company"),
                 "department_ids": [(6, 0, [_int(value) for value in values.get("department_ids", [])])],
-                "grade_ids": [(6, 0, [_int(value) for value in values.get("grade_ids", [])])],
-                "employee_ids": [(6, 0, [_int(value) for value in values.get("employee_ids", [])])],
                 "tag_ids": [(6, 0, [_int(value) for value in values.get("tag_ids", [])])],
-                "download_policy": values.get("download_policy", "allow" if company.documentary_default_allow_download else "inherit"),
-                "approval_status": approval_status,
-                "publish_at": publish_at or False,
-                "is_official": bool(values.get("is_official", False)),
+                "download_policy": values.get("download_policy", "inherit"),
+                "approval_status": "draft",
+                "status": "processing",
+                "processing_state": "processing",
+                "category": values.get("category") or "general",
+                "keywords": values.get("keywords") or False,
+                "is_internal_only": bool(values.get("is_internal_only", False)),
+                "is_official": True,
                 "replaces_media_id": _int(values.get("replaces_media_id")) or False,
             })
             upload = request.env["company.documentary.upload"].sudo().create({
@@ -541,18 +585,14 @@ class CompanyDocumentaryController(http.Controller):
             CloudflareR2Storage(request.env).complete_multipart(upload.object_key, upload.provider_upload_id, normalized)
             upload.write({"state": "completed", "uploaded_parts": normalized})
             media = upload.media_id
-            company = self._user().company_id
-            now = fields.Datetime.now()
-            completion_values = {"processing_state": "ready"}
-            if not company.documentary_require_upload_approval:
-                if media.publish_at and media.publish_at > now:
-                    completion_values["approval_status"] = "scheduled"
-                else:
-                    completion_values["approval_status"] = "approved"
-                    completion_values["published_at"] = now
-            media.write(completion_values)
-            if completion_values.get("approval_status") == "approved":
-                media._activate_replacement()
+            media.with_context(lifecycle_write=True).write({
+                "processing_state": "processing",
+                "status": "processing",
+            })
+            if not media.thumbnail_key:
+                media.with_context(lifecycle_write=True).write({
+                    "thumbnail_key": "%s/thumbnail.jpg" % media.storage_key.rsplit("/", 1)[0],
+                })
             self._audit("media_uploaded", media=media, metadata={"event": "upload_completed"})
             return {"success": True, "data": self._media_data(media, self._user())}
         except (UserError, AccessError, ValidationError) as error:
@@ -580,11 +620,17 @@ class CompanyDocumentaryController(http.Controller):
         try:
             media = self._media(id, edit=True)
             payload = {key: values[key] for key in (
-                "name", "description", "mandatory", "completion_threshold", "comments_enabled",
-                "download_policy", "scope_mode", "access_scope", "duration_seconds", "thumbnail_key",
-                "transcript", "chapters", "publish_at", "is_official",
+                "name", "description", "download_policy", "scope_mode", "access_scope",
+                "duration_seconds", "thumbnail_key", "transcript", "chapters", "is_official",
+                "category", "keywords", "is_internal_only",
             ) if key in values}
-            for key in ("department_ids", "grade_ids", "employee_ids", "tag_ids"):
+            if "is_hero" in values:
+                if not self._is_manager():
+                    return self._error(_("Documentary Manager access is required."))
+                payload["is_hero"] = bool(values["is_hero"])
+            if "status" in values or "approval_status" in values:
+                return self._error(_("Status cannot be changed from edit."))
+            for key in ("department_ids", "tag_ids"):
                 if key in values:
                     payload[key] = [(6, 0, [_int(value) for value in values[key]])]
             if not payload:
@@ -688,72 +734,11 @@ class CompanyDocumentaryController(http.Controller):
 
     @http.route("/api/company-documentary/comments", type="json", auth="user", methods=["POST"], csrf=False)
     def comments(self, media_id=None, body=None, action="list", comment_id=None, parent_id=None, **kwargs):
-        try:
-            media = self._media(media_id)
-            comment_model = request.env["company.documentary.comment"].sudo()
-            if action == "list":
-                comments = comment_model.search([
-                    ("media_id", "=", media.id), ("parent_id", "=", False), ("active", "=", True),
-                ], order="create_date asc")
-                return {"success": True, "data": [self._comment_data(comment) for comment in comments]}
-            if not media.comments_enabled and not self._is_manager():
-                return self._error(_("Comments are disabled for this video."))
-            if action == "create":
-                if not body or not body.strip():
-                    return self._error(_("A comment cannot be empty."))
-                mentioned_ids = []
-                for token in re.findall(r"@([\w\s.-]+)", body.strip()):
-                    match = request.env["res.users"].sudo().search([
-                        ("name", "ilike", token.strip()),
-                        ("company_ids", "in", self._user().company_id.id),
-                    ], limit=1)
-                    if match:
-                        mentioned_ids.append(match.id)
-                comment = comment_model.create({
-                    "media_id": media.id,
-                    "user_id": self._user().id,
-                    "body": body.strip(),
-                    "parent_id": _int(parent_id) if parent_id else False,
-                    "mentioned_user_ids": [(6, 0, mentioned_ids)],
-                })
-                if self._user().employee_id:
-                    request.env["company.documentary.watch.event"].sudo().create({
-                        "media_id": media.id, "user_id": self._user().id,
-                        "employee_id": self._user().employee_id.id, "event_type": "comment",
-                    })
-                media.invalidate_recordset(["comment_count"])
-                return {"success": True, "data": self._comment_data(comment)}
-            if action == "delete" and comment_id:
-                comment = comment_model.browse(_int(comment_id)).exists()
-                if not comment or comment.media_id != media:
-                    return self._error(_("Comment not found."))
-                if comment.user_id != self._user() and not self._is_manager():
-                    return self._error(_("You can only delete your own comments."))
-                comment.unlink()
-                media.invalidate_recordset(["comment_count"])
-                return {"success": True, "data": {"deleted": True}}
-            raise UserError(_("Unsupported comment action."))
-        except (UserError, AccessError, ValidationError) as error:
-            return self._error(str(error))
+        return self._error(_("Comments are not available in Company Documentary."))
 
     @http.route("/api/company-documentary/likes", type="json", auth="user", methods=["POST"], csrf=False)
     def likes(self, media_id, action="toggle", **kwargs):
-        try:
-            media = self._media(media_id)
-            Like = request.env["company.documentary.like"].sudo()
-            existing = Like.search([("media_id", "=", media.id), ("user_id", "=", self._user().id)], limit=1)
-            if action == "toggle":
-                if existing:
-                    existing.unlink()
-                    liked = False
-                else:
-                    Like.create({"media_id": media.id, "user_id": self._user().id})
-                    liked = True
-                media.invalidate_recordset(["like_count"])
-                return {"success": True, "data": {"liked": liked, "like_count": media.like_count}}
-            return {"success": True, "data": {"liked": bool(existing), "like_count": media.like_count}}
-        except (UserError, AccessError, ValidationError) as error:
-            return self._error(str(error))
+        return self._error(_("Likes are not available in Company Documentary."))
 
     @http.route("/api/company-documentary/media/action", type="json", auth="user", methods=["POST"], csrf=False)
     def media_action(self, id=None, action=None, **kwargs):
@@ -1343,6 +1328,35 @@ class CompanyDocumentaryController(http.Controller):
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
+    def _resolve_home_hero_media(self, user):
+        Media = request.env["company.documentary.media"].sudo()
+        domain = [
+            ("company_id", "=", user.company_id.id),
+            ("status", "=", "published"),
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+        ]
+        tagged = Media.search(
+            domain + [("is_hero", "=", True)],
+            order="published_at desc, write_date desc",
+            limit=24,
+        )
+        for media in tagged:
+            if media._user_can_view(user):
+                return media
+        candidates = Media.search(domain, order="published_at desc, create_date desc", limit=48)
+        for media in candidates:
+            if media._user_can_view(user):
+                return media
+        return Media.browse()
+
+    @http.route("/api/company-documentary/home/hero", type="json", auth="user", methods=["POST"], csrf=False)
+    def home_hero(self, **kwargs):
+        media = self._resolve_home_hero_media(self._user())
+        if not media:
+            return {"success": True, "data": None}
+        return {"success": True, "data": self._media_data(media, self._user())}
+
     @http.route("/api/company-documentary/continue-watching", type="json", auth="user", methods=["POST"], csrf=False)
     def continue_watching(self, **kwargs):
         progress = request.env["company.documentary.watch"].sudo().search([
@@ -1405,12 +1419,17 @@ class CompanyDocumentaryController(http.Controller):
             payload = {}
             for key, field in (
                 ("require_upload_approval", "documentary_require_upload_approval"),
-                ("default_mandatory", "documentary_default_mandatory"),
-                ("default_comments_enabled", "documentary_default_comments_enabled"),
-                ("default_allow_download", "documentary_default_allow_download"),
-                ("default_completion_threshold", "documentary_default_completion_threshold"),
-                ("deleted_retention_days", "documentary_deleted_retention_days"),
-                ("auto_transcription", "documentary_auto_transcription"),
+                ("department_restrictions", "documentary_department_restrictions"),
+                ("employee_download", "documentary_employee_download"),
+                ("external_sharing", "documentary_external_sharing"),
+                ("max_upload_mb", "documentary_max_upload_mb"),
+                ("storage_quota_gb", "documentary_storage_quota_gb"),
+                ("default_resolution", "documentary_default_resolution"),
+                ("restore_window_days", "documentary_restore_window_days"),
+                ("retention_years", "documentary_retention_years"),
+                ("auto_archive_months", "documentary_auto_archive_months"),
+                ("disposition_review", "documentary_disposition_review"),
+                ("compliance_analytics", "documentary_compliance_analytics"),
             ):
                 if key in values:
                     payload[field] = values[key]
@@ -1439,24 +1458,36 @@ class CompanyDocumentaryController(http.Controller):
             return self._error(str(error))
 
     @http.route("/api/company-documentary/media/approval", type="json", auth="user", methods=["POST"], csrf=False)
-    def media_approval(self, id=None, action=None, comment=None, publish_at=None, **kwargs):
-        if not self._is_manager():
-            return self._error(_("Documentary Manager access is required."))
+    def media_approval(self, id=None, action=None, comment=None, notify_audience=False, **kwargs):
         try:
-            media = self._media(id, edit=True)
-            if action == "approve":
-                if publish_at:
-                    media.write({"publish_at": publish_at})
-                media.action_approve(comment)
-            elif action == "reject":
-                media.action_reject(comment)
-            elif action == "submit":
-                media.action_submit_for_approval()
-            elif action == "cancel_schedule":
-                media.write({"publish_at": False, "approval_status": "approved", "published_at": fields.Datetime.now()})
+            if action == "submit":
+                media = self._media(id, edit=True)
+                media.lifecycle_submit_for_review()
+            elif action == "withdraw":
+                media = self._media(id)
+                media.lifecycle_withdraw()
+            elif action in ("approve", "approve_publish", "reject", "publish", "archive", "republish"):
+                if not self._is_manager():
+                    return self._error(_("Documentary Supervisor access is required."))
+                media = self._media(id, edit=True)
+                if action == "approve":
+                    media.lifecycle_approve()
+                elif action == "approve_publish":
+                    if not self._is_admin():
+                        return self._error(_("Documentary Administrator access is required."))
+                    media.lifecycle_approve_and_publish()
+                elif action == "reject":
+                    media.lifecycle_return_for_correction(comment)
+                elif action == "publish":
+                    if not self._is_admin():
+                        return self._error(_("Documentary Administrator access is required."))
+                    media.lifecycle_publish(notify_audience=bool(notify_audience))
+                elif action == "archive":
+                    media.lifecycle_archive(comment or kwargs.get("reason"))
+                elif action == "republish":
+                    media.lifecycle_republish_request()
             else:
                 return self._error(_("Unsupported approval action."))
-            self._audit("media_updated", media=media, metadata={"approval_action": action})
             return {"success": True, "data": self._media_data(media, self._user())}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
@@ -1470,9 +1501,9 @@ class CompanyDocumentaryController(http.Controller):
             if not media_records:
                 return self._error(_("Select at least one video."))
             payload = {key: values[key] for key in (
-                "mandatory", "comments_enabled", "download_policy", "scope_mode", "access_scope",
+                "download_policy", "scope_mode", "access_scope",
             ) if key in values}
-            for key in ("department_ids", "grade_ids", "employee_ids", "tag_ids"):
+            for key in ("department_ids", "tag_ids"):
                 if key in values:
                     payload[key] = [(6, 0, [_int(value) for value in values[key]])]
             if not payload:
@@ -1486,17 +1517,86 @@ class CompanyDocumentaryController(http.Controller):
             return self._error(str(error))
 
     @http.route("/api/company-documentary/media/share", type="json", auth="user", methods=["POST"], csrf=False)
-    def media_share(self, id=None, **kwargs):
+    def media_share(self, id=None, link_type="internal", expires_at=None, **kwargs):
         try:
-            media = self._media(id)
-            media._ensure_share_token()
+            media = self._media(id, edit=True)
+            if media.status != "published":
+                return self._error(_("Only published documentaries can be shared."))
+            if link_type == "external" and not media.company_id.documentary_external_sharing:
+                return self._error(_("External sharing is disabled."))
+            if link_type == "external" and media.is_internal_only:
+                return self._error(_("Internal-only documentaries cannot have external links."))
+            token = uuid.uuid4().hex
+            link = request.env["company.documentary.share.link"].sudo().create({
+                "media_id": media.id,
+                "link_type": link_type,
+                "token": token,
+                "created_by_id": self._user().id,
+                "expires_at": expires_at or False,
+            })
             host = request.httprequest.host_url.rstrip("/")
+            path = "/our-story/documentary/%s" % media.id
+            url = "%s%s?share=%s" % (host, path, token)
+            self._audit("share_link_created", media=media, metadata={"link_id": link.id, "link_type": link_type})
+            links = request.env["company.documentary.share.link"].sudo().search([
+                ("media_id", "=", media.id),
+            ])
             return {"success": True, "data": {
-                "url": "%s/company-documentary?share=%s" % (host, media.share_token),
-                "token": media.share_token,
+                "url": url,
+                "token": token,
+                "links": [{
+                    "id": item.id,
+                    "link_type": item.link_type,
+                    "created_at": item.create_date,
+                    "expires_at": item.expires_at or False,
+                    "open_count": item.open_count,
+                    "revoked": bool(item.revoked_at),
+                } for item in links],
             }}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
+
+    @http.route("/api/company-documentary/media/versions", type="json", auth="user", methods=["POST"], csrf=False)
+    def media_versions(self, id=None, **kwargs):
+        try:
+            media = self._media(id)
+            versions = request.env["company.documentary.version"].sudo().search([
+                ("media_id", "=", media.id),
+            ], order="version_number desc")
+            return {"success": True, "data": [{
+                "id": version.id,
+                "version_number": version.version_number,
+                "is_live": version.is_live,
+                "change_note": version.change_note or "",
+                "created_at": version.create_date,
+                "created_by_name": version.created_by_id.name,
+                "duration_seconds": version.duration_seconds,
+                "resolution": version.resolution or "",
+                "codec": version.codec or "",
+                "live_from": version.live_from or False,
+                "live_to": version.live_to or False,
+            } for version in versions]}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/company-documentary/audit", type="json", auth="user", methods=["POST"], csrf=False)
+    def audit_log(self, media_id=None, limit=200, **kwargs):
+        if not self._is_manager():
+            return self._error(_("Documentary Manager access is required."))
+        domain = [("media_id.company_id", "=", self._user().company_id.id)]
+        if media_id:
+            domain.append(("media_id", "=", _int(media_id)))
+        events = request.env["company.documentary.audit"].sudo().search(
+            domain, limit=min(_int(limit, 200), 500), order="create_date desc"
+        )
+        return {"success": True, "data": [{
+            "id": event.id,
+            "event_type": event.event_type,
+            "media_id": event.media_id.id or False,
+            "user_name": event.user_id.name,
+            "created_at": event.create_date,
+            "metadata": event.metadata or {},
+        } for event in events]}
 
     @http.route("/api/company-documentary/media/caption-event", type="json", auth="user", methods=["POST"], csrf=False)
     def caption_event(self, media_id=None, **kwargs):

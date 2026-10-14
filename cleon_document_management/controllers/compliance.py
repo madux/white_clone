@@ -58,6 +58,8 @@ class ComplianceController(http.Controller):
             "branch_ids": policy.branch_ids.ids,
             "minimum_documents": policy.minimum_documents,
             "grace_period_days": policy.grace_period_days,
+            "grace_period_enabled": bool(policy.grace_period_enabled),
+            "non_compliance_mode": policy.non_compliance_mode or "after_grace",
             "effective_date": str(policy.effective_date or ""),
             "active": policy.active,
             "lifecycle_status": policy.lifecycle_status or "active",
@@ -131,6 +133,12 @@ class ComplianceController(http.Controller):
         if type_code != "compliance_request":
             data["verified_by"] = policy.verified_by or ""
             data["verification_sla_days"] = policy.verification_sla_days
+            data["verification_document_type_ids"] = (
+                policy.verification_document_type_ids.ids
+            )
+            escalation = policy.verification_sla_escalation_user_id
+            data["verification_sla_escalation_user_id"] = escalation.id if escalation else False
+            data["verification_sla_escalation_user_name"] = escalation.name if escalation else ""
         return data
 
     @staticmethod
@@ -253,6 +261,8 @@ class ComplianceController(http.Controller):
             "branch_ids": [fields.Command.set(scope_ids["branch_ids"])],
             "minimum_documents": kwargs.get("minimum_documents", 1),
             "grace_period_days": kwargs.get("grace_period_days", 0),
+            "grace_period_enabled": bool(kwargs.get("grace_period_enabled")),
+            "non_compliance_mode": kwargs.get("non_compliance_mode") or "after_grace",
             "effective_date": kwargs.get("effective_date") or False,
             "active": kwargs.get("active", True),
             "allow_waiver": kwargs.get("allow_waiver", True),
@@ -287,6 +297,18 @@ class ComplianceController(http.Controller):
             ),
             "verified_by": kwargs.get("verified_by") or "hr_admin",
             "verification_sla_days": int(kwargs.get("verification_sla_days") or 3),
+            "verification_document_type_ids": [
+                fields.Command.set(
+                    env["doc.document.type"]
+                    .browse(kwargs.get("verification_document_type_ids", []) or [])
+                    .exists()
+                    .ids
+                )
+            ],
+            "verification_sla_escalation_user_id": int(
+                kwargs.get("verification_sla_escalation_user_id") or 0
+            )
+            or False,
         }
         if values["lifecycle_status"] == "draft":
             values["active"] = False
@@ -302,9 +324,20 @@ class ComplianceController(http.Controller):
             values.update(ComplianceController._request_policy_values(kwargs))
             values.pop("verified_by", None)
             values.pop("verification_sla_days", None)
+            values.pop("verification_sla_escalation_user_id", None)
         elif type_code == "review_schedule":
             values["document_type_ids"] = [fields.Command.clear()]
             values.update(ComplianceController._review_policy_values(kwargs))
+        elif type_code == "renewable_document":
+            values["grace_period_enabled"] = False
+            values["grace_period_days"] = 0
+            values["non_compliance_mode"] = "after_due"
+            values["schedule"] = False
+            values["minimum_documents"] = max(
+                int(values.get("minimum_documents") or 1), 1
+            )
+        elif type_code == "retention":
+            values["schedule"] = False
         elif type_code != "retention":
             if not env["doc.document.type"].browse(
                 kwargs.get("document_type_ids", []) or []
@@ -453,6 +486,91 @@ class ComplianceController(http.Controller):
                 ("department_id.name", "ilike", search),
             ]
         return Result.search(domain, order="employee_id")
+
+    @http.route(
+        "/api/compliance/verification-sla-contact/search",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def search_verification_sla_contact(self, **kwargs):
+        """Search users for verification SLA alert contact (by employee or user fields)."""
+        try:
+            require_compliance_manage()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        query = (kwargs.get("query") or "").strip()
+        limit = min(int(kwargs.get("limit") or 20), 50)
+        user = request.env.user
+        company = user.company_id
+        items = []
+        seen = set()
+
+        def add_user(res_user, employee=None):
+            if not res_user or not res_user.active or res_user.id in seen:
+                return
+            if res_user.share:
+                return
+            seen.add(res_user.id)
+            emp = employee or res_user.employee_id
+            subtitle_parts = []
+            if emp:
+                if emp.job_title:
+                    subtitle_parts.append(emp.job_title)
+                if emp.department_id:
+                    subtitle_parts.append(emp.department_id.name)
+            email = res_user.email or (emp.work_email if emp else "") or res_user.login or ""
+            items.append(
+                {
+                    "id": res_user.id,
+                    "name": res_user.name or "",
+                    "email": email,
+                    "employee_name": emp.name if emp else "",
+                    "job_title": emp.job_title if emp else "",
+                    "department": emp.department_id.name if emp and emp.department_id else "",
+                    "subtitle": " · ".join(subtitle_parts),
+                }
+            )
+
+        Employee = request.env["hr.employee"].sudo()
+        emp_domain = [("active", "=", True), ("user_id", "!=", False)]
+        if company:
+            emp_domain.append(("company_id", "in", [False, company.id]))
+        if query:
+            emp_domain += [
+                "|",
+                "|",
+                "|",
+                "|",
+                ("name", "ilike", query),
+                ("work_email", "ilike", query),
+                ("job_title", "ilike", query),
+                ("department_id.name", "ilike", query),
+                ("user_id.name", "ilike", query),
+            ]
+        for employee in Employee.search(emp_domain, order="name", limit=limit):
+            add_user(employee.user_id, employee)
+
+        if len(items) < limit:
+            User = request.env["res.users"]
+            user_domain = [("active", "=", True), ("share", "=", False)]
+            if company:
+                user_domain.append(("company_id", "in", [False, company.id]))
+            if query:
+                user_domain += [
+                    "|",
+                    "|",
+                    ("name", "ilike", query),
+                    ("login", "ilike", query),
+                    ("email", "ilike", query),
+                ]
+            for res_user in User.search(user_domain, order="name", limit=limit):
+                add_user(res_user)
+                if len(items) >= limit:
+                    break
+
+        return {"success": True, "data": {"items": items[:limit]}}
 
     @http.route(
         "/api/compliance/targets",
@@ -832,6 +950,10 @@ class ComplianceController(http.Controller):
                 "applies_to",
                 "minimum_documents",
                 "grace_period_days",
+                "grace_period_enabled",
+                "non_compliance_mode",
+                "verified_by",
+                "verification_sla_days",
                 "allow_waiver",
                 "alert_schedule_days",
                 "escalate_manager_days",
@@ -865,6 +987,12 @@ class ComplianceController(http.Controller):
             values["assigned_auditor_id"] = (
                 int(kwargs["assigned_auditor_id"]) if kwargs["assigned_auditor_id"] else False
             )
+        if "verification_sla_escalation_user_id" in kwargs:
+            values["verification_sla_escalation_user_id"] = (
+                int(kwargs["verification_sla_escalation_user_id"])
+                if kwargs["verification_sla_escalation_user_id"]
+                else False
+            )
         if "retention_action_mode" in kwargs:
             values["retention_action_mode"] = (
                 ComplianceController._normalize_retention_mode(
@@ -884,6 +1012,7 @@ class ComplianceController(http.Controller):
             )
         for field_name, model_name in (
             ("document_type_ids", "doc.document.type"),
+            ("verification_document_type_ids", "doc.document.type"),
             ("department_ids", "hr.department"),
             ("grade_ids", "hr.grade"),
             ("employee_ids", "hr.employee"),
@@ -937,6 +1066,10 @@ class ComplianceController(http.Controller):
             values["minimum_documents"] = int(values["minimum_documents"])
         if "grace_period_days" in values:
             values["grace_period_days"] = int(values["grace_period_days"])
+        if "grace_period_enabled" in values:
+            values["grace_period_enabled"] = bool(values["grace_period_enabled"])
+        if "non_compliance_mode" in values and values["non_compliance_mode"]:
+            values["non_compliance_mode"] = values["non_compliance_mode"]
         if "repeat_every_months" in values:
             values["repeat_every_months"] = int(values["repeat_every_months"] or 0)
         if "tasks_needed_minimum" in values:
@@ -947,6 +1080,15 @@ class ComplianceController(http.Controller):
             values["document_type_ids"] = [fields.Command.clear()]
         if policy._is_review_schedule_policy() and "document_type_ids" not in values:
             values["document_type_ids"] = [fields.Command.clear()]
+        if policy.policy_type_id.code == "renewable_document":
+            values["grace_period_enabled"] = False
+            values["grace_period_days"] = 0
+            values["non_compliance_mode"] = "after_due"
+            values["schedule"] = False
+            if "minimum_documents" not in values:
+                values["minimum_documents"] = max(policy.minimum_documents or 1, 1)
+        if policy.policy_type_id.code == "retention":
+            values["schedule"] = False
         try:
             policy.write(values)
             if policy._is_compliance_request() and "request_tasks" in kwargs:
@@ -1270,6 +1412,7 @@ class ComplianceController(http.Controller):
             "department_compliance": self._report_department_compliance,
             "exceptions": self._report_exceptions,
             "employee_scores": self._report_employee_scores,
+            "retention_items": self._report_retention_items,
         }
         handler = handlers.get(report_key)
         if not handler:
@@ -1601,6 +1744,65 @@ class ComplianceController(http.Controller):
                 "status": record.status,
                 "active": record.active,
             })
+        page_slice, total, page, page_size = self._paginate(
+            rows,
+            kwargs.get("page"),
+            kwargs.get("page_size"),
+            export=kwargs.get("export"),
+        )
+        return {
+            "success": True,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "data": page_slice,
+        }
+
+    def _report_retention_items(self, **kwargs):
+        domain = []
+        if kwargs.get("policy_id"):
+            domain.append(("policy_id", "=", int(kwargs["policy_id"])))
+        states = kwargs.get("states")
+        if states:
+            if isinstance(states, str):
+                states = [s.strip() for s in states.split(",") if s.strip()]
+            domain.append(("state", "in", list(states)))
+        else:
+            domain.append(
+                (
+                    "state",
+                    "in",
+                    (
+                        "reported",
+                        "due_archive",
+                        "due_delete",
+                        "on_hold",
+                        "blocked_backup",
+                        "blocked_error",
+                        "pending_owner",
+                    ),
+                )
+            )
+        items = request.env["doc.compliance.retention.item"].sudo().search(
+            domain, order="archive_due, delete_due, id"
+        )
+        rows = []
+        for item in items:
+            row = item.to_report_dict()
+            if kwargs.get("search"):
+                search = str(kwargs["search"]).strip().lower()
+                haystack = " ".join(
+                    [
+                        row.get("policy") or "",
+                        row.get("document") or "",
+                        row.get("employee") or "",
+                        row.get("document_type") or "",
+                        row.get("state") or "",
+                    ]
+                ).lower()
+                if search not in haystack:
+                    continue
+            rows.append(row)
         page_slice, total, page, page_size = self._paginate(
             rows,
             kwargs.get("page"),
@@ -1961,9 +2163,7 @@ class ComplianceController(http.Controller):
             return {"success": False, "message": "Verification not found."}
         service = request.env["doc.compliance.verification.service"]
         user = request.env.user
-        if item.verifier_id != user and not user.has_group(
-            "cleon_document_management.group_document_admin"
-        ):
+        if not service.user_can_act_on_item(item, user):
             return {"success": False, "message": "Verification not found."}
         item.document_id.check_access_rule("read")
         return {

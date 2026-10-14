@@ -50,8 +50,8 @@ export default function ComplianceRequestTaskModal({
   const editing = Boolean(initial);
 
   const scopePayload = useMemo(
-    () => buildScopePayload(linkableContext.scope, linkableContext.applies_to),
-    [linkableContext.scope, linkableContext.applies_to],
+    () => buildScopePayload(linkableContext.scope),
+    [linkableContext.scope],
   );
 
   if (!open) return null;

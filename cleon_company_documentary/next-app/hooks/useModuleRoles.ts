@@ -12,10 +12,10 @@ export function useModuleRoleDefinitions(enabled = true) {
   });
 }
 
-export function useModuleRoleMembers(search = "", enabled = true) {
+export function useModuleRoleMembers(search = "", enabled = true, limit = 50) {
   return useQuery({
-    queryKey: ["company-documentary", "roles", "members", search],
-    queryFn: () => api.roleMembers(search),
+    queryKey: ["company-documentary", "roles", "members", search, limit],
+    queryFn: () => api.roleMembers(search, limit),
     enabled,
   });
 }

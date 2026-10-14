@@ -60,6 +60,15 @@ class CompanyDocumentaryNextAppController(http.Controller):
         return html.replace("</body>", f"{script}</body>", 1)
 
     @http.route(
+        "/our-story/documentary/<int:media_id>",
+        type="http",
+        auth="user",
+        sitemap=False,
+    )
+    def our_story_documentary(self, media_id, **kwargs):
+        return request.redirect("/company-documentary?openMedia=%s" % media_id)
+
+    @http.route(
         ["/company-documentary", "/company-documentary/<path:subpath>"],
         type="http",
         auth="user",

@@ -15,6 +15,8 @@ MATERIAL_POLICY_FIELDS = frozenset(
         "document_type_ids",
         "minimum_documents",
         "grace_period_days",
+        "grace_period_enabled",
+        "non_compliance_mode",
         "due_days",
         "no_document_due_days",
         "applies_to",
@@ -29,6 +31,8 @@ MATERIAL_POLICY_FIELDS = frozenset(
         "retention_owner_notice_days",
         "verified_by",
         "verification_sla_days",
+        "verification_document_type_ids",
+        "verification_sla_escalation_user_id",
     }
 )
 
@@ -163,7 +167,20 @@ class CompliancePolicy(models.Model):
         copy=False,
     )
     minimum_documents = fields.Integer(default=1)
+    grace_period_enabled = fields.Boolean(
+        string="Grace Period Enabled",
+        default=False,
+    )
     grace_period_days = fields.Integer(string="Grace Period (Days)", default=0)
+    non_compliance_mode = fields.Selection(
+        [
+            ("after_due", "After due date"),
+            ("after_grace", "After grace period"),
+            ("never", "Never automatically"),
+        ],
+        string="Mark as non-compliant",
+        default="after_grace",
+    )
     effective_date = fields.Date(
         string="Effective Date",
         tracking=True,
@@ -233,7 +250,10 @@ class CompliancePolicy(models.Model):
     auto_request_renewal = fields.Boolean(
         string="Auto-generate Renewal Task",
         default=True,
-        help="Automatically generate a document renewal task upon entering expiration window.",
+        help=(
+            "Create an employee to-do when alert thresholds are reached before expiry, "
+            "and when evaluation finds an expired required document."
+        ),
     )
 
     # Compliance Request specific fields
@@ -288,9 +308,26 @@ class CompliancePolicy(models.Model):
         help="Document Manager / Admin responsible for conducting audits.",
     )
 
-    @api.constrains("minimum_documents", "grace_period_days", "custom_schedule_days")
+    def _normalize_grace_and_non_compliance(self):
+        for policy in self:
+            if not policy.grace_period_enabled:
+                if policy.grace_period_days:
+                    policy.grace_period_days = 0
+                if policy.non_compliance_mode == "after_grace":
+                    policy.non_compliance_mode = "after_due"
+
+    @api.constrains(
+        "grace_period_enabled",
+        "grace_period_days",
+        "minimum_documents",
+        "custom_schedule_days",
+    )
     def _check_positive_values(self):
         for policy in self:
+            if policy.grace_period_enabled and (policy.grace_period_days or 0) < 1:
+                raise ValidationError(
+                    _("Grace period must be at least 1 day when grace is enabled.")
+                )
             if policy.minimum_documents < 1 or policy.grace_period_days < 0:
                 raise ValidationError(
                     _(
@@ -439,6 +476,7 @@ class CompliancePolicy(models.Model):
         if ready:
             ready._ensure_current_version()
             ready.action_evaluate(run_type="automatic")
+        policies._normalize_grace_and_non_compliance()
         return policies
 
     def write(self, vals):
@@ -461,6 +499,12 @@ class CompliancePolicy(models.Model):
             for policy in self:
                 policy._validate_document_types_for_activation()
         result = super().write(vals)
+        if {
+            "grace_period_enabled",
+            "grace_period_days",
+            "non_compliance_mode",
+        }.intersection(vals):
+            self._normalize_grace_and_non_compliance()
         if {"schedule", "custom_schedule_days", "effective_date"}.intersection(vals):
             self.action_set_next_run()
         if {"name", "minimum_documents", "grace_period_days", "active"}.intersection(vals):
@@ -481,6 +525,12 @@ class CompliancePolicy(models.Model):
             "employee_ids",
             "minimum_documents",
             "grace_period_days",
+            "grace_period_enabled",
+            "non_compliance_mode",
+            "verification_document_type_ids",
+            "verified_by",
+            "verification_sla_days",
+            "verification_sla_escalation_user_id",
             "active",
             "effective_date",
         }
@@ -626,6 +676,14 @@ class CompliancePolicy(models.Model):
         ):
             return self.env["doc.compliance.evaluation"]
 
+        doc_req_engine = self.env["doc.compliance.document_requirement.engine"]
+        if (
+            self.policy_type_id.code == "document_requirement"
+            and self.event_trigger
+            and not doc_req_engine.document_requirement_event_started(self, employee)
+        ):
+            return self.env["doc.compliance.evaluation"]
+
         Evaluation = self._sudo_evaluation_env()
         evaluation = Evaluation.search(
             [("policy_id", "=", self.id), ("employee_id", "=", employee.id)],
@@ -696,6 +754,8 @@ class CompliancePolicy(models.Model):
         self.env["doc.compliance.notify"].sudo().notify_after_evaluation(
             self, employee, evaluation, previous_status
         )
+        if self.policy_type_id.code == "renewable_document":
+            self._schedule_expired_renewal_tasks(employee, today)
         return evaluation
 
     def _evaluation_engine_kind(self):

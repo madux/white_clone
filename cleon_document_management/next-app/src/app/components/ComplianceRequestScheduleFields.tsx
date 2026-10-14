@@ -87,6 +87,7 @@ export default function ComplianceRequestScheduleFields({
   onGraceChange,
   onReminderChange,
   layout = "grid",
+  showGracePeriod = false,
 }: {
   schedule: ComplianceRequestScheduleState;
   onChange: (schedule: ComplianceRequestScheduleState) => void;
@@ -97,6 +98,7 @@ export default function ComplianceRequestScheduleFields({
   onGraceChange: (value: string) => void;
   onReminderChange: (value: number) => void;
   layout?: "grid" | "sections";
+  showGracePeriod?: boolean;
 }) {
   const iconMuted = "h-4 w-4 shrink-0 text-slate-400";
 
@@ -164,16 +166,18 @@ export default function ComplianceRequestScheduleFields({
           onChange={(value) => onDueDaysChange(Number(value))}
         />
       </ScheduleField>
-      <ScheduleField
-        icon={<Clock className={iconMuted} aria-hidden />}
-        label="Grace period (days)"
-        hint="Buffer period after due date before escalation notices trigger."
-      >
-        <DaysInput
-          value={gracePeriodDays}
-          onChange={(value) => onGraceChange(value)}
-        />
-      </ScheduleField>
+      {showGracePeriod ? (
+        <ScheduleField
+          icon={<Clock className={iconMuted} aria-hidden />}
+          label="Grace period (days)"
+          hint="Buffer period after due date before escalation notices trigger."
+        >
+          <DaysInput
+            value={gracePeriodDays}
+            onChange={(value) => onGraceChange(value)}
+          />
+        </ScheduleField>
+      ) : null}
       <ScheduleField
         icon={<Bell className={iconMuted} aria-hidden />}
         label="Reminder every (days)"
@@ -295,16 +299,18 @@ export default function ComplianceRequestScheduleFields({
           onChange={(event) => onDueDaysChange(Number(event.target.value))}
         />
       </label>
-      <label className="block space-y-1">
-        <span className="label">Grace period (days)</span>
-        <input
-          type="number"
-          min={0}
-          className="field"
-          value={gracePeriodDays}
-          onChange={(event) => onGraceChange(event.target.value)}
-        />
-      </label>
+      {showGracePeriod ? (
+        <label className="block space-y-1">
+          <span className="label">Grace period (days)</span>
+          <input
+            type="number"
+            min={0}
+            className="field"
+            value={gracePeriodDays}
+            onChange={(event) => onGraceChange(event.target.value)}
+          />
+        </label>
+      ) : null}
       <label className="block space-y-1">
         <span className="label">Reminder every (days)</span>
         <input

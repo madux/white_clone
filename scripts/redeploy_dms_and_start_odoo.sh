@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
-# Build/sync the DMS Next app, upgrade Odoo modules, then start the server (one dev loop).
+# Build/sync module Next apps, upgrade Odoo modules, then start the server (one dev loop).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-NEXT_APP="${REPO_ROOT}/cleon_document_management/next-app"
 ODOO_DB="${ODOO_DB:-white_cleon_17}"
 
-echo "==> Deploy Next app (cleon_document_management)" >&2
-cd "${NEXT_APP}"
-npm run deploy
+deploy_next_app() {
+  local module_name="$1"
+  local next_app_dir="$2"
+  echo "==> Deploy Next app (${module_name})" >&2
+  cd "${next_app_dir}"
+  npm run deploy
+}
+
+deploy_next_app "cleon_document_management" "${REPO_ROOT}/cleon_document_management/next-app"
+deploy_next_app "cleon_company_documentary" "${REPO_ROOT}/cleon_company_documentary/next-app"
+deploy_next_app "cleon_social_gallery" "${REPO_ROOT}/cleon_social_gallery/next-app"
 
 echo "==> Stop any running Odoo on database ${ODOO_DB}" >&2
 if pgrep -f "odoo-bin.*-d[ =]${ODOO_DB}" >/dev/null 2>&1 || pgrep -f "odoo-bin.*-d ${ODOO_DB}" >/dev/null 2>&1; then

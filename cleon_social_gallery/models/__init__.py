@@ -5,6 +5,9 @@ from . import social_gallery_upload
 from . import social_gallery_tag
 from . import social_gallery_comment
 from . import social_gallery_like
+from . import social_gallery_media_view
+from . import social_gallery_custom_group
+from . import social_gallery_disposal_record
 from . import social_gallery_report
 from . import social_gallery_share_link
 from . import social_gallery_audit

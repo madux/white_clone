@@ -4,10 +4,8 @@ import {
   ChevronDown,
   Download,
   Gauge,
-  Heart,
   LoaderCircle,
   Maximize2,
-  MessageCircle,
   Minimize2,
   Pause,
   PictureInPicture,
@@ -23,11 +21,12 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { DocumentaryComment, DocumentaryMedia } from "../../../../lib/types";
 import { api } from "../../../../lib/api";
 import { formatBytes, formatDuration } from "../documentaryUtils";
-import { toSocialComments, type SocialComment } from "@/lib/socialUtils";
-import { useDocumentaryComments, useDocumentaryMutations } from "../../../../hooks/useDocumentary";
-import { CommentThread } from "../social/CommentThread";
-import { CommentComposer } from "../social/CommentComposer";
 import { PostNav } from "../social/PostNav";
+import { MediaLifecyclePanel } from "../media/MediaLifecyclePanel";
+import { VersionHistoryPanel } from "../media/VersionHistoryPanel";
+import { ReviewHistoryPanel } from "../media/ReviewHistoryPanel";
+
+type ManagerPanel = "workflow" | "versions" | "review";
 
 function stripHtml(value?: string) {
   if (!value) return "";
@@ -40,7 +39,8 @@ export function VideoModal({
   onShare,
   onError,
   userId,
-  isManager,
+  isAdministrator,
+  isSupervisor,
   onPrev,
   onNext,
   hasPrev,
@@ -52,7 +52,8 @@ export function VideoModal({
   onShare?: () => void;
   onError: (message: string) => void;
   userId?: number;
-  isManager?: boolean;
+  isAdministrator?: boolean;
+  isSupervisor?: boolean;
   onPrev?: () => void;
   onNext?: () => void;
   hasPrev?: boolean;
@@ -61,7 +62,6 @@ export function VideoModal({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const composerRef = useRef<HTMLInputElement>(null);
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -73,15 +73,14 @@ export function VideoModal({
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [subtitleUrls, setSubtitleUrls] = useState<Record<number, string>>({});
-  const [commentBody, setCommentBody] = useState("");
-  const [replyTo, setReplyTo] = useState<SocialComment | null>(null);
   const [showMore, setShowMore] = useState(false);
   const [currentMedia, setCurrentMedia] = useState(media);
+  const [managerPanel, setManagerPanel] = useState<ManagerPanel>("workflow");
+  const showManagerPanels = Boolean(
+    isAdministrator || isSupervisor || currentMedia.can_edit,
+  );
   const lastTracked = useRef(0);
   const sessionId = useId();
-
-  const commentsQuery = useDocumentaryComments(currentMedia.id);
-  const { postComment, deleteComment, toggleLike } = useDocumentaryMutations();
 
   const qualityOptions = [
     "original",
@@ -90,8 +89,6 @@ export function VideoModal({
 
   useEffect(() => {
     setCurrentMedia(media);
-    setReplyTo(null);
-    setCommentBody("");
     setShowMore(false);
   }, [media]);
 
@@ -197,32 +194,6 @@ export function VideoModal({
     }
   };
 
-  const submitComment = async () => {
-    if (!commentBody.trim()) return;
-    try {
-      await postComment.mutateAsync({
-        media_id: currentMedia.id,
-        body: commentBody.trim(),
-        parent_id: replyTo?.id,
-      });
-      setCommentBody("");
-      setReplyTo(null);
-    } catch (error) {
-      onError(error instanceof Error ? error.message : "Comment failed.");
-    }
-  };
-
-  const handleLike = async () => {
-    try {
-      const result = await toggleLike.mutateAsync(currentMedia.id);
-      const next = { ...currentMedia, liked_by_me: result.liked, like_count: result.like_count };
-      setCurrentMedia(next);
-      onMediaChange?.(next);
-    } catch (error) {
-      onError(error instanceof Error ? error.message : "Could not update like.");
-    }
-  };
-
   async function toggleFavorite() {
     try {
       const updated = await api.mediaAction({ id: currentMedia.id, action: "favorite" }) as DocumentaryMedia;
@@ -233,7 +204,6 @@ export function VideoModal({
     }
   }
 
-  const comments = toSocialComments((commentsQuery.data || []) as DocumentaryComment[]);
   const hasMore = Boolean(currentMedia.transcript || (currentMedia.chapters?.length || 0) > 0);
   const description = stripHtml(currentMedia.description);
 
@@ -418,22 +388,6 @@ export function VideoModal({
             <div className="cinema-action-row">
               <button
                 type="button"
-                className={`cinema-action-btn${currentMedia.liked_by_me ? " is-active" : ""}`}
-                onClick={handleLike}
-              >
-                <Heart size={18} fill={currentMedia.liked_by_me ? "currentColor" : "none"} />
-                <span>{currentMedia.like_count || 0} likes</span>
-              </button>
-              <button
-                type="button"
-                className="cinema-action-btn"
-                onClick={() => composerRef.current?.focus()}
-              >
-                <MessageCircle size={18} />
-                <span>{currentMedia.comment_count || 0} comments</span>
-              </button>
-              <button
-                type="button"
                 className={`cinema-action-btn${currentMedia.favorite ? " is-active" : ""}`}
                 onClick={toggleFavorite}
               >
@@ -447,6 +401,58 @@ export function VideoModal({
                 </button>
               )}
             </div>
+            {showManagerPanels && (
+              <div className="cinema-manager-panels">
+                <nav className="cinema-manager-tabs" aria-label="Video administration">
+                  <button
+                    type="button"
+                    className={managerPanel === "workflow" ? "active" : ""}
+                    onClick={() => setManagerPanel("workflow")}
+                  >
+                    Workflow
+                  </button>
+                  {(isAdministrator || isSupervisor) ? (
+                    <>
+                      <button
+                        type="button"
+                        className={managerPanel === "versions" ? "active" : ""}
+                        onClick={() => setManagerPanel("versions")}
+                      >
+                        Versions
+                      </button>
+                      <button
+                        type="button"
+                        className={managerPanel === "review" ? "active" : ""}
+                        onClick={() => setManagerPanel("review")}
+                      >
+                        Review history
+                      </button>
+                    </>
+                  ) : null}
+                </nav>
+                <div className="cinema-manager-panel-body">
+                  {managerPanel === "workflow" && (
+                    <MediaLifecyclePanel
+                      media={currentMedia}
+                      isAdministrator={Boolean(isAdministrator)}
+                      isSupervisor={Boolean(isSupervisor)}
+                      userId={userId}
+                      onUpdated={(updated) => {
+                        setCurrentMedia(updated);
+                        onMediaChange?.(updated);
+                      }}
+                      onError={onError}
+                    />
+                  )}
+                  {(isAdministrator || isSupervisor) && managerPanel === "versions" && (
+                    <VersionHistoryPanel mediaId={currentMedia.id} />
+                  )}
+                  {(isAdministrator || isSupervisor) && managerPanel === "review" && (
+                    <ReviewHistoryPanel mediaId={currentMedia.id} />
+                  )}
+                </div>
+              </div>
+            )}
             {hasMore && (
               <div className="cinema-more-section">
                 <button type="button" className="cinema-more-toggle" onClick={() => setShowMore((value) => !value)}>
@@ -488,32 +494,6 @@ export function VideoModal({
             )}
           </div>
 
-          <div className="cinema-modal-discussion">
-            <div className="cinema-discussion-header">
-              <h3>Discussion</h3>
-              <span>{currentMedia.comment_count || 0}</span>
-            </div>
-            <CommentThread
-              comments={comments}
-              loading={commentsQuery.isLoading}
-              currentUserId={userId}
-              isManager={isManager}
-              onReply={(comment) => setReplyTo(comment)}
-              onDelete={(commentId) => deleteComment.mutateAsync({ media_id: currentMedia.id, comment_id: commentId }).catch((error) => onError(error instanceof Error ? error.message : "Delete failed"))}
-            />
-            {currentMedia.comments_enabled && (
-              <CommentComposer
-                value={commentBody}
-                onChange={setCommentBody}
-                onSubmit={submitComment}
-                loading={postComment.isPending}
-                replyTo={replyTo?.user_name}
-                onCancelReply={() => setReplyTo(null)}
-                placeholder="Share your thoughts on this video…"
-                inputRef={composerRef}
-              />
-            )}
-          </div>
         </div>
       </div>
     </div>

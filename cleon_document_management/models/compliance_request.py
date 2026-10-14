@@ -166,6 +166,9 @@ class ComplianceRequestCycle(models.Model):
         index=True,
     )
     closed_at = fields.Datetime()
+    last_reminder_at = fields.Datetime(
+        help="Last automated reminder sent for this open cycle.",
+    )
     task_ids = fields.One2many(
         "doc.compliance.task", "cycle_id", string="Tasks"
     )

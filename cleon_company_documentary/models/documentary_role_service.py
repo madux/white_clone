@@ -8,15 +8,19 @@ class DocumentaryRoleService(models.AbstractModel):
     _description = "Company Documentary role assignment service"
 
     @api.model
-    def _require_system_admin(self):
-        if not self.env.user.has_group("base.group_system"):
-            raise AccessError(
-                _("Only system administrators can manage Company Documentary roles.")
-            )
+    def _require_role_admin(self):
+        user = self.env.user
+        if user.has_group("base.group_system"):
+            return
+        if user.has_group("cleon_company_documentary.group_company_documentary_admin"):
+            return
+        raise AccessError(
+            _("Documentary Administrator access is required to manage roles.")
+        )
 
     @api.model
     def _definitions(self):
-        self._require_system_admin()
+        self._require_role_admin()
         self.env["documentary.role.definition"].sync_registry()
         rows = self.env["documentary.role.definition"].search([])
         return [
@@ -61,7 +65,7 @@ class DocumentaryRoleService(models.AbstractModel):
 
     @api.model
     def list_members(self, search="", limit=50):
-        self._require_system_admin()
+        self._require_role_admin()
         self.env["documentary.role.definition"].sync_registry()
         domain = self._company_employee_domain()
         if search:
@@ -106,7 +110,7 @@ class DocumentaryRoleService(models.AbstractModel):
 
     @api.model
     def assign_roles(self, employee_id, assignments):
-        self._require_system_admin()
+        self._require_role_admin()
         self.env["documentary.role.definition"].sync_registry()
         employee = self.env["hr.employee"].sudo().browse(int(employee_id))
         if not employee or not employee.active:

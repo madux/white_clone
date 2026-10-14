@@ -123,8 +123,11 @@ export const api = {
     tag_ids?: number[];
     transcript?: string;
     chapters?: Array<{ title: string; start_seconds: number }>;
-    publish_at?: string | false;
+    category?: string;
+    keywords?: string;
+    is_internal_only?: boolean;
     is_official?: boolean;
+    is_hero?: boolean;
   }) {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia; message?: string }>("/api/company-documentary/media/update", payload));
   },
@@ -212,6 +215,14 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia[]; message?: string }>("/api/company-documentary/continue-watching"));
   },
 
+  async homeHero() {
+    return unwrap(
+      await rpc<{ success: boolean; data: DocumentaryMedia | null; message?: string }>(
+        "/api/company-documentary/home/hero",
+      ),
+    );
+  },
+
   async recycleBin() {
     return unwrap(await rpc<{ success: boolean; data: RecycleBinData; message?: string }>("/api/company-documentary/recycle-bin"));
   },
@@ -232,8 +243,13 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: ModuleRoleDefinition[]; message?: string }>("/api/company-documentary/roles/definitions"));
   },
 
-  async roleMembers(search = "") {
-    return unwrap(await rpc<{ success: boolean; data: ModuleRoleMember[]; message?: string }>("/api/company-documentary/roles/members", { search, limit: 50 }));
+  async roleMembers(search = "", limit = 50) {
+    return unwrap(
+      await rpc<{ success: boolean; data: ModuleRoleMember[]; message?: string }>(
+        "/api/company-documentary/roles/members",
+        { search, limit },
+      ),
+    );
   },
 
   async assignRoles(employeeId: number, assignments: ModuleRoleAssignment[]) {
@@ -248,12 +264,43 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryFolder; message?: string }>("/api/company-documentary/folders/favorite", payload));
   },
 
-  async mediaApproval(payload: { id: number; action: "approve" | "reject" | "submit" | "cancel_schedule"; comment?: string; publish_at?: string }) {
+  async mediaApproval(payload: {
+    id: number;
+    action:
+      | "approve"
+      | "approve_publish"
+      | "reject"
+      | "submit"
+      | "withdraw"
+      | "publish"
+      | "archive"
+      | "republish";
+    comment?: string;
+    notify_audience?: boolean;
+    reason?: string;
+  }) {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia; message?: string }>("/api/company-documentary/media/approval", payload));
   },
 
-  async mediaShare(id: number) {
-    return unwrap(await rpc<{ success: boolean; data: { url: string; token: string }; message?: string }>("/api/company-documentary/media/share", { id }));
+  async mediaVersions(id: number) {
+    return unwrap(await rpc<{ success: boolean; data: import("./types").DocumentaryVersion[]; message?: string }>("/api/company-documentary/media/versions", { id }));
+  },
+
+  async mediaDetail(id: number) {
+    return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia; message?: string }>("/api/company-documentary/media/detail", { id }));
+  },
+
+  async auditLog(media_id: number, limit = 200) {
+    return unwrap(
+      await rpc<{ success: boolean; data: import("./types").DocumentaryAuditEvent[]; message?: string }>(
+        "/api/company-documentary/audit",
+        { media_id, limit },
+      ),
+    );
+  },
+
+  async mediaShare(id: number, link_type: "internal" | "external" = "internal", expires_at?: string) {
+    return unwrap(await rpc<{ success: boolean; data: { url: string; token: string; links?: unknown[] }; message?: string }>("/api/company-documentary/media/share", { id, link_type, expires_at }));
   },
 
   async captionEvent(media_id: number) {
@@ -288,17 +335,14 @@ export const api = {
     file_size: number;
     title?: string;
     description?: string;
-    mandatory?: boolean;
-    completion_threshold?: number;
-    comments_enabled?: boolean;
     scope_mode?: "inherited" | "override";
     access_scope?: string;
     department_ids?: number[];
-    grade_ids?: number[];
-    employee_ids?: number[];
     tag_ids?: number[];
     download_policy?: "inherit" | "allow" | "deny";
-    publish_at?: string;
+    category?: string;
+    keywords?: string;
+    is_internal_only?: boolean;
     is_official?: boolean;
     replaces_media_id?: number;
   }) {

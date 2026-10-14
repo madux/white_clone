@@ -7,6 +7,9 @@ from dateutil.relativedelta import relativedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
+# Sentinel for post-expiry renewal to-dos (distinct from pre-expiry alert_schedule_days).
+RENEWAL_ALERT_EXPIRED_DAYS_BEFORE = -1
+
 
 class ComplianceRenewalAlert(models.Model):
     _name = "doc.compliance.renewal.alert"
@@ -201,6 +204,90 @@ class CompliancePolicyExecution(models.Model):
                     )
                 RenewalAlert.create(alert_vals)
 
+    def _expired_renewal_documents(self, employee, today):
+        self.ensure_one()
+        if not self.document_type_ids:
+            return self.env["doc.document"]
+        return self.env["doc.document"].sudo().search(
+            [
+                ("employee_id", "=", employee.id),
+                ("document_type_id", "in", self.document_type_ids.ids),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+                ("has_expiry", "=", True),
+                ("expiry_date", "!=", False),
+                ("expiry_date", "<", today),
+                ("state", "in", ["approved", "signed", "expired"]),
+            ]
+        )
+
+    def _clear_stale_expired_renewal_alerts(self, employee, today):
+        self.ensure_one()
+        RenewalAlert = self.env["doc.compliance.renewal.alert"].sudo()
+        stale = RenewalAlert.search(
+            [
+                ("policy_id", "=", self.id),
+                ("document_id.employee_id", "=", employee.id),
+                ("days_before", "=", RENEWAL_ALERT_EXPIRED_DAYS_BEFORE),
+            ]
+        )
+        for alert in stale:
+            document = alert.document_id
+            if document.expiry_date and document.expiry_date >= today:
+                alert.unlink()
+
+    def _schedule_expired_renewal_tasks(self, employee, today=None):
+        """Create a renewal to-do when a required document is already expired."""
+        self.ensure_one()
+        if self._policy_type_code() != "renewable_document":
+            return
+        if not self.auto_request_renewal:
+            return
+        if not self._applies_to_employee(employee):
+            return
+        today = today or fields.Date.context_today(self)
+        self._clear_stale_expired_renewal_alerts(employee, today)
+        RenewalAlert = self.env["doc.compliance.renewal.alert"].sudo()
+        activity_type = self.env.ref(
+            "mail.mail_activity_data_todo", raise_if_not_found=False
+        )
+        employee_user = employee.user_id
+        for document in self._expired_renewal_documents(employee, today):
+            existing = RenewalAlert.search(
+                [
+                    ("policy_id", "=", self.id),
+                    ("document_id", "=", document.id),
+                    ("days_before", "=", RENEWAL_ALERT_EXPIRED_DAYS_BEFORE),
+                ],
+                limit=1,
+            )
+            if existing:
+                continue
+            days_overdue = (today - document.expiry_date).days
+            note = _(
+                "%(document)s for %(employee)s expired on %(date)s "
+                "(%(days)s days ago). Upload an updated document.",
+                document=document.name,
+                employee=employee.name,
+                date=document.expiry_date,
+                days=days_overdue,
+            )
+            if activity_type and employee_user:
+                document.activity_schedule(
+                    activity_type_id=activity_type.id,
+                    user_id=employee_user.id,
+                    date_deadline=today,
+                    summary=_("Renew expired document"),
+                    note=note,
+                )
+            RenewalAlert.create(
+                {
+                    "policy_id": self.id,
+                    "document_id": document.id,
+                    "days_before": RENEWAL_ALERT_EXPIRED_DAYS_BEFORE,
+                }
+            )
+
     @api.model
     def _cron_renewal_alerts(self):
         today = fields.Date.context_today(self)
@@ -211,6 +298,7 @@ class CompliancePolicyExecution(models.Model):
         for policy in policies:
             for employee in policy._target_employees():
                 policy._process_renewal_alerts_for_employee(employee, today)
+                policy._schedule_expired_renewal_tasks(employee, today)
 
     def _create_lifecycle_request(self, employee, event_trigger, triggered_at=None):
         self.ensure_one()

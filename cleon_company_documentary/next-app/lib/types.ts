@@ -46,8 +46,9 @@ export interface DocumentaryFolder {
   id: number;
   name: string;
   description: string;
+  color?: string;
   parent_id: number | false;
-  access_scope: "company" | "department" | "grade" | "employee";
+  access_scope: "company" | "department";
   allow_download: boolean;
   archived: boolean;
   deleted_at: string | false;
@@ -55,6 +56,7 @@ export interface DocumentaryFolder {
   can_edit: boolean;
   is_pinned?: boolean;
   favorite?: boolean;
+  updated_at?: string;
   department_ids?: number[];
   grade_ids?: number[];
   employee_ids?: number[];
@@ -86,18 +88,31 @@ export interface DocumentaryMedia {
   tags: string[];
   download_allowed: boolean;
   mandatory: boolean;
+  is_hero?: boolean;
   completion_threshold: number;
   comments_enabled: boolean;
   scope_mode: "inherited" | "override";
-  access_scope: "company" | "department" | "grade" | "employee";
+  access_scope: "company" | "department";
   department_ids?: number[];
-  grade_ids?: number[];
-  employee_ids?: number[];
   favorite: boolean;
-  like_count: number;
-  liked_by_me: boolean;
-  comment_count: number;
   owner_name?: string;
+  uploader_name?: string;
+  uploader_job_title?: string;
+  status?: string;
+  category?: string;
+  keywords?: string;
+  is_internal_only?: boolean;
+  resolution?: string;
+  codec?: string;
+  current_version_number?: number;
+  return_reason?: string;
+  archive_reason?: string;
+  legal_hold?: boolean;
+  submitted_by_id?: number | false;
+  submitted_by_name?: string | false;
+  submitted_at?: string | false;
+  review_decided_by_name?: string | false;
+  published_by_name?: string | false;
   view_count: number;
   unique_viewer_count: number;
   created_at: string;
@@ -156,12 +171,26 @@ export interface AudienceOptions {
 
 export interface DocumentarySettings {
   require_upload_approval: boolean;
-  default_mandatory: boolean;
-  default_comments_enabled: boolean;
-  default_allow_download: boolean;
-  default_completion_threshold: number;
-  deleted_retention_days: number;
-  auto_transcription: boolean;
+  department_restrictions: boolean;
+  employee_download: boolean;
+  external_sharing: boolean;
+  max_upload_mb: number;
+  storage_quota_gb: number;
+  default_resolution: string;
+  restore_window_days: number;
+  retention_years: number;
+  auto_archive_months: number;
+  disposition_review: boolean;
+  compliance_analytics: boolean;
+}
+
+export interface DocumentaryAuditEvent {
+  id: number;
+  event_type: string;
+  media_id: number | false;
+  user_name: string;
+  created_at: string;
+  metadata: Record<string, unknown>;
 }
 
 export interface RecycleBinData {
@@ -173,9 +202,25 @@ export interface MediaFilters {
   mandatory?: boolean;
   processing_state?: string;
   approval_status?: string;
+  status?: string;
+  category?: string;
   date_from?: string;
   date_to?: string;
   recycle_bin?: boolean;
+}
+
+export interface DocumentaryVersion {
+  id: number;
+  version_number: number;
+  is_live: boolean;
+  change_note: string;
+  created_at: string;
+  created_by_name: string;
+  duration_seconds: number;
+  resolution: string;
+  codec: string;
+  live_from: string | false;
+  live_to: string | false;
 }
 
 export interface DocumentaryAnalytics {

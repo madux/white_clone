@@ -5,11 +5,13 @@ import {
   Bell, Cloud, Download, LoaderCircle, Settings2, SlidersHorizontal,
 } from "lucide-react";
 import type { GallerySettings } from "@/lib/types";
-import { useGalleryMutations, useGalleryTrustedUsers } from "@/hooks/useSocialGallery";
+import { normalizeLayout, useGalleryMutations, useGalleryTrustedUsers } from "@/hooks/useSocialGallery";
 import { api } from "@/lib/api";
+import AppSelect from "../shared/AppSelect";
 import { LoadingState } from "../shared/LoadingState";
 import { UserSearchPicker } from "../shared/UserSearchPicker";
 import RolesView from "./RolesView";
+import ComplianceDispositionPanel from "./ComplianceDispositionPanel";
 
 export default function SettingsView({
   settings, loading, albums = [], onRefresh, onError, isSystemAdmin = false,
@@ -37,7 +39,12 @@ export default function SettingsView({
   const [activeTab, setActiveTab] = useState<"configuration" | "roles">("configuration");
 
   useEffect(() => {
-    if (settings) setForm({ ...settings });
+    if (settings) {
+      setForm({
+        ...settings,
+        default_layout: normalizeLayout(settings.default_layout),
+      });
+    }
   }, [settings]);
 
   useEffect(() => {
@@ -113,51 +120,66 @@ export default function SettingsView({
         <div className="modal-form">
           <label className="field">
             <span className="label">Default Visibility</span>
-            <select value={form.default_visibility || "public"} onChange={(e) => update("default_visibility", e.target.value)}>
-              <option value="public">Public — all employees can view</option>
-              <option value="private">Private — admin approval required</option>
-            </select>
+            <AppSelect
+              value={form.default_visibility || "public"}
+              options={[
+                { value: "public", label: "Public — assignable to audiences" },
+                { value: "private", label: "Private — admins, supervisors, and creator only" },
+              ]}
+              onChange={(value) => update("default_visibility", value)}
+              ariaLabel="Default visibility"
+            />
+          </label>
+          <label className="field">
+            <span className="label">Supervisor uploads in albums</span>
+            <AppSelect
+              value={form.supervisor_upload_requires_approval ? "approval" : "auto"}
+              options={[
+                { value: "auto", label: "Auto-approve in album detail (public gallery)" },
+                { value: "approval", label: "Require administrator approval" },
+              ]}
+              onChange={(value) => update("supervisor_upload_requires_approval", value === "approval")}
+              ariaLabel="Supervisor upload approval"
+            />
           </label>
           <label className="field">
             <span className="label">Maximum Upload Size (MB)</span>
-            <select value={form.max_upload_mb || 25} onChange={(e) => update("max_upload_mb", Number(e.target.value))}>
-              {[5, 10, 25, 50, 100].map((v) => <option key={v} value={v}>{v} MB per file</option>)}
-            </select>
+            <AppSelect
+              value={String(form.max_upload_mb || 25)}
+              options={[5, 10, 25, 50, 100].map((v) => ({ value: String(v), label: `${v} MB per file` }))}
+              onChange={(value) => update("max_upload_mb", Number(value))}
+              ariaLabel="Maximum upload size"
+            />
           </label>
           <label className="field">
             <span className="label">Default Layout</span>
-            <select value={form.default_layout || "grid"} onChange={(e) => update("default_layout", e.target.value)}>
-              <option value="grid">Grid View</option>
-              <option value="list">List View</option>
-              <option value="masonry">Masonry Layout</option>
-            </select>
+            <AppSelect
+              value={form.default_layout || "grid"}
+              options={[
+                { value: "grid", label: "Cards" },
+                { value: "list", label: "List" },
+              ]}
+              onChange={(value) => update("default_layout", value)}
+              ariaLabel="Default layout"
+            />
           </label>
           <label className="field">
             <span className="label">Default Destination Album</span>
-            <select
-              value={form.default_destination_album_id || ""}
-              onChange={(e) => update("default_destination_album_id", e.target.value ? Number(e.target.value) : false)}
-            >
-              <option value="">Auto — monthly album</option>
-              {albums.map((album) => <option key={album.id} value={album.id}>{album.name}</option>)}
-            </select>
+            <AppSelect
+              value={form.default_destination_album_id ? String(form.default_destination_album_id) : ""}
+              placeholder="Auto — monthly album"
+              options={[
+                { value: "", label: "Auto — monthly album" },
+                ...albums.map((album) => ({ value: String(album.id), label: album.name })),
+              ]}
+              onChange={(value) => update("default_destination_album_id", value ? Number(value) : false)}
+              ariaLabel="Default destination album"
+            />
           </label>
           <div className="switch-list">
-            <label className="toggle-row">
-              <span>
-                <strong>Allow external sharing</strong>
-                <small>Let users create public share links.</small>
-              </span>
-              <span className="toggle">
-                <input type="checkbox" checked={!!form.allow_external_share} onChange={(e) => update("allow_external_share", e.target.checked)} />
-              </span>
-            </label>
-          </div>
-          <div className="switch-list">
             {([
-              ["auto_create_monthly_album", "Auto-create monthly album", "A new album is created at the start of each month."],
-              ["auto_approve_trusted", "Auto-approve trusted users", "Trusted uploaders skip the review queue."],
-              ["ai_moderation_enabled", "AI review on uploads", "When on, uploads are screened automatically. When off, every upload goes to Pending Requests for manual review."],
+              ["auto_create_monthly_album", "Auto-create monthly album", "A new album is created at the start of each month for supervisor uploads."],
+              ["auto_approve_trusted", "Auto-approve trusted supervisors' albums", "When on, albums created by trusted supervisors are approved immediately."],
             ] as const).map(([key, label, helper]) => (
               <label key={key} className="toggle-row">
                 <span>
@@ -191,9 +213,7 @@ export default function SettingsView({
           {([
             ["notify_new_upload", "Email notifications for new uploads", "Send mail when someone uploads media."],
             ["notify_approval_request", "Approval request notifications", "Alert managers when review is needed."],
-            ["notify_comments", "Comment notifications", "Notify owners when comments are posted."],
             ["notify_likes", "Like notifications", "Batch like alerts using the size below."],
-            ["notify_content_reports", "Content report notifications", "Alert managers when media is reported."],
             ["weekly_digest", "Weekly digest", "A weekly summary of gallery activity."],
           ] as const).map(([key, label, helper]) => (
             <label key={key} className="toggle-row">
@@ -213,8 +233,57 @@ export default function SettingsView({
         </label>
         <label className="field">
           <span className="label">Recycle bin retention (days)</span>
-          <input type="number" min={1} value={form.deleted_retention_days || 365} onChange={(e) => update("deleted_retention_days", Number(e.target.value))} />
+          <input type="number" min={7} max={365} value={form.deleted_retention_days || 30} onChange={(e) => update("deleted_retention_days", Number(e.target.value))} />
         </label>
+      </div>
+
+      <div className="settings-section">
+        <div className="settings-section-header">
+          <Settings2 size={18} />
+          <div>
+            <div className="eyebrow">Compliance</div>
+            <h2>Retention & legal hold</h2>
+          </div>
+        </div>
+        <div className="modal-form">
+          <label className="field">
+            <span className="label">Rejected media retention (days)</span>
+            <input type="number" min={30} max={365} value={form.rejected_retention_days || 90} onChange={(e) => update("rejected_retention_days", Number(e.target.value))} />
+          </label>
+          <label className="field">
+            <span className="label">Audit log retention (days)</span>
+            <input type="number" min={365} max={3650} value={form.audit_retention_days || 730} onChange={(e) => update("audit_retention_days", Number(e.target.value))} />
+          </label>
+          <label className="field">
+            <span className="label">Cold storage tier after (days in recycle bin)</span>
+            <input type="number" min={30} max={3650} value={form.lifecycle_cold_after_days || 90} onChange={(e) => update("lifecycle_cold_after_days", Number(e.target.value))} />
+          </label>
+          <label className="toggle-row">
+            <span>
+              <strong>Disposition review before permanent delete</strong>
+              <small>Administrators must approve purge when retention expires.</small>
+            </span>
+            <span className="toggle">
+              <input type="checkbox" checked={!!form.disposition_review} onChange={(e) => update("disposition_review", e.target.checked)} />
+            </span>
+          </label>
+          <label className="toggle-row">
+            <span>
+              <strong>Tenant-wide legal hold</strong>
+              <small>Blocks permanent deletion for all gallery media.</small>
+            </span>
+            <span className="toggle">
+              <input type="checkbox" checked={!!form.tenant_legal_hold} onChange={(e) => update("tenant_legal_hold", e.target.checked)} />
+            </span>
+          </label>
+          {form.tenant_legal_hold && (
+            <label className="field">
+              <span className="label">Legal hold reason</span>
+              <input value={form.tenant_legal_hold_reason || ""} onChange={(e) => update("tenant_legal_hold_reason", e.target.value)} />
+            </label>
+          )}
+        </div>
+        <ComplianceDispositionPanel onError={onError} />
       </div>
 
       <div className="settings-section">
@@ -225,7 +294,7 @@ export default function SettingsView({
             <h2>Trusted uploaders</h2>
           </div>
         </div>
-        <p className="meta-muted">Trusted users can skip the review queue when auto-approve is enabled.</p>
+        <p className="meta-muted">Trusted supervisors can have new albums auto-approved when the setting above is enabled.</p>
         <div className="export-list switch-list">
           {(trustedQuery.data || []).map((trusted) => (
             <div key={trusted.id} className="toggle-row">

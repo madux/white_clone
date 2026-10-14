@@ -276,5 +276,11 @@ export function useGalleryMutations() {
 }
 
 export function isValidLayout(value?: string): value is LayoutMode {
-  return value === "grid" || value === "list" || value === "masonry";
+  return value === "grid" || value === "list";
+}
+
+/** Maps legacy stored values (compact, masonry) to grid. */
+export function normalizeLayout(value?: string): LayoutMode {
+  if (value === "list") return "list";
+  return "grid";
 }

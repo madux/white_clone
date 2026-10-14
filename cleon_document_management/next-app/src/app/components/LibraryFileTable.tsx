@@ -54,6 +54,7 @@ export type LibraryFileRow = {
   /** Pink folder with in-folder file peeks when the folder has items */
   folderPreview?: { hasContent: boolean; documents?: FileVisualInput[] };
   folderKind?: DocFolder["folder_kind"];
+  folderColorHex?: string | null;
   /** @deprecated use folderPreview */
   orgFolder?: { hasContent: boolean; documents?: FileVisualInput[] };
 };

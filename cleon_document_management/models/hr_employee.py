@@ -2,6 +2,8 @@ from datetime import timedelta
 
 from odoo import api, fields, models
 
+from .compliance_document_requirement_engine import DOC_REQUIREMENT_CLASSIFY_FIELDS
+
 
 class HrEmployee(models.Model):
     _inherit = "hr.employee"
@@ -121,6 +123,15 @@ class HrEmployee(models.Model):
         self.env["doc.compliance.policy"].trigger_compliance_request_for_employees(
             employees, "employee_start"
         )
+        Policy = self.env["doc.compliance.policy"]
+        DocReq = self.env["doc.compliance.document_requirement.engine"]
+        for employee in employees:
+            triggered_at = DocReq._onboarding_triggered_at(employee)
+            Policy.trigger_document_requirement_for_employees(
+                employee,
+                "onboarding",
+                triggered_at=triggered_at,
+            )
         return employees
 
     def write(self, vals):
@@ -133,6 +144,15 @@ class HrEmployee(models.Model):
                 before[employee.id] = {
                     key: service._ems_field_display(employee, key)
                     for key in tracked_keys
+                }
+        classify_keys = set(vals.keys()) & set(DOC_REQUIREMENT_CLASSIFY_FIELDS)
+        doc_req_before = {}
+        DocReq = self.env["doc.compliance.document_requirement.engine"]
+        if classify_keys:
+            for employee in self:
+                doc_req_before[employee.id] = {
+                    key: DocReq._snapshot_employee_field(employee, key)
+                    for key in classify_keys
                 }
         result = super().write(vals)
         if config.setup_complete:
@@ -157,6 +177,15 @@ class HrEmployee(models.Model):
             for employee in self:
                 self.env["doc.compliance.policy"].reassign_reviews_for_manager_change(
                     employee
+                )
+        Policy = self.env["doc.compliance.policy"]
+        for employee in self:
+            event = DocReq.classify_document_requirement_event(
+                employee, vals, doc_req_before.get(employee.id)
+            )
+            if event:
+                Policy.trigger_document_requirement_for_employees(
+                    employee, event
                 )
         return result
 

@@ -14,9 +14,14 @@ import {
   type OrgLibraryKindFilter,
 } from "../../../lib/orgLibraryStats";
 import {
+  applyOrgLibraryKindToSearchParams,
+  orgLibraryKindFromSearchParams,
+} from "../../../lib/orgLibraryTabParams";
+import {
   INITIAL_ORG_DOCUMENT_TAB_FILTERS,
   INITIAL_ORG_FOLDER_FILTERS,
   INITIAL_ORG_POLICY_TAB_FILTERS,
+  orgActiveFolderMatchesKindTab,
   orgFolderTreeVisibleIds,
   uniqueOrgFolderOptions,
   type OrgDocumentTabFilters,
@@ -48,16 +53,11 @@ export default function OrganizationalFilesPage() {
   const folderIdParam = Number(params.get("folder") || 0);
   const activeFolderId = folderIdParam > 0 ? folderIdParam : null;
   const [kindFilter, setKindFilter] = useState<OrgLibraryKindFilter>(() =>
-    params.get("tab") === "policies" ? "policy" : "all",
+    orgLibraryKindFromSearchParams(params),
   );
 
   useEffect(() => {
-    const wantsPolicies = params.get("tab") === "policies";
-    setKindFilter((prev) => {
-      if (wantsPolicies && prev !== "policy") return "policy";
-      if (!wantsPolicies && prev === "policy") return "all";
-      return prev;
-    });
+    setKindFilter(orgLibraryKindFromSearchParams(params));
   }, [params]);
 
   const [treeSearch, setTreeSearch] = useState("");
@@ -125,6 +125,15 @@ export default function OrganizationalFilesPage() {
     [basePath, params, router],
   );
 
+  useEffect(() => {
+    if (!activeFolderId || !activeFolder) return;
+    if (
+      !orgActiveFolderMatchesKindTab(activeFolder, folders.data ?? [], kindFilter)
+    ) {
+      setFolderInUrl(null);
+    }
+  }, [activeFolder, activeFolderId, folders.data, kindFilter, setFolderInUrl]);
+
   const breadcrumbItems = useMemo((): LibraryCrumb[] => {
     const items: LibraryCrumb[] = [
       { label: "Document Management", href: "/pages/organization" },
@@ -167,9 +176,11 @@ export default function OrganizationalFilesPage() {
         active={kindFilter}
         onChange={(filter) => {
           setKindFilter(filter);
-          const next = new URLSearchParams(params.toString());
-          if (filter === "policy") next.set("tab", "policies");
-          else next.delete("tab");
+          const next = applyOrgLibraryKindToSearchParams(
+            new URLSearchParams(params.toString()),
+            filter,
+          );
+          next.delete("folder");
           const query = next.toString();
           router.replace(query ? `${basePath}?${query}` : basePath);
         }}
@@ -177,101 +188,84 @@ export default function OrganizationalFilesPage() {
 
       <OrganizationalLibraryAdminLinks />
 
-      {kindFilter === "policy" ? (
-        <section className="app-table-well app-page-body">
+      <div className="org-library-shell flex min-h-[min(72vh,52rem)] flex-col gap-4 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:gap-6 lg:p-5">
+        <div className="w-full shrink-0 lg:w-60 xl:w-72">
+          <OrgFolderNavTree
+            folders={folders.data ?? []}
+            activeFolderId={activeFolderId}
+            kindFilter={kindFilter}
+            search={treeSearch}
+            onSearchChange={setTreeSearch}
+            onSelectFolder={setFolderInUrl}
+            treeVisibleIds={treeVisibleIds}
+          />
+        </div>
+
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-xl border border-slate-200 bg-white lg:border-0">
           <AppToolbar
             search={contentSearch}
             onSearchChange={setContentSearch}
             searchPlaceholder={searchPlaceholder}
             extras={
-              <OrgLibraryFilterBar {...filterBarProps} part="trigger" />
+              activeFolderId ? undefined : (
+                <OrgLibraryFilterBar {...filterBarProps} part="trigger" />
+              )
             }
             footer={
-              filtersExpanded ? (
+              !activeFolderId && filtersExpanded ? (
                 <OrgLibraryFilterBar {...filterBarProps} part="panel" />
               ) : undefined
             }
           />
-          <OrganizationalPoliciesPanel
-            search={contentSearch}
-            policyFilters={policyTabFilters}
-            viewMode={viewMode === "card" ? "cards" : "list"}
-            canManageFolders={
-              currentUser.data?.is_document_manager === true || canCreateFolder
-            }
-            onCategoriesLoaded={setPolicyCategories}
-          />
-        </section>
-      ) : (
-        <div className="org-library-shell flex min-h-[min(72vh,52rem)] flex-col gap-4 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:gap-6 lg:p-5">
-          <div className="w-full shrink-0 lg:w-60 xl:w-72">
-            <OrgFolderNavTree
-              folders={folders.data ?? []}
-              activeFolderId={activeFolderId}
-              kindFilter={kindFilter}
-              search={treeSearch}
-              onSearchChange={setTreeSearch}
-              onSelectFolder={setFolderInUrl}
-              treeVisibleIds={treeVisibleIds}
+          {activeFolderId && activeFolder ? (
+            <OrganizationFolderPage
+              embedded
+              folderId={activeFolderId}
+              viewMode={folderViewMode}
+              onViewModeChange={setFolderViewMode}
+              onNavigateToFolder={setFolderInUrl}
+              contentSearch={contentSearch}
+              onContentSearchChange={setContentSearch}
             />
-          </div>
-
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-xl border border-slate-200 bg-white lg:border-0">
-            <AppToolbar
+          ) : kindFilter === "documents" ? (
+            <OrgLibraryDocumentsContents
               search={contentSearch}
-              onSearchChange={setContentSearch}
-              searchPlaceholder={searchPlaceholder}
-              extras={
-                activeFolderId ? undefined : (
-                  <OrgLibraryFilterBar {...filterBarProps} part="trigger" />
-                )
-              }
-              footer={
-                !activeFolderId && filtersExpanded ? (
-                  <OrgLibraryFilterBar {...filterBarProps} part="panel" />
-                ) : undefined
-              }
+              documentFilters={documentTabFilters}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
             />
-            {activeFolderId && activeFolder ? (
-              <OrganizationFolderPage
-                embedded
-                folderId={activeFolderId}
-                viewMode={folderViewMode}
-                onViewModeChange={setFolderViewMode}
-                onNavigateToFolder={setFolderInUrl}
-                contentSearch={contentSearch}
-                onContentSearchChange={setContentSearch}
-              />
-            ) : kindFilter === "documents" ? (
-              <OrgLibraryDocumentsContents
-                search={contentSearch}
-                documentFilters={documentTabFilters}
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-              />
-            ) : (
-              <OrgLibraryRootContents
-                folders={folders.data ?? []}
-                kindFilter={kindFilter}
-                search={contentSearch}
-                folderFilters={folderFilters}
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                onOpenFolder={(id) => setFolderInUrl(id)}
-              />
-            )}
-          </div>
-
-          {activeFolder ? (
-            <div className="hidden w-full shrink-0 xl:block xl:w-80 2xl:w-96">
-              <OrgFolderInspector
-                folder={activeFolder}
-                folderDocuments={folderDocuments.data ?? []}
-              />
-            </div>
-          ) : null}
+          ) : kindFilter === "policy" ? (
+            <OrganizationalPoliciesPanel
+              search={contentSearch}
+              policyFilters={policyTabFilters}
+              viewMode={viewMode === "card" ? "cards" : "list"}
+              canManageFolders={
+                currentUser.data?.is_document_manager === true || canCreateFolder
+              }
+              onCategoriesLoaded={setPolicyCategories}
+            />
+          ) : (
+            <OrgLibraryRootContents
+              folders={folders.data ?? []}
+              kindFilter={kindFilter}
+              search={contentSearch}
+              folderFilters={folderFilters}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              onOpenFolder={(id) => setFolderInUrl(id)}
+            />
+          )}
         </div>
-      )}
+
+        {activeFolder ? (
+          <div className="hidden w-full shrink-0 xl:block xl:w-80 2xl:w-96">
+            <OrgFolderInspector
+              folder={activeFolder}
+              folderDocuments={folderDocuments.data ?? []}
+            />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

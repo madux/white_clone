@@ -352,8 +352,9 @@ class DocOrganizationalApprovalService(models.AbstractModel):
             "parent_id": int(payload.get("parent_id") or 0) or False,
             "retention_period": payload.get("retention_period") or "7",
         }
-        if payload.get("folder_color"):
-            vals["folder_color"] = payload.get("folder_color")
+        color_hex = (payload.get("color_hex") or payload.get("folder_color") or "").strip()
+        if color_hex:
+            vals["color_hex"] = color_hex
         department_ids = [int(x) for x in (payload.get("department_ids") or []) if str(x).isdigit()]
         grade_ids = [int(x) for x in (payload.get("grade_ids") or []) if str(x).isdigit()]
         employee_ids = [int(x) for x in (payload.get("employee_ids") or []) if str(x).isdigit()]

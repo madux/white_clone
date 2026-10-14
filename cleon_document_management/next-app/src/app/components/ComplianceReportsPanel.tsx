@@ -9,6 +9,7 @@ import {
   FileWarning,
   ShieldAlert,
   UserCheck,
+  History,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
@@ -202,6 +203,40 @@ const REPORTS: ReportConfig[] = [
       String(item.valid_until || ""),
       formatStatusLabel(String(item.status || "")),
       item.active ? "Yes" : "No",
+    ],
+  },
+  {
+    id: "retention_items",
+    label: "Retention due & safeguards",
+    description:
+      "Employee file documents tracked by retention policies: due to archive or delete (report only), on hold, backup blocks, and pending owner approval.",
+    icon: History,
+    filename: "retention-due-and-safeguards.csv",
+    csvHeaders: [
+      "Policy",
+      "Employee",
+      "Document",
+      "Document type",
+      "State",
+      "Report reason",
+      "Archive due",
+      "Delete due",
+      "Clock start",
+      "Last evaluated",
+      "Last error",
+    ],
+    csvRow: (item) => [
+      String(item.policy || ""),
+      String(item.employee || ""),
+      String(item.document || ""),
+      String(item.document_type || ""),
+      formatStatusLabel(String(item.state || "")),
+      formatStatusLabel(String(item.reported_reason || "")),
+      String(item.archive_due || ""),
+      String(item.delete_due || ""),
+      String(item.clock_start || ""),
+      String(item.last_evaluated_at || ""),
+      String(item.last_error || ""),
     ],
   },
   {

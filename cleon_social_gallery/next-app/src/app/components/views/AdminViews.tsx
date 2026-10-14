@@ -4,10 +4,11 @@ import { useMemo, useState } from "react";
 import {
   Bot, CheckCircle2, Copy, Flag, History, Recycle, ShieldAlert, Trash2, User,
 } from "lucide-react";
-import type { AuditLogEntry, DuplicateGroup, FlaggedReport, GalleryMedia, UploadHistoryEntry } from "@/lib/types";
+import type { AuditLogEntry, DuplicateGroup, FlaggedReport, GalleryAlbum, GalleryMedia, UploadHistoryEntry } from "@/lib/types";
 import { formatBytes, formatDate } from "@/lib/api";
 import { MediaThumb, StatusBadge } from "../shared/MediaThumb";
 import { useGalleryMutations } from "@/hooks/useSocialGallery";
+import AppSelect from "../shared/AppSelect";
 import { BatchToolbar } from "../shared/BatchToolbar";
 import { EmptyState } from "../shared/EmptyState";
 import { LoadingState } from "../shared/LoadingState";
@@ -19,19 +20,24 @@ import { QueryError } from "../shared/QueryError";
 import { useGalleryContributions } from "@/hooks/useSocialGallery";
 
 export function PendingReviewView({
-  media, loading, albums, onRefresh, error, onError,
+  media, pendingAlbums = [], loading, albums, onRefresh, error, onError, isAdmin = false,
 }: {
   media: GalleryMedia[];
+  pendingAlbums?: GalleryAlbum[];
   loading: boolean;
-  albums: Array<{ id: number; name: string }>;
+  albums: Array<{ id: number; name: string; status?: string }>;
   onRefresh: () => void;
   error?: string;
   onError?: (message: string) => void;
+  isAdmin?: boolean;
 }) {
-  const { mediaApproval, mediaBatchAction } = useGalleryMutations();
+  const { mediaApproval, mediaBatchAction, albumAction } = useGalleryMutations();
+  const [tab, setTab] = useState<"media" | "albums">("media");
   const [selected, setSelected] = useState<number[]>([]);
   const [albumId, setAlbumId] = useState<number | "">("");
   const [comment, setComment] = useState("");
+  const [albumRejectReason, setAlbumRejectReason] = useState("");
+  const approvedAlbums = albums.filter((a) => a.status === "approved" || !a.status);
 
   const toggle = (id: number) => setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   const allSelected = selected.length === media.length && media.length > 0;
@@ -40,7 +46,7 @@ export function PendingReviewView({
 
   if (loading) return <LoadingState message="Loading pending media…" />;
   if (error) return <QueryError message={error} />;
-  if (media.length === 0) {
+  if (!loading && media.length === 0 && pendingAlbums.length === 0) {
     return (
       <EmptyState
         icon={CheckCircle2}
@@ -52,14 +58,62 @@ export function PendingReviewView({
 
   return (
     <div>
+      {isAdmin && (
+        <div className="settings-modal-tabs" style={{ marginBottom: 16 }}>
+          <button type="button" className={tab === "media" ? "active" : ""} onClick={() => setTab("media")}>Media</button>
+          <button type="button" className={tab === "albums" ? "active" : ""} onClick={() => setTab("albums")}>Albums</button>
+        </div>
+      )}
+      {tab === "albums" && isAdmin ? (
+        <div className="stack-list">
+          {pendingAlbums.length === 0 ? (
+            <EmptyState icon={CheckCircle2} title="No pending albums" description="Supervisor albums awaiting approval will appear here." />
+          ) : pendingAlbums.map((album) => (
+            <div key={album.id} className="approval-row">
+              <div className="profile-copy">
+                <strong>{album.name}</strong>
+                <span>{album.created_by_name} · {album.visibility}</span>
+                {album.description && <span className="meta-muted">{album.description}</span>}
+              </div>
+              <div className="field">
+                <input value={albumRejectReason} onChange={(e) => setAlbumRejectReason(e.target.value)} placeholder="Rejection reason (required to reject)" />
+              </div>
+              <div className="media-list-actions">
+                <button
+                  type="button"
+                  className="secondary-button small"
+                  onClick={() => albumAction.mutateAsync({ id: album.id, action: "approve" }).then(onRefresh).catch(handleError)}
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  className="danger-button small"
+                  disabled={!albumRejectReason.trim()}
+                  onClick={() => albumAction.mutateAsync({ id: album.id, action: "reject", comment: albumRejectReason }).then(onRefresh).catch(handleError)}
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
       <PageToolbar
         left={(
           <>
             <div className="field">
-              <select value={albumId} onChange={(e) => setAlbumId(e.target.value ? Number(e.target.value) : "")}>
-                <option value="">Select destination album</option>
-                {albums.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
+              <AppSelect
+                value={albumId === "" ? "" : String(albumId)}
+                placeholder="Select destination album"
+                options={[
+                  { value: "", label: "Select destination album" },
+                  ...approvedAlbums.map((a) => ({ value: String(a.id), label: a.name })),
+                ]}
+                onChange={(value) => setAlbumId(value ? Number(value) : "")}
+                ariaLabel="Destination album for approval"
+              />
             </div>
             <div className="field">
               <input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Rejection reason / note" />
@@ -87,7 +141,7 @@ export function PendingReviewView({
             <button
               type="button"
               className="danger-button small"
-              disabled={!selected.length}
+              disabled={!selected.length || !comment.trim()}
               onClick={() => mediaBatchAction.mutateAsync({ ids: selected, action: "reject", comment }).then(() => { setSelected([]); onRefresh(); }).catch(handleError)}
             >
               Reject Selected
@@ -111,6 +165,7 @@ export function PendingReviewView({
             <div className="profile-copy">
               <strong>{item.display_name}</strong>
               <span>{item.uploaded_by_name} · {formatBytes(item.file_size)} · {formatDate(item.create_date)}</span>
+              {item.is_unassigned && <span className="status-badge pending">No album selected</span>}
             </div>
             <div className="media-list-actions">
               <button
@@ -129,6 +184,7 @@ export function PendingReviewView({
               <button
                 type="button"
                 className="danger-button small"
+                disabled={!comment.trim()}
                 onClick={() => mediaApproval.mutateAsync({ id: item.id, action: "reject", comment }).then(onRefresh).catch(handleError)}
               >
                 Reject
@@ -137,6 +193,8 @@ export function PendingReviewView({
           </div>
         ))}
       </div>
+        </>
+      )}
     </div>
   );
 }
@@ -294,21 +352,23 @@ export function FlaggedContentView({
 }
 
 export function RecycleBinView({
-  media, loading, onRefresh, isAdmin, onError,
+  payload, loading, onRefresh, isAdmin, onError,
 }: {
-  media: GalleryMedia[];
+  payload?: { albums: Array<{ id: number; name: string; media_count: number; deleted_at: string; deleted_by_name: string; media: GalleryMedia[] }>; media: GalleryMedia[] };
   loading: boolean;
   onRefresh: () => void;
   isAdmin: boolean;
   onError?: (message: string) => void;
 }) {
-  const { mediaBatchAction, recycleClear } = useGalleryMutations();
+  const { mediaBatchAction, recycleClear, albumAction } = useGalleryMutations();
+  const media = payload?.media || [];
+  const albumGroups = payload?.albums || [];
   const [selected, setSelected] = useState<number[]>([]);
   const allSelected = selected.length === media.length && media.length > 0;
   const handleError = (err: unknown) => onError?.(err instanceof Error ? err.message : "Action failed");
 
   if (loading) return <LoadingState message="Loading recycle bin…" />;
-  if (media.length === 0) {
+  if (media.length === 0 && albumGroups.length === 0) {
     return <EmptyState icon={Recycle} title="Recycle bin is empty" description="Deleted media will appear here before permanent purge." />;
   }
 
@@ -340,6 +400,22 @@ export function RecycleBinView({
         )}
       </BatchToolbar>
 
+      {albumGroups.map((group) => (
+        <div key={group.id} className="duplicate-group" style={{ marginBottom: 16 }}>
+          <div className="profile-copy">
+            <strong>{group.name}</strong>
+            <span>{group.media_count} items · Deleted {formatDate(group.deleted_at)} by {group.deleted_by_name}</span>
+          </div>
+          <button
+            type="button"
+            className="secondary-button small"
+            onClick={() => albumAction.mutateAsync({ id: group.id, action: "restore" }).then(onRefresh).catch(handleError)}
+          >
+            Restore album and items
+          </button>
+        </div>
+      ))}
+
       <div className="stack-list">
         {media.map((item) => (
           <div key={item.id} className="recycle-row">
@@ -370,38 +446,25 @@ export function RecycleBinView({
 
 export function ContributionsView({
   onOpenMedia,
-  isAdmin = false,
-  albums = [],
   onRefresh,
   onError,
 }: {
   media?: GalleryMedia[];
   loading?: boolean;
   onOpenMedia?: (media: GalleryMedia) => void;
-  isAdmin?: boolean;
-  albums?: Array<{ id: number; name: string }>;
   onRefresh?: () => void;
   onError?: (message: string) => void;
 }) {
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selected, setSelected] = useState<number[]>([]);
-  const [albumId, setAlbumId] = useState<number | "">("");
-  const [comment, setComment] = useState("");
   const contributionsQuery = useGalleryContributions(statusFilter, true);
-  const { mediaBatchAction } = useGalleryMutations();
+  const { mediaAction } = useGalleryMutations();
   const media = contributionsQuery.data || [];
   const loading = contributionsQuery.isLoading;
-  const allSelected = selected.length === media.length && media.length > 0;
   const handleError = (err: unknown) => onError?.(err instanceof Error ? err.message : "Action failed");
-  const toggle = (id: number) => setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   const refresh = () => {
     contributionsQuery.refetch();
     onRefresh?.();
   };
-  const canApproveSelected = selected.length > 0 && selected.every((id) => {
-    const item = media.find((m) => m.id === id);
-    return albumId || item?.album_id;
-  });
 
   if (loading) return <LoadingState message="Loading your contributions…" />;
   if (media.length === 0) {
@@ -415,7 +478,7 @@ export function ContributionsView({
                   key={status}
                   type="button"
                   className={statusFilter === status ? "active" : ""}
-                  onClick={() => { setStatusFilter(status); setSelected([]); }}
+                  onClick={() => setStatusFilter(status)}
                 >
                   {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
                 </button>
@@ -438,113 +501,54 @@ export function ContributionsView({
                 key={status}
                 type="button"
                 className={statusFilter === status ? "active" : ""}
-                onClick={() => { setStatusFilter(status); setSelected([]); }}
+                onClick={() => setStatusFilter(status)}
               >
                 {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
               </button>
             ))}
           </div>
         )}
-        right={isAdmin ? (
-          <>
-            <div className="field">
-              <select value={albumId} onChange={(e) => setAlbumId(e.target.value ? Number(e.target.value) : "")}>
-                <option value="">Destination album</option>
-                {albums.map((album) => <option key={album.id} value={album.id}>{album.name}</option>)}
-              </select>
-            </div>
-            <div className="field">
-              <input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Rejection note" />
-            </div>
-          </>
-        ) : undefined}
       />
-
-      {isAdmin && (
-        <BatchToolbar
-          count={selected.length}
-          total={media.length}
-          onClear={() => setSelected([])}
-          onToggleAll={() => setSelected(allSelected ? [] : media.map((m) => m.id))}
-        >
-          <button
-            type="button"
-            className="secondary-button small"
-            disabled={!canApproveSelected}
-            onClick={() => mediaBatchAction.mutateAsync({
-              ids: selected,
-              action: "approve",
-              album_id: albumId || undefined,
-              comment,
-            }).then(() => { setSelected([]); refresh(); }).catch(handleError)}
-          >
-            Approve Selected
-          </button>
-          <button
-            type="button"
-            className="danger-button small"
-            disabled={!selected.length}
-            onClick={() => mediaBatchAction.mutateAsync({
-              ids: selected,
-              action: "reject",
-              comment,
-            }).then(() => { setSelected([]); refresh(); }).catch(handleError)}
-          >
-            Reject Selected
-          </button>
-          <button
-            type="button"
-            className="danger-button small"
-            disabled={!selected.length}
-            onClick={() => {
-              if (!window.confirm(`Move ${selected.length} item(s) to the recycle bin?`)) return;
-              mediaBatchAction.mutateAsync({ ids: selected, action: "delete" })
-                .then(() => { setSelected([]); refresh(); })
-                .catch(handleError);
-            }}
-          >
-            <Trash2 size={14} />
-            Delete Selected
-          </button>
-        </BatchToolbar>
-      )}
 
       <div className="analytics-table-wrap">
         <table>
           <thead>
             <tr>
-              {isAdmin && <th aria-label="Select" />}
               <th>Preview</th>
               <th>File</th>
               <th>Status</th>
               <th>Album</th>
+              <th>Review note</th>
               <th>Uploaded</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {media.map((item) => (
               <tr
                 key={item.id}
-                className={`clickable-row ${selected.includes(item.id) ? "is-selected" : ""}`}
+                className="clickable-row"
                 onClick={() => onOpenMedia?.(item)}
                 role="button"
                 tabIndex={0}
               >
-                {isAdmin && (
-                  <td onClick={(event) => event.stopPropagation()}>
-                    <input
-                      className="sg-check media-select-check"
-                      type="checkbox"
-                      checked={selected.includes(item.id)}
-                      onChange={() => toggle(item.id)}
-                    />
-                  </td>
-                )}
                 <td><MediaThumb media={item} className="list-thumb" showOverlay={false} /></td>
                 <td>{item.display_name}</td>
                 <td><StatusBadge status={item.approval_status} /></td>
-                <td>{item.album_name || "—"}</td>
+                <td>{item.album_name || "No album selected"}</td>
+                <td>{item.approver_comment || "—"}</td>
                 <td>{formatDate(item.create_date)}</td>
+                <td onClick={(event) => event.stopPropagation()}>
+                  {item.can_withdraw && (
+                    <button
+                      type="button"
+                      className="secondary-button small"
+                      onClick={() => mediaAction.mutateAsync({ id: item.id, action: "withdraw" }).then(refresh).catch(handleError)}
+                    >
+                      Withdraw
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -637,16 +641,28 @@ export function AuditLogView({
         left={(
           <>
             <div className="field">
-              <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
-                <option value="">All events</option>
-                {events.map((event) => <option key={event} value={event}>{event}</option>)}
-              </select>
+              <AppSelect
+                value={eventFilter}
+                placeholder="All events"
+                options={[
+                  { value: "", label: "All events" },
+                  ...events.map((event) => ({ value: event, label: event })),
+                ]}
+                onChange={setEventFilter}
+                ariaLabel="Filter audit events"
+              />
             </div>
             <div className="field">
-              <select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)}>
-                <option value="">All entities</option>
-                {entities.map((entity) => <option key={entity} value={entity}>{entity}</option>)}
-              </select>
+              <AppSelect
+                value={entityFilter}
+                placeholder="All entities"
+                options={[
+                  { value: "", label: "All entities" },
+                  ...entities.map((entity) => ({ value: entity, label: entity })),
+                ]}
+                onChange={setEntityFilter}
+                ariaLabel="Filter audit entities"
+              />
             </div>
           </>
         )}

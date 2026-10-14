@@ -8,15 +8,10 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { complianceRuleCreatePath } from "../../../../lib/complianceRuleCreatePath";
-import {
-  clearComplianceRuleCreateDraft,
-  readComplianceRuleCreateDraft,
-  writeComplianceRuleCreateDraft,
-} from "../../../../lib/complianceRuleCreateDraft";
+import { clearComplianceRuleCreateDraft } from "../../../../lib/complianceRuleCreateDraft";
 import {
   buildCreatePolicyPayload,
   defaultPolicyForm,
@@ -34,7 +29,7 @@ import {
 import { useAppDialog } from "../../../../hooks/useAppDialog";
 import { api } from "../../../../lib/api";
 import BackButton from "../BackButton";
-import ComplianceDocumentTypeMultiSelect from "../ComplianceDocumentTypeMultiSelect";
+import { AiPolicyDocumentTypePicker } from "./AiPolicyDocumentTypePicker";
 import { PolicyForm } from "../CompliancePage";
 import ThemedSelect from "../ThemedSelect";
 
@@ -75,23 +70,9 @@ export default function ComplianceRuleCreatePage() {
   const [aiPolicyTypeId, setAiPolicyTypeId] = useState("");
   const [aiDocumentTypeIds, setAiDocumentTypeIds] = useState<number[]>([]);
   const [aiPending, setAiPending] = useState(false);
-  const draftHydrated = useRef(false);
 
   useEffect(() => {
-    if (draftHydrated.current) return;
-    draftHydrated.current = true;
-    const draft = readComplianceRuleCreateDraft();
-    if (!draft) return;
-    setPolicyForm(draft.policyForm);
-    setPolicyReviewMeta(draft.reviewMeta);
-    setWizardProgress({
-      step: draft.configureStep,
-      wizardStep: draft.wizardStep,
-    });
-    setAiName(draft.ai.name);
-    setAiDescription(draft.ai.description);
-    setAiPolicyTypeId(draft.ai.policyTypeId);
-    setAiDocumentTypeIds(draft.ai.documentTypeIds);
+    clearComplianceRuleCreateDraft();
   }, []);
 
   const handleWizardStateChange = useCallback((next: WizardProgress) => {
@@ -102,40 +83,22 @@ export default function ComplianceRuleCreatePage() {
     );
   }, []);
 
-  const persistDraft = useCallback(() => {
-    writeComplianceRuleCreateDraft({
-      v: 2,
-      policyForm,
-      reviewMeta: policyReviewMeta,
-      configureStep: wizardProgress.step,
-      wizardStep: wizardProgress.wizardStep,
-      ai: {
-        name: aiName,
-        description: aiDescription,
-        policyTypeId: aiPolicyTypeId,
-        documentTypeIds: aiDocumentTypeIds,
-      },
-    });
-  }, [
-    aiDescription,
-    aiDocumentTypeIds,
-    aiName,
-    aiPolicyTypeId,
-    policyForm,
-    policyReviewMeta,
-    wizardProgress,
-  ]);
-
-  useEffect(() => {
-    if (!draftHydrated.current) return;
-    persistDraft();
-  }, [persistDraft]);
+  const handlePolicyTypeChange = useCallback(() => {
+    setPolicyReviewMeta(undefined);
+    setWizardProgress({ step: "configure", wizardStep: 0 });
+    clearComplianceRuleCreateDraft();
+  }, []);
 
   useEffect(() => {
     if (!policyForm.policy_type_id && types.data?.length) {
+      const documentRequirement = types.data.find(
+        (item) => item.code === "document_requirement",
+      );
       setPolicyForm((prev) => ({
         ...prev,
-        policy_type_id: String(types.data![0].id),
+        policy_type_id: String(
+          (documentRequirement ?? types.data![0]).id,
+        ),
       }));
     }
   }, [types.data, policyForm.policy_type_id]);
@@ -258,6 +221,7 @@ export default function ComplianceRuleCreatePage() {
         initialStep={wizardProgress.step}
         initialWizardStep={wizardProgress.wizardStep}
         onWizardStateChange={handleWizardStateChange}
+        onPolicyTypeChange={handlePolicyTypeChange}
         reviewMeta={policyReviewMeta}
         onClose={leaveCreateFlow}
         onSubmit={submitPolicy}
@@ -330,14 +294,13 @@ export default function ComplianceRuleCreatePage() {
                   }))}
                 />
               </label>
-              <div className="block space-y-1 text-sm sm:col-span-2">
-                <span className="font-semibold text-slate-800">Required documents</span>
-                <ComplianceDocumentTypeMultiSelect
-                  types={aiSelectableDocumentTypes}
-                  selected={aiDocumentTypeIds}
-                  onChange={setAiDocumentTypeIds}
-                  placeholder="Select document types"
-                  expiryTypesOnly={aiPolicyTypeCode === "renewable_document"}
+              <div className="sm:col-span-2">
+                <AiPolicyDocumentTypePicker
+                  typeCode={aiPolicyTypeCode}
+                  policyTypeId={aiPolicyTypeId}
+                  documentTypeIds={aiDocumentTypeIds}
+                  onDocumentTypeIdsChange={setAiDocumentTypeIds}
+                  selectableDocumentTypes={aiSelectableDocumentTypes}
                 />
               </div>
             </div>
@@ -388,7 +351,7 @@ export default function ComplianceRuleCreatePage() {
           </span>
           <p className="mt-4 text-base font-bold text-slate-900">Rule wizard</p>
           <p className="mt-1 text-sm text-slate-500">
-            Step through basics, audience, requirements, and timing, then confirm.
+            Step through each section, then confirm.
           </p>
         </Link>
         <Link

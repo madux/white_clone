@@ -6,14 +6,23 @@ import type { DocumentaryMedia } from "../../../../lib/types";
 import { api } from "../../../../lib/api";
 import { AudiencePicker, type AudienceScope } from "./AudiencePicker";
 import { ModalShell } from "./ModalShell";
+import { MediaLifecyclePanel } from "../media/MediaLifecyclePanel";
 
 export function MediaEditModal({
   media,
+  canSetHero = false,
+  isAdministrator = false,
+  isSupervisor = false,
+  userId,
   onClose,
   onSaved,
   onError,
 }: {
   media: DocumentaryMedia;
+  canSetHero?: boolean;
+  isAdministrator?: boolean;
+  isSupervisor?: boolean;
+  userId?: number;
   onClose: () => void;
   onSaved: () => void;
   onError: (message: string) => void;
@@ -27,25 +36,21 @@ export function MediaEditModal({
   const [departmentIds, setDepartmentIds] = useState(
     media.department_ids || [],
   );
-  const [gradeIds, setGradeIds] = useState(media.grade_ids || []);
-  const [employeeIds, setEmployeeIds] = useState(media.employee_ids || []);
-  const [mandatory, setMandatory] = useState(media.mandatory);
-  const [commentsEnabled, setCommentsEnabled] = useState(
-    media.comments_enabled,
-  );
+  const [category, setCategory] = useState(media.category || "general");
+  const [keywords, setKeywords] = useState(media.keywords || "");
+  const [isInternalOnly, setIsInternalOnly] = useState(media.is_internal_only || false);
+  const [isHero, setIsHero] = useState(Boolean(media.is_hero));
   const [downloadPolicy, setDownloadPolicy] = useState(
     media.download_allowed ? "allow" : "deny",
   );
   const [transcript, setTranscript] = useState(media.transcript || "");
-  const [publishAt, setPublishAt] = useState(
-    media.publish_at ? String(media.publish_at).slice(0, 16) : "",
-  );
   const [chaptersText, setChaptersText] = useState(
     (media.chapters || [])
       .map((chapter) => `${chapter.start_seconds}|${chapter.title}`)
       .join("\n"),
   );
   const [loading, setLoading] = useState(false);
+  const [lifecycleMedia, setLifecycleMedia] = useState(media);
   async function save(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
@@ -63,17 +68,16 @@ export function MediaEditModal({
         id: media.id,
         name,
         description,
-        mandatory,
-        comments_enabled: commentsEnabled,
         download_policy: downloadPolicy as "allow" | "deny",
         scope_mode: scopeMode,
         access_scope: scope,
         department_ids: scopeMode === "override" ? departmentIds : [],
-        grade_ids: scopeMode === "override" ? gradeIds : [],
-        employee_ids: scopeMode === "override" ? employeeIds : [],
+        category,
+        keywords,
+        is_internal_only: isInternalOnly,
+        ...(canSetHero ? { is_hero: isHero } : {}),
         transcript,
         chapters,
-        publish_at: publishAt || false,
       });
       onSaved();
     } catch (error) {
@@ -135,40 +139,56 @@ export function MediaEditModal({
             setScope={setScope}
             departmentIds={departmentIds}
             setDepartmentIds={setDepartmentIds}
-            gradeIds={gradeIds}
-            setGradeIds={setGradeIds}
-            employeeIds={employeeIds}
-            setEmployeeIds={setEmployeeIds}
           />
         )}
-        <div className="switch-list">
-          <label className="switch-row">
-            <span>
-              <strong>Mandatory training</strong>
-              <small>Include this video in completion reporting.</small>
-            </span>
-            <input
-              type="checkbox"
-              checked={mandatory}
-              onChange={(event) => setMandatory(event.target.checked)}
-            />
-          </label>
-          <label className="switch-row">
-            <span>
-              <strong>Allow comments</strong>
-              <small>Let viewers leave context below the player.</small>
-            </span>
-            <input
-              type="checkbox"
-              checked={commentsEnabled}
-              onChange={(event) => setCommentsEnabled(event.target.checked)}
-            />
-          </label>
-        </div>
+        <MediaLifecyclePanel
+          media={lifecycleMedia}
+          isAdministrator={isAdministrator}
+          isSupervisor={isSupervisor}
+          userId={userId}
+          compact
+          onUpdated={(updated) => setLifecycleMedia(updated)}
+          onError={onError}
+        />
         <label>
-          Publishing schedule
-          <input type="datetime-local" value={publishAt} onChange={(event) => setPublishAt(event.target.value)} />
+          Category
+          <select value={category} onChange={(event) => setCategory(event.target.value)}>
+            <option value="general">General</option>
+            <option value="onboarding">Onboarding</option>
+            <option value="training">Training</option>
+            <option value="marketing">Marketing</option>
+            <option value="hr_updates">HR Updates</option>
+            <option value="company_events">Company Events</option>
+            <option value="product_launches">Product Launches</option>
+          </select>
         </label>
+        <label>
+          Keywords
+          <input value={keywords} onChange={(event) => setKeywords(event.target.value)} />
+        </label>
+        <label className="switch-row">
+          <span>
+            <strong>Internal only</strong>
+          </span>
+          <input
+            type="checkbox"
+            checked={isInternalOnly}
+            onChange={(event) => setIsInternalOnly(event.target.checked)}
+          />
+        </label>
+        {canSetHero ? (
+          <label className="switch-row">
+            <span>
+              <strong>Home hero video</strong>
+              <small className="form-hint">Featured on Documentary Home (replaces latest-video default).</small>
+            </span>
+            <input
+              type="checkbox"
+              checked={isHero}
+              onChange={(event) => setIsHero(event.target.checked)}
+            />
+          </label>
+        ) : null}
         <label>
           Transcript
           <textarea value={transcript} onChange={(event) => setTranscript(event.target.value)} rows={4} placeholder="Paste or edit the video transcript" />

@@ -50,11 +50,18 @@ class ComplianceEvaluationReviewSchedule(models.Model):
                 lambda r: r.state not in ("completed", "cancelled")
             )
             completed = reviews.filtered(lambda r: r.state == "completed")
-            if escalated:
+            overdue_mode = policy.review_overdue_mode or "after_grace"
+            if not policy.grace_period_enabled and overdue_mode == "after_grace":
+                overdue_mode = "after_due"
+            if escalated and overdue_mode != "never":
                 comp = "non_compliant"
                 status = "non_compliant"
                 reason = "Review overdue after grace period."
-            elif overdue and policy.review_overdue_mode == "after_due":
+            elif escalated and overdue_mode == "never":
+                comp = "at_risk"
+                status = "grace"
+                reason = "Review overdue (no automatic non-compliance)."
+            elif overdue and overdue_mode == "after_due":
                 comp = "at_risk"
                 status = "grace"
                 reason = "Review overdue."

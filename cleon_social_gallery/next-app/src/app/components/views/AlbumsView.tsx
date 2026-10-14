@@ -11,7 +11,16 @@ import { LoadingGrid } from "../shared/LoadingGrid";
 import { PageToolbar } from "../shared/PageToolbar";
 import { AlbumCover } from "../shared/AlbumCover";
 import { LoadMoreFooter } from "../shared/LoadMoreFooter";
+import AppSelect from "../shared/AppSelect";
 import { StatusBadge } from "../shared/StatusBadge";
+
+const ALBUM_SORT_OPTIONS = [
+  { value: "newest", label: "Newest First" },
+  { value: "oldest", label: "Oldest First" },
+  { value: "name", label: "Name (A-Z)" },
+  { value: "photos", label: "Most Photos" },
+  { value: "size", label: "Largest Size" },
+];
 
 interface AlbumsViewProps {
   albums: GalleryAlbum[];
@@ -23,10 +32,11 @@ interface AlbumsViewProps {
   onRefresh: () => void;
   onCreateAlbum?: () => void;
   isManager?: boolean;
+  isAdmin?: boolean;
 }
 
 export default function AlbumsView({
-  albums, loading, total, onLoadMore, loadingMore, onOpenAlbum, onRefresh, onCreateAlbum, isManager,
+  albums, loading, total, onLoadMore, loadingMore, onOpenAlbum, onRefresh, onCreateAlbum, isManager, isAdmin,
 }: AlbumsViewProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [editAlbum, setEditAlbum] = useState<GalleryAlbum | null>(null);
@@ -51,13 +61,12 @@ export default function AlbumsView({
         left={(
           <>
             <div className="field">
-              <select value={sort} onChange={(e) => setSort(e.target.value)}>
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="name">Name (A-Z)</option>
-                <option value="photos">Most Photos</option>
-                <option value="size">Largest Size</option>
-              </select>
+              <AppSelect
+                value={sort}
+                options={ALBUM_SORT_OPTIONS}
+                onChange={setSort}
+                ariaLabel="Sort albums"
+              />
             </div>
             <span className="meta-muted">{total ?? albums.length} albums</span>
           </>
@@ -147,6 +156,7 @@ export default function AlbumsView({
         <EditAlbumModal
           album={editAlbum}
           isManager={!!isManager}
+          isAdmin={!!isAdmin}
           onClose={() => setEditAlbum(null)}
           onSaved={onRefresh}
         />

@@ -4,8 +4,8 @@ import StatusPill from "./StatusPill";
 import type { EmployeeFileIssue } from "../../../lib/types";
 
 function issueTitle(issue: EmployeeFileIssue) {
-  if (issue.source === "exclusion" && issue.issue_type_label?.trim()) {
-    return issue.issue_type_label.trim();
+  if (issue.source === "exclusion") {
+    return issue.classification_label?.trim() || "Excluded";
   }
   return issue.issue_type_label?.trim() || issue.name?.trim() || "Issue";
 }
@@ -32,14 +32,19 @@ export default function EmployeeFileIssueCell({
 }) {
   const title = issueTitle(issue);
   const showName = shouldShowIssueName(issue, title);
+  const hideClassificationBadge =
+    title.trim().toLowerCase() === "excluded" ||
+    classificationLabel.trim().toLowerCase() === "excluded";
 
   return (
     <div className="ef-issue-summary">
       <p className="ef-issue-summary__title">{title}</p>
       {showName ? <p className="ef-issue-summary__name">{issue.name}</p> : null}
-      <div className="ef-issue-summary__meta">
-        <StatusPill label={classificationLabel} tone="attention" />
-      </div>
+      {!hideClassificationBadge ? (
+        <div className="ef-issue-summary__meta">
+          <StatusPill label={classificationLabel} tone="attention" />
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -15,7 +15,9 @@ export const VERIFIED_BY_OPTIONS = Object.entries(VERIFIED_BY_LABELS).map(
 /** Policy types that do not use document verification / verifier SLA settings. */
 export function policyTypeUsesVerification(typeCode: string): boolean {
   return (
-    typeCode !== "review_schedule" && typeCode !== "compliance_request"
+    typeCode !== "review_schedule" &&
+    typeCode !== "compliance_request" &&
+    typeCode !== "retention"
   );
 }
 
@@ -41,7 +43,10 @@ export const APPROVAL_FLOW_LABELS: Record<string, string> = {
  * requires verification, the policy's verifier handles its uploads instead.
  */
 export function approverHandoffTypes(
-  form: Pick<PolicyCreateFormState, "document_type_ids" | "request_tasks">,
+  form: Pick<
+    PolicyCreateFormState,
+    "document_type_ids" | "request_tasks" | "verification_document_type_ids"
+  >,
   typeCode: string,
   documentTypes: DocumentType[] | undefined,
 ): DocumentType[] {
@@ -55,12 +60,9 @@ export function approverHandoffTypes(
   if (typeCode === "compliance_request") {
     return [];
   }
-  const ids = new Set<number>(form.document_type_ids);
+  const verifyIds = new Set<number>(form.verification_document_type_ids ?? []);
   return documentTypes.filter(
     (type) =>
-      ids.has(type.id) &&
-      type.require_upload_approval &&
-      // Older payloads omit the flag; the backend derives it from upload approval by default.
-      (type.verification_required ?? true),
+      verifyIds.has(type.id) && type.require_upload_approval,
   );
 }

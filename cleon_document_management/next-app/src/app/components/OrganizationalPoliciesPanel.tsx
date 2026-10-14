@@ -9,10 +9,13 @@ import type { OrganizationalPolicy } from "../../../lib/types";
 import BulkFolderActions from "./BulkFolderActions";
 import EmptyState from "./EmptyState";
 import OrganizationalPolicyActions from "./OrganizationalPolicyActions";
-import OrgFolderIcon from "./OrgFolderIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { OrgPolicyTabFilters } from "../../../lib/orgLibraryFilters";
+import OrgLibraryItemCardGrid from "./OrgLibraryItemCardGrid";
+import { type LibraryFileRow } from "./LibraryFileTable";
+import StatusPill from "./StatusPill";
+import OrgFolderIcon from "./OrgFolderIcon";
 
 function statusLabel(status: OrganizationalPolicy["lifecycle_status"]) {
   if (status === "active") return "Active";
@@ -123,6 +126,47 @@ export default function OrganizationalPoliciesPanel({
     await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
   };
 
+  const policyCardRows = useMemo((): LibraryFileRow[] => {
+    return items.map((policy) => ({
+      id: String(policy.id),
+      kind: "folder",
+      name: policy.name,
+      subtitle:
+        [
+          policy.category,
+          visibilityLabel(policy.policy_visibility),
+          policy.document_name ? policy.document_name : "No linked document",
+          policy.effective_date ? `Effective ${policy.effective_date}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ") || undefined,
+      folderKind: "policy",
+      folderPreview: { hasContent: Boolean(policy.document_id), documents: [] },
+      href: `/pages/organization/folder?folder=${policy.folder_id}`,
+      modified: policy.updated_at ? policy.updated_at.slice(0, 10) : undefined,
+      modifiedRaw: policy.updated_at || undefined,
+      selected: selectedFolderIds.includes(policy.folder_id),
+      onSelectChange: () => toggleRow(policy.folder_id),
+      status: (
+        <div className="flex flex-wrap items-center justify-center gap-1">
+          <StatusPill label={statusLabel(policy.lifecycle_status)} />
+        </div>
+      ),
+      actions: (
+        <OrganizationalPolicyActions
+          policy={policy}
+          canManage={canManageFolders}
+          onChanged={async () => {
+            setSelectedFolderIds((current) =>
+              current.filter((id) => id !== policy.folder_id),
+            );
+            await invalidatePolicies();
+          }}
+        />
+      ),
+    }));
+  }, [canManageFolders, items, selectedFolderIds]);
+
   if (query.isLoading) {
     return (
       <div className="space-y-3 p-4">
@@ -161,87 +205,12 @@ export default function OrganizationalPoliciesPanel({
           description="Create a policy from + New in a folder to register classified documents here."
         />
       ) : viewMode === "cards" ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {items.map((policy) => (
-            <article
-              key={policy.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-brand-pink/30 hover:shadow-lg hover:shadow-pink-100"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex min-w-0 items-start gap-3">
-                  {canManageFolders ? (
-                    <Checkbox
-                      checked={selectedFolderIds.includes(policy.folder_id)}
-                      onCheckedChange={() => toggleRow(policy.folder_id)}
-                      aria-label={`Select ${policy.name}`}
-                      className="mt-1"
-                    />
-                  ) : null}
-                  <OrgFolderIcon
-                    className="h-10 w-10 shrink-0"
-                    folderKind="policy"
-                    hasContent={Boolean(policy.document_id)}
-                  />
-                </div>
-                <OrganizationalPolicyActions
-                  policy={policy}
-                  canManage={canManageFolders}
-                  onChanged={async () => {
-                    setSelectedFolderIds((current) =>
-                      current.filter((id) => id !== policy.folder_id),
-                    );
-                    await invalidatePolicies();
-                  }}
-                />
-              </div>
-              <h2 className="mt-4 font-bold text-slate-900">
-                <Link
-                  href={`/pages/organization/folder?folder=${policy.folder_id}`}
-                  className="hover:text-brand-pink"
-                >
-                  {policy.name}
-                </Link>
-              </h2>
-              {policy.description ? (
-                <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-500">
-                  {policy.description}
-                </p>
-              ) : null}
-              <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-                <span className={statusBadgeClass(policy.lifecycle_status)}>
-                  {statusLabel(policy.lifecycle_status)}
-                </span>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
-                  {visibilityLabel(policy.policy_visibility)}
-                </span>
-              </div>
-              <dl className="mt-4 grid gap-2 border-t border-slate-100 pt-4 text-xs text-slate-600">
-                <div className="flex justify-between gap-2">
-                  <dt className="font-medium text-slate-500">Category</dt>
-                  <dd className="text-right">{policy.category || "—"}</dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="font-medium text-slate-500">Effective</dt>
-                  <dd className="text-right">
-                    {policy.effective_date || "—"}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="font-medium text-slate-500">Updated</dt>
-                  <dd className="text-right">
-                    {policy.updated_at ? policy.updated_at.slice(0, 10) : "—"}
-                  </dd>
-                </div>
-                {policy.document_name ? (
-                  <div className="flex justify-between gap-2">
-                    <dt className="font-medium text-slate-500">Document</dt>
-                    <dd className="truncate text-right">{policy.document_name}</dd>
-                  </div>
-                ) : null}
-              </dl>
-            </article>
-          ))}
-        </div>
+        <OrgLibraryItemCardGrid
+          rows={policyCardRows}
+          selectable={canManageFolders}
+          emptyTitle="No policies yet"
+          emptyDescription="Create a policy from + New in a folder to register classified documents here."
+        />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200">
           <table className="min-w-full text-left text-sm">

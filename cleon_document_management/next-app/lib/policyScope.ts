@@ -63,16 +63,14 @@ export function policyScopeFromApi(policy: {
   return scope;
 }
 
-export function buildScopePayload(
+export function appliesToFromPolicyScope(
   scope: PolicyScopeState,
-  appliesTo?: string,
-) {
-  const filtered = hasPolicyScopeFilters(scope);
-  const applies_to = filtered
-    ? "filtered"
-    : appliesTo === "filtered"
-      ? "filtered"
-      : "all";
+): "all" | "filtered" {
+  return hasPolicyScopeFilters(scope) ? "filtered" : "all";
+}
+
+export function buildScopePayload(scope: PolicyScopeState) {
+  const applies_to = appliesToFromPolicyScope(scope);
   return {
     applies_to,
     department_ids: scope.department_ids,
@@ -159,6 +157,142 @@ export function toggleScopeId(
     ? current.filter((item) => item !== id)
     : [...current, id];
   return { ...scope, [key]: next };
+}
+
+export function addScopeId(
+  scope: PolicyScopeState,
+  key: keyof PolicyScopeState,
+  id: number,
+): PolicyScopeState {
+  if (scope[key].includes(id)) {
+    return scope;
+  }
+  return { ...scope, [key]: [...scope[key], id] };
+}
+
+/** Select a department/grade/etc. and drop redundant individual picks for that group. */
+export function pickScopeDimension(
+  scope: PolicyScopeState,
+  key: keyof PolicyScopeState,
+  id: number,
+  targets?: PolicyScopeTargets,
+): PolicyScopeState {
+  if (key === "employee_ids") {
+    return addScopeId(scope, key, id);
+  }
+  const members = listEmployeesInScopeDimension(key, id, targets);
+  const memberIds = new Set(members.map((row) => row.id));
+  const next = addScopeId(scope, key, id);
+  return {
+    ...next,
+    employee_ids: next.employee_ids.filter((empId) => !memberIds.has(empId)),
+  };
+}
+
+export function unpickScopeDimension(
+  scope: PolicyScopeState,
+  key: keyof PolicyScopeState,
+  id: number,
+  targets?: PolicyScopeTargets,
+): PolicyScopeState {
+  const members = listEmployeesInScopeDimension(key, id, targets);
+  const memberIds = new Set(members.map((row) => row.id));
+  const next = removeScopeId(scope, key, id);
+  return {
+    ...next,
+    employee_ids: next.employee_ids.filter((empId) => !memberIds.has(empId)),
+  };
+}
+
+export function isEmployeeInPolicyScope(
+  employeeId: number,
+  scope: PolicyScopeState,
+  targets?: PolicyScopeTargets,
+): boolean {
+  const employee = targets?.employees?.find((row) => row.id === employeeId);
+  if (!employee) return false;
+  return employeeMatchesPolicyScope(employee, scope);
+}
+
+export function countEmployeesPickedInDimension(
+  key: keyof PolicyScopeState,
+  id: number,
+  scope: PolicyScopeState,
+  targets?: PolicyScopeTargets,
+  memberFilter?: (employee: NonNullable<PolicyScopeTargets["employees"]>[number]) => boolean,
+): { picked: number; total: number } {
+  const members = listEmployeesInScopeDimension(key, id, targets).filter((row) =>
+    memberFilter ? memberFilter(row) : true,
+  );
+  const dimensionSelected = key === "employee_ids" ? false : scope[key].includes(id);
+  if (dimensionSelected) {
+    return { picked: members.length, total: members.length };
+  }
+  const picked = members.filter((row) =>
+    isEmployeeInPolicyScope(row.id, scope, targets),
+  ).length;
+  return { picked, total: members.length };
+}
+
+export function pickAllEmployeesInDimension(
+  scope: PolicyScopeState,
+  key: keyof PolicyScopeState,
+  id: number,
+  targets?: PolicyScopeTargets,
+  memberFilter?: (employee: NonNullable<PolicyScopeTargets["employees"]>[number]) => boolean,
+): PolicyScopeState {
+  const members = listEmployeesInScopeDimension(key, id, targets).filter((row) =>
+    memberFilter ? memberFilter(row) : true,
+  );
+  if (!members.length) return scope;
+  if (key !== "employee_ids") {
+    return pickScopeDimension(scope, key, id, targets);
+  }
+  const ids = new Set(scope.employee_ids);
+  for (const member of members) {
+    ids.add(member.id);
+  }
+  return { ...scope, employee_ids: [...ids] };
+}
+
+export function unpickAllEmployeesInDimension(
+  scope: PolicyScopeState,
+  key: keyof PolicyScopeState,
+  id: number,
+  targets?: PolicyScopeTargets,
+  memberFilter?: (employee: NonNullable<PolicyScopeTargets["employees"]>[number]) => boolean,
+): PolicyScopeState {
+  const members = listEmployeesInScopeDimension(key, id, targets).filter((row) =>
+    memberFilter ? memberFilter(row) : true,
+  );
+  let next = scope;
+  if (key !== "employee_ids" && next[key].includes(id)) {
+    next = unpickScopeDimension(next, key, id, targets);
+  }
+  for (const member of members) {
+    if (isEmployeeInPolicyScope(member.id, next, targets)) {
+      next = removeEmployeeFromPolicyScope(member.id, next, targets);
+    }
+  }
+  return next;
+}
+
+export function toggleEmployeeInPolicyScope(
+  employeeId: number,
+  scope: PolicyScopeState,
+  targets?: PolicyScopeTargets,
+): PolicyScopeState {
+  if (isEmployeeInPolicyScope(employeeId, scope, targets)) {
+    return removeEmployeeFromPolicyScope(employeeId, scope, targets);
+  }
+  return addScopeId(scope, "employee_ids", employeeId);
+}
+
+export function countUniqueDirectoryMembersInScope(
+  scope: PolicyScopeState,
+  targets?: PolicyScopeTargets,
+): number {
+  return listEmployeesInPolicyScope(scope, targets).length;
 }
 
 export function removeScopeId(

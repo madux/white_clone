@@ -36,24 +36,87 @@ class ComplianceEngine(models.AbstractModel):
         today = fields.Date.context_today(self)
         effective = policy.effective_date or today
         trigger = self._employee_start_date(employee)
+        code = policy.policy_type_id.code if policy.policy_type_id else ""
+        if code == "document_requirement" and policy.event_trigger:
+            anchor = self.env[
+                "doc.compliance.document_requirement.engine"
+            ].document_requirement_anchor_date(policy, employee)
+            if anchor:
+                trigger = anchor
         if trigger < effective:
             trigger = effective
         due_days = due_days if due_days is not None else max(policy.due_days or 0, 0)
-        grace_days = (
-            grace_days
-            if grace_days is not None
-            else max(policy.grace_period_days or 0, 0)
-        )
+        if grace_days is None:
+            grace_days = (
+                max(policy.grace_period_days or 0, 0)
+                if getattr(policy, "grace_period_enabled", False)
+                else 0
+            )
+        elif not getattr(policy, "grace_period_enabled", False):
+            grace_days = 0
         due_date = trigger + timedelta(days=due_days)
         grace_end = due_date + timedelta(days=grace_days)
+        mode = self._effective_non_compliance_mode(policy)
+        if mode == "after_due":
+            non_compliance_date = due_date + timedelta(days=1)
+        elif mode == "never":
+            non_compliance_date = False
+        else:
+            non_compliance_date = grace_end + timedelta(days=1) if grace_days else due_date + timedelta(days=1)
         return {
             "trigger_date": trigger,
             "due_date": due_date,
             "grace_end_date": grace_end,
-            "non_compliance_date": grace_end + timedelta(days=1)
-            if grace_days
-            else due_date + timedelta(days=1),
+            "non_compliance_date": non_compliance_date,
         }
+
+    @api.model
+    def _effective_non_compliance_mode(self, policy):
+        mode = policy.non_compliance_mode or "after_grace"
+        if not getattr(policy, "grace_period_enabled", False) and mode == "after_grace":
+            return "after_due"
+        return mode
+
+    @api.model
+    def _missing_document_timeline_status(self, policy, dates, today):
+        """Map overdue missing documents to compliance + legacy line status."""
+        due = dates["due_date"]
+        grace_end = dates["grace_end_date"]
+        mode = self._effective_non_compliance_mode(policy)
+        if today <= due:
+            return (
+                "at_risk",
+                "grace",
+                "due_in_days",
+                "Due %s" % due,
+            )
+        if mode == "never":
+            return (
+                "at_risk",
+                "grace",
+                "overdue_no_auto",
+                "Overdue · no automatic non-compliance",
+            )
+        if mode == "after_due":
+            return (
+                "non_compliant",
+                "missing",
+                "overdue",
+                "Overdue since %s" % due,
+            )
+        if today <= grace_end:
+            return (
+                "at_risk",
+                "grace",
+                "grace_remaining",
+                "Overdue · grace until %s" % grace_end,
+            )
+        return (
+            "non_compliant",
+            "missing",
+            "overdue",
+            "Overdue since %s" % due,
+        )
 
     @api.model
     def _current_documents(self, employee, document_type):
@@ -71,8 +134,13 @@ class ComplianceEngine(models.AbstractModel):
         )
 
     @api.model
-    def _document_is_verified(self, document, document_type):
-        if document_type.verification_required:
+    def _document_is_verified(self, document, document_type, policy=None):
+        requires_verification = False
+        if policy and hasattr(policy, "policy_requires_compliance_verification"):
+            requires_verification = policy.policy_requires_compliance_verification(
+                document_type
+            )
+        if requires_verification:
             service = self.env["doc.compliance.verification.service"].sudo()
             if service.document_pending_verification(document):
                 return False
@@ -135,7 +203,7 @@ class ComplianceEngine(models.AbstractModel):
                     continue
                 if document.expiry_date < today:
                     continue
-            if not self._document_is_verified(document, document_type):
+            if not self._document_is_verified(document, document_type, policy=policy):
                 if document.approval_state == "rejected":
                     rejected_doc = document
                 else:
@@ -214,12 +282,14 @@ class ComplianceEngine(models.AbstractModel):
                     break
 
         if missing_expiry and not valid_docs:
-            comp = "at_risk" if today <= dates["grace_end_date"] else "non_compliant"
+            comp, legacy, reason, msg = self._missing_document_timeline_status(
+                policy, dates, today
+            )
             return {
-                "status": "grace" if comp == "at_risk" else "missing",
+                "status": legacy,
                 "compliance_status": comp,
-                "reason_code": "expiry_missing",
-                "reason_message": "Expiry date missing",
+                "reason_code": reason if reason != "due_in_days" else "expiry_missing",
+                "reason_message": msg if reason != "due_in_days" else "Expiry date missing",
                 "required_count": required,
                 "matched_count": 0,
                 "document_ids": documents.ids,
@@ -227,21 +297,9 @@ class ComplianceEngine(models.AbstractModel):
                 "grace_end_date": dates["grace_end_date"],
             }
 
-        if today <= dates["due_date"]:
-            comp = "at_risk"
-            legacy = "grace"
-            reason = "due_in_days"
-            msg = "Due %s" % dates["due_date"]
-        elif today <= dates["grace_end_date"]:
-            comp = "at_risk"
-            legacy = "grace"
-            reason = "grace_remaining"
-            msg = "Overdue · grace until %s" % dates["grace_end_date"]
-        else:
-            comp = "non_compliant"
-            legacy = "missing"
-            reason = "overdue"
-            msg = "Overdue since %s" % dates["due_date"]
+        comp, legacy, reason, msg = self._missing_document_timeline_status(
+            policy, dates, today
+        )
 
         code = policy.policy_type_id.code if policy.policy_type_id else ""
         if code == "renewable_document" and not documents:
@@ -253,27 +311,21 @@ class ComplianceEngine(models.AbstractModel):
                 grace_days=requirement.grace_period_days,
             )
             dates = alt
-            if today <= alt["due_date"]:
-                comp, legacy, reason, msg = (
-                    "at_risk",
-                    "grace",
-                    "no_document",
-                    "Document missing · due %s" % alt["due_date"],
-                )
-            elif today <= alt["grace_end_date"]:
-                comp, legacy, reason, msg = (
-                    "at_risk",
-                    "grace",
-                    "no_document_grace",
-                    "Document missing · grace until %s" % alt["grace_end_date"],
-                )
-            else:
-                comp, legacy, reason, msg = (
-                    "non_compliant",
-                    "missing",
-                    "no_document_overdue",
-                    "Document missing · overdue since %s" % alt["due_date"],
-                )
+            comp, legacy, reason, msg = self._missing_document_timeline_status(
+                policy, alt, today
+            )
+            if reason == "due_in_days":
+                reason = "no_document"
+                msg = "Document missing · due %s" % alt["due_date"]
+            elif reason == "grace_remaining":
+                reason = "no_document_grace"
+                msg = "Document missing · grace until %s" % alt["grace_end_date"]
+            elif reason == "overdue":
+                reason = "no_document_overdue"
+                msg = "Document missing · overdue since %s" % alt["due_date"]
+            elif reason == "overdue_no_auto":
+                reason = "no_document_overdue"
+                msg = "Document missing · overdue (no automatic non-compliance)"
 
         return {
             "status": legacy,

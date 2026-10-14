@@ -1,25 +1,21 @@
 "use client";
 
 import {
-  Bot,
   Clock3,
-  Flag,
   Heart,
   Images,
   LayoutGrid,
   MessageCircle,
   Plus,
   TrendingUp,
-  Upload,
 } from "lucide-react";
-import { DepartmentLeaderboard } from "./DepartmentLeaderboard";
-import type { DashboardActivity, GalleryDashboard, GalleryMedia } from "@/lib/types";
+import type { GalleryDashboard, GalleryMedia } from "@/lib/types";
 import { formatBytes } from "@/lib/api";
 import { EmptyState } from "../shared/EmptyState";
 import { LoadingGrid } from "../shared/LoadingGrid";
 import { AlbumCover } from "../shared/AlbumCover";
 import { MediaThumb } from "../shared/MediaThumb";
-import { formatActivityMessage, greeting, initials, relativeTime } from "../galleryUtils";
+import { greeting, initials } from "../galleryUtils";
 
 function UploadTrendLineChart({
   points,
@@ -82,52 +78,16 @@ function UploadTrendLineChart({
   );
 }
 
-function ActivityItem({
-  log,
-  onOpenMedia,
-  onOpenAlbum,
-}: {
-  log: DashboardActivity;
-  onOpenMedia?: (id: number) => void;
-  onOpenAlbum?: (id: number) => void;
-}) {
-  const clickable = (log.media_id && onOpenMedia) || (log.album_id && onOpenAlbum);
-  const handleClick = () => {
-    if (log.media_id && onOpenMedia) onOpenMedia(log.media_id);
-    else if (log.album_id && onOpenAlbum) onOpenAlbum(log.album_id);
-  };
-
-  return (
-    <button
-      type="button"
-      className={`dash-activity-row ${clickable ? "is-clickable" : ""}`}
-      onClick={clickable ? handleClick : undefined}
-      disabled={!clickable}
-    >
-      <div className="dash-activity-avatar">{initials(log.user_name)}</div>
-      <div className="profile-copy">
-        <strong>{log.user_name}</strong>
-        <span>{formatActivityMessage(log)} · {relativeTime(log.create_date)}</span>
-      </div>
-    </button>
-  );
-}
-
 export default function DashboardView({
   data,
   loading,
   userName,
   isManager,
   pendingCount,
-  aiReviewCount,
-  flaggedCount,
   onOpenPending,
-  onOpenAiReview,
-  onOpenFlagged,
   onOpenAlbum,
   onOpenMedia,
   onBrowseGallery,
-  onUpload,
   onCreateAlbum,
 }: {
   data?: GalleryDashboard;
@@ -135,16 +95,11 @@ export default function DashboardView({
   userName?: string;
   isManager?: boolean;
   pendingCount?: number;
-  aiReviewCount?: number;
-  flaggedCount?: number;
   onOpenPending: () => void;
-  onOpenAiReview?: () => void;
-  onOpenFlagged?: () => void;
   onOpenAlbum: (id: number) => void;
   onOpenMedia: (media: GalleryMedia, list?: GalleryMedia[]) => void;
   onBrowseGallery: () => void;
-  onUpload: () => void;
-  onCreateAlbum: () => void;
+  onCreateAlbum?: () => void;
 }) {
   if (loading || !data) {
     return (
@@ -174,43 +129,25 @@ export default function DashboardView({
           <h1>{greeting(userName)}</h1>
           <p>See what&apos;s new, what&apos;s trending, and where your team is engaging.</p>
           <div className="dash-hero-actions">
-            <button type="button" className="primary-button" onClick={onUpload}>
-              <Upload size={16} />
-              Upload
-            </button>
             <button type="button" className="secondary-button" onClick={onBrowseGallery}>
               <LayoutGrid size={16} />
               Browse gallery
             </button>
-            <button type="button" className="secondary-button" onClick={onCreateAlbum}>
-              <Plus size={16} />
-              New album
-            </button>
+            {onCreateAlbum && (
+              <button type="button" className="primary-button" onClick={onCreateAlbum}>
+                <Plus size={16} />
+                New album
+              </button>
+            )}
           </div>
         </div>
-        {isManager && (pendingCount || aiReviewCount || flaggedCount) ? (
+        {isManager && pendingCount ? (
           <div className="dash-manager-queue">
-            {pendingCount ? (
-              <button type="button" className="dash-queue-card" onClick={onOpenPending}>
-                <Clock3 size={18} />
-                <strong>{pendingCount}</strong>
-                <span>Pending review</span>
-              </button>
-            ) : null}
-            {aiReviewCount ? (
-              <button type="button" className="dash-queue-card" onClick={onOpenAiReview}>
-                <Bot size={18} />
-                <strong>{aiReviewCount}</strong>
-                <span>AI review</span>
-              </button>
-            ) : null}
-            {flaggedCount ? (
-              <button type="button" className="dash-queue-card warn" onClick={onOpenFlagged}>
-                <Flag size={18} />
-                <strong>{flaggedCount}</strong>
-                <span>Flagged</span>
-              </button>
-            ) : null}
+            <button type="button" className="dash-queue-card" onClick={onOpenPending}>
+              <Clock3 size={18} />
+              <strong>{pendingCount}</strong>
+              <span>Pending review</span>
+            </button>
           </div>
         ) : null}
       </section>
@@ -253,12 +190,12 @@ export default function DashboardView({
             icon={Images}
             title="No media yet"
             description="Upload photos or videos to start building your gallery."
-            action={(
-              <button type="button" className="primary-button small" onClick={onUpload}>
-                <Upload size={14} />
-                Upload media
+            action={onCreateAlbum ? (
+              <button type="button" className="secondary-button small" onClick={onCreateAlbum}>
+                <Plus size={14} />
+                Create album
               </button>
-            )}
+            ) : undefined}
           />
         ) : (
           <div className="dash-media-strip">
@@ -357,46 +294,6 @@ export default function DashboardView({
           )}
         </section>
       </div>
-
-      <section className="analytics-panel section-block">
-        <div className="section-heading">
-          <div>
-            <h2>Department leaderboard</h2>
-            <p>Earn points for your team — likes and comments count most</p>
-          </div>
-        </div>
-        <DepartmentLeaderboard
-          rows={data.department_engagement}
-          userDepartment={data.user_department}
-          onBrowseGallery={onBrowseGallery}
-        />
-      </section>
-
-      <section className="analytics-panel section-block">
-        <div className="section-heading">
-          <div>
-            <h2>Recent activity</h2>
-            <p>What&apos;s happening across your gallery</p>
-          </div>
-        </div>
-        {data.recent_activity.length === 0 ? (
-          <EmptyState icon={Clock3} title="No activity yet" description="Gallery events will appear here as your team participates." />
-        ) : (
-          <div className="dash-activity-list">
-            {data.recent_activity.slice(0, 12).map((log, index) => (
-              <ActivityItem
-                key={`${log.create_date}-${index}`}
-                log={log}
-                onOpenMedia={(id) => {
-                  const media = [...(data.trending_media || []), ...(data.recent_media || [])].find((item) => item.id === id);
-                  if (media) onOpenMedia(media);
-                }}
-                onOpenAlbum={onOpenAlbum}
-              />
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 }

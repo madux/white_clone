@@ -24,11 +24,16 @@ class ResCompany(models.Model):
     )
     sg_max_upload_mb = fields.Integer(string="Max Upload Size (MB)", default=25)
     sg_default_layout = fields.Selection(
-        [("grid", "Grid"), ("list", "List"), ("masonry", "Masonry")],
+        [("grid", "Grid"), ("list", "List")],
         default="grid",
     )
     sg_theme_color = fields.Char(default="#e83e8c")
-    sg_deleted_retention_days = fields.Integer(default=365)
+    sg_deleted_retention_days = fields.Integer(default=30)
+    sg_supervisor_upload_requires_approval = fields.Boolean(
+        string="Supervisor Uploads Require Approval",
+        default=False,
+        help="When enabled, supervisor uploads in album detail are pending until approved.",
+    )
     sg_notify_new_upload = fields.Boolean(default=True)
     sg_notify_approval_request = fields.Boolean(default=True)
     sg_notify_comments = fields.Boolean(default=True)
@@ -40,4 +45,18 @@ class ResCompany(models.Model):
     sg_like_batch_size = fields.Integer(default=5)
     sg_weekly_digest = fields.Boolean(default=False)
     sg_allow_external_share = fields.Boolean(default=False)
-    sg_ai_moderation_enabled = fields.Boolean(default=True)
+    sg_ai_moderation_enabled = fields.Boolean(default=False)
+    sg_rejected_retention_days = fields.Integer(string="Rejected Media Retention (days)", default=90)
+    sg_audit_retention_days = fields.Integer(string="Audit Log Retention (days)", default=730)
+    sg_disposition_review = fields.Boolean(
+        string="Disposition Review Required",
+        default=False,
+        help="Items past retention wait for administrator approval before purge.",
+    )
+    sg_lifecycle_cold_after_days = fields.Integer(
+        string="Move to Cold Tier After (days)",
+        default=90,
+        help="Archived or superseded objects transition to cold storage after this many days.",
+    )
+    sg_tenant_legal_hold = fields.Boolean(string="Tenant Legal Hold", default=False)
+    sg_tenant_legal_hold_reason = fields.Char()

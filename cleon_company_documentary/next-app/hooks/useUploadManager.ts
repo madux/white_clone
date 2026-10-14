@@ -2,6 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 import { api } from "../lib/api";
+import { uploadCompleteHint } from "../lib/lifecycleUtils";
+import type { DocumentarySettings } from "../lib/types";
 import type { AudienceScope } from "../src/app/components/modals/AudiencePicker";
 
 export type UploadJobStatus =
@@ -22,6 +24,7 @@ export type UploadJob = {
   progress: number;
   status: UploadJobStatus;
   error?: string;
+  lifecycleHint?: string;
   dismissed: boolean;
 };
 
@@ -34,14 +37,12 @@ export type UploadQueueItem = {
 
 export type UploadBatchMetadata = {
   description: string;
-  mandatory: boolean;
-  completionThreshold: number;
-  commentsEnabled: boolean;
+  category: string;
+  keywords: string;
+  isInternalOnly: boolean;
   scope: "inherited" | "override";
   accessScope: AudienceScope;
   departmentIds: number[];
-  gradeIds: number[];
-  employeeIds: number[];
   tagIds: number[];
   allowDownload: boolean;
   thumbnailFile: File | null;
@@ -119,6 +120,8 @@ type UseUploadManagerOptions = {
   onJobComplete?: () => void;
   onJobError?: (message: string) => void;
   onBatchComplete?: (count: number) => void;
+  isAdministrator?: boolean;
+  isSupervisor?: boolean;
 };
 
 export function useUploadManager(options: UseUploadManagerOptions = {}) {
@@ -164,6 +167,12 @@ export function useUploadManager(options: UseUploadManagerOptions = {}) {
       void (async () => {
         let completedCount = 0;
         let batchFailed = false;
+        let uploadSettings: DocumentarySettings | null = null;
+        try {
+          uploadSettings = await api.settings();
+        } catch {
+          uploadSettings = null;
+        }
 
         for (const item of queue) {
           if (batchFailed) {
@@ -191,16 +200,14 @@ export function useUploadManager(options: UseUploadManagerOptions = {}) {
               file_size: item.file.size,
               title: item.title.trim() || stripExtension(item.file.name),
               description: metadata.description.trim(),
-              mandatory: metadata.mandatory,
-              completion_threshold: metadata.completionThreshold,
-              comments_enabled: metadata.commentsEnabled,
+              category: metadata.category,
+              keywords: metadata.keywords,
+              is_internal_only: metadata.isInternalOnly,
               scope_mode: metadata.scope === "inherited" ? "inherited" : "override",
               access_scope: metadata.scope === "inherited" ? "company" : metadata.accessScope,
               department_ids: metadata.scope === "inherited" ? [] : metadata.departmentIds,
-              grade_ids: metadata.scope === "inherited" ? [] : metadata.gradeIds,
-              employee_ids: metadata.scope === "inherited" ? [] : metadata.employeeIds,
               tag_ids: metadata.tagIds,
-              download_policy: metadata.allowDownload ? "allow" : "deny",
+              download_policy: metadata.allowDownload ? "allow" : "inherit",
             });
 
             updateJob(item.id, {
@@ -271,7 +278,14 @@ export function useUploadManager(options: UseUploadManagerOptions = {}) {
               );
             }
 
-            updateJob(item.id, { status: "completed", progress: 100 });
+            updateJob(item.id, {
+              status: "completed",
+              progress: 100,
+              lifecycleHint: uploadCompleteHint(completed, uploadSettings, {
+                isAdministrator: options.isAdministrator,
+                isSupervisor: options.isSupervisor,
+              }),
+            });
             completedCount += 1;
             options.onJobComplete?.();
           } catch (error) {

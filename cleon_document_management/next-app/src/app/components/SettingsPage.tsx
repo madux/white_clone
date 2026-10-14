@@ -175,6 +175,26 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Record<string, any> | null>(null);
   const [search, setSearch] = useState("");
   const [settingsFind, setSettingsFind] = useState("");
+  const [settingsNavCollapsed, setSettingsNavCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("cleon-settings-nav-collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const setSettingsNavCollapsedPersist = (collapsed: boolean) => {
+    setSettingsNavCollapsed(collapsed);
+    try {
+      window.localStorage.setItem(
+        "cleon-settings-nav-collapsed",
+        collapsed ? "1" : "0",
+      );
+    } catch {
+      /* ignore */
+    }
+  };
   const [notice, setNotice] = useState<{
     message: string;
     error?: boolean;
@@ -234,7 +254,11 @@ export default function SettingsPage() {
         .filter((id) => visibleIds.has(id))
         .map((id) => {
           const meta = sectionById.get(id);
-          return { id, label: meta?.label ?? id };
+          return {
+            id,
+            label: meta?.label ?? id,
+            icon: meta?.icon,
+          };
         }),
     }));
   }, [visibleSections, sectionById]);
@@ -414,6 +438,8 @@ export default function SettingsPage() {
             search={settingsFind}
             onSearchChange={setSettingsFind}
             activeEmphasis={guideSection === section}
+            collapsed={settingsNavCollapsed}
+            onCollapsedChange={setSettingsNavCollapsedPersist}
           />
           <div className="min-w-0 flex-1">
             {query.isLoading ? (

@@ -4,7 +4,7 @@ import uuid
 from datetime import timedelta
 
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 MANAGER_GROUP = "cleon_social_gallery.group_social_gallery_manager"
@@ -89,6 +89,12 @@ class SocialGalleryMedia(models.Model):
     ai_moderation_note = fields.Text()
     deleted_at = fields.Datetime(index=True)
     deleted_by = fields.Many2one("res.users")
+    deleted_with_album_id = fields.Many2one("social.gallery.album", ondelete="set null", index=True)
+    delete_reason = fields.Selection(
+        [("deleted", "Deleted"), ("withdrawn", "Withdrawn"), ("with_album", "Deleted With Album")],
+        copy=False,
+    )
+    withdrawn = fields.Boolean(default=False, index=True)
     is_pinned = fields.Boolean(default=False)
     comments_enabled = fields.Boolean(default=True)
     share_token = fields.Char(copy=False, index=True)
@@ -100,6 +106,25 @@ class SocialGalleryMedia(models.Model):
     like_count = fields.Integer(compute="_compute_like_count", store=True)
     comment_count = fields.Integer(compute="_compute_comment_count", store=True)
     active = fields.Boolean(default=True)
+    purge_date = fields.Datetime(index=True)
+    legal_hold = fields.Boolean(default=False, index=True)
+    legal_hold_reason = fields.Char()
+    disposition_state = fields.Selection(
+        [
+            ("none", "None"),
+            ("due", "Due for Disposal"),
+            ("approved", "Approved for Disposal"),
+        ],
+        default="none",
+        index=True,
+    )
+    storage_tier = fields.Selection(
+        [("standard", "Standard"), ("cold", "Cold")],
+        default="standard",
+        index=True,
+    )
+    needs_processing = fields.Boolean(default=True, index=True)
+    rejected_at = fields.Datetime()
 
     @api.depends("like_ids")
     def _compute_like_count(self):
@@ -114,6 +139,7 @@ class SocialGalleryMedia(models.Model):
     like_ids = fields.One2many("social.gallery.like", "media_id")
     comment_ids = fields.One2many("social.gallery.comment", "media_id")
     report_ids = fields.One2many("social.gallery.report", "media_id")
+    view_log_ids = fields.One2many("social.gallery.media.view", "media_id")
 
     @api.constrains("file_size", "mime_type")
     def _check_media(self):
@@ -145,17 +171,63 @@ class SocialGalleryMedia(models.Model):
             return True
         if self.approval_status != "approved":
             return self.uploaded_by == user
-        if self.album_id and not self.album_id._user_can_view(user):
-            return False
+        if self.album_id:
+            if self.album_id.status != "approved" and not self._is_gallery_manager(user):
+                return self.uploaded_by == user
+            if not self.album_id._user_can_view(user):
+                return False
         return True
 
     def _user_can_edit(self, user=None):
         self.ensure_one()
         user = user or self.env.user
-        return self._is_gallery_manager(user) or self.uploaded_by == user
+        if self._is_gallery_manager(user):
+            return True
+        return self.uploaded_by == user
+
+    def _user_can_delete(self, user=None):
+        return self._is_gallery_manager(user or self.env.user)
+
+    def _user_can_withdraw(self, user=None):
+        self.ensure_one()
+        user = user or self.env.user
+        return (
+            self.uploaded_by == user
+            and self.approval_status == "pending"
+            and not self.deleted_at
+        )
 
     def _user_can_moderate(self, user=None):
-        return self._is_gallery_manager(user or self.env.user)
+        user = user or self.env.user
+        if not self._is_gallery_manager(user):
+            return False
+        return self.uploaded_by != user
+
+    def _is_unassigned(self):
+        self.ensure_one()
+        return self.approval_status == "pending" and not self.album_id
+
+    def record_view(self, user=None, from_review=False):
+        self.ensure_one()
+        user = user or self.env.user
+        if from_review and self._is_gallery_manager(user):
+            return False
+        today = fields.Date.context_today(self)
+        View = self.env["social.gallery.media.view"].sudo()
+        existing = View.search([
+            ("media_id", "=", self.id),
+            ("user_id", "=", user.id),
+            ("view_date", "=", today),
+        ], limit=1)
+        if existing:
+            return False
+        View.create({
+            "media_id": self.id,
+            "user_id": user.id,
+            "view_date": today,
+        })
+        self.sudo().write({"view_count": self.view_count + 1})
+        return True
 
     def _blocking_moderation_flags(self, flags=None):
         self.ensure_one()
@@ -277,49 +349,235 @@ class SocialGalleryMedia(models.Model):
             self.ai_moderation_note = note or ""
         self._enforce_ai_screening_outcome()
 
+    def _create_disposal_record(self):
+        Disposal = self.env["social.gallery.disposal.record"].sudo()
+        for media in self:
+            Disposal.create({
+                "company_id": media.company_id.id,
+                "media_id": media.id,
+                "media_name": media.display_name,
+                "album_name": media.album_id.name if media.album_id else "",
+                "deleted_by_id": media.deleted_by.id if media.deleted_by else False,
+                "deleted_at": media.deleted_at,
+                "purged_at": fields.Datetime.now(),
+                "retention_rule": "recycle_bin",
+                "approver_id": self.env.user.id if media.disposition_state == "approved" else False,
+                "storage_keys_removed": media._storage_keys(),
+            })
+
     @api.model
-    def _cron_purge_recycle_bin(self):
+    def _cron_process_uploads(self):
+        from .gallery_media_processing import process_media_thumbnail
+        pending = self.search([
+            ("needs_processing", "=", True),
+            ("storage_key", "!=", False),
+        ], limit=50)
+        for media in pending:
+            process_media_thumbnail(self.env, media)
+
+    @api.model
+    def _cron_lifecycle_tiers(self):
+        """Mark aged non-active objects as cold tier (FR-254 metadata; R2 lifecycle is bucket policy)."""
         for company in self.env["res.company"].search([]):
-            days = company.sg_deleted_retention_days or 365
+            days = company.sg_lifecycle_cold_after_days or 90
             cutoff = fields.Datetime.now() - timedelta(days=days)
-            stale = self.search([
+            cold_candidates = self.search([
                 ("company_id", "=", company.id),
+                ("storage_tier", "=", "standard"),
                 ("deleted_at", "!=", False),
                 ("deleted_at", "<=", cutoff),
             ])
+            cold_candidates.write({"storage_tier": "cold"})
+
+    @api.model
+    def _cron_purge_recycle_bin(self):
+        now = fields.Datetime.now()
+        for company in self.env["res.company"].search([]):
+            due = self.search([
+                ("company_id", "=", company.id),
+                ("purge_date", "!=", False),
+                ("purge_date", "<=", now),
+                "|",
+                ("deleted_at", "!=", False),
+                ("approval_status", "=", "rejected"),
+            ])
+            for media in due:
+                if media._is_on_legal_hold():
+                    continue
+                if company.sg_disposition_review and media.disposition_state != "approved":
+                    if media.disposition_state != "due":
+                        media.disposition_state = "due"
+                    continue
+                media._create_disposal_record()
+                media.unlink()
+
+    @api.model
+    def _cron_purge_audit_logs(self):
+        Audit = self.env["social.gallery.audit"].sudo()
+        for company in self.env["res.company"].search([]):
+            days = company.sg_audit_retention_days or 730
+            cutoff = fields.Datetime.now() - timedelta(days=days)
+            stale = Audit.search([
+                ("company_id", "=", company.id),
+                ("create_date", "<=", cutoff),
+            ])
             stale.unlink()
 
-    def action_approve(self, album_id=None, comment=None):
+    def action_duplicate(self):
+        from odoo.addons.cleon_social_gallery.controllers.storage import CloudflareR2Storage
+        import uuid
+
+        created = self.env["social.gallery.media"]
+        storage = CloudflareR2Storage(self.env)
         for media in self:
-            vals = {
+            if not self.env.user.has_group(MANAGER_GROUP) and not self.env.user.has_group(ADMIN_GROUP):
+                raise AccessError(_("Only supervisors and administrators can duplicate media."))
+            new_key = media.storage_key
+            if storage.is_configured():
+                safe = media.file_name or "media"
+                new_key = "social-gallery/%s/%s-%s" % (
+                    media.company_id.id, uuid.uuid4().hex, safe
+                )
+                storage.copy_object(media.storage_key, new_key)
+            copy = media.copy({
+                "display_name": _("%s (copy)") % media.display_name,
+                "storage_key": new_key,
+                "thumbnail_key": False,
                 "approval_status": "approved",
                 "approved_by": self.env.user.id,
                 "approved_at": fields.Datetime.now(),
-                "ai_review_status": "passed",
+                "view_count": 0,
+                "download_count": 0,
+                "like_ids": [(5, 0, 0)],
+                "version": 1,
+                "replaces_media_id": False,
+                "needs_processing": media.media_type == "image",
+            })
+            created |= copy
+        return created
+
+    def action_approve(self, album_id=None, comment=None, reviewer=None):
+        reviewer = reviewer or self.env.user
+        Album = self.env["social.gallery.album"]
+        for media in self:
+            if media.approval_status != "pending":
+                reviewer_name = media.approved_by.name if media.approved_by else _("another reviewer")
+                raise UserError(_("Already reviewed by %s.") % reviewer_name)
+            if media.uploaded_by == reviewer:
+                raise AccessError(_("You cannot approve media you uploaded."))
+            target_album_id = album_id or (media.album_id.id if media.album_id else False)
+            if not target_album_id:
+                raise UserError(_("Select an approved album before approving."))
+            album = Album.browse(target_album_id).exists()
+            if not album or album.deleted_at or album.status != "approved":
+                raise UserError(_("Choose an approved, non-deleted album."))
+            vals = {
+                "approval_status": "approved",
+                "approved_by": reviewer.id,
+                "approved_at": fields.Datetime.now(),
+                "album_id": album.id,
+                "ai_review_status": "skipped",
             }
-            if album_id:
-                vals["album_id"] = album_id
             if comment:
                 vals["approver_comment"] = comment
             media.write(vals)
 
-    def action_reject(self, comment=None):
-        self.write({
-            "approval_status": "rejected",
-            "approver_comment": comment or "",
-            "approved_by": self.env.user.id,
-            "approved_at": fields.Datetime.now(),
-            "ai_review_status": "dismissed",
-        })
+    def action_reject(self, comment=None, reviewer=None):
+        reviewer = reviewer or self.env.user
+        if not (comment or "").strip():
+            raise UserError(_("A rejection reason is required."))
+        for media in self:
+            if media.approval_status != "pending":
+                reviewer_name = media.approved_by.name if media.approved_by else _("another reviewer")
+                raise UserError(_("Already reviewed by %s.") % reviewer_name)
+            if media.uploaded_by == reviewer:
+                raise AccessError(_("You cannot reject media you uploaded."))
+            rejected_at = fields.Datetime.now()
+            days = media.company_id.sg_rejected_retention_days or 90
+            media.write({
+                "approval_status": "rejected",
+                "approver_comment": comment.strip(),
+                "approved_by": reviewer.id,
+                "approved_at": rejected_at,
+                "rejected_at": rejected_at,
+                "purge_date": rejected_at + timedelta(days=days),
+                "ai_review_status": "dismissed",
+            })
 
-    def action_soft_delete(self):
-        self.write({
-            "deleted_at": fields.Datetime.now(),
-            "deleted_by": self.env.user.id,
-        })
+    def _is_on_legal_hold(self):
+        self.ensure_one()
+        company = self.company_id
+        if company.sg_tenant_legal_hold:
+            return True
+        if self.legal_hold:
+            return True
+        if self.album_id and self.album_id.legal_hold:
+            return True
+        return False
 
-    def action_restore(self):
-        self.write({"deleted_at": False, "deleted_by": False})
+    def _retention_days_for_media(self):
+        self.ensure_one()
+        company = self.company_id
+        if self.deleted_at or self.withdrawn:
+            return company.sg_deleted_retention_days or 30
+        if self.approval_status == "rejected":
+            return company.sg_rejected_retention_days or 90
+        return company.sg_deleted_retention_days or 30
+
+    def action_soft_delete(self, reason="deleted"):
+        now = fields.Datetime.now()
+        for media in self:
+            days = media._retention_days_for_media()
+            media.write({
+                "deleted_at": now,
+                "deleted_by": self.env.user.id,
+                "delete_reason": reason,
+                "purge_date": now + timedelta(days=days),
+                "disposition_state": "none",
+            })
+
+    def action_withdraw(self):
+        for media in self:
+            if not media._user_can_withdraw():
+                raise AccessError(_("Only pending uploads can be withdrawn by their owner."))
+            now = fields.Datetime.now()
+            days = media.company_id.sg_deleted_retention_days or 30
+            media.write({
+                "deleted_at": now,
+                "deleted_by": self.env.user.id,
+                "delete_reason": "withdrawn",
+                "withdrawn": True,
+                "purge_date": now + timedelta(days=days),
+            })
+
+    def action_restore(self, album_id=None):
+        for media in self:
+            prior_status = media.approval_status
+            vals = {
+                "deleted_at": False,
+                "deleted_by": False,
+                "delete_reason": False,
+                "withdrawn": False,
+                "deleted_with_album_id": False,
+            }
+            if album_id:
+                vals["album_id"] = album_id
+            elif media.album_id and media.album_id.deleted_at:
+                raise UserError(
+                    _("Restore the album first or choose another approved album.")
+                )
+            media.write(vals)
+
+    def action_rereview_after_edit(self):
+        for media in self:
+            if media.uploaded_by != self.env.user and not media._is_gallery_manager():
+                raise AccessError(_("You cannot edit this media."))
+            if media.approval_status == "approved" and not media._is_gallery_manager():
+                media.write({
+                    "approval_status": "pending",
+                    "approved_by": False,
+                    "approved_at": False,
+                })
 
     def _storage_keys(self):
         keys = []
@@ -337,7 +595,8 @@ class SocialGalleryMedia(models.Model):
             storage.delete_objects(self._storage_keys())
 
     def unlink(self):
-        self._delete_storage_objects()
+        if not self.env.context.get("skip_storage_delete"):
+            self._delete_storage_objects()
         return super().unlink()
 
     @staticmethod

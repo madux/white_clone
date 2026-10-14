@@ -166,6 +166,7 @@ class ComplianceVerificationItem(models.Model):
     submitted_at = fields.Datetime(default=fields.Datetime.now)
     sla_due_at = fields.Datetime()
     sla_reminder_sent = fields.Boolean(default=False, copy=False)
+    sla_escalation_notified = fields.Boolean(default=False, copy=False)
     sla_escalated = fields.Boolean(default=False, copy=False)
     verifier_not_found = fields.Boolean(default=False, copy=False)
     verifier_note = fields.Char()
@@ -204,6 +205,7 @@ class ComplianceVerificationItem(models.Model):
         now = fields.Datetime.now()
         pending = self.search([("status", "=", "pending")])
         Audit = self.env["doc.compliance.audit.log"]
+        Notify = self.env["doc.compliance.notify"].sudo()
         for item in pending:
             if not item.sla_due_at or not item.policy_id:
                 continue
@@ -215,23 +217,67 @@ class ComplianceVerificationItem(models.Model):
                 continue
             sla_days = max(policy.verification_sla_days or 3, 1)
             escalate_at = item.sla_due_at + timedelta(days=sla_days)
+            document = item.document_id
+            employee = item.employee_id
+            verifier = item.verifier_id
             if now >= item.sla_due_at and not item.sla_reminder_sent:
                 item.sla_reminder_sent = True
                 Audit.log_event(
                     "verification_sla_reminder",
                     _("Verification SLA reminder"),
                     policy=policy,
-                    employee=item.employee_id,
-                    detail=item.document_id.name,
+                    employee=employee,
+                    detail=document.name,
                 )
+                if verifier:
+                    due_label = fields.Datetime.to_string(item.sla_due_at)
+                    Notify._send_mail(
+                        verifier,
+                        _("Verification due: %s") % document.name,
+                        "<p>%s</p>"
+                        % _(
+                            "Please verify %(document)s for %(employee)s. "
+                            "SLA was %(due)s.",
+                            document=document.name,
+                            employee=employee.name,
+                            due=due_label,
+                        ),
+                        dedupe_key="verification_sla_reminder_%s" % item.id,
+                    )
+            if now >= item.sla_due_at and not item.sla_escalation_notified:
+                contact = policy._verification_sla_escalation_recipient()
+                if contact:
+                    item.sla_escalation_notified = True
+                    verifier_name = verifier.name if verifier else _("Unassigned")
+                    Notify._send_mail(
+                        contact,
+                        _("Verification SLA missed: %s") % document.name,
+                        "<p>%s</p>"
+                        % _(
+                            "%(document)s for %(employee)s is still pending verification. "
+                            "Assigned verifier: %(verifier)s. Policy: %(policy)s.",
+                            document=document.name,
+                            employee=employee.name,
+                            verifier=verifier_name,
+                            policy=policy.name,
+                        ),
+                        dedupe_key="verification_sla_escalation_%s" % item.id,
+                    )
+                    Audit.log_event(
+                        "verification_sla_escalation",
+                        _("Verification SLA alert sent"),
+                        policy=policy,
+                        employee=employee,
+                        detail=document.name,
+                    )
             if now >= escalate_at and not item.sla_escalated:
                 item.sla_escalated = True
                 Audit.log_event(
                     "verification_sla_escalated",
                     _("Verification overdue (2× SLA)"),
                     policy=policy,
-                    employee=item.employee_id,
-                    detail=item.document_id.name,
+                    employee=employee,
+                    detail=document.name,
                 )
 
 
@@ -250,40 +296,71 @@ class CompliancePolicyWorkItems(models.AbstractModel):
         "doc.compliance.verification.item", "policy_id", string="Verification items"
     )
 
+    def _user_can_verify_compliance(self, user):
+        if not user or not user.active:
+            return False
+        return user.has_group(
+            "cleon_document_management.group_document_manager"
+        ) or user.has_group("cleon_document_management.group_document_admin")
+
+    def _qualify_verifier_user(self, user, employee):
+        """Verifier must be document manager/admin; fallback to qualified HR admins."""
+        self.ensure_one()
+        if user and self._user_can_verify_compliance(user):
+            if employee.user_id and user == employee.user_id:
+                alternate = self.owner_id or self._admin_users()[:1]
+                return alternate if self._user_can_verify_compliance(alternate) else self.env["res.users"]
+            return user
+        qualified_admins = self._admin_users().filtered(
+            lambda item: self._user_can_verify_compliance(item)
+        )
+        return qualified_admins[:1]
+
     def _resolve_verifier_user(self, employee):
         self.ensure_one()
         if self.verified_by == "line_manager":
             manager = employee.parent_id.user_id if employee.parent_id else False
-            return manager if manager else self.owner_id
-        if self.verified_by == "policy_owner":
-            return self.owner_id
-        if self.verified_by == "assigned_reviewer":
-            return self.assigned_reviewer_id
-        return self._admin_users()[:1]
+            candidate = manager if manager else self.owner_id
+        elif self.verified_by == "policy_owner":
+            candidate = self.owner_id
+        elif self.verified_by == "assigned_reviewer":
+            candidate = self.assigned_reviewer_id
+        else:
+            candidate = self._admin_users()[:1]
+        return self._qualify_verifier_user(candidate, employee)
+
+    def policy_requires_compliance_verification(self, document_type):
+        self.ensure_one()
+        if not document_type:
+            return False
+        return document_type in self.verification_document_type_ids
+
+    def _verification_sla_escalation_recipient(self):
+        self.ensure_one()
+        if self.verification_sla_escalation_user_id:
+            return self.verification_sla_escalation_user_id
+        return self.owner_id
 
     def _maybe_queue_verification(self, employee, document):
         self.ensure_one()
         if hasattr(self, "_is_compliance_request") and self._is_compliance_request():
             return
         document_type = document.document_type_id
-        if not document_type.verification_required:
+        if not self.policy_requires_compliance_verification(document_type):
             return
         verifier = self._resolve_verifier_user(employee)
         verifier_not_found = False
         verifier_note = ""
-        original = verifier
         if not verifier:
-            verifier = self._admin_users()[:1]
             verifier_not_found = True
-            verifier_note = _("Verifier not found; routed to HR administrator.")
-        if employee.user_id and verifier == employee.user_id:
-            verifier = self.owner_id or self._admin_users()[:1]
-            verifier_note = _("Submitter cannot verify; routed to alternate verifier.")
+            verifier_note = _(
+                "Verifier not found or lacks document manager access; routed to HR administrator."
+            )
+            verifier = self._admin_users().filtered(
+                lambda item: self._user_can_verify_compliance(item)
+            )[:1]
         if not verifier:
             return
-        if not original and not verifier_not_found:
-            verifier_not_found = True
-            verifier_note = _("Verifier not found; routed to HR administrator.")
         VerificationItem = self.env["doc.compliance.verification.item"].sudo()
         existing = VerificationItem.search(
             [
@@ -293,7 +370,7 @@ class CompliancePolicyWorkItems(models.AbstractModel):
             limit=1,
         )
         if existing:
-            return
+            return existing
         sla_days = max(self.verification_sla_days or 3, 1)
         item = VerificationItem.create(
             {

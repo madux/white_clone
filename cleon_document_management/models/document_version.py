@@ -44,6 +44,19 @@ class DocumentVersion(models.Model):
         string="Change Note",
     )
 
+    has_expiry = fields.Boolean(
+        string="Had expiry",
+        help="Whether this version was tracked with an expiry date when archived.",
+    )
+    expiry_date = fields.Date(
+        string="Expiry at archive",
+        help="Expiry date on the document when this version was archived.",
+    )
+    issue_date = fields.Date(
+        string="Issue at archive",
+        help="Issue date on the document when this version was archived.",
+    )
+
     active = fields.Boolean(
         default=True,
     )

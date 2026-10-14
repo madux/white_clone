@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { api } from "../lib/api";
+import { documentTypesForPicker } from "../lib/complianceDocumentTypes";
 import { DocumentType, User } from "../lib/types";
 
 export const QUERY_KEYS = {
@@ -28,6 +29,7 @@ export const QUERY_KEYS = {
   ) => ["compliance", "run", runId, "employees", page, search, status],
   complianceReport: (reportKey: string, page: number, search: string) =>
     ["compliance", "report", reportKey, page, search],
+  retentionComplianceSettings: ["compliance", "retention-settings"],
   approvalInbox: ["admin", "approval-inbox"],
   pendingEmployeeUploads: ["admin", "pending-employee-uploads"],
   workspaceActivity: ["admin", "workspace-activity"],
@@ -314,6 +316,22 @@ export function useDocumentTypes() {
   });
 }
 
+/** Per–document-type retention rules from Settings (Employee file retention). */
+export function useRetentionComplianceSettings(enabled = true) {
+  return useQuery({
+    queryKey: QUERY_KEYS.retentionComplianceSettings,
+    queryFn: async () => {
+      const result = await api.listRetentionSettings();
+      if (!result.success) {
+        throw new Error(result.message || "Failed to load retention settings.");
+      }
+      return result.data ?? [];
+    },
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
 export function useCreateDocumentType() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -322,9 +340,11 @@ export function useCreateDocumentType() {
       const created = (result as { success?: boolean; data?: DocumentType }).data;
       if (created?.id) {
         queryClient.setQueryData<DocumentType[]>(QUERY_KEYS.documentTypes, (current) => {
-          const list = current ?? [];
-          if (list.some((item) => item.id === created.id)) return list;
-          return [...list, created];
+          const list = documentTypesForPicker(current ?? []);
+          if (list.some((item) => Number(item.id) === Number(created.id))) {
+            return list;
+          }
+          return documentTypesForPicker([...list, created]);
         });
       }
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documentTypes });

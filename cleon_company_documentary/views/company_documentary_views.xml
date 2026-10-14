@@ -43,9 +43,8 @@
                     </group>
                     <notebook>
                         <page string="Audience">
+                            <field name="color"/>
                             <field name="department_ids" widget="many2many_tags" invisible="access_scope != 'department'"/>
-                            <field name="grade_ids" widget="many2many_tags" invisible="access_scope != 'grade'"/>
-                            <field name="employee_ids" widget="many2many_tags" invisible="access_scope != 'employee'"/>
                             <field name="editor_ids" widget="many2many_tags"/>
                         </page>
                         <page string="Videos">
@@ -71,8 +70,9 @@
             <tree>
                 <field name="name"/>
                 <field name="folder_id"/>
+                <field name="status"/>
+                <field name="category"/>
                 <field name="processing_state"/>
-                <field name="mandatory"/>
                 <field name="file_size"/>
                 <field name="active"/>
             </tree>
@@ -86,9 +86,10 @@
             <form string="Company Documentary Video">
                 <field name="active" invisible="1"/>
                 <header>
-                    <button name="action_archive" type="object" string="Archive" invisible="not active"/>
-                    <button name="action_restore" type="object" string="Restore" invisible="active"/>
-                    <field name="processing_state" widget="statusbar" statusbar_visible="uploading,processing,ready,failed"/>
+                    <button name="action_submit_for_approval" type="object" string="Submit for review" invisible="status not in ('draft', 'returned')"/>
+                    <button name="action_archive" type="object" string="Archive" invisible="status != 'published'"/>
+                    <button name="action_restore" type="object" string="Restore" invisible="status != 'deleted'"/>
+                    <field name="status" widget="statusbar" statusbar_visible="processing,draft,pending_review,approved,published,archived"/>
                 </header>
                 <sheet>
                     <group>
@@ -96,17 +97,26 @@
                             <field name="name"/>
                             <field name="folder_id"/>
                             <field name="description"/>
+                            <field name="category"/>
+                            <field name="keywords"/>
                             <field name="tag_ids" widget="many2many_tags"/>
+                            <field name="is_internal_only"/>
+                            <field name="is_official"/>
+                            <field name="is_hero"/>
                             <field name="original_filename"/>
                             <field name="mime_type"/>
                             <field name="file_size"/>
                         </group>
                         <group>
-                            <field name="mandatory"/>
-                            <field name="completion_threshold"/>
+                            <field name="processing_state"/>
                             <field name="download_policy"/>
-                            <field name="comments_enabled"/>
                             <field name="duration_seconds"/>
+                            <field name="resolution"/>
+                            <field name="codec"/>
+                            <field name="current_version_number"/>
+                            <field name="published_at"/>
+                            <field name="purge_date"/>
+                            <field name="legal_hold"/>
                             <field name="view_count"/>
                             <field name="unique_viewer_count"/>
                         </group>
@@ -116,8 +126,15 @@
                             <field name="scope_mode"/>
                             <field name="access_scope" invisible="scope_mode != 'override'"/>
                             <field name="department_ids" widget="many2many_tags" invisible="scope_mode != 'override' or access_scope != 'department'"/>
-                            <field name="grade_ids" widget="many2many_tags" invisible="scope_mode != 'override' or access_scope != 'grade'"/>
-                            <field name="employee_ids" widget="many2many_tags" invisible="scope_mode != 'override' or access_scope != 'employee'"/>
+                        </page>
+                        <page string="Review">
+                            <field name="submitted_by_id"/>
+                            <field name="submitted_at"/>
+                            <field name="return_reason"/>
+                            <field name="review_decided_by_id"/>
+                            <field name="review_decided_at"/>
+                            <field name="published_by_id"/>
+                            <field name="archive_reason"/>
                         </page>
                         <page string="Storage">
                             <field name="storage_key"/>
@@ -133,6 +150,21 @@
                                     <field name="language"/>
                                     <field name="format"/>
                                     <field name="is_default"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Transcript">
+                            <field name="transcript"/>
+                        </page>
+                        <page string="Versions">
+                            <field name="version_ids">
+                                <tree>
+                                    <field name="version_number"/>
+                                    <field name="is_live"/>
+                                    <field name="change_note"/>
+                                    <field name="created_by_id"/>
+                                    <field name="live_from"/>
+                                    <field name="live_to"/>
                                 </tree>
                             </field>
                         </page>

@@ -357,16 +357,21 @@ class Document(models.Model):
         "doc.document.acknowledgement", "document_id", string="Acknowledgements"
     )
 
-    @api.depends("legal_hold_ids.active", "folder_id")
+    @api.depends("legal_hold_ids.active", "folder_id", "employee_id")
     def _compute_legal_hold_active(self):
         Hold = self.env["doc.legal.hold"]
         for document in self:
-            domain = [
-                ("active", "=", True),
-                "|",
-                ("document_id", "=", document.id),
-                ("folder_id", "=", document.folder_id.id),
-            ]
+            or_parts = [("document_id", "=", document.id)]
+            if document.folder_id:
+                or_parts.append(("folder_id", "=", document.folder_id.id))
+            if document.employee_id:
+                or_parts.append(("employee_id", "=", document.employee_id.id))
+            domain = [("active", "=", True)]
+            if len(or_parts) == 1:
+                domain.append(or_parts[0])
+            else:
+                domain.extend(["|"] * (len(or_parts) - 1))
+                domain.extend(or_parts)
             document.legal_hold_active = bool(Hold.search_count(domain))
 
     version_ids = fields.One2many(
@@ -774,6 +779,11 @@ class Document(models.Model):
                     "uploaded_by": self.env.user.id,
                     "upload_date": fields.Datetime.now(),
                     "change_note": change_note,
+                    "has_expiry": bool(document.has_expiry),
+                    "expiry_date": document.expiry_date
+                    if document.has_expiry
+                    else False,
+                    "issue_date": document.issue_date or False,
                 }
             )
             attachment_copy.sudo().write(
@@ -781,6 +791,16 @@ class Document(models.Model):
             )
             created |= version
         return created
+
+    def _reset_renewal_alerts_after_renewal(self):
+        """Clear renewal alert log so a new expiry cycle can notify again."""
+        self.ensure_one()
+        today = fields.Date.context_today(self)
+        if not self.has_expiry or not self.expiry_date or self.expiry_date < today:
+            return
+        self.env["doc.compliance.renewal.alert"].sudo().search(
+            [("document_id", "=", self.id)]
+        ).unlink()
 
     def _effective_preview_attachment(self):
         self.ensure_one()
@@ -1028,6 +1048,7 @@ class Document(models.Model):
             )
         pending.sudo().write({"res_model": self._name, "res_id": self.id})
         self.sudo().write(write_vals)
+        self._reset_renewal_alerts_after_renewal()
         self._log_organizational_audit(
             "replace",
             _("Published new file version"),
@@ -1148,6 +1169,7 @@ class Document(models.Model):
                 }
             )
         self.sudo().write(write_vals)
+        self._reset_renewal_alerts_after_renewal()
         self._apply_upload_approval_workflow()
         self._log_organizational_audit(
             "replace",

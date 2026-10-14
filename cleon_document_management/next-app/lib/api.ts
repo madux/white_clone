@@ -1,5 +1,6 @@
 // cleon_document_management/next-app/lib/api.ts
 import axios from "axios";
+import { documentTypesForPicker } from "./complianceDocumentTypes";
 import {
   assertOrgUploadSucceeded,
   type OrgUploadApiResult,
@@ -682,8 +683,12 @@ export const api = {
       };
     }>("/api/organizational/policies-templates", {}),
 
-  suggestedOrganizationalFiles: (payload: { name: string; folder_id?: number }) =>
-    rpc<{ success: boolean; data: { items: import("./types").DocDocument[] } }>(
+  suggestedOrganizationalFiles: (payload: {
+    name: string;
+    folder_id?: number;
+    folder_kind?: "project" | "vendor" | "folder";
+  }) =>
+    rpc<{ success: boolean; data: { items: import("./types").SuggestedCollectionFile[] } }>(
       "/api/organizational/suggested-files",
       payload,
     ),
@@ -1579,6 +1584,26 @@ export const api = {
       payload,
     ).then(unwrapCompliance),
 
+  searchVerificationSlaContact: (query: string) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      data: {
+        items: {
+          id: number;
+          name: string;
+          email: string;
+          employee_name: string;
+          job_title: string;
+          department: string;
+          subtitle: string;
+        }[];
+      };
+    }>("/api/compliance/verification-sla-contact/search", { query }).then((r) => {
+      if (r.success === false) throw new Error(r.message || "Search failed.");
+      return r.data.items;
+    }),
+
   updatePolicy: (payload: Record<string, any>) =>
     rpc<{ success: boolean; data: CompliancePolicy }>(
       "/api/compliance/policies/update",
@@ -1595,7 +1620,7 @@ export const api = {
     rpc<{ success: boolean; data: DocumentType[] }>(
       "/api/get-document-type",
       {},
-    ).then((r) => r.data),
+    ).then((r) => documentTypesForPicker(r.data ?? [])),
 
   createDocumentType: (payload: Record<string, any>) =>
     rpc<{ success: boolean; data: DocumentType; message?: string }>(

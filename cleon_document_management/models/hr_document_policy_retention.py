@@ -194,6 +194,8 @@ class RetentionPolicy(models.Model):
             "description": self.description or "",
             "document_type_id": doc_type.id if doc_type else False,
             "document_type_name": doc_type.name if doc_type else "",
+            "retention_value": self.retention_value or 0,
+            "retention_unit": self.retention_unit or "years",
             "archive_after_value": self.archive_after_value or 0,
             "archive_after_unit": self.archive_after_unit or "years",
             "delete_after_value": self.delete_after_value or 0,

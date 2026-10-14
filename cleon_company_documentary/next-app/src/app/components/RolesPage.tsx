@@ -1,23 +1,49 @@
 "use client";
 
-import { AlertTriangle, LoaderCircle, Search, Shield, UserRound } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Circle,
+  Crown,
+  LoaderCircle,
+  Save,
+  Search,
+  Shield,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   useAssignModuleRoles,
   useModuleRoleDefinitions,
   useModuleRoleMembers,
 } from "../../../hooks/useModuleRoles";
-import type {
-  ModuleRoleAssignment,
-  ModuleRoleDefinition,
-  ModuleRoleMember,
-} from "../../../lib/types";
+import {
+  applyTierToRoles,
+  avatarTone,
+  initialsFromName,
+  memberRoleTier,
+  ROLE_TIER_CARDS,
+  tierLabel,
+  TIER_PRIVILEGES,
+  type DocumentaryRoleTier,
+} from "../../../lib/documentaryRoleTiers";
+import type { ModuleRoleAssignment, ModuleRoleMember } from "../../../lib/types";
+import { RoleCapabilitiesMatrix } from "./RoleCapabilitiesMatrix";
+
+type RolesTab = "assignments" | "matrix";
+
+function RoleBadge({ tier }: { tier: DocumentaryRoleTier }) {
+  return <span className={`roles-tier-badge roles-tier-badge--${tier}`}>{tierLabel(tier)}</span>;
+}
 
 export default function RolesPage({ embedded = false }: { embedded?: boolean }) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [tab, setTab] = useState<RolesTab>("assignments");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   const [draftRoles, setDraftRoles] = useState<ModuleRoleMember | null>(null);
+  const [draftTier, setDraftTier] = useState<DocumentaryRoleTier | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,172 +51,283 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
     return () => window.clearTimeout(timer);
   }, [search]);
 
-  const definitionsQuery = useModuleRoleDefinitions();
-  const membersQuery = useModuleRoleMembers(debouncedSearch);
+  useModuleRoleDefinitions();
+  const rosterQuery = useModuleRoleMembers("", true, 200);
+  const membersQuery = useModuleRoleMembers(debouncedSearch, true, 200);
   const assignMutation = useAssignModuleRoles();
 
-  const assignableRoles = useMemo(
-    () =>
-      (definitionsQuery.data || []).filter(
-        (role): role is ModuleRoleDefinition & { role_key: "manager" | "admin" } =>
-          role.assignable &&
-          (role.role_key === "manager" || role.role_key === "admin"),
-      ),
-    [definitionsQuery.data],
-  );
-
   const members = membersQuery.data || [];
+  const roster = rosterQuery.data || [];
+
   const selectedMember =
-    draftRoles ||
-    members.find((member) => member.employee_id === selectedEmployeeId) ||
-    null;
+    draftRoles || members.find((member) => member.employee_id === selectedEmployeeId) || null;
+
+  useEffect(() => {
+    if (selectedEmployeeId || !members.length) return;
+    setSelectedEmployeeId(members[0].employee_id);
+  }, [members, selectedEmployeeId]);
 
   useEffect(() => {
     setDraftRoles(null);
+    setDraftTier(null);
   }, [selectedEmployeeId]);
 
-  function handleToggle(roleKey: "manager" | "admin", enabled: boolean) {
-    if (!selectedMember) return;
-    const base = draftRoles || selectedMember;
-    const nextRoles = { ...base.roles, [roleKey]: enabled, user: true };
-    if (roleKey === "admin" && enabled) nextRoles.manager = true;
-    if (roleKey === "manager" && !enabled) nextRoles.admin = false;
-    setDraftRoles({ ...base, roles: nextRoles });
+  const activeMember = draftRoles || selectedMember;
+  const activeTier =
+    draftTier ?? (activeMember ? memberRoleTier(activeMember) : "employee");
+
+  const stats = useMemo(() => {
+    const counts = { administrator: 0, supervisor: 0, employee: 0 };
+    for (const member of roster) {
+      counts[memberRoleTier(member)] += 1;
+    }
+    return { total: roster.length, ...counts };
+  }, [roster]);
+
+  const baselineMember = useMemo(
+    () => members.find((member) => member.employee_id === selectedEmployeeId) || null,
+    [members, selectedEmployeeId],
+  );
+
+  const hasChanges = Boolean(
+    draftRoles &&
+      baselineMember &&
+      JSON.stringify(draftRoles.roles) !== JSON.stringify(baselineMember.roles),
+  );
+
+  function selectTier(tier: DocumentaryRoleTier) {
+    if (!activeMember) return;
+    const base = draftRoles || activeMember;
+    setDraftTier(tier);
+    setDraftRoles({
+      ...base,
+      roles: applyTierToRoles(base.roles, tier),
+    });
   }
 
   async function handleSave() {
-    if (!selectedMember) return;
+    if (!selectedMember || !draftRoles) return;
     setNotice(null);
-    const source = draftRoles || selectedMember;
-    const assignments: ModuleRoleAssignment[] = assignableRoles.map((role) => ({
-      role_key: role.role_key,
-      enabled: Boolean(source.roles[role.role_key]),
-    }));
+    const assignments: ModuleRoleAssignment[] = [
+      { role_key: "manager", enabled: Boolean(draftRoles.roles.manager) },
+      { role_key: "admin", enabled: Boolean(draftRoles.roles.admin) },
+    ];
     try {
       const updated = await assignMutation.mutateAsync({
         employee_id: selectedMember.employee_id,
         assignments,
       });
-      setDraftRoles(updated);
-      setNotice("Company Documentary roles updated successfully.");
+      setDraftRoles(null);
+      setDraftTier(null);
+      setNotice("Assignments saved successfully.");
+      void rosterQuery.refetch();
+      void membersQuery.refetch();
+      return updated;
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Roles could not be updated.");
     }
   }
 
-  const activeMember = draftRoles || selectedMember;
-
-  const hasChanges =
-    !!draftRoles &&
-    JSON.stringify(draftRoles.roles) !== JSON.stringify(selectedMember?.roles);
-
   return (
-    <div className={`roles-admin-page ${embedded ? "is-embedded" : ""}`}>
-      {!embedded ? (
-        <div className="roles-admin-header">
-          <div>
-            <p className="roles-admin-eyebrow">System administration</p>
-            <h1>Company Documentary roles</h1>
-            <p>Assign Manager and Administrator responsibilities for Company Documentary.</p>
+    <div className={`roles-access-page ${embedded ? "is-embedded" : ""}`}>
+      <header className="roles-access-header roles-access-header--toolbar">
+        <div className="roles-access-header-actions">
+          <div className="roles-access-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "assignments"}
+              className={tab === "assignments" ? "active" : ""}
+              onClick={() => setTab("assignments")}
+            >
+              Member Assignments
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "matrix"}
+              className={tab === "matrix" ? "active" : ""}
+              onClick={() => setTab("matrix")}
+            >
+              Role Access Matrix
+            </button>
           </div>
-          <button
-            type="button"
-            className="primary-button"
-            onClick={handleSave}
-            disabled={!selectedMember?.has_login || !hasChanges || assignMutation.isPending}
-          >
-            {assignMutation.isPending && <LoaderCircle size={16} className="spin" />}
-            Save roles
-          </button>
+          {tab === "assignments" ? (
+            <button
+              type="button"
+              className="primary-button roles-access-save"
+              onClick={() => void handleSave()}
+              disabled={!selectedMember?.has_login || !hasChanges || assignMutation.isPending}
+            >
+              {assignMutation.isPending ? (
+                <LoaderCircle className="spin" size={16} />
+              ) : (
+                <Save size={16} />
+              )}
+              Save assignments
+            </button>
+          ) : null}
         </div>
+      </header>
+
+      {notice ? <p className="roles-admin-notice">{notice}</p> : null}
+
+      {tab === "matrix" ? (
+        <RoleCapabilitiesMatrix variant="matrix" />
       ) : (
-        <div className="roles-admin-toolbar">
-          <p>Assign Manager and Administrator roles for Company Documentary.</p>
-          <button
-            type="button"
-            className="primary-button"
-            onClick={handleSave}
-            disabled={!selectedMember?.has_login || !hasChanges || assignMutation.isPending}
-          >
-            {assignMutation.isPending && <LoaderCircle size={16} className="spin" />}
-            Save roles
-          </button>
-        </div>
-      )}
-      {notice && <p className="roles-admin-notice">{notice}</p>}
-
-      <div className="roles-admin-grid">
-        <section className="roles-admin-panel">
-          <label>Employee search</label>
-          <div className="roles-admin-search">
-            <Search size={16} />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by name, email, or login"
-            />
+        <>
+          <div className="roles-access-stats">
+            <article className="roles-stat-card roles-stat-card--primary">
+              <Users size={18} />
+              <div>
+                <strong>{stats.total} members</strong>
+                <span>Enterprise directory</span>
+              </div>
+            </article>
+            <article className="roles-stat-card">
+              <Crown size={18} />
+              <div>
+                <strong>{stats.administrator}</strong>
+                <span>Full governance authority</span>
+              </div>
+            </article>
+            <article className="roles-stat-card">
+              <Shield size={18} />
+              <div>
+                <strong>{stats.supervisor}</strong>
+                <span>Media &amp; review control</span>
+              </div>
+            </article>
+            <article className="roles-stat-card">
+              <UserRound size={18} />
+              <div>
+                <strong>{stats.employee}</strong>
+                <span>Viewing &amp; playback only</span>
+              </div>
+            </article>
           </div>
-          <div className="roles-admin-list">
-            {members.map((member) => (
-              <button
-                key={member.employee_id}
-                type="button"
-                className={`roles-admin-member ${selectedEmployeeId === member.employee_id ? "active" : ""}`}
-                onClick={() => setSelectedEmployeeId(member.employee_id)}
-              >
-                <UserRound size={16} />
-                <div>
-                  <strong>{member.employee_name}</strong>
-                  <span>{member.department || "No department"}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
 
-        <div className="roles-admin-detail">
-          {!selectedMember && <p className="roles-admin-empty">Select an employee to assign roles.</p>}
-          {selectedMember && (
-            <>
-              <section className="roles-admin-panel">
-                <p className="roles-admin-eyebrow">Selected employee</p>
-                <h2>{selectedMember.employee_name}</h2>
-                {!selectedMember.has_login && (
-                  <div className="roles-admin-warning">
-                    <AlertTriangle size={16} />
-                    <span>This employee has no linked Odoo user account.</span>
+          <div className="roles-access-layout">
+            <section className="roles-access-list-panel">
+              <h2>Employee search ({members.length})</h2>
+              <div className="roles-access-search">
+                <Search size={16} />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search by name, email, or login..."
+                />
+              </div>
+              <div className="roles-access-member-list">
+                {membersQuery.isLoading ? (
+                  <div className="loading-state compact">
+                    <LoaderCircle className="spin" size={20} />
                   </div>
-                )}
-              </section>
-              <section className="roles-admin-panel">
-                <div className="roles-admin-module-title">
-                  <Shield size={18} />
-                  <div>
-                    <h3>Company Documentary</h3>
-                    <p>Manager and Administrator tiers for this module only.</p>
-                  </div>
-                </div>
-                {activeMember &&
-                  assignableRoles.map((role) => (
-                    <div key={role.role_key} className="roles-admin-toggle-row">
-                      <div>
-                        <strong>{role.label}</strong>
-                        <p>{role.description}</p>
-                        <small>{role.capabilities}</small>
-                      </div>
+                ) : members.length === 0 ? (
+                  <p className="roles-admin-empty inline">No employees match your search.</p>
+                ) : (
+                  members.map((member) => {
+                    const tier = memberRoleTier(member);
+                    const selected = selectedEmployeeId === member.employee_id;
+                    return (
                       <button
+                        key={member.employee_id}
                         type="button"
-                        className={`roles-admin-toggle ${activeMember.roles[role.role_key] ? "on" : ""}`}
-                        disabled={assignMutation.isPending || !activeMember.has_login}
-                        onClick={() => handleToggle(role.role_key, !activeMember.roles[role.role_key])}
-                      />
+                        className={`roles-access-member-row${selected ? " is-selected" : ""}`}
+                        onClick={() => setSelectedEmployeeId(member.employee_id)}
+                      >
+                        <span className={`roles-avatar roles-avatar--${avatarTone(member.employee_name)}`}>
+                          {initialsFromName(member.employee_name)}
+                        </span>
+                        <span className="roles-access-member-copy">
+                          <strong>{member.employee_name}</strong>
+                          <span>{member.department || "No department"}</span>
+                        </span>
+                        <RoleBadge tier={tier} />
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </section>
+
+            <section className="roles-access-detail-panel">
+              {!activeMember ? (
+                <p className="roles-admin-empty">Select an employee to assign a Documentary role.</p>
+              ) : (
+                <>
+                  <div className="roles-access-profile">
+                    <span
+                      className={`roles-avatar roles-avatar--lg roles-avatar--${avatarTone(activeMember.employee_name)}`}
+                    >
+                      {initialsFromName(activeMember.employee_name)}
+                    </span>
+                    <div>
+                      <div className="roles-access-profile-title">
+                        <h2>{activeMember.employee_name}</h2>
+                        {activeMember.has_login ? (
+                          <span className="roles-active-pill">Active</span>
+                        ) : null}
+                      </div>
+                      <p>
+                        {activeMember.user_login || activeMember.user_name || "No login"}
+                        {activeMember.department ? ` · ${activeMember.department}` : ""}
+                      </p>
                     </div>
-                  ))}
-              </section>
-            </>
-          )}
-        </div>
-      </div>
+                  </div>
+
+                  {!activeMember.has_login && (
+                    <div className="roles-admin-warning">
+                      <AlertTriangle size={16} />
+                      <span>This employee needs a linked Odoo user before roles can be assigned.</span>
+                    </div>
+                  )}
+
+                  <div className="roles-access-section">
+                    <h3>Assign documentary role</h3>
+                    <p className="roles-access-section-hint">Select one authorization level</p>
+                    <div className="roles-tier-cards">
+                      {ROLE_TIER_CARDS.map((card) => {
+                        const selected = activeTier === card.tier;
+                        return (
+                          <button
+                            key={card.tier}
+                            type="button"
+                            disabled={!activeMember.has_login || assignMutation.isPending}
+                            className={`roles-tier-card${selected ? " is-selected" : ""}`}
+                            onClick={() => selectTier(card.tier)}
+                          >
+                            <span className="roles-tier-card-radio" aria-hidden />
+                            <span className="roles-tier-card-body">
+                              <span className="roles-tier-card-title-row">
+                                <strong>{card.title}</strong>
+                                <span className="roles-tier-card-badge">{card.badge}</span>
+                              </span>
+                              <span className="roles-tier-card-desc">{card.description}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="roles-access-privileges">
+                    <h4>Privileges for {tierLabel(activeTier)} tier</h4>
+                    <ul>
+                      {TIER_PRIVILEGES[activeTier].map((item) => (
+                        <li key={item.label} className={item.allowed ? "allowed" : "denied"}>
+                          {item.allowed ? <Check size={16} /> : <Circle size={16} />}
+                          {item.label}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              )}
+            </section>
+          </div>
+        </>
+      )}
     </div>
   );
 }

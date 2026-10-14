@@ -5,26 +5,18 @@ import { useState } from "react";
 import type { AudienceOptions } from "../../../../lib/types";
 import { useDocumentaryAudience } from "../../../../hooks/useDocumentary";
 
-export type AudienceScope = "company" | "department" | "grade" | "employee";
+export type AudienceScope = "company" | "department";
 
 export function AudiencePicker({
   scope,
   setScope,
   departmentIds,
   setDepartmentIds,
-  gradeIds,
-  setGradeIds,
-  employeeIds,
-  setEmployeeIds,
 }: {
   scope: AudienceScope;
   setScope: (value: AudienceScope) => void;
   departmentIds: number[];
   setDepartmentIds: (value: number[]) => void;
-  gradeIds: number[];
-  setGradeIds: (value: number[]) => void;
-  employeeIds: number[];
-  setEmployeeIds: (value: number[]) => void;
 }) {
   const [search, setSearch] = useState("");
   const audienceQuery = useDocumentaryAudience(search, true);
@@ -33,31 +25,10 @@ export function AudiencePicker({
     grades: [],
     employees: [],
   };
-  const choices =
-    scope === "department"
-      ? data.departments
-      : scope === "grade"
-        ? data.grades
-        : data.employees;
-  const selected =
-    scope === "department"
-      ? departmentIds
-      : scope === "grade"
-        ? gradeIds
-        : employeeIds;
-  const setSelected =
-    scope === "department"
-      ? setDepartmentIds
-      : scope === "grade"
-        ? setGradeIds
-        : setEmployeeIds;
+  const choices = data.departments;
 
   function toggle(id: number) {
-    setSelected(
-      selected.includes(id)
-        ? selected.filter((item) => item !== id)
-        : [...selected, id],
-    );
+    setDepartmentIds(departmentIds.includes(id) ? [] : [id]);
   }
 
   return (
@@ -69,10 +40,8 @@ export function AudiencePicker({
       <div className="scope-grid">
         {(
           [
-            ["company", "Everyone in the company"],
-            ["department", "Specific departments"],
-            ["grade", "Specific grades"],
-            ["employee", "Specific employees"],
+            ["company", "All employees"],
+            ["department", "One department"],
           ] as [AudienceScope, string][]
         ).map(([value, label]) => (
           <button
@@ -118,14 +87,14 @@ export function AudiencePicker({
                   type="button"
                   key={id}
                   className={
-                    selected.includes(id)
+                    departmentIds.includes(id)
                       ? "audience-result selected"
                       : "audience-result"
                   }
                   onClick={() => toggle(id)}
                 >
                   <span>
-                    {selected.includes(id) ? (
+                    {departmentIds.includes(id) ? (
                       <Check size={14} />
                     ) : (
                       <span className="scope-dot" />
@@ -144,10 +113,10 @@ export function AudiencePicker({
               </span>
             )}
           </div>
-          {!!selected.length && (
+          {!!departmentIds.length && (
             <div className="selected-count">
-              {selected.length} {scope}
-              {selected.length === 1 ? "" : "s"} selected
+              {departmentIds.length} department
+              {departmentIds.length === 1 ? "" : "s"} selected
             </div>
           )}
         </>

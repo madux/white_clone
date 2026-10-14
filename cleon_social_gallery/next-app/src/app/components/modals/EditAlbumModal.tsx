@@ -5,18 +5,26 @@ import { LoaderCircle } from "lucide-react";
 import type { GalleryAlbum } from "@/lib/types";
 import { useGalleryMutations } from "@/hooks/useSocialGallery";
 import { AlbumAccessScopeFields, type AlbumAccessScope } from "../shared/AlbumAccessScopeFields";
+import AppSelect from "../shared/AppSelect";
 import { ModalShell } from "../shared/ModalShell";
+
+const VISIBILITY_OPTIONS = [
+  { value: "public", label: "Public" },
+  { value: "private", label: "Private" },
+];
 
 export default function EditAlbumModal({
   album,
   onClose,
   onSaved,
   isManager,
+  isAdmin,
 }: {
   album: GalleryAlbum;
   onClose: () => void;
   onSaved: () => void;
   isManager: boolean;
+  isAdmin?: boolean;
 }) {
   const { updateAlbum, albumAction, pinAlbum } = useGalleryMutations();
   const [name, setName] = useState(album.name);
@@ -25,6 +33,9 @@ export default function EditAlbumModal({
   const [accessScope, setAccessScope] = useState<AlbumAccessScope>((album.access_scope as AlbumAccessScope) || "company");
   const [departmentIds, setDepartmentIds] = useState<number[]>(album.department_ids || []);
   const [branchIds, setBranchIds] = useState<number[]>(album.branch_ids || []);
+  const [unitIds, setUnitIds] = useState<number[]>(album.unit_ids || []);
+  const [gradeIds, setGradeIds] = useState<number[]>(album.grade_ids || []);
+  const [customGroupIds, setCustomGroupIds] = useState<number[]>(album.custom_group_ids || []);
   const [employeeIds, setEmployeeIds] = useState<number[]>(album.employee_ids || []);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -36,6 +47,18 @@ export default function EditAlbumModal({
     }
     if (accessScope === "branch" && !branchIds.length) {
       setError("Select at least one branch.");
+      return;
+    }
+    if (accessScope === "unit" && !unitIds.length) {
+      setError("Select at least one unit.");
+      return;
+    }
+    if (accessScope === "grade" && !gradeIds.length) {
+      setError("Select at least one grade.");
+      return;
+    }
+    if (accessScope === "custom_group" && !customGroupIds.length) {
+      setError("Select at least one custom group.");
       return;
     }
     if (accessScope === "employee" && !employeeIds.length) {
@@ -53,6 +76,9 @@ export default function EditAlbumModal({
         access_scope: accessScope,
         department_ids: departmentIds,
         branch_ids: branchIds,
+        unit_ids: unitIds,
+        grade_ids: gradeIds,
+        custom_group_ids: customGroupIds,
         employee_ids: employeeIds,
       });
       onSaved();
@@ -102,25 +128,37 @@ export default function EditAlbumModal({
         </label>
         <label>
           Visibility
-          <select value={visibility} onChange={(e) => setVisibility(e.target.value as "public" | "private")} disabled={!album.can_edit}>
-            <option value="public">Public</option>
-            <option value="private">Private</option>
-          </select>
+          <AppSelect
+            value={visibility}
+            options={VISIBILITY_OPTIONS}
+            onChange={(value) => setVisibility(value as "public" | "private")}
+            disabled={!album.can_edit}
+            ariaLabel="Album visibility"
+          />
         </label>
         <AlbumAccessScopeFields
           accessScope={accessScope}
           departmentIds={departmentIds}
           branchIds={branchIds}
+          unitIds={unitIds}
+          gradeIds={gradeIds}
+          customGroupIds={customGroupIds}
           employeeIds={employeeIds}
           disabled={!album.can_edit}
           onChange={(values) => {
             setAccessScope(values.access_scope);
             setDepartmentIds(values.department_ids);
             setBranchIds(values.branch_ids);
+            setUnitIds(values.unit_ids);
+            setGradeIds(values.grade_ids);
+            setCustomGroupIds(values.custom_group_ids);
             setEmployeeIds(values.employee_ids);
           }}
         />
-        {album.status !== "approved" && isManager && (
+        {album.status === "rejected" && album.can_edit && (
+          <button type="button" className="secondary-button small" onClick={() => runAction("resubmit")}>Resubmit for review</button>
+        )}
+        {album.status === "pending" && isAdmin && (
           <div className="primary-actions">
             <button type="button" className="secondary-button small" onClick={() => runAction("approve")}>Approve Album</button>
             <button type="button" className="danger-button small" onClick={() => runAction("reject")}>Reject Album</button>

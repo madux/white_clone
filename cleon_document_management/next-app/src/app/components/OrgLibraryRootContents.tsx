@@ -13,8 +13,9 @@ import OrgFolderIcon from "./OrgFolderIcon";
 import FolderActions from "./FolderActions";
 import ViewToggle from "./ViewToggle";
 import { Checkbox } from "@/components/ui/checkbox";
-import { folderCardStyle } from "../../../lib/folderColor";
 import EmptyState from "./EmptyState";
+import OrgLibraryItemCardGrid from "./OrgLibraryItemCardGrid";
+import type { LibraryFileRow } from "./LibraryFileTable";
 
 function rootTitle(kindFilter: OrgLibraryKindFilter) {
   if (kindFilter === "project") return "Projects";
@@ -50,6 +51,41 @@ export default function OrgLibraryRootContents({
     setSelected((current) =>
       current.includes(id) ? current.filter((v) => v !== id) : [...current, id],
     );
+
+  const rootCardRows = useMemo<LibraryFileRow[]>(
+    () =>
+      roots.map((folder) => ({
+        id: String(folder.id),
+        kind: "folder",
+        name: folder.folder_name,
+        subtitle: `${folder.document_count ?? 0} items`,
+        folderKind: folder.folder_kind,
+        folderColorHex: folder.color_hex,
+        folderPreview: {
+          hasContent: (folder.document_count ?? 0) > 0,
+          documents: [],
+        },
+        modified: formatDocumentDate(folder.last_modified),
+        onOpen: () => onOpenFolder(folder.id),
+        selected: selected.includes(folder.id),
+        onSelectChange: () => toggle(folder.id),
+        extra: folder.locked ? (
+          <Lock className="h-4 w-4 text-muted-foreground" />
+        ) : null,
+        actions: (
+          <FolderActions
+            folderId={folder.id}
+            folderName={folder.folder_name}
+            description={folder.description}
+            locked={folder.locked}
+            folderType={folder.folder_type}
+            accessScope={folder.access_scope}
+            folderKind={folder.folder_kind}
+          />
+        ),
+      })),
+    [onOpenFolder, roots, selected],
+  );
 
   if (!roots.length) {
     return (
@@ -121,34 +157,7 @@ export default function OrgLibraryRootContents({
           ))}
         </ul>
       ) : (
-        <div className="grid gap-4 overflow-y-auto p-4 sm:grid-cols-2 xl:grid-cols-3">
-          {roots.map((folder) => (
-            <article
-              key={folder.id}
-              className="relative rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-brand-pink/30 hover:shadow-md"
-              style={folderCardStyle(folder.color_hex)}
-            >
-              <button
-                type="button"
-                onClick={() => onOpenFolder(folder.id)}
-                className="flex w-full flex-col items-start text-left"
-              >
-                <OrgFolderIcon
-                  className="mb-3 h-12 w-12"
-                  folderKind={folder.folder_kind}
-                  hasContent={(folder.document_count ?? 0) > 0}
-                />
-                <p className="font-semibold text-slate-900">{folder.folder_name}</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {folder.document_count ?? 0} items
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  Modified {formatDocumentDate(folder.last_modified)}
-                </p>
-              </button>
-            </article>
-          ))}
-        </div>
+        <OrgLibraryItemCardGrid rows={rootCardRows} selectable />
       )}
     </div>
   );

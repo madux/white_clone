@@ -73,9 +73,9 @@ export function validateOrganizationalVisibility(
 type ScopeTarget = { id: number; name: string };
 
 const VISIBILITY_LABELS: Record<OrgVisibilityMode, string> = {
-  public: "Public",
+  public: "Company-wide",
   restricted: "Restricted",
-  private: "Private",
+  private: "Private (creator only)",
   company_owned: "Company owned",
   admin_only: "Admin only",
 };

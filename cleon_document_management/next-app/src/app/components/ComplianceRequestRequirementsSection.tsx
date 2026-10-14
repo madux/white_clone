@@ -4,6 +4,7 @@ import type { PolicyCreateFormState } from "../../../lib/policyCreateForm";
 import type { DocumentType } from "../../../lib/types";
 import type { ComplianceLinkableContext } from "../../../lib/complianceRequestTasks";
 import ComplianceRequestScheduleFields from "./ComplianceRequestScheduleFields";
+import { PolicyWizardGraceAndNonComplianceFields } from "./compliance/PolicyWizardGraceAndNonComplianceFields";
 import ComplianceRequestTaskList from "./ComplianceRequestTaskList";
 import ThemedSelect from "./ThemedSelect";
 import { Users } from "lucide-react";
@@ -60,7 +61,15 @@ export default function ComplianceRequestRequirementsSection({
         onReminderChange={(reminder_frequency_days) =>
           setForm({ ...form, reminder_frequency_days })
         }
+        showGracePeriod={false}
       />
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <PolicyWizardGraceAndNonComplianceFields
+          form={form}
+          setForm={setForm}
+        />
+      </div>
 
       <section className="space-y-3">
         <h3 className="text-sm font-bold text-slate-900">Oversight</h3>

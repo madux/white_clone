@@ -184,6 +184,12 @@ export function MediaCard({
     media.processing_state === "uploading" ||
     (uploadProgress !== undefined && uploadProgress < 100);
   const uploadPct = uploadProgress ?? (media.processing_state === "uploading" ? 0 : undefined);
+  const showWatchProgress = Boolean(progress && !isUploading);
+  const watchProgressPercent = progress
+    ? progress.completed
+      ? 100
+      : Math.round(progress.completion_percent)
+    : 0;
 
   const handleOpen = () => {
     if (isUploading) return;
@@ -230,7 +236,7 @@ export function MediaCard({
   return (
     <article className={`media-card ${selected ? "is-selected" : ""}`}>
       <button
-        className={`media-preview ${palette} ${thumbnailUrl ? "has-thumbnail" : ""}${isUploading ? " is-uploading" : ""}`}
+        className={`media-preview ${palette} ${thumbnailUrl ? "has-thumbnail" : ""}${isUploading ? " is-uploading" : ""}${showWatchProgress ? " has-watch-progress" : ""}`}
         style={thumbnailUrl ? { backgroundImage: `linear-gradient(#24162a55,#24162a55), url(${thumbnailUrl})` } : undefined}
         onClick={handleOpen}
         disabled={isUploading}
@@ -247,20 +253,34 @@ export function MediaCard({
         )}
         <span className="media-type"><Video size={14} /> {media.mime_type.split("/")[1]?.toUpperCase() || "VIDEO"}</span>
         <span className="play-button"><Play size={19} fill="currentColor" /></span>
-        <div className="social-card-overlay">
-          <span className="social-card-stat"><Heart size={16} fill="currentColor" /> {media.like_count || 0}</span>
-          <span className="social-card-stat"><MessageCircle size={16} /> {media.comment_count || 0}</span>
-        </div>
         <span className="duration">{formatDuration(media.duration_seconds)}</span>
+        {showWatchProgress && progress && (
+          <div
+            className={`watch-progress-bar on-thumbnail${progress.completed ? " is-complete" : ""}`}
+            role="progressbar"
+            aria-valuenow={watchProgressPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={progress.completed ? "Completed" : `${watchProgressPercent}% watched`}
+          >
+            <span style={{ width: `${watchProgressPercent}%` }} />
+          </div>
+        )}
       </button>
       <div className="media-copy">
-        {(badge || (progress && !progress.completed && !isUploading)) && (
+        {(badge || showWatchProgress) && (
           <div className="media-card-head">
             {badge ? <span className={`status-badge ${badge.variant}`}>{badge.label}</span> : <span />}
-            {progress && !progress.completed && !isUploading && (
+            {showWatchProgress && progress && (
               <span className="watch-progress-chip">
-                <Clock3 size={12} />
-                {Math.round(progress.completion_percent)}% watched
+                {progress.completed ? (
+                  "Completed"
+                ) : (
+                  <>
+                    <Clock3 size={12} />
+                    {watchProgressPercent}% watched
+                  </>
+                )}
               </span>
             )}
           </div>
@@ -294,9 +314,6 @@ export function MediaCard({
               <span style={{ width: `${uploadPct}%` }} />
             </div>
           </div>
-        )}
-        {progress && !progress.completed && !isUploading && (
-          <div className="watch-progress-bar"><span style={{ width: `${progress.completion_percent}%` }} /></div>
         )}
       </div>
     </article>

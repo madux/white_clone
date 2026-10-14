@@ -57,7 +57,11 @@ class ComplianceRequestEngine(models.Model):
         if self.effective_date and trigger < self.effective_date:
             trigger = self.effective_date
         due_days = max(self.due_days or 0, 1)
-        grace_days = max(self.grace_period_days or 0, 0)
+        grace_days = (
+            max(self.grace_period_days or 0, 0)
+            if self.grace_period_enabled
+            else 0
+        )
         due_date = trigger + timedelta(days=due_days)
         grace_end = due_date + timedelta(days=grace_days)
         return trigger, due_date, grace_end
@@ -156,6 +160,20 @@ class ComplianceRequestEngine(models.Model):
         minimum = max(self.tasks_needed_minimum or 1, 1)
         return len(done_required) >= minimum
 
+    def _mark_request_cycle_non_compliant(self, cycle):
+        self.ensure_one()
+        if not cycle or cycle.state != "open":
+            return
+        cycle.write(
+            {
+                "state": "non_compliant",
+                "closed_at": fields.Datetime.now(),
+            }
+        )
+        self.env["doc.compliance.notify"].sudo().notify_request_cycle_non_compliant(
+            self, cycle
+        )
+
     def _sync_request_cycle_state(self, cycle):
         self.ensure_one()
         if not cycle or cycle.state != "open":
@@ -175,13 +193,15 @@ class ComplianceRequestEngine(models.Model):
             and t.requirement == "required"
         )
         if not pending and not self._tasks_needed_met(tasks):
-            if today > cycle.grace_end_date:
-                cycle.write(
-                    {
-                        "state": "non_compliant",
-                        "closed_at": fields.Datetime.now(),
-                    }
-                )
+            mode = self.non_compliance_mode or "after_grace"
+            if not self.grace_period_enabled and mode == "after_grace":
+                mode = "after_due"
+            if mode == "never":
+                return
+            if mode == "after_due" and today > cycle.due_date:
+                self._mark_request_cycle_non_compliant(cycle)
+            elif mode == "after_grace" and today > cycle.grace_end_date:
+                self._mark_request_cycle_non_compliant(cycle)
 
     def _request_cycle_status_payload(self, cycle, exception):
         today = fields.Date.context_today(self)
@@ -238,12 +258,7 @@ class ComplianceRequestEngine(models.Model):
                 "reason_code": "grace_remaining",
                 "reason_message": _("Overdue · grace until %s") % cycle.grace_end_date,
             }
-        cycle.write(
-            {
-                "state": "non_compliant",
-                "closed_at": fields.Datetime.now(),
-            }
-        )
+        self._mark_request_cycle_non_compliant(cycle)
         return {
             "compliance_status": "non_compliant",
             "status": "non_compliant",
@@ -494,21 +509,12 @@ class ComplianceRequestEngine(models.Model):
             if frequency <= 0:
                 continue
             policy.evaluate_compliance_request_employee(cycle.employee_id)
-            if cycle.state != "open":
+            cycle = cycle.exists()
+            if not cycle or cycle.state != "open":
                 continue
-            employee = cycle.employee_id
-            note = _(
-                "Reminder: %(policy)s — complete your tasks by %(due)s.",
-                policy=policy.name,
-                due=cycle.due_date,
+            self.env["doc.compliance.notify"].sudo().notify_request_cycle_reminder(
+                policy, cycle
             )
-            if employee.user_id:
-                policy._schedule_activity(
-                    employee.user_id,
-                    _("Compliance reminder"),
-                    note,
-                    cycle.due_date,
-                )
 
     @api.model
     def _cron_compliance_request_joined_scope(self):

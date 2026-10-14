@@ -41,12 +41,10 @@ export function UploadModal({
   const [scope, setScope] = useState("inherited");
   const [accessScope, setAccessScope] = useState<AudienceScope>("company");
   const [departmentIds, setDepartmentIds] = useState<number[]>([]);
-  const [gradeIds, setGradeIds] = useState<number[]>([]);
-  const [employeeIds, setEmployeeIds] = useState<number[]>([]);
-  const [mandatory, setMandatory] = useState(false);
-  const [commentsEnabled, setCommentsEnabled] = useState(false);
-  const [allowDownload, setAllowDownload] = useState(true);
-  const [threshold, setThreshold] = useState("85");
+  const [category, setCategory] = useState("general");
+  const [keywords, setKeywords] = useState("");
+  const [isInternalOnly, setIsInternalOnly] = useState(false);
+  const [allowDownload, setAllowDownload] = useState(false);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
   const [subtitleLanguage, setSubtitleLanguage] = useState("en");
@@ -100,14 +98,12 @@ export function UploadModal({
 
     onStartBatch(queue, {
       description,
-      mandatory,
-      completionThreshold: Number(threshold) || 85,
-      commentsEnabled,
+      category,
+      keywords,
+      isInternalOnly,
       scope: scope === "inherited" ? "inherited" : "override",
       accessScope,
       departmentIds,
-      gradeIds,
-      employeeIds,
       tagIds,
       allowDownload,
       thumbnailFile,
@@ -234,6 +230,22 @@ export function UploadModal({
 
         <div className="upload-options-grid">
           <label>
+            <span>Category</span>
+            <select value={category} onChange={(event) => setCategory(event.target.value)}>
+              <option value="general">General</option>
+              <option value="onboarding">Onboarding</option>
+              <option value="training">Training</option>
+              <option value="marketing">Marketing</option>
+              <option value="hr_updates">HR Updates</option>
+              <option value="company_events">Company Events</option>
+              <option value="product_launches">Product Launches</option>
+            </select>
+          </label>
+          <label>
+            <span>Keywords</span>
+            <input value={keywords} onChange={(event) => setKeywords(event.target.value)} placeholder="Comma-separated" />
+          </label>
+          <label>
             <span>Access</span>
             <select
               value={scope}
@@ -243,16 +255,6 @@ export function UploadModal({
               <option value="override">Override for this video</option>
             </select>
           </label>
-          <label>
-            <span>Completion threshold</span>
-            <input
-              type="number"
-              min="1"
-              max="100"
-              value={threshold}
-              onChange={(event) => setThreshold(event.target.value)}
-            />
-          </label>
         </div>
         {scope === "override" && (
           <AudiencePicker
@@ -260,10 +262,6 @@ export function UploadModal({
             setScope={setAccessScope}
             departmentIds={departmentIds}
             setDepartmentIds={setDepartmentIds}
-            gradeIds={gradeIds}
-            setGradeIds={setGradeIds}
-            employeeIds={employeeIds}
-            setEmployeeIds={setEmployeeIds}
           />
         )}
         <div className="tag-picker">
@@ -308,30 +306,19 @@ export function UploadModal({
         <div className="switch-list">
           <label className="switch-row">
             <span>
-              <strong>Mandatory training</strong>
-              <small>Track completion for every viewer.</small>
+              <strong>Internal only</strong>
+              <small>Disables employee download in the player.</small>
             </span>
             <input
               type="checkbox"
-              checked={mandatory}
-              onChange={(event) => setMandatory(event.target.checked)}
-            />
-          </label>
-          <label className="switch-row">
-            <span>
-              <strong>Allow comments</strong>
-              <small>Let viewers discuss this video.</small>
-            </span>
-            <input
-              type="checkbox"
-              checked={commentsEnabled}
-              onChange={(event) => setCommentsEnabled(event.target.checked)}
+              checked={isInternalOnly}
+              onChange={(event) => setIsInternalOnly(event.target.checked)}
             />
           </label>
           <label className="switch-row">
             <span>
               <strong>Allow downloads</strong>
-              <small>Viewers may save a copy.</small>
+              <small>Applies when employee download is enabled in settings.</small>
             </span>
             <input
               type="checkbox"

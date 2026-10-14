@@ -59,7 +59,13 @@ function UploadToast({
         </div>
         <div className="upload-toast-copy">
           <strong>{job.title}</strong>
-          <span>{isError && job.error ? job.error : statusLabel(job)}</span>
+          <span>
+            {isError && job.error
+              ? job.error
+              : isComplete && job.lifecycleHint
+                ? job.lifecycleHint
+                : statusLabel(job)}
+          </span>
         </div>
         <button
           type="button"

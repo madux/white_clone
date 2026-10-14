@@ -88,6 +88,8 @@ class ComplianceReviewEngine(models.Model):
         return trigger_date + relativedelta(months=months)
 
     def _grace_end(self, due_date):
+        if not self.grace_period_enabled:
+            return due_date
         grace = max(self.grace_period_days or 0, 0)
         return due_date + timedelta(days=grace)
 
@@ -240,14 +242,22 @@ class ComplianceReviewEngine(models.Model):
             ]
         )
         overdue_mode = self.review_overdue_mode or "after_grace"
+        if not self.grace_period_enabled and overdue_mode == "after_grace":
+            overdue_mode = "after_due"
         for review in reviews:
             if review.state == "completed":
+                continue
+            if overdue_mode == "never":
                 continue
             if overdue_mode == "after_due" and review.due_date < today:
                 if review.state != "overdue":
                     review.write({"state": "overdue"})
                     self.evaluate_employee(review.employee_id)
-            if review.grace_end_date and review.grace_end_date < today:
+            if (
+                overdue_mode == "after_grace"
+                and review.grace_end_date
+                and review.grace_end_date < today
+            ):
                 if review.state not in ("escalated", "completed"):
                     review.write({"state": "escalated", "escalated": True})
                     self._escalate_review(review)

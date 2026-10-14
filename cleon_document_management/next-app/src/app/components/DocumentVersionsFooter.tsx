@@ -102,6 +102,9 @@ export default function DocumentVersionsFooter({
                 <span className="mt-0.5 block font-normal text-slate-400">
                   {version.uploaded_by} ·{" "}
                   {version.upload_date?.slice(0, 16).replace("T", " ")}
+                  {version.has_expiry && version.expiry_date
+                    ? ` · Expiry ${version.expiry_date}`
+                    : ""}
                 </span>
               </span>
               <div className="flex shrink-0 items-center gap-2">

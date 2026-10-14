@@ -158,6 +158,24 @@ export function filterOrgRootFolders(
   return sortOrgFolders(roots, filters.sort);
 }
 
+/** Whether the open folder belongs under the current summary tab (e.g. Projects). */
+export function orgActiveFolderMatchesKindTab(
+  folder: DocFolder,
+  folders: DocFolder[],
+  kindFilter: OrgLibraryKindFilter,
+): boolean {
+  if (kindFilter === "all" || kindFilter === "documents") return true;
+  const org = folders.filter((item) => item.folder_type === "organizational");
+  const byId = new Map(org.map((item) => [item.id, item]));
+  let current: DocFolder | undefined = folder;
+  while (current) {
+    if ((current.folder_kind || "folder") === kindFilter) return true;
+    const parentId = parentFolderId(current);
+    current = parentId ? byId.get(parentId) : undefined;
+  }
+  return false;
+}
+
 /** Folder ids that match filters, plus ancestors for tree navigation. */
 export function orgFolderTreeVisibleIds(
   folders: DocFolder[],

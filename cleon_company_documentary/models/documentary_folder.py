@@ -16,6 +16,7 @@ class CompanyDocumentaryFolder(models.Model):
 
     name = fields.Char(required=True, index=True)
     description = fields.Text()
+    color = fields.Char(default="#E91E8C", help="Folder colour from the SRS palette.")
     parent_id = fields.Many2one(
         "company.documentary.folder", ondelete="restrict", index=True
     )
@@ -36,10 +37,8 @@ class CompanyDocumentaryFolder(models.Model):
     )
     access_scope = fields.Selection(
         [
-            ("company", "Everyone"),
-            ("department", "Specific Departments"),
-            ("grade", "Specific Grades"),
-            ("employee", "Specific Employees"),
+            ("company", "All Employees"),
+            ("department", "Specific Department"),
         ],
         required=True,
         default="company",
@@ -92,21 +91,13 @@ class CompanyDocumentaryFolder(models.Model):
         for folder in self:
             folder.media_count = len(folder.media_ids.filtered("active"))
 
-    @api.constrains("access_scope", "department_ids", "grade_ids", "employee_ids")
+    @api.constrains("access_scope", "department_ids")
     def _check_scope_targets(self):
         for folder in self:
-            if folder.access_scope == "department" and not folder.department_ids:
-                raise ValidationError(_("Select at least one department."))
-            if folder.access_scope == "grade" and not folder.grade_ids:
-                raise ValidationError(_("Select at least one grade."))
-            if folder.access_scope == "employee" and not folder.employee_ids:
-                raise ValidationError(_("Select at least one employee."))
+            if folder.access_scope == "department" and len(folder.department_ids) != 1:
+                raise ValidationError(_("Select exactly one department for folder access."))
             if folder.access_scope != "department" and folder.department_ids:
                 raise ValidationError(_("Departments can only be selected for department access."))
-            if folder.access_scope != "grade" and folder.grade_ids:
-                raise ValidationError(_("Grades can only be selected for grade access."))
-            if folder.access_scope != "employee" and folder.employee_ids:
-                raise ValidationError(_("Employees can only be selected for employee access."))
 
     @api.constrains("parent_id", "company_id")
     def _check_parent_company(self):
@@ -141,9 +132,7 @@ class CompanyDocumentaryFolder(models.Model):
             return False
         if self.access_scope == "department":
             return employee.department_id in self.department_ids
-        if self.access_scope == "grade":
-            return employee.grade_id in self.grade_ids
-        return employee in self.employee_ids
+        return False
 
     def _user_can_edit(self, user=None):
         self.ensure_one()

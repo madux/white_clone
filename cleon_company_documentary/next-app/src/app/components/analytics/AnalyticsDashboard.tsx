@@ -4,7 +4,7 @@ import { Download, LoaderCircle, Maximize2, Minimize2, ShieldCheck, X } from "lu
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../../../../lib/api";
 import type { ComplianceMandatoryFilter, DocumentaryFolder } from "../../../../lib/types";
-import { useDocumentaryAnalytics } from "../../../../hooks/useDocumentary";
+import { useDocumentaryAnalytics, useDocumentarySettings } from "../../../../hooks/useDocumentary";
 import {
   AnalyticsCompliance,
   type ComplianceExportState,
@@ -69,8 +69,16 @@ export function AnalyticsDashboard({
     ...(folderId ? { folder_id: Number(folderId) } : {}),
     ...(mediaId ? { media_id: Number(mediaId) } : {}),
   };
+  const settingsQuery = useDocumentarySettings(true);
+  const complianceEnabled = settingsQuery.data?.compliance_analytics !== false;
   const query = useDocumentaryAnalytics(filters, tab !== "compliance");
   const data = query.data;
+
+  useEffect(() => {
+    if (!complianceEnabled && tab === "compliance") {
+      setTab("overview");
+    }
+  }, [complianceEnabled, tab]);
   async function exportReport() {
     if (tab === "compliance") {
       if (!complianceExport.mediaId) return;
@@ -275,7 +283,7 @@ export function AnalyticsDashboard({
               ["departments", "Departments"],
               ["engagement", "Engagement"],
               ["trends", "Trends"],
-              ["compliance", "Compliance"],
+              ...(complianceEnabled ? [["compliance", "Compliance"] as [AnalyticsTab, string]] : []),
             ] as [AnalyticsTab, string][]
           ).map(([value, label]) => (
             <button
@@ -324,7 +332,9 @@ export function AnalyticsDashboard({
           <ShieldCheck size={15} />
           <span>
             Analytics are available to authorized managers and administrators.
-            The Compliance tab shows per-employee training status for oversight.
+            {complianceEnabled
+              ? " The Compliance tab shows per-employee training status for oversight."
+              : " Compliance analytics are disabled in Documentary settings."}
           </span>
         </footer>
       </section>

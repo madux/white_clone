@@ -12,7 +12,7 @@ import DocumentViewerDialog from "./DocumentViewerDialog";
 import LibraryFileTable, { type LibraryFileRow } from "./LibraryFileTable";
 import StatusPill from "./StatusPill";
 import ViewToggle from "./ViewToggle";
-import EmptyState from "./EmptyState";
+import OrgLibraryItemCardGrid from "./OrgLibraryItemCardGrid";
 import { sortLibraryFileRows } from "../../../lib/libraryTableSort";
 import {
   filterOrgDocumentsTab,
@@ -81,7 +81,14 @@ export default function OrgLibraryDocumentsContents({
         source_url: document.source_url,
       },
       name: document.name,
-      subtitle: document.document_type || undefined,
+      subtitle:
+        [
+          document.document_type,
+          document.folder_name ? `In ${document.folder_name}` : null,
+          orgDocumentSourceLabel(document),
+        ]
+          .filter(Boolean)
+          .join(" · ") || undefined,
       description: orgDocumentSourceLabel(document),
       location: document.folder_name || "—",
       owner: document.owner_name || "—",
@@ -155,42 +162,16 @@ export default function OrgLibraryDocumentsContents({
               : "Upload or link files in an organizational folder to see them here."
           }
         />
-      ) : !rows.length && !documentsQuery.isLoading ? (
-        <EmptyState
-          title="No documents found"
-          description={
+      ) : (
+        <OrgLibraryItemCardGrid
+          rows={rows}
+          emptyTitle="No documents found"
+          emptyDescription={
             search.trim()
               ? "Try a different search term or open a folder from the tree."
               : "Upload or link files in an organizational folder to see them here."
           }
         />
-      ) : (
-        <div className="grid gap-4 overflow-y-auto p-4 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.map((row) => (
-            <article
-              key={row.id}
-              className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-brand-pink/30 hover:shadow-md"
-            >
-              <button type="button" className="block w-full text-left" onClick={row.onOpen}>
-                <p className="font-semibold text-slate-900">{row.name}</p>
-                {row.subtitle ? (
-                  <p className="mt-1 text-xs text-slate-500">{row.subtitle}</p>
-                ) : null}
-                {row.description ? (
-                  <p className="mt-1 text-xs font-medium text-slate-600">
-                    Source: {row.description}
-                  </p>
-                ) : null}
-                {row.location ? (
-                  <p className="mt-1 text-xs text-slate-400">Folder: {row.location}</p>
-                ) : null}
-                {row.modified ? (
-                  <p className="mt-1 text-xs text-slate-400">Modified {row.modified}</p>
-                ) : null}
-              </button>
-            </article>
-          ))}
-        </div>
       )}
 
       {viewing ? (

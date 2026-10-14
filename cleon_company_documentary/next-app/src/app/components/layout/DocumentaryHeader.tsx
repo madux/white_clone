@@ -38,7 +38,9 @@ export function DocumentaryHeader({
             Cleon<span>HR</span>
           </div>
           <div className="header-breadcrumb hidden min-w-0 items-center gap-2 text-xs text-slate-400 lg:flex">
-            <span>Workspace</span>
+            <span>Corporate Assets</span>
+            <ChevronRight size={14} />
+            <span>Documentary</span>
             <ChevronRight size={14} />
             <strong className="truncate font-semibold text-slate-600">
               {pageTitle}

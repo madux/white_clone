@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type MouseEvent } from "react";
-import { Grid3X3, Heart, LayoutGrid, List, MessageCircle, Trash2, Upload } from "lucide-react";
+import { useMemo, useState, type MouseEvent } from "react";
+import { ChevronRight, LayoutGrid, List, Trash2, Upload } from "lucide-react";
 import type { GalleryAlbum, GalleryMedia, LayoutMode } from "@/lib/types";
 import { formatBytes, formatDate } from "@/lib/api";
 import { MediaThumb, StatusBadge } from "../shared/MediaThumb";
@@ -9,9 +9,14 @@ import UploadModal from "../modals/UploadModal";
 import { EmptyState } from "../shared/EmptyState";
 import { LoadingGrid } from "../shared/LoadingGrid";
 import { LoadMoreFooter } from "../shared/LoadMoreFooter";
-import { PageToolbar } from "../shared/PageToolbar";
+import AppSelect from "../shared/AppSelect";
 import { BatchToolbar } from "../shared/BatchToolbar";
 import { useGalleryMutations } from "@/hooks/useSocialGallery";
+import {
+  GalleryLibraryChrome,
+  type GalleryStatusFilter,
+} from "../gallery/GalleryLibraryChrome";
+import { normalizeLayout } from "@/hooks/useSocialGallery";
 
 interface GalleryFeedProps {
   media: GalleryMedia[];
@@ -29,23 +34,40 @@ interface GalleryFeedProps {
   loadingMore?: boolean;
   canManage?: boolean;
   onError?: (message: string) => void;
+  libraryMode?: boolean;
+  albumFilterId?: number | null;
+  onAlbumFilter?: (albumId: number | null) => void;
+  statusFilter?: GalleryStatusFilter;
+  onStatusFilter?: (value: GalleryStatusFilter) => void;
+  sort?: string;
+  onSort?: (value: string) => void;
+  onCreateAlbum?: () => void;
+  statusCounts?: { all: number; approved: number; pending: number; rejected: number };
+  search?: string;
+  onSearch?: (value: string) => void;
 }
-
-const LAYOUT_ICONS = {
-  grid: LayoutGrid,
-  list: List,
-  masonry: Grid3X3,
-};
 
 export default function GalleryFeedView({
   media, loading, layout, onLayoutChange, onOpenMedia, albumId, albums, onRefresh, onUpload, hideToolbar,
   total, onLoadMore, loadingMore, canManage = false, onError,
+  libraryMode = false,
+  albumFilterId = null,
+  onAlbumFilter,
+  statusFilter = "",
+  onStatusFilter,
+  sort = "newest",
+  onSort,
+  onCreateAlbum,
+  statusCounts,
+  search = "",
+  onSearch,
 }: GalleryFeedProps) {
   const [showUpload, setShowUpload] = useState(false);
   const [selected, setSelected] = useState<number[]>([]);
   const [moveAlbumId, setMoveAlbumId] = useState<number | "">("");
   const { mediaBatchAction } = useGalleryMutations();
   const allSelected = selected.length === media.length && media.length > 0;
+  const viewLayout = normalizeLayout(layout);
 
   const triggerUpload = () => {
     if (onUpload) onUpload();
@@ -64,77 +86,111 @@ export default function GalleryFeedView({
     onOpenMedia(item);
   };
 
+  const statusOptions = useMemo(() => {
+    const counts = statusCounts || { all: total ?? media.length, approved: 0, pending: 0, rejected: 0 };
+    return [
+      { value: "" as GalleryStatusFilter, label: "All", count: counts.all },
+      { value: "approved" as GalleryStatusFilter, label: "Approved", count: counts.approved },
+      { value: "pending" as GalleryStatusFilter, label: "Pending", count: counts.pending },
+      { value: "rejected" as GalleryStatusFilter, label: "Rejected", count: counts.rejected },
+    ];
+  }, [statusCounts, total, media.length]);
+
+  const approvedAlbums = useMemo(
+    () => (albums || []).filter((a) => a.status === "approved"),
+    [albums],
+  );
+
   return (
-    <div>
-      {!hideToolbar && (
-        <PageToolbar
-          left={(
-            <div className="view-toggle">
-              {(["grid", "list", "masonry"] as LayoutMode[]).map((mode) => {
-                const Icon = LAYOUT_ICONS[mode];
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    className={layout === mode ? "active" : ""}
-                    onClick={() => onLayoutChange(mode)}
-                    aria-label={`${mode} view`}
-                  >
-                    <Icon size={14} />
-                  </button>
-                );
-              })}
-            </div>
-          )}
+    <div className={libraryMode ? "gallery-library-page" : ""}>
+      {libraryMode && onAlbumFilter && onStatusFilter && onSort && onSearch && (
+        <GalleryLibraryChrome
+          search={search}
+          onSearch={onSearch}
+          layout={viewLayout}
+          onLayoutChange={onLayoutChange}
+          statusFilter={statusFilter}
+          onStatusFilter={onStatusFilter}
+          statusOptions={statusOptions}
+          sort={sort}
+          onSort={onSort}
+          albums={approvedAlbums}
+          albumFilterId={albumFilterId}
+          onAlbumFilter={onAlbumFilter}
+          shown={media.length}
+          total={total ?? media.length}
+          onCreateAlbum={onCreateAlbum}
+          canManageStatus={canManage}
         />
       )}
 
-      {canManage && media.length > 0 && (
+      {libraryMode && media.length > 0 && (
+        <div className="gallery-selection-bar">
+          {canManage ? (
+            <BatchToolbar
+              count={selected.length}
+              total={media.length}
+              onClear={() => setSelected([])}
+              onToggleAll={() => setSelected(allSelected ? [] : media.map((m) => m.id))}
+            >
+              <AppSelect
+                variant="toolbar"
+                value={moveAlbumId === "" ? "" : String(moveAlbumId)}
+                placeholder="Move to album…"
+                options={[
+                  { value: "", label: "Move to album…" },
+                  ...approvedAlbums.map((album) => ({
+                    value: String(album.id),
+                    label: album.name,
+                  })),
+                ]}
+                onChange={(value) => setMoveAlbumId(value ? Number(value) : "")}
+                ariaLabel="Move selected to album"
+              />
+              <button
+                type="button"
+                className="secondary-button small"
+                disabled={!selected.length || !moveAlbumId}
+                onClick={() => mediaBatchAction.mutateAsync({
+                  ids: selected,
+                  action: "move",
+                  album_id: moveAlbumId,
+                }).then(() => { setSelected([]); onRefresh(); }).catch(handleError)}
+              >
+                Move
+              </button>
+              <button
+                type="button"
+                className="danger-button small gallery-selection-delete"
+                disabled={!selected.length}
+                onClick={() => {
+                  if (!window.confirm(`Move ${selected.length} item(s) to the recycle bin?`)) return;
+                  mediaBatchAction.mutateAsync({ ids: selected, action: "delete" })
+                    .then(() => { setSelected([]); onRefresh(); })
+                    .catch(handleError);
+                }}
+              >
+                <Trash2 size={14} />
+                <span className="gallery-selection-delete-label">Delete</span>
+              </button>
+            </BatchToolbar>
+          ) : null}
+          {canManage && (
+            <p className="gallery-selection-tip">
+              <span className="gallery-selection-tip-desktop">Tip: Hover over any media item and click the checkmark to select</span>
+              <span className="gallery-selection-tip-mobile">Tap the checkmark on items to select them</span>
+            </p>
+          )}
+        </div>
+      )}
+
+      {!libraryMode && !hideToolbar && canManage && media.length > 0 && (
         <BatchToolbar
           count={selected.length}
           total={media.length}
           onClear={() => setSelected([])}
           onToggleAll={() => setSelected(allSelected ? [] : media.map((m) => m.id))}
-        >
-          <div className="field">
-            <select
-              value={moveAlbumId}
-              onChange={(e) => setMoveAlbumId(e.target.value ? Number(e.target.value) : "")}
-              aria-label="Move selected to album"
-            >
-              <option value="">Move to album…</option>
-              {(albums || []).map((album) => (
-                <option key={album.id} value={album.id}>{album.name}</option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="button"
-            className="secondary-button small"
-            disabled={!selected.length || !moveAlbumId}
-            onClick={() => mediaBatchAction.mutateAsync({
-              ids: selected,
-              action: "move",
-              album_id: moveAlbumId,
-            }).then(() => { setSelected([]); onRefresh(); }).catch(handleError)}
-          >
-            Move Selected
-          </button>
-          <button
-            type="button"
-            className="danger-button small"
-            disabled={!selected.length}
-            onClick={() => {
-              if (!window.confirm(`Move ${selected.length} item(s) to the recycle bin?`)) return;
-              mediaBatchAction.mutateAsync({ ids: selected, action: "delete" })
-                .then(() => { setSelected([]); onRefresh(); })
-                .catch(handleError);
-            }}
-          >
-            <Trash2 size={14} />
-            Delete Selected
-          </button>
-        </BatchToolbar>
+        />
       )}
 
       {loading ? (
@@ -144,56 +200,109 @@ export default function GalleryFeedView({
           icon={Upload}
           title="No media found"
           description="Upload photos or videos to start building your gallery."
-          action={(
+          action={onUpload ? (
             <button type="button" className="primary-button" onClick={triggerUpload}>
               <Upload size={16} />
               Upload Media
             </button>
-          )}
+          ) : undefined}
         />
-      ) : layout === "list" ? (
-        <div className="analytics-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                {canManage && <th aria-label="Select" />}
-                <th>Preview</th>
-                <th>Name</th>
-                <th>Album</th>
-                <th>Uploader</th>
-                <th>Size</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {media.map((item) => (
-                <tr
-                  key={item.id}
-                  className={`media-list-row ${selected.includes(item.id) ? "is-selected" : ""}`}
+      ) : viewLayout === "list" ? (
+        <>
+          <ul className="gallery-mobile-media-list" aria-label="Media list">
+            {media.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className={`gallery-mobile-media-row ${selected.includes(item.id) ? "is-selected" : ""}`}
                   onClick={(event) => openMedia(item, event)}
                 >
-                  {canManage && (
-                    <td onClick={(event) => event.stopPropagation()}>
-                      <input className="sg-check media-select-check" type="checkbox" checked={selected.includes(item.id)} onChange={() => toggle(item.id)} />
-                    </td>
-                  )}
-                  <td><MediaThumb media={item} className="list-thumb" showOverlay={false} /></td>
-                  <td>{item.display_name}</td>
-                  <td>{item.album_name || "—"}</td>
-                  <td>{item.uploaded_by_name}</td>
-                  <td>{formatBytes(item.file_size)}</td>
-                  <td><StatusBadge status={item.approval_status} /></td>
+                  <div className="gallery-mobile-media-thumb">
+                    <MediaThumb
+                      media={item}
+                      className="gallery-mobile-list-thumb"
+                      showOverlay={item.media_type === "video"}
+                    />
+                    {canManage && (
+                      <label
+                        className="gallery-mobile-media-select"
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => event.stopPropagation()}
+                      >
+                        <input
+                          className="sg-check"
+                          type="checkbox"
+                          checked={selected.includes(item.id)}
+                          onChange={() => toggle(item.id)}
+                          aria-label={`Select ${item.display_name}`}
+                        />
+                      </label>
+                    )}
+                  </div>
+                  <div className="gallery-mobile-media-body">
+                    <div className="gallery-mobile-media-head">
+                      <span className="gallery-mobile-media-title">{item.display_name}</span>
+                      <StatusBadge status={item.approval_status} />
+                    </div>
+                    <p className="gallery-mobile-media-line">
+                      {item.album_name || "No album"}
+                      <span className="gallery-mobile-media-dot" aria-hidden>·</span>
+                      {formatBytes(item.file_size)}
+                    </p>
+                    <p className="gallery-mobile-media-line gallery-mobile-media-line--muted">
+                      {item.uploaded_by_name}
+                      <span className="gallery-mobile-media-dot" aria-hidden>·</span>
+                      {formatDate(item.create_date)}
+                    </p>
+                  </div>
+                  <ChevronRight className="gallery-mobile-media-chevron" size={18} aria-hidden />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="analytics-table-wrap gallery-list-table">
+            <table>
+              <thead>
+                <tr>
+                  {canManage && <th aria-label="Select" />}
+                  <th>Preview</th>
+                  <th>Name</th>
+                  <th>Album</th>
+                  <th>Uploader</th>
+                  <th>Size</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {media.map((item) => (
+                  <tr
+                    key={item.id}
+                    className={`media-list-row ${selected.includes(item.id) ? "is-selected" : ""}`}
+                    onClick={(event) => openMedia(item, event)}
+                  >
+                    {canManage && (
+                      <td onClick={(event) => event.stopPropagation()}>
+                        <input className="sg-check media-select-check" type="checkbox" checked={selected.includes(item.id)} onChange={() => toggle(item.id)} />
+                      </td>
+                    )}
+                    <td><MediaThumb media={item} className="list-thumb" showOverlay={false} /></td>
+                    <td>{item.display_name}</td>
+                    <td>{item.album_name || "—"}</td>
+                    <td>{item.uploaded_by_name}</td>
+                    <td>{formatBytes(item.file_size)}</td>
+                    <td><StatusBadge status={item.approval_status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : (
-        <div className={layout === "masonry" ? "sg-masonry" : "media-grid"}>
+        <div className="media-grid gallery-library-grid">
           {media.map((item) => (
             <article
               key={item.id}
-              className={`media-card ${layout === "masonry" ? "sg-masonry-item" : ""} ${selected.includes(item.id) ? "is-selected" : ""}`}
+              className={`media-card ${selected.includes(item.id) ? "is-selected" : ""}`}
               tabIndex={0}
               role="button"
               onClick={(event) => openMedia(item, event)}
@@ -207,7 +316,7 @@ export default function GalleryFeedView({
               <div className="media-thumb-wrap">
                 {canManage && (
                   <input
-                    className="sg-check media-select-check"
+                    className="sg-check media-select-check gallery-hover-check"
                     type="checkbox"
                     checked={selected.includes(item.id)}
                     onClick={(event) => event.stopPropagation()}
@@ -215,11 +324,7 @@ export default function GalleryFeedView({
                     aria-label={`Select ${item.display_name}`}
                   />
                 )}
-                <MediaThumb media={item} />
-                <div className="social-card-overlay">
-                  <span className="social-card-stat"><Heart size={18} fill="currentColor" /> {item.like_count}</span>
-                  <span className="social-card-stat"><MessageCircle size={18} /> {item.comment_count}</span>
-                </div>
+                <MediaThumb media={item} showOverlay />
               </div>
               <div className="media-copy">
                 <div className="media-title-row">
@@ -229,9 +334,6 @@ export default function GalleryFeedView({
                 <div className="media-footer">
                   <span>{item.uploaded_by_name}</span>
                   <span>{formatDate(item.create_date)}</span>
-                </div>
-                <div className="media-meta">
-                  <span>{item.like_count} likes · {item.comment_count} comments</span>
                 </div>
               </div>
             </article>
@@ -260,55 +362,3 @@ export default function GalleryFeedView({
   );
 }
 
-export function AlbumDetailView({
-  album, media, loading, layout, onLayoutChange, onOpenMedia, onRefresh, onUpload,
-  total, onLoadMore, loadingMore, canManage, albums, onError,
-}: {
-  album: GalleryAlbum;
-  media: GalleryMedia[];
-  loading: boolean;
-  layout: LayoutMode;
-  onLayoutChange: (layout: LayoutMode) => void;
-  onOpenMedia: (media: GalleryMedia) => void;
-  onRefresh: () => void;
-  onUpload?: () => void;
-  total?: number;
-  onLoadMore?: () => void;
-  loadingMore?: boolean;
-  canManage?: boolean;
-  albums?: GalleryAlbum[];
-  onError?: (message: string) => void;
-}) {
-  return (
-    <div>
-      <div className="filter-toolbar">
-        <p className="album-meta-line">
-          {album.description || "No description"} · {album.photo_count} photos · {album.video_count} videos · {formatBytes(album.total_size)}
-        </p>
-        {onUpload && (
-          <button type="button" className="primary-button small" onClick={onUpload}>
-            <Upload size={14} />
-            Upload Media
-          </button>
-        )}
-      </div>
-      <GalleryFeedView
-        media={media}
-        loading={loading}
-        layout={layout}
-        onLayoutChange={onLayoutChange}
-        onOpenMedia={onOpenMedia}
-        albumId={album.id}
-        albums={albums}
-        onRefresh={onRefresh}
-        onUpload={onUpload}
-        hideToolbar={false}
-        total={total}
-        onLoadMore={onLoadMore}
-        loadingMore={loadingMore}
-        canManage={canManage}
-        onError={onError}
-      />
-    </div>
-  );
-}

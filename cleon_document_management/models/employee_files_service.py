@@ -2077,15 +2077,17 @@ class DocEmployeeFilesService(models.AbstractModel):
         reason_label = EXCLUSION_REASON_LABELS.get(
             exclusion.reason, exclusion.reason or ""
         )
+        display_label = classification_label(classification)
         return {
             "id": exclusion.id,
             "source": "exclusion",
             "name": _("Excluded employee: %s") % employee.name,
             "category": classification,
             "classification": classification,
-            "classification_label": classification_label(classification),
+            "classification_label": display_label,
             "issue_type": exclusion.reason,
-            "issue_type_label": reason_label,
+            "issue_type_label": display_label,
+            "exclusion_reason_label": reason_label,
             "details": exclusion.justification
             or _("Employee is excluded from Employee Files."),
             "state": "open",

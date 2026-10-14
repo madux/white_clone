@@ -489,6 +489,68 @@ class OrganizationalFilesController(http.Controller):
             },
         }
 
+    @classmethod
+    def _collection_suggestion_base_domain(cls, registered_doc_ids):
+        base = cls._policy_suggestion_base_domain(registered_doc_ids, adopt_mode=False)
+        return expression.AND(
+            [
+                base,
+                ("folder_id.folder_kind", "not in", ["project", "vendor"]),
+            ]
+        )
+
+    @classmethod
+    def _collection_suggestion_kind_name_domain(cls, folder_kind):
+        kind = (folder_kind or "").strip().lower()
+        keyword = {"project": "project", "vendor": "vendor"}.get(kind)
+        if not keyword:
+            return []
+        return [("name", "ilike", f"%{keyword}%")]
+
+    @classmethod
+    def _search_collection_suggestion_documents(cls, env, query, folder_kind=None, folder_id=None):
+        Policy = env["doc.organizational.policy"]
+        registered_doc_ids = Policy.registered_primary_document_ids()
+        base = cls._collection_suggestion_base_domain(registered_doc_ids)
+        if folder_id:
+            base = expression.AND([base, [("folder_id", "!=", int(folder_id))]])
+
+        search_domains = []
+        word_domain = cls._policy_suggestion_word_domain(query)
+        if word_domain:
+            search_domains.append(expression.AND([base, word_domain]))
+        kind_name_domain = cls._collection_suggestion_kind_name_domain(folder_kind)
+        if kind_name_domain:
+            search_domains.append(expression.AND([base, kind_name_domain]))
+        if not search_domains:
+            return env["doc.document"].browse()
+
+        Document = env["doc.document"]
+        seen = {}
+        for search_domain in search_domains:
+            for document in Document.search(search_domain, order="name", limit=200):
+                seen[document.id] = document
+        return Document.browse(list(seen.keys()))
+
+    @classmethod
+    def _collection_suggestion_match_reason(cls, document, query, folder_kind=None):
+        haystack = cls._policy_match_text(
+            f"{document.name or ''} {document.description or ''}"
+        )
+        needle = cls._policy_match_text(query)
+        if needle and needle in haystack:
+            return "exact"
+        words = cls._policy_query_words(query)
+        if words and all(word in haystack for word in words):
+            return "terms"
+        name_lower = (document.name or "").lower()
+        kind = (folder_kind or "").strip().lower()
+        if kind == "project" and "project" in name_lower:
+            return "project_keyword"
+        if kind == "vendor" and "vendor" in name_lower:
+            return "vendor_keyword"
+        return "related"
+
     @http.route(
         "/api/organizational/suggested-files",
         type="json",
@@ -496,31 +558,52 @@ class OrganizationalFilesController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def suggested_files(self, name=None, folder_id=None, **kwargs):
+    def suggested_files(self, name=None, folder_id=None, folder_kind=None, **kwargs):
         perm = self._perm()
         if not perm.user_can_access_org_library(request.env.user):
             return {"success": False, "message": "You do not have permission to browse this library."}
         query = (name or "").strip()
         if len(query) < 2:
             return {"success": True, "data": {"items": []}}
-        domain = [
-            ("folder_id.folder_type", "=", "organizational"),
-            ("active", "=", True),
-            ("is_shortcut", "=", False),
-            ("is_template", "=", False),
-            "|",
-            ("name", "ilike", query),
-            ("description", "ilike", query),
-        ]
-        if folder_id:
-            domain.append(("folder_id", "!=", int(folder_id)))
-        documents = request.env["doc.document"].search(domain, limit=20)
-        items = [
-            document.serialize_for_api(request.env.user)
-            for document in documents
-            if document._organizational_user_can_access(request.env.user)
-        ]
-        return {"success": True, "data": {"items": items[:20]}}
+        kind = folder_kind or kwargs.get("folder_kind")
+        documents = self._search_collection_suggestion_documents(
+            request.env,
+            query,
+            folder_kind=kind,
+            folder_id=folder_id,
+        )
+        user = request.env.user
+        items = []
+        for document in documents:
+            folder_kind_value = document.folder_id.folder_kind or "folder"
+            if folder_kind_value in ("project", "vendor"):
+                continue
+            if not document._organizational_user_can_access(user):
+                continue
+            payload = document.serialize_for_api(user)
+            payload["match_reason"] = self._collection_suggestion_match_reason(
+                document, query, kind
+            )
+            payload["folder_path"] = [
+                crumb.get("name") or ""
+                for crumb in (payload.get("folder_path") or [])
+            ]
+            items.append(payload)
+        needle = query.lower()
+
+        def _rank(payload):
+            doc_name = (payload.get("name") or "").lower()
+            reason = payload.get("match_reason") or ""
+            if needle and needle in doc_name:
+                return 0
+            if reason == "exact":
+                return 1
+            if reason in ("terms", "project_keyword", "vendor_keyword"):
+                return 2
+            return 3
+
+        items.sort(key=_rank)
+        return {"success": True, "data": {"items": items[:50]}}
 
     @staticmethod
     def _policy_match_text(value):

@@ -21,12 +21,15 @@ export const documentaryKeys = {
     filters,
   ],
   continueWatching: ["company-documentary", "continue-watching"],
+  homeHero: ["company-documentary", "home-hero"],
   recycleBin: ["company-documentary", "recycle-bin"],
   settings: ["company-documentary", "settings"],
   audience: (search: string) => ["company-documentary", "audience", search],
   analytics: (filters: Record<string, unknown>) => ["company-documentary", "analytics", filters],
   compliance: (filters: Record<string, unknown>) => ["company-documentary", "compliance", filters],
   comments: (mediaId: number) => ["company-documentary", "comments", mediaId],
+  mediaVersions: (mediaId: number) => ["company-documentary", "media-versions", mediaId],
+  mediaAudit: (mediaId: number) => ["company-documentary", "media-audit", mediaId],
 };
 
 export function useDocumentaryUser() {
@@ -57,6 +60,14 @@ export function useContinueWatching() {
   return useQuery({
     queryKey: documentaryKeys.continueWatching,
     queryFn: api.continueWatching,
+  });
+}
+
+export function useHomeHero(enabled = true) {
+  return useQuery({
+    queryKey: documentaryKeys.homeHero,
+    queryFn: api.homeHero,
+    enabled,
   });
 }
 
@@ -130,6 +141,7 @@ export function useDocumentaryMediaAction() {
       queryClient.invalidateQueries({ queryKey: ["company-documentary", "media"] });
       queryClient.invalidateQueries({ queryKey: documentaryKeys.recycleBin });
       queryClient.invalidateQueries({ queryKey: documentaryKeys.continueWatching });
+      queryClient.invalidateQueries({ queryKey: documentaryKeys.homeHero });
     },
   });
 }
@@ -181,7 +193,28 @@ export function useMediaApproval() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.mediaApproval,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["company-documentary", "media"] }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["company-documentary", "media"] });
+      queryClient.invalidateQueries({ queryKey: documentaryKeys.homeHero });
+      queryClient.invalidateQueries({ queryKey: documentaryKeys.mediaVersions(variables.id) });
+      queryClient.invalidateQueries({ queryKey: documentaryKeys.mediaAudit(variables.id) });
+    },
+  });
+}
+
+export function useDocumentaryVersions(mediaId: number, enabled = true) {
+  return useQuery({
+    queryKey: documentaryKeys.mediaVersions(mediaId),
+    queryFn: () => api.mediaVersions(mediaId),
+    enabled: enabled && mediaId > 0,
+  });
+}
+
+export function useDocumentaryAuditLog(mediaId: number, enabled = true) {
+  return useQuery({
+    queryKey: documentaryKeys.mediaAudit(mediaId),
+    queryFn: () => api.auditLog(mediaId),
+    enabled: enabled && mediaId > 0,
   });
 }
 

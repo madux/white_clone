@@ -222,7 +222,7 @@ export default function EmployeeFilesIssuesPage({
                         </td>
                         <td className="dms-col-actions">
                           {issue.source === "exclusion" ? (
-                            <StatusPill label="Excluded" />
+                            <span className="text-slate-400">—</span>
                           ) : issue.recommended_action === "view_in_ems" ? (
                             <StatusPill label="View in EMS" />
                           ) : issue.recommended_action === "none" ? (

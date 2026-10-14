@@ -49,10 +49,6 @@ export function CreateFolderModal({
   const [departmentIds, setDepartmentIds] = useState(
     initialFolder?.department_ids || [],
   );
-  const [gradeIds, setGradeIds] = useState(initialFolder?.grade_ids || []);
-  const [employeeIds, setEmployeeIds] = useState(
-    initialFolder?.employee_ids || [],
-  );
   const [allowDownload, setAllowDownload] = useState(
     initialFolder?.allow_download || false,
   );
@@ -74,8 +70,6 @@ export function CreateFolderModal({
               parent_id: parentId ? Number(parentId) : false,
               access_scope: scope,
               department_ids: departmentIds,
-              grade_ids: gradeIds,
-              employee_ids: employeeIds,
               allow_download: allowDownload,
             });
         }}
@@ -126,10 +120,6 @@ export function CreateFolderModal({
           setScope={setScope}
           departmentIds={departmentIds}
           setDepartmentIds={setDepartmentIds}
-          gradeIds={gradeIds}
-          setGradeIds={setGradeIds}
-          employeeIds={employeeIds}
-          setEmployeeIds={setEmployeeIds}
         />
         <label className="switch-row">
           <span>
@@ -165,17 +155,10 @@ export function BatchShareModal({
 }: {
   count: number;
   onClose: () => void;
-  onSave: (
-    scope: string,
-    departmentIds: number[],
-    gradeIds: number[],
-    employeeIds: number[],
-  ) => void;
+  onSave: (scope: string, departmentIds: number[]) => void;
 }) {
   const [scope, setScope] = useState<AudienceScope>("department");
   const [departmentIds, setDepartmentIds] = useState<number[]>([]);
-  const [gradeIds, setGradeIds] = useState<number[]>([]);
-  const [employeeIds, setEmployeeIds] = useState<number[]>([]);
   return (
     <ModalShell
       eyebrow="Bulk access"
@@ -192,10 +175,6 @@ export function BatchShareModal({
           setScope={setScope}
           departmentIds={departmentIds}
           setDepartmentIds={setDepartmentIds}
-          gradeIds={gradeIds}
-          setGradeIds={setGradeIds}
-          employeeIds={employeeIds}
-          setEmployeeIds={setEmployeeIds}
         />
         <div className="modal-actions">
           <button className="secondary-button" onClick={onClose}>
@@ -203,7 +182,7 @@ export function BatchShareModal({
           </button>
           <button
             className="primary-button"
-            onClick={() => onSave(scope, departmentIds, gradeIds, employeeIds)}
+            onClick={() => onSave(scope, departmentIds)}
           >
             Apply access
           </button>

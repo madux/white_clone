@@ -518,6 +518,11 @@ export type SuggestedPolicyFile = DocDocument & {
   folder_path?: string[];
 };
 
+export type SuggestedCollectionFile = DocDocument & {
+  match_reason?: "exact" | "terms" | "project_keyword" | "vendor_keyword" | "related";
+  folder_path?: string[];
+};
+
 export interface OrganizationalPolicy {
   id: number;
   name: string;
@@ -807,6 +812,9 @@ export interface DocumentVersion {
   change_note: string;
   file_size: number;
   mime_type: string;
+  has_expiry?: boolean;
+  expiry_date?: string;
+  issue_date?: string;
 }
 
 export interface ShareLink {
@@ -838,6 +846,8 @@ export interface CompliancePolicy {
   branch_ids?: number[];
   minimum_documents: number;
   grace_period_days: number;
+  grace_period_enabled?: boolean;
+  non_compliance_mode?: string;
   effective_date: string;
   active: boolean;
   lifecycle_status?: "draft" | "active" | "archived";
@@ -869,12 +879,19 @@ export interface CompliancePolicy {
   review_completion_minimum?: number;
   review_overdue_mode?: string;
   review_milestones?: Array<Record<string, unknown>>;
+  verified_by?: string;
+  verification_sla_days?: number;
+  verification_document_type_ids?: number[];
+  verification_sla_escalation_user_id?: number | false;
+  verification_sla_escalation_user_name?: string;
 }
 
 export interface RetentionSettingRule {
   id: number;
   document_type_id: number;
   document_type_name: string;
+  retention_value: number;
+  retention_unit: string;
   archive_after_value: number;
   archive_after_unit: string;
   delete_after_value: number;
@@ -1049,7 +1066,8 @@ export type ComplianceReportKey =
   | "expiring_soon"
   | "department_compliance"
   | "exceptions"
-  | "employee_scores";
+  | "employee_scores"
+  | "retention_items";
 
 export type WorkspaceActivityKind =
   | "acknowledgement"

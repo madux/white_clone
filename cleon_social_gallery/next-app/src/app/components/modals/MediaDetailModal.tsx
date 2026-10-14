@@ -1,29 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { History, Images, Trash2 } from "lucide-react";
-import type { GalleryAlbum, GalleryComment, GalleryMedia, GalleryTag } from "@/lib/types";
+import { Copy, Crop, Download, Heart, Replace, Trash2, Undo2 } from "lucide-react";
+import type { GalleryAlbum, GalleryMedia } from "@/lib/types";
 import { api, formatBytes, formatDate } from "@/lib/api";
-import { toSocialComments, type SocialComment } from "@/lib/socialUtils";
 import { MediaThumb, StatusBadge } from "../shared/MediaThumb";
-import { useGalleryComments, useGalleryMutations, useGalleryTags } from "@/hooks/useSocialGallery";
-import { PostDetailLayout } from "../social/PostDetailLayout";
-import { PostHeader } from "../social/PostHeader";
-import { PostCaption } from "../social/PostCaption";
-import { EngagementBar, LikeCount } from "../social/EngagementBar";
-import { CommentThread } from "../social/CommentThread";
-import { CommentComposer } from "../social/CommentComposer";
+import { useGalleryMutations } from "@/hooks/useSocialGallery";
 import { PostNav } from "../social/PostNav";
-import ShareModal from "./ShareModal";
+import AppSelect from "../shared/AppSelect";
 import { ModalShell } from "../shared/ModalShell";
-import { EmptyState } from "../shared/EmptyState";
+import CropModal from "./CropModal";
+import { uploadSocialFile } from "@/lib/uploadSocialFile";
 
 export default function MediaDetailModal({
   media,
   albums,
   userId,
   isManager,
-  allowExternalShare,
   onClose,
   onRefresh,
   onError,
@@ -36,7 +29,6 @@ export default function MediaDetailModal({
   albums: GalleryAlbum[];
   userId?: number;
   isManager?: boolean;
-  allowExternalShare?: boolean;
   onClose: () => void;
   onRefresh: () => void;
   onError?: (message: string) => void;
@@ -46,50 +38,29 @@ export default function MediaDetailModal({
   hasNext?: boolean;
 }) {
   const [assetUrl, setAssetUrl] = useState("");
-  const [showManage, setShowManage] = useState(false);
   const [displayName, setDisplayName] = useState(media.display_name);
   const [description, setDescription] = useState(media.description);
-  const [accessibleDescription, setAccessibleDescription] = useState(media.accessible_description);
-  const [commentBody, setCommentBody] = useState("");
-  const [replyTo, setReplyTo] = useState<SocialComment | null>(null);
-  const [reportReason, setReportReason] = useState("inappropriate");
-  const [confirmReport, setConfirmReport] = useState(false);
-  const [versions, setVersions] = useState<GalleryMedia[]>([]);
-  const [similar, setSimilar] = useState<GalleryMedia[]>([]);
-  const [showShare, setShowShare] = useState(false);
   const [moveAlbumId, setMoveAlbumId] = useState<number | "">(media.album_id || "");
   const [currentMedia, setCurrentMedia] = useState(media);
-  const [selectedTagIds, setSelectedTagIds] = useState<number[]>(media.tag_ids || []);
-  const [newTagName, setNewTagName] = useState("");
-  const [manageTab, setManageTab] = useState<"details" | "versions" | "similar">("details");
-  const composerRef = useRef<HTMLInputElement>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [replaceBusy, setReplaceBusy] = useState(false);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
 
-  const commentsQuery = useGalleryComments(currentMedia.id);
-  const tagsQuery = useGalleryTags();
-  const { updateMedia, mediaAction, toggleLike, postComment, deleteComment, createTag } = useGalleryMutations();
+  const { updateMedia, mediaAction, toggleLike } = useGalleryMutations();
+  const isOwner = userId === currentMedia.uploaded_by;
+  const approvedAlbums = albums.filter((a) => a.status === "approved");
 
   useEffect(() => {
     setCurrentMedia(media);
     setDisplayName(media.display_name);
     setDescription(media.description);
-    setAccessibleDescription(media.accessible_description);
     setMoveAlbumId(media.album_id || "");
-    setSelectedTagIds(media.tag_ids || []);
-    setShowManage(false);
-    setReplyTo(null);
-    setCommentBody("");
   }, [media]);
 
   useEffect(() => {
     api.assetUrl(currentMedia.id).then((r) => setAssetUrl(r.url)).catch(() => {});
     api.mediaAction({ id: currentMedia.id, action: "view" }).catch(() => {});
   }, [currentMedia.id]);
-
-  useEffect(() => {
-    if (!showManage) return;
-    if (manageTab === "versions") api.mediaVersions(currentMedia.id).then(setVersions).catch(() => {});
-    if (manageTab === "similar") api.similarMedia(currentMedia.id).then(setSimilar).catch(() => {});
-  }, [showManage, manageTab, currentMedia.id]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -108,8 +79,6 @@ export default function MediaDetailModal({
         id: currentMedia.id,
         display_name: displayName,
         description,
-        accessible_description: accessibleDescription,
-        tag_ids: selectedTagIds,
       });
       onRefresh();
     } catch (err) {
@@ -118,23 +87,9 @@ export default function MediaDetailModal({
   };
 
   const move = async () => {
-    if (!moveAlbumId) return;
+    if (!moveAlbumId || !isManager) return;
     try {
       await api.moveMedia({ id: currentMedia.id, album_id: Number(moveAlbumId) });
-      onRefresh();
-    } catch (err) {
-      handleError(err);
-    }
-  };
-
-  const report = async () => {
-    if (!confirmReport) {
-      setConfirmReport(true);
-      return;
-    }
-    try {
-      await api.reportMedia({ id: currentMedia.id, reason: reportReason });
-      setConfirmReport(false);
       onRefresh();
     } catch (err) {
       handleError(err);
@@ -164,235 +119,243 @@ export default function MediaDetailModal({
     }
   };
 
-  const submitComment = async () => {
-    if (!commentBody.trim()) return;
+  const deleteMedia = async () => {
+    if (!window.confirm("Move this item to the Recycle Bin?")) return;
     try {
-      await postComment.mutateAsync({
-        media_id: currentMedia.id,
-        body: commentBody.trim(),
-        parent_id: replyTo?.id,
-      });
-      setCommentBody("");
-      setReplyTo(null);
+      await mediaAction.mutateAsync({ id: currentMedia.id, action: "delete" });
+      onClose();
       onRefresh();
     } catch (err) {
       handleError(err);
     }
   };
 
-  const addTag = async () => {
-    const name = newTagName.trim();
-    if (!name) return;
+  const withdrawMedia = async () => {
+    if (!window.confirm("Withdraw this pending upload?")) return;
     try {
-      const tag = await createTag.mutateAsync(name) as GalleryTag;
-      setSelectedTagIds((prev) => [...new Set([...prev, tag.id])]);
-      setNewTagName("");
+      await mediaAction.mutateAsync({ id: currentMedia.id, action: "withdraw" });
+      onClose();
+      onRefresh();
     } catch (err) {
       handleError(err);
     }
   };
 
-  const comments = toSocialComments((commentsQuery.data || []) as GalleryComment[]);
-  const allTags = (tagsQuery.data || []) as GalleryTag[];
+  const duplicateMedia = async () => {
+    if (!window.confirm("Create an approved copy of this media in the same album?")) return;
+    try {
+      const copy = await api.duplicateMedia(currentMedia.id);
+      setCurrentMedia(copy);
+      onRefresh();
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  const onReplaceFile = async (file: File) => {
+    const sameType = currentMedia.media_type === "video"
+      ? file.type.startsWith("video/")
+      : file.type.startsWith("image/");
+    if (!sameType) {
+      handleError(new Error("Replacement file must be the same media type."));
+      return;
+    }
+    setReplaceBusy(true);
+    try {
+      const updated = await uploadSocialFile({
+        file,
+        displayName: currentMedia.display_name,
+        description: currentMedia.description,
+        albumId: currentMedia.album_id || undefined,
+        replaceMediaId: currentMedia.id,
+      });
+      setCurrentMedia(updated);
+      onRefresh();
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setReplaceBusy(false);
+      if (replaceInputRef.current) replaceInputRef.current.value = "";
+    }
+  };
+
+  const requestReReview = async () => {
+    try {
+      await updateMedia.mutateAsync({
+        id: currentMedia.id,
+        trigger_re_review: true,
+      });
+      onRefresh();
+    } catch (err) {
+      handleError(err);
+    }
+  };
 
   return (
-    <>
-      <ModalShell
-        title={currentMedia.display_name}
-        eyebrow="Media Detail"
-        onClose={onClose}
-        wide
-        className="media-detail"
-      >
-        <div className="modal-body social-detail-body">
-          <PostNav onPrev={onPrev} onNext={onNext} hasPrev={hasPrev} hasNext={hasNext} />
-          <PostDetailLayout
-            media={(
-              <div className="media-detail-asset-frame">
-                {assetUrl ? (
-                  currentMedia.media_type === "video" ? (
-                    <video src={assetUrl} controls className="media-detail-asset" />
-                  ) : (
-                    <img src={assetUrl} alt={currentMedia.display_name} className="media-detail-asset" />
-                  )
-                ) : (
-                  <MediaThumb media={currentMedia} />
-                )}
-              </div>
+    <ModalShell
+      title={currentMedia.display_name}
+      eyebrow="Media Detail"
+      onClose={onClose}
+      wide
+      className="media-detail"
+    >
+      <div className="modal-body social-detail-body">
+        <PostNav onPrev={onPrev} onNext={onNext} hasPrev={hasPrev} hasNext={hasNext} />
+        <div className="media-detail-layout">
+          <div className="media-detail-asset-frame">
+            {assetUrl ? (
+              currentMedia.media_type === "video" ? (
+                <video src={assetUrl} controls className="media-detail-asset" />
+              ) : (
+                <img src={assetUrl} alt={currentMedia.display_name} className="media-detail-asset" />
+              )
+            ) : (
+              <MediaThumb media={currentMedia} />
             )}
-            sidebar={(
-              <>
-                <PostHeader
-                  userName={currentMedia.uploaded_by_name}
-                  subtitle={currentMedia.album_name}
-                  createdAt={currentMedia.create_date}
-                  onMenu={() => setShowManage((value) => !value)}
-                />
-                <PostCaption title={currentMedia.display_name} description={currentMedia.description} />
-                <EngagementBar
-                  liked={currentMedia.liked_by_me}
-                  onLike={toggleLikeAction}
-                  onComment={() => composerRef.current?.focus()}
-                  onShare={() => setShowShare(true)}
-                  onDownload={download}
-                  extra={currentMedia.can_edit ? (
-                    <button
-                      type="button"
-                      className="social-post-icon-btn danger"
-                      onClick={() => mediaAction.mutateAsync({ id: currentMedia.id, action: "delete" }).then(onClose).catch(handleError)}
-                      aria-label="Delete"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  ) : undefined}
-                />
-                <LikeCount count={currentMedia.like_count} />
-                {currentMedia.comment_count > 0 && (
-                  <p className="social-post-like-count">
-                    <strong>{currentMedia.comment_count}</strong> {currentMedia.comment_count === 1 ? "comment" : "comments"}
-                  </p>
-                )}
-                <CommentThread
-                  comments={comments}
-                  loading={commentsQuery.isLoading}
-                  currentUserId={userId}
-                  isManager={isManager}
-                  onReply={(comment) => setReplyTo(comment)}
-                  onDelete={(commentId) => deleteComment.mutateAsync({ media_id: currentMedia.id, comment_id: commentId }).catch(handleError)}
-                />
-                {currentMedia.comments_enabled && (
-                  <CommentComposer
-                    value={commentBody}
-                    onChange={setCommentBody}
-                    onSubmit={submitComment}
-                    loading={postComment.isPending}
-                    replyTo={replyTo?.user_name}
-                    onCancelReply={() => setReplyTo(null)}
-                    placeholder={replyTo ? `Reply to ${replyTo.user_name}…` : "Add a comment…"}
-                    inputRef={composerRef}
+          </div>
+          <div className="media-detail-sidebar modal-form">
+            <p className="meta-muted">
+              {currentMedia.uploaded_by_name} · {currentMedia.album_name || "No album selected"}
+            </p>
+            <StatusBadge status={currentMedia.approval_status} />
+            {currentMedia.legal_hold && (
+              <p className="status-badge pending">Legal hold — deletion and disposal blocked</p>
+            )}
+            {currentMedia.disposition_state === "due" && (
+              <p className="status-badge pending">Disposition review required before purge</p>
+            )}
+            {currentMedia.storage_tier === "cold" && (
+              <p className="meta-muted">Storage tier: cold</p>
+            )}
+            {currentMedia.is_unassigned && (
+              <p className="status-badge pending">No album selected — reviewer must assign before approval.</p>
+            )}
+            <p className="meta-muted">{formatBytes(currentMedia.file_size)} · {formatDate(currentMedia.create_date)}</p>
+
+            <div className="media-detail-actions">
+              <button type="button" className="secondary-button small" onClick={toggleLikeAction}>
+                <Heart size={16} fill={currentMedia.liked_by_me ? "currentColor" : "none"} />
+                {currentMedia.like_count}
+              </button>
+              <button type="button" className="secondary-button small" onClick={download}>
+                <Download size={16} />
+                Download
+              </button>
+              {isManager && (
+                <button type="button" className="secondary-button small" onClick={duplicateMedia}>
+                  <Copy size={16} />
+                  Duplicate
+                </button>
+              )}
+              {currentMedia.can_edit && currentMedia.media_type === "image" && assetUrl && (
+                <button type="button" className="secondary-button small" onClick={() => setCropOpen(true)}>
+                  <Crop size={16} />
+                  Crop
+                </button>
+              )}
+              {currentMedia.can_edit && (
+                <>
+                  <button
+                    type="button"
+                    className="secondary-button small"
+                    disabled={replaceBusy}
+                    onClick={() => replaceInputRef.current?.click()}
+                  >
+                    <Replace size={16} />
+                    {replaceBusy ? "Replacing…" : "Replace"}
+                  </button>
+                  <input
+                    ref={replaceInputRef}
+                    type="file"
+                    hidden
+                    accept={currentMedia.media_type === "video" ? "video/*" : "image/*"}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) onReplaceFile(file);
+                    }}
                   />
+                </>
+              )}
+              {currentMedia.can_delete && (
+                <button type="button" className="danger-button small" onClick={deleteMedia}>
+                  <Trash2 size={16} />
+                  Delete
+                </button>
+              )}
+              {currentMedia.can_withdraw && (
+                <button type="button" className="secondary-button small" onClick={withdrawMedia}>
+                  <Undo2 size={16} />
+                  Withdraw
+                </button>
+              )}
+            </div>
+
+            {(currentMedia.can_edit || isOwner) && (
+              <>
+                <label>
+                  Display name
+                  <input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    disabled={!currentMedia.can_edit}
+                  />
+                </label>
+                <label>
+                  Description
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    disabled={!currentMedia.can_edit}
+                  />
+                </label>
+                {currentMedia.can_edit && (
+                  <button type="button" className="primary-button small" onClick={save}>Save</button>
                 )}
-                {showManage && (
-                  <div className="social-manage-drawer">
-                    <div className="panel-tabs">
-                      {(["details", "versions", "similar"] as const).map((tab) => (
-                        <button key={tab} type="button" className={manageTab === tab ? "active" : ""} onClick={() => setManageTab(tab)}>
-                          {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                    {manageTab === "details" && (
-                      <div className="modal-form">
-                        <label>
-                          Display Name
-                          <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={!currentMedia.can_edit} />
-                        </label>
-                        <label>
-                          Description
-                          <textarea value={description} onChange={(e) => setDescription(e.target.value)} disabled={!currentMedia.can_edit} />
-                        </label>
-                        <label>
-                          Accessible Description
-                          <textarea value={accessibleDescription} onChange={(e) => setAccessibleDescription(e.target.value)} disabled={!currentMedia.can_edit} />
-                        </label>
-                        <StatusBadge status={currentMedia.approval_status} />
-                        <p className="meta-muted">Size: {formatBytes(currentMedia.file_size)} · {formatDate(currentMedia.create_date)}</p>
-                        {currentMedia.can_edit && (
-                          <>
-                            <label>
-                              Tags
-                              <div className="tag-picker">
-                                {allTags.map((tag) => (
-                                  <label key={tag.id} className="tag-chip">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedTagIds.includes(tag.id)}
-                                      onChange={(e) => setSelectedTagIds((prev) => e.target.checked ? [...prev, tag.id] : prev.filter((id) => id !== tag.id))}
-                                    />
-                                    {tag.name}
-                                  </label>
-                                ))}
-                              </div>
-                              <div className="contributor-row">
-                                <input value={newTagName} onChange={(e) => setNewTagName(e.target.value)} placeholder="New tag name" />
-                                <button type="button" className="secondary-button small" onClick={addTag}>Add</button>
-                              </div>
-                            </label>
-                            <label>
-                              Move to album
-                              <div className="contributor-row">
-                                <select value={moveAlbumId} onChange={(e) => setMoveAlbumId(e.target.value ? Number(e.target.value) : "")}>
-                                  <option value="">Select album</option>
-                                  {albums.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                                </select>
-                                <button type="button" className="secondary-button small" onClick={move}>Move</button>
-                              </div>
-                            </label>
-                            <button type="button" className="primary-button small" onClick={save}>Save changes</button>
-                          </>
-                        )}
-                        <label>
-                          Report content
-                          <div className="contributor-row">
-                            <select value={reportReason} onChange={(e) => setReportReason(e.target.value)}>
-                              <option value="inappropriate">Inappropriate Content</option>
-                              <option value="harassment">Harassment</option>
-                              <option value="privacy">Privacy Violation</option>
-                              <option value="copyright">Copyright Issue</option>
-                              <option value="other">Other</option>
-                            </select>
-                            <button type="button" className="danger-button small" onClick={report}>
-                              {confirmReport ? "Confirm Report" : "Report"}
-                            </button>
-                          </div>
-                        </label>
-                      </div>
-                    )}
-                    {manageTab === "versions" && (
-                      versions.length === 0 ? (
-                        <EmptyState icon={History} title="No previous versions" description="Edits and replacements will appear here." />
-                      ) : (
-                        <div className="stack-list">
-                          {versions.map((version) => (
-                            <div key={version.id} className="activity-row">
-                              <span className="status-badge pending">v{version.version}</span>
-                              <div className="profile-copy">
-                                <strong>{version.display_name}</strong>
-                                <span>{formatDate(version.create_date)}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    )}
-                    {manageTab === "similar" && (
-                      similar.length === 0 ? (
-                        <EmptyState icon={Images} title="No similar content" description="Related media will be suggested here." />
-                      ) : (
-                        <div className="similar-grid">
-                          {similar.map((item) => (
-                            <article key={item.id} className="media-card" onClick={() => setCurrentMedia(item)} role="button" tabIndex={0}>
-                              <MediaThumb media={item} />
-                              <div className="media-copy"><span className="media-title">{item.display_name}</span></div>
-                            </article>
-                          ))}
-                        </div>
-                      )
-                    )}
-                  </div>
+                {isOwner && currentMedia.approval_status === "approved" && !isManager && (
+                  <button type="button" className="secondary-button small" onClick={requestReReview}>
+                    Mark for re-review after edits
+                  </button>
                 )}
               </>
             )}
-          />
+
+            {isManager && (
+              <label>
+                Move to album
+                <div className="contributor-row">
+                  <AppSelect
+                    value={moveAlbumId === "" ? "" : String(moveAlbumId)}
+                    placeholder="Select album"
+                    options={[
+                      { value: "", label: "Select album" },
+                      ...approvedAlbums.map((a) => ({ value: String(a.id), label: a.name })),
+                    ]}
+                    onChange={(value) => setMoveAlbumId(value ? Number(value) : "")}
+                    ariaLabel="Move media to album"
+                  />
+                  <button type="button" className="secondary-button small" onClick={move}>Move</button>
+                </div>
+              </label>
+            )}
+
+            {currentMedia.approver_comment && (
+              <p className="meta-muted"><strong>Review note:</strong> {currentMedia.approver_comment}</p>
+            )}
+          </div>
         </div>
-      </ModalShell>
-      {showShare && (
-        <ShareModal
-          mediaId={currentMedia.id}
-          allowExternalShare={allowExternalShare}
-          onClose={() => setShowShare(false)}
+      </div>
+      {cropOpen && assetUrl && (
+        <CropModal
+          media={currentMedia}
+          assetUrl={assetUrl}
+          onClose={() => setCropOpen(false)}
+          onComplete={() => {
+            onRefresh();
+            api.assetUrl(currentMedia.id).then((r) => setAssetUrl(r.url)).catch(() => {});
+          }}
+          onError={handleError}
         />
       )}
-    </>
+    </ModalShell>
   );
 }

@@ -3,16 +3,13 @@ export type GalleryView =
   | "albums"
   | "gallery"
   | "pending"
-  | "pending-ai"
-  | "flagged"
   | "recycle"
   | "contributions"
   | "upload-history"
-  | "duplicates"
   | "audit"
   | "settings";
 
-export type LayoutMode = "grid" | "list" | "masonry";
+export type LayoutMode = "grid" | "list";
 
 export interface User {
   id: number;
@@ -66,6 +63,10 @@ export interface GalleryAlbum {
   department_ids: number[];
   branch_ids: number[];
   employee_ids: number[];
+  unit_ids?: number[];
+  grade_ids?: number[];
+  custom_group_ids?: number[];
+  legal_hold?: boolean;
   status: string;
   is_pinned: boolean;
   event_name: string;
@@ -117,6 +118,41 @@ export interface GalleryMedia {
   create_date: string;
   can_edit: boolean;
   can_moderate: boolean;
+  can_delete?: boolean;
+  can_withdraw?: boolean;
+  is_unassigned?: boolean;
+  legal_hold?: boolean;
+  disposition_state?: string;
+  storage_tier?: string;
+}
+
+export interface DisposalRecord {
+  id: number;
+  media_id: number;
+  media_name: string;
+  album_name: string;
+  purged_at: string;
+  retention_rule: string;
+}
+
+export interface PendingReviewPayload {
+  media: GalleryMedia[];
+  albums: GalleryAlbum[];
+  actionable_count: number;
+}
+
+export interface RecycleBinAlbumGroup {
+  id: number;
+  name: string;
+  media_count: number;
+  deleted_at: string;
+  deleted_by_name: string;
+  media: GalleryMedia[];
+}
+
+export interface RecycleBinPayload {
+  albums: RecycleBinAlbumGroup[];
+  media: GalleryMedia[];
 }
 
 export interface GalleryComment {
@@ -151,6 +187,13 @@ export interface GallerySettings {
   weekly_digest: boolean;
   allow_external_share: boolean;
   ai_moderation_enabled: boolean;
+  supervisor_upload_requires_approval: boolean;
+  rejected_retention_days?: number;
+  audit_retention_days?: number;
+  disposition_review?: boolean;
+  lifecycle_cold_after_days?: number;
+  tenant_legal_hold?: boolean;
+  tenant_legal_hold_reason?: string;
 }
 
 export interface PaginatedResult<T> {
@@ -163,8 +206,13 @@ export interface PaginatedResult<T> {
 export interface ScopeTargets {
   departments: { id: number; name: string }[];
   branches: { id: number; name: string }[];
+  units?: { id: number; name: string }[];
+  grades?: { id: number; name: string }[];
+  custom_groups?: { id: number; name: string; member_count?: number }[];
   employees: { id: number; name: string; department?: string }[];
   branches_available: boolean;
+  units_available?: boolean;
+  grades_available?: boolean;
 }
 
 export interface DashboardAlbum extends GalleryAlbum {

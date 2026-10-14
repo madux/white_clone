@@ -5,20 +5,19 @@ import {
   Images,
   Grid3X3,
   Clock,
-  Bot,
-  Flag,
   Trash2,
   User,
   History,
-  Copy,
   FileText,
   Settings,
   X,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { GalleryView } from "@/lib/types";
+import type { GalleryRoleTier } from "@/lib/galleryRoleTiers";
+import { canAccessGalleryView } from "@/lib/galleryAccess";
 
 const SIDEBAR_COLLAPSED_KEY = "cleon-social-gallery-sidebar-collapsed";
 
@@ -26,10 +25,7 @@ interface SidebarProps {
   activeView: GalleryView;
   onNavigate: (view: GalleryView) => void;
   pendingCount: number;
-  aiReviewCount?: number;
-  flaggedCount?: number;
-  isManager: boolean;
-  isAdmin: boolean;
+  roleTier: GalleryRoleTier;
   mobileNav: boolean;
   onClose: () => void;
 }
@@ -40,26 +36,22 @@ const BROWSE: Array<{ id: GalleryView; label: string; icon: React.ReactNode }> =
   { id: "gallery", label: "Gallery", icon: <Grid3X3 size={17} /> },
 ];
 
-const PERSONAL: Array<{ id: GalleryView; label: string; icon: React.ReactNode }> = [
+const PERSONAL_EMPLOYEE: Array<{ id: GalleryView; label: string; icon: React.ReactNode }> = [
   { id: "contributions", label: "My Contributions", icon: <User size={17} /> },
   { id: "upload-history", label: "Upload History", icon: <History size={17} /> },
 ];
 
-const MODERATION: Array<{ id: GalleryView; label: string; icon: React.ReactNode; countKey?: "pending" | "ai" | "flagged" }> = [
+const MODERATION: Array<{ id: GalleryView; label: string; icon: React.ReactNode; countKey?: "pending" }> = [
   { id: "pending", label: "Pending Review", icon: <Clock size={17} />, countKey: "pending" },
-  { id: "pending-ai", label: "AI Review", icon: <Bot size={17} />, countKey: "ai" },
-  { id: "flagged", label: "Flagged Content", icon: <Flag size={17} />, countKey: "flagged" },
   { id: "recycle", label: "Recycle Bin", icon: <Trash2 size={17} /> },
-  { id: "duplicates", label: "Duplicates", icon: <Copy size={17} /> },
-  { id: "audit", label: "Audit Log", icon: <FileText size={17} /> },
 ];
 
 export default function Sidebar({
-  activeView, onNavigate, pendingCount, aiReviewCount = 0, flaggedCount = 0,
-  isManager, isAdmin, mobileNav, onClose,
+  activeView, onNavigate, pendingCount,
+  roleTier, mobileNav, onClose,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const counts = { pending: pendingCount, ai: aiReviewCount, flagged: flaggedCount };
+  const counts = { pending: pendingCount };
 
   useEffect(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
@@ -74,7 +66,7 @@ export default function Sidebar({
     });
   };
 
-  const renderLink = (item: { id: GalleryView; label: string; icon: React.ReactNode; countKey?: "pending" | "ai" | "flagged" }) => {
+  const renderLink = (item: { id: GalleryView; label: string; icon: React.ReactNode; countKey?: "pending" }) => {
     const count = item.countKey ? counts[item.countKey] : 0;
     return (
       <button
@@ -83,28 +75,44 @@ export default function Sidebar({
         className={`sidebar-link ${activeView === item.id ? "active" : ""}`}
         onClick={() => onNavigate(item.id)}
         aria-current={activeView === item.id ? "page" : undefined}
-        title={collapsed ? item.label : undefined}
+        title={effectiveCollapsed ? item.label : undefined}
       >
         {item.icon}
-        {!collapsed && <span>{item.label}</span>}
-        {!collapsed && count > 0 && (
+        {!effectiveCollapsed && <span>{item.label}</span>}
+        {!effectiveCollapsed && count > 0 && (
           <span className={`nav-count ${item.countKey === "pending" ? "alert" : ""}`}>{count}</span>
         )}
       </button>
     );
   };
 
-  const renderSection = (label: string, items: Array<{ id: GalleryView; label: string; icon: React.ReactNode; countKey?: "pending" | "ai" | "flagged" }>) => (
+  const renderSection = (label: string, items: Array<{ id: GalleryView; label: string; icon: React.ReactNode; countKey?: "pending" }>) => (
     <>
-      {!collapsed && <div className="sidebar-section-label">{label}</div>}
+      {!effectiveCollapsed && <div className="sidebar-section-label">{label}</div>}
       <nav className="sidebar-nav">{items.map(renderLink)}</nav>
     </>
   );
 
+  const browseItems = useMemo(
+    () => BROWSE.filter((item) => canAccessGalleryView(roleTier, item.id)),
+    [roleTier],
+  );
+
+  const moderationItems = useMemo(
+    () => MODERATION.filter((item) => canAccessGalleryView(roleTier, item.id)),
+    [roleTier],
+  );
+
+  const showUploadHistoryInWorkspace = roleTier !== "employee"
+    && canAccessGalleryView(roleTier, "upload-history");
+
+  const effectiveCollapsed = collapsed && !mobileNav;
+  const showBrand = !effectiveCollapsed;
+
   return (
-    <aside className={`gallery-sidebar ${mobileNav ? "is-open" : ""} ${collapsed ? "is-collapsed" : ""}`}>
-      <div className={`sidebar-brand-row ${collapsed ? "is-collapsed" : ""}`}>
-        {!collapsed && (
+    <aside className={`gallery-sidebar ${mobileNav ? "is-open" : ""} ${effectiveCollapsed ? "is-collapsed" : ""}`}>
+      <div className={`sidebar-brand-row ${effectiveCollapsed ? "is-collapsed" : ""}`}>
+        {showBrand && (
           <div className="brand-lockup">
             <span className="directory-brand">Social Gallery</span>
           </div>
@@ -118,30 +126,54 @@ export default function Sidebar({
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
+        <button
+          type="button"
+          className="sidebar-mobile-dismiss"
+          onClick={onClose}
+          aria-label="Close navigation"
+        >
+          <X size={18} />
+        </button>
       </div>
-      <button type="button" className="mobile-close" onClick={onClose} aria-label="Close navigation">
-        <X size={18} />
-      </button>
 
-      {renderSection("Browse", BROWSE)}
-      {renderSection("Personal", PERSONAL)}
+      {browseItems.length > 0 && renderSection("Browse", browseItems)}
+      {roleTier === "employee" && renderSection("Personal", PERSONAL_EMPLOYEE)}
+      {showUploadHistoryInWorkspace && (
+        <nav className="sidebar-nav">
+          {renderLink({ id: "upload-history", label: "Upload History", icon: <History size={17} /> })}
+        </nav>
+      )}
 
-      {isManager && renderSection("Moderation", MODERATION)}
+      {moderationItems.length > 0 && renderSection("Moderation", moderationItems)}
 
-      {isAdmin && (
+      {roleTier === "administrator" && (
         <>
-          {!collapsed && <div className="sidebar-section-label">Admin</div>}
+          {!effectiveCollapsed && <div className="sidebar-section-label">Admin</div>}
           <nav className="sidebar-nav">
-            <button
-              type="button"
-              className={`sidebar-link ${activeView === "settings" ? "active" : ""}`}
-              onClick={() => onNavigate("settings")}
-              aria-current={activeView === "settings" ? "page" : undefined}
-              title={collapsed ? "Settings" : undefined}
-            >
-              <Settings size={17} />
-              {!collapsed && <span>Settings</span>}
-            </button>
+            {canAccessGalleryView(roleTier, "audit") && (
+              <button
+                type="button"
+                className={`sidebar-link ${activeView === "audit" ? "active" : ""}`}
+                onClick={() => onNavigate("audit")}
+                aria-current={activeView === "audit" ? "page" : undefined}
+                title={effectiveCollapsed ? "Audit Log" : undefined}
+              >
+                <FileText size={17} />
+                {!effectiveCollapsed && <span>Audit Log</span>}
+              </button>
+            )}
+            {canAccessGalleryView(roleTier, "settings") && (
+              <button
+                type="button"
+                className={`sidebar-link ${activeView === "settings" ? "active" : ""}`}
+                onClick={() => onNavigate("settings")}
+                aria-current={activeView === "settings" ? "page" : undefined}
+                title={effectiveCollapsed ? "Settings" : undefined}
+              >
+                <Settings size={17} />
+                {!effectiveCollapsed && <span>Settings</span>}
+              </button>
+            )}
           </nav>
         </>
       )}

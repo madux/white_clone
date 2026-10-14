@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ORG_NEW_MENU_GROUPS } from "../../../lib/orgNewMenuCatalog";
+import type { OrgLibraryKindFilter } from "../../../lib/orgLibraryStats";
 import { useEffect, useState } from "react";
 import CloudImportDialog from "./CloudImportDialog";
 import type { DocDocument, DocFolder } from "../../../lib/types";
@@ -29,8 +30,6 @@ import { CLOUD_SOURCE_OPTIONS } from "./CloudSourceLogos";
 import CreatePolicyFolderDialog from "./CreatePolicyFolderDialog";
 import PolicyFolderDocumentOptions from "./PolicyFolderDocumentOptions";
 
-export type OrgLibraryRootTab = "folders" | "policies";
-
 export default function OrganizationalNewMenu({
   parentFolder,
   folderLocked = false,
@@ -39,7 +38,8 @@ export default function OrganizationalNewMenu({
   canCreatePolicy,
   onCreateRootFolder,
   folderDocuments,
-  libraryTab = "folders",
+  /** Active organisational library summary tab (Folders, Documents, Projects, …). */
+  summaryTab = "all",
   chrome = false,
 }: {
   parentFolder?: DocFolder | null;
@@ -49,8 +49,7 @@ export default function OrganizationalNewMenu({
   canCreatePolicy: boolean;
   onCreateRootFolder?: () => void;
   folderDocuments?: DocDocument[];
-  /** When + New is used on the org library root (no open folder). */
-  libraryTab?: OrgLibraryRootTab;
+  summaryTab?: OrgLibraryKindFilter;
   chrome?: boolean;
 }) {
   const types = useDocumentTypes();
@@ -150,11 +149,10 @@ export default function OrganizationalNewMenu({
 
   const createItems: NewMenuItem[] = [];
   const atLibraryRoot = !inFolder;
-  const onPoliciesTab = atLibraryRoot && libraryTab === "policies";
 
   if (canCreateFolder && !folderLocked) {
     if (atLibraryRoot) {
-      if (!onPoliciesTab) {
+      if (summaryTab === "all" || summaryTab === "documents") {
         if (onCreateRootFolder) {
           createItems.push({
             label: "Create folder",
@@ -162,37 +160,25 @@ export default function OrganizationalNewMenu({
             onSelect: () => onCreateRootFolder(),
           });
         }
-        createItems.push(
-          {
-            label: "Create project",
-            icon: FolderKanban,
-            onSelect: () => setNamedKind("project"),
-          },
-          {
-            label: "Create vendor",
-            icon: Store,
-            onSelect: () => setNamedKind("vendor"),
-          },
-        );
-      }
-    } else {
-      createItems.push(
-        {
-          label: "Create folder",
-          icon: FolderPlus,
-          onSelect: () => setNamedKind("folder"),
-        },
-        {
+      } else if (summaryTab === "project") {
+        createItems.push({
           label: "Create project",
           icon: FolderKanban,
           onSelect: () => setNamedKind("project"),
-        },
-        {
+        });
+      } else if (summaryTab === "vendor") {
+        createItems.push({
           label: "Create vendor",
           icon: Store,
           onSelect: () => setNamedKind("vendor"),
-        },
-      );
+        });
+      }
+    } else if (summaryTab !== "policy") {
+      createItems.push({
+        label: "Create folder",
+        icon: FolderPlus,
+        onSelect: () => setNamedKind("folder"),
+      });
     }
   }
   if (canAddFiles) {
@@ -211,7 +197,12 @@ export default function OrganizationalNewMenu({
       onSelect: () => setCreatingTemplate(true),
     });
   }
-  if (canCreatePolicy && !folderLocked && (inFolder || atLibraryRoot)) {
+  if (
+    canCreatePolicy &&
+    !folderLocked &&
+    atLibraryRoot &&
+    summaryTab === "policy"
+  ) {
     createItems.push({
       label: "Create policy",
       icon: ShieldCheck,

@@ -205,9 +205,38 @@ class CompliancePolicyVersioning(models.AbstractModel):
         default="hr_admin",
     )
     verification_sla_days = fields.Integer(default=3)
+    verification_sla_escalation_user_id = fields.Many2one(
+        "res.users",
+        string="Verification SLA alert contact",
+        help=(
+            "User notified when a pending verification passes its SLA without a "
+            "decision. Alerts only; they do not verify on behalf of the verifier."
+        ),
+        ondelete="set null",
+    )
+    verification_document_type_ids = fields.Many2many(
+        "doc.document.type",
+        "doc_compliance_policy_verification_document_type_rel",
+        "policy_id",
+        "document_type_id",
+        string="Compliance verification document types",
+        help="Uploaded documents of these types require manual compliance verification for this policy.",
+    )
     assignment_ids = fields.One2many(
         "doc.compliance.assignment", "policy_id", string="Assignments"
     )
+
+    @api.constrains("verification_document_type_ids", "document_type_ids")
+    def _check_verification_document_types_subset(self):
+        for policy in self:
+            extra = policy.verification_document_type_ids - policy.document_type_ids
+            if extra:
+                raise ValidationError(
+                    _(
+                        "Compliance verification types must be included in the policy required document types (%s).",
+                        ", ".join(extra.mapped("name")),
+                    )
+                )
 
     def _ensure_current_version(self):
         self.ensure_one()
@@ -295,13 +324,6 @@ class CompliancePolicyVersioning(models.AbstractModel):
                 raise ValidationError(
                     _(
                         'Document type "%(name)s" must answer Expires before this policy can activate.',
-                        name=document_type.name,
-                    )
-                )
-            if not document_type.verification_rule:
-                raise ValidationError(
-                    _(
-                        'Document type "%(name)s" must answer Verification required before activation.',
                         name=document_type.name,
                     )
                 )

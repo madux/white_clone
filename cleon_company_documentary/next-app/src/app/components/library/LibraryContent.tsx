@@ -4,19 +4,23 @@ import {
   Archive,
   ArrowLeft,
   Check,
-  Filter,
+  Clock3,
   LayoutGrid,
   List,
   Pencil,
   Pin,
+  Plus,
   ShieldCheck,
   Star,
   Trash2,
 } from "lucide-react";
+import { DocumentaryHomeHero } from "../home/DocumentaryHomeHero";
+import { HomeFolderRow } from "../home/HomeFolderRow";
+import { PinnedSpaceCard } from "../home/PinnedSpaceCard";
+import { LibraryPageToolbar } from "./LibraryPageToolbar";
 import type { DocumentaryFolder, DocumentaryMedia } from "../../../../lib/types";
 import type { LayoutMode, LibraryView, MediaFiltersState } from "./libraryTypes";
 import {
-  FeaturedFolder,
   FolderCard,
   MediaCard,
   EmptyState,
@@ -28,6 +32,10 @@ export function LibraryContent({
   folders,
   favoriteFolders = [],
   featuredFolders,
+  heroMedia,
+  heroLoading,
+  continueWatching,
+  continueWatchingLoading,
   selectedFolder,
   libraryView,
   search,
@@ -63,6 +71,10 @@ export function LibraryContent({
   folders: DocumentaryFolder[];
   favoriteFolders?: DocumentaryFolder[];
   featuredFolders: DocumentaryFolder[];
+  heroMedia: DocumentaryMedia | null;
+  heroLoading: boolean;
+  continueWatching: DocumentaryMedia[];
+  continueWatchingLoading: boolean;
   selectedFolder: DocumentaryFolder | null;
   libraryView: LibraryView;
   search: string;
@@ -95,15 +107,26 @@ export function LibraryContent({
   onFiltersChange: (filters: MediaFiltersState) => void;
   onNotice: (type: "error" | "success", text: string) => void;
 }) {
-  const showLibraryOverview = !selectedFolder && libraryView === "home";
+  const showLibraryOverview = !selectedFolder && libraryView === "home" && !search.trim();
+  const showHomeMediaGrid = libraryView === "home" && (Boolean(selectedFolder) || Boolean(search.trim()));
+  const hideMainMediaSection = showLibraryOverview && !showHomeMediaGrid;
   const showFavoriteFolders = !selectedFolder && libraryView === "favorites";
   const showFilters = libraryView === "all" || !!selectedFolder;
-  const mediaSectionHeading = selectedFolder
-    ? { title: selectedFolder.name, description: `${selectedFolder.media_count} videos in this space` }
-    : libraryView === "home"
-      ? search
-        ? { title: `Results for “${search}”`, description: "" }
-        : { title: "Latest videos", description: "" }
+  const showLibraryChrome = showFilters;
+  const libraryPageTitle = selectedFolder
+    ? selectedFolder.name
+    : search.trim()
+      ? `Results for “${search}”`
+      : "Documentary Library";
+  const libraryPageDescription = selectedFolder
+    ? `${selectedFolder.media_count} videos in this space`
+    : search.trim()
+      ? "Videos matching your search in the documentary library."
+      : "Browse corporate videos, executive messages, and HR recordings in one place.";
+  const mediaSectionHeading = showLibraryChrome
+    ? null
+    : libraryView === "home" && search.trim()
+      ? { title: `Results for “${search}”`, description: "" }
       : libraryView === "favorites"
         ? search
           ? { title: `Results for “${search}”`, description: "" }
@@ -119,29 +142,31 @@ export function LibraryContent({
 
   return (
     <>
+      {showLibraryOverview && heroMedia && (
+        <DocumentaryHomeHero
+          media={heroMedia}
+          onOpen={() => onOpenMedia(heroMedia)}
+          onToggleFavorite={() => onMediaAction(heroMedia, "favorite")}
+        />
+      )}
+      {showLibraryOverview && heroLoading && !heroMedia && <LoadingState />}
       {showLibraryOverview && (
         <section className="section-block">
           <div className="section-heading">
             <div>
-              <h2>Pinned access</h2>
+              <h2><Pin size={16} className="section-title-icon" /> Pinned access</h2>
               <p>Start with the spaces your team returns to most.</p>
             </div>
-            <button className="text-button" onClick={onViewAll}>
-              View all <ArrowLeft size={14} className="rotate-180" />
+            <button type="button" className="text-button" onClick={onViewAll}>
+              View all videos <ArrowLeft size={14} className="rotate-180" />
             </button>
           </div>
-          <div className="featured-grid">
-            {featuredFolders.map((folder, index) => (
-              <FeaturedFolder
+          <div className="pinned-spaces-grid">
+            {featuredFolders.map((folder) => (
+              <PinnedSpaceCard
                 key={folder.id}
                 folder={folder}
-                tint={index}
-                onClick={() => onSelectFolder(folder)}
-                onPin={() => onPinFolder(folder)}
-                onFavorite={() => onFavoriteFolder(folder)}
-                onEdit={() => onEditFolder(folder)}
-                onDelete={() => confirmFolderDelete(folder)}
-                canManage={canManage}
+                onOpen={() => onSelectFolder(folder)}
               />
             ))}
             {!featuredFolders.length && (
@@ -160,16 +185,18 @@ export function LibraryContent({
               <h2>Folders</h2>
               <p>A simple, calm place to keep every story together.</p>
             </div>
+            {canManage ? (
+              <button type="button" className="secondary-button small" onClick={onCreateFolder}>
+                <Plus size={16} /> New folder
+              </button>
+            ) : null}
           </div>
-          <div className="folder-grid">
+          <div className="home-folder-list">
             {folders.map((folder) => (
-              <FolderCard
+              <HomeFolderRow
                 key={folder.id}
                 folder={folder}
-                canManage={canManage}
                 onOpen={() => onSelectFolder(folder)}
-                onAction={onFolderAction}
-                onEdit={() => onEditFolder(folder)}
                 onPin={() => onPinFolder(folder)}
                 onFavorite={() => onFavoriteFolder(folder)}
               />
@@ -178,6 +205,43 @@ export function LibraryContent({
               <EmptyState title="No folders yet" description="A folder gives every upload a clear home." action={canManage ? "Create a folder" : undefined} onAction={onCreateFolder} />
             )}
           </div>
+        </section>
+      )}
+      {showLibraryOverview && (
+        <section className="section-block">
+          <div className="section-heading">
+            <div>
+              <h2><Clock3 size={16} className="section-title-icon" /> Continue watching</h2>
+              <p>Pick up where you left off.</p>
+            </div>
+          </div>
+          {continueWatchingLoading && <LoadingState />}
+          {!continueWatchingLoading && continueWatching.length > 0 && (
+            <div className="continue-watching-rail">
+              {continueWatching.map((item, index) => (
+                <div key={item.id} className="continue-watching-item">
+                  <MediaCard
+                    media={item}
+                    index={index}
+                    layoutMode="grid"
+                    canManage={canManage}
+                    selected={false}
+                    onOpen={() => onOpenMedia(item)}
+                    onEdit={() => onEditMedia(item)}
+                    onShare={() => onShareMedia(item)}
+                    onSelect={() => {}}
+                    onAction={onMediaAction}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          {!continueWatchingLoading && !continueWatching.length && (
+            <EmptyState
+              title="Nothing to continue"
+              description="Start watching a video to see it here."
+            />
+          )}
         </section>
       )}
       {showFavoriteFolders && (
@@ -210,7 +274,22 @@ export function LibraryContent({
           </div>
         </section>
       )}
+      {showLibraryChrome && (
+        <LibraryPageToolbar
+          title={libraryPageTitle}
+          description={libraryPageDescription}
+          canManage={canManage}
+          layoutMode={layoutMode}
+          filters={filters}
+          onCreateFolder={onCreateFolder}
+          onUpload={onUpload}
+          onLayoutChange={onLayoutChange}
+          onFiltersChange={onFiltersChange}
+        />
+      )}
+      {!hideMainMediaSection && (
       <section className="section-block media-section">
+        {(mediaSectionHeading || (selectedFolder && showLibraryChrome)) && (
         <div className="section-heading">
           {mediaSectionHeading ? (
             <div>
@@ -219,7 +298,7 @@ export function LibraryContent({
             </div>
           ) : <div />}
           <div className="section-heading-actions">
-            {selectedFolder && (
+            {selectedFolder && showLibraryChrome && (
               <div className="folder-quick-actions">
                 <button
                   type="button"
@@ -261,35 +340,14 @@ export function LibraryContent({
                 )}
               </div>
             )}
-            <div className="view-toggle">
-              <button className={layoutMode === "grid" ? "active" : ""} onClick={() => onLayoutChange("grid")} aria-label="Grid view"><LayoutGrid size={16} /></button>
-              <button className={layoutMode === "list" ? "active" : ""} onClick={() => onLayoutChange("list")} aria-label="List view"><List size={16} /></button>
-            </div>
+            {!showLibraryChrome && (
+              <div className="view-toggle">
+                <button type="button" className={layoutMode === "grid" ? "active" : ""} onClick={() => onLayoutChange("grid")} aria-label="Grid view"><LayoutGrid size={16} /></button>
+                <button type="button" className={layoutMode === "list" ? "active" : ""} onClick={() => onLayoutChange("list")} aria-label="List view"><List size={16} /></button>
+              </div>
+            )}
           </div>
         </div>
-        {showFilters && (
-          <div className="filter-toolbar">
-            <Filter size={15} />
-            <select value={filters.processing_state || ""} onChange={(e) => onFiltersChange({ ...filters, processing_state: e.target.value || undefined })}>
-              <option value="">All statuses</option>
-              <option value="ready">Ready</option>
-              <option value="processing">Processing</option>
-              <option value="uploading">Uploading</option>
-              <option value="failed">Failed</option>
-            </select>
-            <select value={filters.approval_status || ""} onChange={(e) => onFiltersChange({ ...filters, approval_status: e.target.value || undefined })}>
-              <option value="">All approval states</option>
-              <option value="approved">Approved</option>
-              <option value="pending">Pending</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="rejected">Rejected</option>
-            </select>
-            <label className="filter-check">
-              <input type="checkbox" checked={Boolean(filters.mandatory)} onChange={(e) => onFiltersChange({ ...filters, mandatory: e.target.checked || undefined })} />
-              Mandatory only
-            </label>
-            <button className="text-button" onClick={() => onFiltersChange({})}>Clear filters</button>
-          </div>
         )}
         {canManage && selectedMediaIds.length > 0 && (
           <div className="batch-toolbar">
@@ -297,7 +355,7 @@ export function LibraryContent({
             <button onClick={() => onBatchAction("favorite")}><Star size={14} /> Favorite</button>
             <button onClick={() => onBatchAction("archive")}><Archive size={14} /> Archive</button>
             <button onClick={onOpenBatchShare}><ShieldCheck size={14} /> Share</button>
-            <select value={batchTargetFolder} onChange={(event) => onMove(event.target.value)} aria-label="Move selected videos">
+            <select className="doc-select doc-select--compact" value={batchTargetFolder} onChange={(event) => onMove(event.target.value)} aria-label="Move selected videos">
               <option value="">Move to…</option>
               {folders.filter((folder) => folder.can_edit).map((folder) => (
                 <option value={folder.id} key={folder.id}>{folder.name}</option>
@@ -322,6 +380,7 @@ export function LibraryContent({
           )}
         </div>
       </section>
+      )}
     </>
   );
 }

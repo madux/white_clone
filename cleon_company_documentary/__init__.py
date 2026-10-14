@@ -18,3 +18,5 @@ def post_init_hook(env):
         _logger.exception("Company Documentary R2 CORS bootstrap failed")
     if "documentary.role.definition" in env:
         env["documentary.role.definition"].sync_registry()
+    if "company.documentary.migrate" in env:
+        env["company.documentary.migrate"].migrate_legacy_statuses()

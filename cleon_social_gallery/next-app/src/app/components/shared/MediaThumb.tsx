@@ -12,6 +12,8 @@ export function MediaThumb({
   selected = false,
   onSelect,
   showOverlay = true,
+  showDescriptionOnHover = false,
+  description,
 }: {
   media: GalleryMedia;
   className?: string;
@@ -19,6 +21,9 @@ export function MediaThumb({
   selected?: boolean;
   onSelect?: (selected: boolean) => void;
   showOverlay?: boolean;
+  /** SRS §3.4 FR-047: show description as overlay on hover (album detail grid). */
+  showDescriptionOnHover?: boolean;
+  description?: string;
 }) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(true);
@@ -34,9 +39,10 @@ export function MediaThumb({
   }, [media.id]);
 
   const isVideo = media.media_type === "video";
+  const descText = (description ?? media.description ?? "").trim();
 
   return (
-    <div className={`media-preview rose ${className}`.trim()}>
+    <div className={`media-preview rose ${showDescriptionOnHover ? "has-desc-hover" : ""} ${className}`.trim()}>
       {loading && <div className="thumb-skeleton" />}
       {url ? (
         isVideo ? (
@@ -52,6 +58,11 @@ export function MediaThumb({
           <span className="media-type-badge">{isVideo ? "Video" : "Photo"}</span>
           {isVideo && <span className="play-button"><Play size={18} fill="currentColor" /></span>}
         </>
+      )}
+      {showDescriptionOnHover && descText && (
+        <div className="media-desc-overlay" aria-hidden>
+          <p>{descText}</p>
+        </div>
       )}
       {selectable && (
         <label className="media-select">

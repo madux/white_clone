@@ -13,18 +13,30 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import ComplianceRequestRequirementsSection from "./ComplianceRequestRequirementsSection";
 import { formatFieldLabel, formatStatusLabel } from "../../../lib/formatLabel";
 import {
   buildCreatePolicyPayload,
+  changePolicyFormType,
   type PolicyCreateFormState,
 } from "../../../lib/policyCreateForm";
 import {
   validatePolicyCreateForm,
-  validatePolicyWizardStep,
   type PolicyWizardStep,
 } from "../../../lib/policyCreateValidation";
+import {
+  fieldErrorsForWizardStep,
+  fieldErrorsFromMissingFields,
+  type PolicyWizardFieldId,
+} from "../../../lib/policyWizardFieldErrors";
 import { complianceRuleCreatePath } from "../../../lib/complianceRuleCreatePath";
 import {
   clearSessionFormDraft,
@@ -40,6 +52,7 @@ import {
   coercePolicySchedule,
 } from "../../../lib/policyFieldCoercion";
 import {
+  buildScopePayload,
   emptyPolicyScope,
   formatPolicyScopeSummary,
 } from "../../../lib/policyScope";
@@ -61,6 +74,7 @@ import {
   useRejectException,
   usePolicies,
   usePolicyTypes,
+  useRetentionComplianceSettings,
 } from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
 import { useComplianceRunToast } from "../../../hooks/useComplianceRunToast";
@@ -68,7 +82,6 @@ import { api } from "../../../lib/api";
 import BulkActionBar from "./BulkActionBar";
 import ComplianceRuleActions from "./ComplianceRuleActions";
 import ModalDialog from "./ModalDialog";
-import ComplianceDocumentTypeMultiSelect from "./ComplianceDocumentTypeMultiSelect";
 import SortableTable from "./SortableTable";
 import ThemedSelect from "./ThemedSelect";
 import {
@@ -89,6 +102,37 @@ import ComplianceRetentionFields, {
 } from "./ComplianceRetentionFields";
 import ComplianceReviewScheduleFields from "./ComplianceReviewScheduleFields";
 import ComplianceVerificationFields from "./ComplianceVerificationFields";
+import PolicyEngineWizardChrome from "./compliance/PolicyEngineWizardChrome";
+import RetentionPolicyWizardPanel from "./compliance/RetentionPolicyWizardPanel";
+import {
+  PolicyWizardAudienceSection,
+  PolicyWizardBasicsSection,
+  PolicyWizardRequirementsSection,
+  PolicyWizardRetentionConfigureSection,
+  PolicyWizardTimingSection,
+} from "./compliance/PolicyWizardGenericPanels";
+import { PolicyWizardSectionError } from "./compliance/PolicyWizardField";
+import {
+  DOCUMENT_REQUIREMENT_WIZARD_LABELS,
+  isDocumentRequirementPageWizard,
+  policyEngineWizardLabels,
+  policyEngineWizardTitle,
+  policyWizardStepKeys,
+} from "../../../lib/documentRequirementWizard";
+import {
+  DocumentRequirementAudiencePanel,
+  DocumentRequirementBasicsPanel,
+  DocumentRequirementDocumentsPanel,
+  DocumentRequirementTimingPanel,
+  DocumentRequirementVerificationPanel,
+} from "./compliance/DocumentRequirementWizardPanels";
+import { PolicyRequirementsDocumentsSection } from "./compliance/PolicyRequirementsDocumentsSection";
+import {
+  RenewableDocumentRequirementFields,
+  RenewableEffectiveDateField,
+} from "./compliance/RenewableDocumentRequirementFields";
+import { policyTypeUsesDocumentTypeList } from "../../../lib/policyDocumentPicker";
+import { PolicyWizardGraceAndNonComplianceFields } from "./compliance/PolicyWizardGraceAndNonComplianceFields";
 import {
   InputGroup,
   InputGroupAddon,
@@ -96,19 +140,6 @@ import {
 } from "@/components/ui/input-group";
 
 type Tab = "rules" | "exceptions" | "history" | "reports";
-const RULE_WIZARD_STEPS = [
-  "Basics",
-  "Audience",
-  "Requirements",
-  "Timing",
-  "Review",
-] as const;
-const RULE_WIZARD_STEP_KEYS: PolicyWizardStep[] = [
-  "basics",
-  "audience",
-  "requirements",
-  "timing",
-];
 const COMPLIANCE_EXCEPTION_FORM_DRAFT_KEY = "compliance/exception-form";
 
 type ComplianceExceptionFormState = {
@@ -949,63 +980,7 @@ export function ScopeChecklist({
   );
 }
 
-export function AlertCadenceSelector({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (newValue: string) => void;
-}) {
-  const PRESETS = [
-    { label: "90 days before", days: 90 },
-    { label: "60 days before", days: 60 },
-    { label: "30 days before", days: 30 },
-    { label: "15 days before", days: 15 },
-    { label: "7 days before", days: 7 },
-    { label: "1 day before", days: 1 },
-    { label: "On expiry day", days: 0 },
-  ];
-
-  const currentDays = (value || "60,30,15,7,0")
-    .split(",")
-    .map((s) => parseInt(s.trim(), 10))
-    .filter((n) => !isNaN(n));
-
-  const toggleDay = (day: number) => {
-    let next: number[];
-    if (currentDays.includes(day)) {
-      next = currentDays.filter((d) => d !== day);
-    } else {
-      next = [...currentDays, day].sort((a, b) => b - a);
-    }
-    onChange(next.join(","));
-  };
-
-  return (
-    <div className="space-y-2 sm:col-span-2">
-      <span className="label">Reminders</span>
-      <div className="flex flex-wrap gap-1.5">
-        {PRESETS.map((preset) => {
-          const isSelected = currentDays.includes(preset.days);
-          return (
-            <button
-              key={preset.days}
-              type="button"
-              onClick={() => toggleDay(preset.days)}
-              className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
-                isSelected
-                  ? "bg-brand-pink text-white"
-                  : "bg-white text-slate-600 border border-slate-200 hover:border-pink-300 hover:text-brand-pink"
-              }`}
-            >
-              {preset.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+export { AlertCadenceSelector } from "./compliance/AlertCadenceSelector";
 
 function TypeSpecificFields({
   typeCode,
@@ -1021,18 +996,11 @@ function TypeSpecificFields({
   if (typeCode === "document_requirement") {
     return (
       <>
-        <Field label="Extra days to submit">
-          <input
-            type="number"
-            min="0"
-            className="field"
-            value={form.grace_period_days}
-            onChange={(e) =>
-              setForm({ ...form, grace_period_days: e.target.value })
-            }
-          />
-        </Field>
-        <div className="flex items-end pb-1">
+        <PolicyWizardGraceAndNonComplianceFields
+          form={form}
+          setForm={setForm}
+        />
+        <div className="flex items-end pb-1 sm:col-span-2">
           <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
             <input
               type="checkbox"
@@ -1043,56 +1011,6 @@ function TypeSpecificFields({
               className="h-4 w-4 accent-pink-600 rounded"
             />
             Allow exceptions
-          </label>
-        </div>
-      </>
-    );
-  }
-
-  if (typeCode === "renewable_document") {
-    return (
-      <>
-        <AlertCadenceSelector
-          value={form.alert_schedule_days}
-          onChange={(val) => setForm({ ...form, alert_schedule_days: val })}
-        />
-        <Field label="Also notify HR">
-          <ThemedSelect
-            value={String(form.escalate_hr_days)}
-            onChange={(val) =>
-              setForm({ ...form, escalate_hr_days: Number(val) })
-            }
-            options={[
-              { value: "15", label: "15 days before expiry" },
-              { value: "7", label: "7 days before expiry" },
-              { value: "3", label: "3 days before expiry" },
-              { value: "1", label: "1 day before expiry" },
-              { value: "0", label: "On expiry day" },
-            ]}
-          />
-        </Field>
-        <Field label="Extra days after expiry">
-          <input
-            type="number"
-            min="0"
-            className="field"
-            value={form.grace_period_days}
-            onChange={(e) =>
-              setForm({ ...form, grace_period_days: e.target.value })
-            }
-          />
-        </Field>
-        <div className="flex items-end pb-1 sm:col-span-2">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={form.auto_request_renewal}
-              onChange={(e) =>
-                setForm({ ...form, auto_request_renewal: e.target.checked })
-              }
-              className="h-4 w-4 accent-pink-600 rounded"
-            />
-            Create a renewal task for the employee
           </label>
         </div>
       </>
@@ -1121,6 +1039,7 @@ export function PolicyForm({
   initialStep = "configure",
   initialWizardStep = 0,
   onWizardStateChange,
+  onPolicyTypeChange,
   reviewMeta,
   importDocumentId,
   presentation = "modal",
@@ -1129,9 +1048,28 @@ export function PolicyForm({
   const [step, setStep] = useState<"configure" | "review">(initialStep);
   const [wizardStep, setWizardStep] = useState<number>(initialWizardStep);
   const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<PolicyWizardFieldId, string>>
+  >({});
   const [importPending, setImportPending] = useState(false);
   const [formTemplates, setFormTemplates] = useState<{ id: number; name: string }[]>([]);
   const entityName = organizationalMode ? "policy" : "rule";
+
+  const applyPolicyTypeChange = useCallback(
+    (newTypeId: string) => {
+      if (String(form.policy_type_id) === String(newTypeId)) return;
+      setForm((prev: PolicyCreateFormState) =>
+        changePolicyFormType(prev, newTypeId),
+      );
+      if (isPage) {
+        setWizardStep(0);
+        setStep("configure");
+        setFieldErrors({});
+      }
+      onPolicyTypeChange?.();
+    },
+    [form.policy_type_id, isPage, onPolicyTypeChange, setForm],
+  );
 
   useEffect(() => {
     setStep(initialStep);
@@ -1177,11 +1115,86 @@ export function PolicyForm({
     (t: any) => String(t.id) === String(form.policy_type_id)
   );
   const typeCode = selectedType?.code || "";
+
+  const retentionSettingsQuery = useRetentionComplianceSettings(
+    typeCode === "retention",
+  );
+
+  useEffect(() => {
+    if (typeCode !== "renewable_document") return;
+    setForm((prev: PolicyCreateFormState) => {
+      if (!prev.schedule && prev.minimum_documents === "1") return prev;
+      return {
+        ...prev,
+        schedule: "",
+        minimum_documents: "1",
+      };
+    });
+  }, [typeCode, setForm]);
+
+  useEffect(() => {
+    if (typeCode !== "retention") return;
+    setForm((prev: PolicyCreateFormState) => {
+      if (!prev.schedule) return prev;
+      return { ...prev, schedule: "" };
+    });
+  }, [typeCode, setForm]);
+
+  const docReqWizard = isDocumentRequirementPageWizard(
+    typeCode,
+    isPage,
+    organizationalMode,
+  );
+  const activeWizardStepKeys = useMemo(
+    () => policyWizardStepKeys(typeCode, docReqWizard),
+    [typeCode, docReqWizard],
+  );
+
+  useEffect(() => {
+    if (!isPage || step === "review") return;
+    const maxIndex = Math.max(0, activeWizardStepKeys.length - 1);
+    if (wizardStep > maxIndex) {
+      setWizardStep(maxIndex);
+    }
+  }, [isPage, step, wizardStep, activeWizardStepKeys.length, typeCode]);
+
+  const wizardStepperLabels = docReqWizard
+    ? DOCUMENT_REQUIREMENT_WIZARD_LABELS
+    : policyEngineWizardLabels(typeCode);
+  const policyPageWizard = isPage;
+  const reviewStepIndex = activeWizardStepKeys.length;
   const allDocumentTypes = documents as DocumentType[];
   const selectableDocumentTypes = useMemo(
-    () => documentTypesForCompliancePolicy(typeCode, allDocumentTypes),
-    [typeCode, allDocumentTypes],
+    () =>
+      documentTypesForCompliancePolicy(
+        typeCode,
+        allDocumentTypes,
+        retentionSettingsQuery.data,
+      ),
+    [typeCode, allDocumentTypes, retentionSettingsQuery.data],
   );
+
+  const clearFieldError = (id: PolicyWizardFieldId) => {
+    setFieldErrors((current) => {
+      if (!current[id]) return current;
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  };
+
+  const applyStepValidationErrors = (stepKey: PolicyWizardStep) => {
+    const errors = fieldErrorsForWizardStep(
+      stepKey,
+      form,
+      typeCode,
+      reviewMeta,
+      entityName,
+    );
+    if (Object.keys(errors).length === 0) return false;
+    setFieldErrors((current) => ({ ...current, ...errors }));
+    return true;
+  };
 
   useEffect(() => {
     if (typeCode !== "compliance_request" && typeCode !== "review_schedule") return;
@@ -1199,9 +1212,20 @@ export function PolicyForm({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!form.policy_type_id) {
-      setFormError(
-        organizationalMode ? "Please select a policy type." : "Please select a rule type.",
-      );
+      if (isPage) {
+        setFieldErrors((current) => ({
+          ...current,
+          policy_type_id: organizationalMode
+            ? "Select a policy type."
+            : "Select a rule type.",
+        }));
+      } else {
+        setFormError(
+          organizationalMode
+            ? "Please select a policy type."
+            : "Please select a rule type.",
+        );
+      }
       return;
     }
     const validation = validatePolicyCreateForm(
@@ -1211,34 +1235,40 @@ export function PolicyForm({
       organizationalMode ? "policy" : "rule",
     );
     if (!validation.canConfirm && step === "review") {
-      setFormError(validation.missingFields[0] || "Complete required fields.");
+      if (isPage) {
+        setFieldErrors(
+          fieldErrorsFromMissingFields(
+            validation.missingFields,
+            entityName,
+          ),
+        );
+      } else {
+        setFormError(
+          validation.missingFields[0] || "Complete required fields.",
+        );
+      }
       return;
     }
     if (step === "configure" && isPage) {
-      const stepKey = RULE_WIZARD_STEP_KEYS[wizardStep];
-      const stepError = validatePolicyWizardStep(
-        stepKey,
-        form,
-        typeCode,
-        reviewMeta,
-        organizationalMode ? "policy" : "rule",
-      );
-      if (stepError) {
-        setFormError(stepError);
+      const stepKey = activeWizardStepKeys[wizardStep];
+      if (applyStepValidationErrors(stepKey)) {
         return;
       }
-      if (wizardStep < RULE_WIZARD_STEP_KEYS.length - 1) {
-        setFormError("");
+      if (wizardStep < activeWizardStepKeys.length - 1) {
+        setFieldErrors({});
         setWizardStep((value) => value + 1);
         return;
       }
       if (!validation.canConfirm) {
-        setFormError(
-          validation.missingFields[0] || "Complete required fields.",
+        setFieldErrors(
+          fieldErrorsFromMissingFields(
+            validation.missingFields,
+            entityName,
+          ),
         );
         return;
       }
-      setFormError("");
+      setFieldErrors({});
       setStep("review");
       return;
     }
@@ -1276,10 +1306,68 @@ export function PolicyForm({
     step === "review" && typeCode === "retention",
   );
   const showBasics = !isPage || wizardStep === 0;
-  const showAudience = !isPage || wizardStep === 1;
-  const showRequirements = !isPage || wizardStep === 2;
-  const showTiming = !isPage || wizardStep === 3;
-  const pageStepIndex = step === "review" ? 4 : wizardStep;
+  const showDocuments = docReqWizard && isPage && wizardStep === 1;
+  const showAudience = docReqWizard
+    ? isPage && wizardStep === 2
+    : !isPage || wizardStep === 1;
+  const showRequirements = docReqWizard
+    ? false
+    : !isPage || wizardStep === 2;
+  const showTiming = docReqWizard
+    ? isPage && wizardStep === 3
+    : typeCode === "renewable_document" || typeCode === "retention"
+      ? false
+      : !isPage || wizardStep === 3;
+  const showVerification = docReqWizard && isPage && wizardStep === 4;
+  const pageStepIndex = step === "review" ? reviewStepIndex : wizardStep;
+
+  const goToWizardCard = (index: number) => {
+    if (index === reviewStepIndex) {
+      if (step === "review") return;
+      for (let i = 0; i < activeWizardStepKeys.length; i++) {
+        const stepKey = activeWizardStepKeys[i];
+        const errors = fieldErrorsForWizardStep(
+          stepKey,
+          form,
+          typeCode,
+          reviewMeta,
+          entityName,
+        );
+        if (Object.keys(errors).length) {
+          setFieldErrors(errors);
+          setStep("configure");
+          setWizardStep(i);
+          return;
+        }
+      }
+      setFieldErrors({});
+      setStep("review");
+      return;
+    }
+    if (index < pageStepIndex) {
+      setStep("configure");
+      setWizardStep(index);
+      return;
+    }
+    if (index === pageStepIndex) return;
+    for (let i = wizardStep; i < index; i++) {
+      const stepKey = activeWizardStepKeys[i];
+      const errors = fieldErrorsForWizardStep(
+        stepKey,
+        form,
+        typeCode,
+        reviewMeta,
+        entityName,
+      );
+      if (Object.keys(errors).length) {
+        setFieldErrors((current) => ({ ...current, ...errors }));
+        setWizardStep(i);
+        return;
+      }
+    }
+    setStep("configure");
+    setWizardStep(index);
+  };
 
   const reviewScreen = (
     <ComplianceRuleReviewScreen
@@ -1297,7 +1385,9 @@ export function PolicyForm({
       confirmLabel={importDocumentId ? "Confirm import" : "Confirm"}
       onBack={() => {
         setStep("configure");
-        if (isPage) setWizardStep(3);
+        if (isPage) {
+          setWizardStep(Math.max(0, activeWizardStepKeys.length - 1));
+        }
       }}
       onConfirm={() =>
         void (async () => {
@@ -1328,83 +1418,264 @@ export function PolicyForm({
     />
   );
 
-  const configureForm = (
+  const configureForm = docReqWizard ? (
     <form
       id="compliance-policy-wizard-form"
       onSubmit={submit}
-      className="grid gap-3 sm:grid-cols-2"
+      className="space-y-2"
     >
       {showBasics ? (
-        <>
-        <Field label={organizationalMode ? "Policy name" : "Rule name"}>
-          <input
-            required
-            className="field"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-        </Field>
-        <Field label={organizationalMode ? "Policy type" : "Rule type"}>
-          <ThemedSelect
-            value={form.policy_type_id}
-            onChange={(value) => {
-              const nextTypeCode =
-                (types || []).find((t: any) => String(t.id) === value)?.code ??
-                "";
-              setForm({
-                ...form,
-                policy_type_id: value,
-                document_type_ids: pruneDocumentTypeIdsForPolicy(
-                  nextTypeCode,
-                  form.document_type_ids,
-                  allDocumentTypes,
-                ),
-              });
-            }}
-            placeholder="Select type"
-            options={types.map((item: any) => ({
-              value: String(item.id),
-              label: item.name,
-            }))}
-          />
-        </Field>
-        <Field label="Description" full>
-          <textarea
-            rows={2}
-            className="field min-h-[4.5rem]"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-        </Field>
-        </>
+        <DocumentRequirementBasicsPanel
+          form={form}
+          setForm={setForm}
+          entityName={entityName}
+          types={types || []}
+          documentTypes={allDocumentTypes}
+          fieldErrors={fieldErrors}
+          onFieldEdit={clearFieldError}
+          onPolicyTypeChange={applyPolicyTypeChange}
+        />
+      ) : null}
+      {showDocuments ? (
+        <DocumentRequirementDocumentsPanel
+          form={form}
+          setForm={setForm}
+          selectableDocumentTypes={selectableDocumentTypes}
+          documentTypeError={fieldErrors.document_type_ids}
+          onDocumentTypesChange={() => clearFieldError("document_type_ids")}
+        />
       ) : null}
       {showAudience ? (
-        <div className="sm:col-span-2">
-          <PolicyAudienceFilters
-            scope={form.scope}
-            targets={targets}
-            allEmployees={form.applies_to === "all"}
-            onAllEmployeesChange={(all) =>
-              setForm({
-                ...form,
-                applies_to: all ? "all" : "filtered",
-                scope: all ? emptyPolicyScope() : form.scope,
-              })
-            }
-            onChange={(scope) =>
-              setForm({
-                ...form,
-                applies_to: "filtered",
-                scope,
-              })
-            }
-          />
-        </div>
+        <DocumentRequirementAudiencePanel
+          form={form}
+          setForm={setForm}
+          targets={targets}
+          audienceError={fieldErrors.audience}
+          onAudienceChange={() => clearFieldError("audience")}
+        />
+      ) : null}
+      {showTiming ? (
+        <DocumentRequirementTimingPanel
+          form={form}
+          setForm={setForm}
+          fieldErrors={fieldErrors}
+          onFieldEdit={clearFieldError}
+        />
+      ) : null}
+      {showVerification ? (
+        <DocumentRequirementVerificationPanel
+          form={form}
+          setForm={setForm}
+          documentTypes={allDocumentTypes}
+          entityName={entityName}
+        />
+      ) : null}
+      {submitError ? (
+        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+          {submitError}
+        </p>
+      ) : null}
+    </form>
+  ) : (
+    <form
+      id="compliance-policy-wizard-form"
+      onSubmit={submit}
+      className={policyPageWizard ? "space-y-2" : "grid gap-3 sm:grid-cols-2"}
+    >
+      {showBasics ? (
+        policyPageWizard ? (
+          <PolicyWizardBasicsSection>
+            <Field
+              label={organizationalMode ? "Policy name" : "Rule name"}
+              error={fieldErrors.name}
+            >
+              <input
+                required
+                className="field"
+                value={form.name}
+                onChange={(e) => {
+                  setForm({ ...form, name: e.target.value });
+                  clearFieldError("name");
+                }}
+              />
+            </Field>
+            <Field
+              label={organizationalMode ? "Policy type" : "Rule type"}
+              error={fieldErrors.policy_type_id}
+            >
+              <ThemedSelect
+                value={form.policy_type_id}
+                onChange={(value) => {
+                  applyPolicyTypeChange(value);
+                  clearFieldError("policy_type_id");
+                }}
+                placeholder="Select type"
+                options={types.map((item: any) => ({
+                  value: String(item.id),
+                  label: item.name,
+                }))}
+              />
+            </Field>
+            <Field label="Description" full>
+              <textarea
+                rows={3}
+                className="field min-h-[5rem] sm:col-span-2"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+              />
+            </Field>
+            {typeCode === "renewable_document" ? (
+              <RenewableEffectiveDateField
+                form={form}
+                setForm={setForm}
+                fieldErrors={fieldErrors}
+                onFieldEdit={clearFieldError}
+              />
+            ) : null}
+            {typeCode === "retention" ? (
+              <RenewableEffectiveDateField
+                form={form}
+                setForm={setForm}
+                fieldErrors={fieldErrors}
+                onFieldEdit={clearFieldError}
+                helpText="This policy starts evaluating retention dates for in-scope documents on or after this date."
+              />
+            ) : null}
+          </PolicyWizardBasicsSection>
+        ) : (
+          <>
+            <Field label={organizationalMode ? "Policy name" : "Rule name"}>
+              <input
+                required
+                className="field"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </Field>
+            <Field label={organizationalMode ? "Policy type" : "Rule type"}>
+              <ThemedSelect
+                value={form.policy_type_id}
+                onChange={(value) => applyPolicyTypeChange(value)}
+                placeholder="Select type"
+                options={types.map((item: any) => ({
+                  value: String(item.id),
+                  label: item.name,
+                }))}
+              />
+            </Field>
+            <Field label="Description" full>
+              <textarea
+                rows={2}
+                className="field min-h-[4.5rem]"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+              />
+            </Field>
+            {typeCode === "renewable_document" ? (
+              <RenewableEffectiveDateField
+                form={form}
+                setForm={setForm}
+                full={false}
+              />
+            ) : null}
+            {typeCode === "retention" ? (
+              <RenewableEffectiveDateField
+                form={form}
+                setForm={setForm}
+                full={false}
+                helpText="This policy starts evaluating retention dates for in-scope documents on or after this date."
+              />
+            ) : null}
+          </>
+        )
+      ) : null}
+      {showAudience ? (
+        policyPageWizard ? (
+          <PolicyWizardAudienceSection>
+            <PolicyAudienceFilters
+              hideTitle
+              scope={form.scope}
+              targets={targets}
+              onChange={(scope) => {
+                setForm({
+                  ...form,
+                  scope,
+                  applies_to: buildScopePayload(scope).applies_to,
+                });
+                clearFieldError("audience");
+              }}
+            />
+            <PolicyWizardSectionError
+              error={fieldErrors.audience}
+              className="mt-2"
+            />
+          </PolicyWizardAudienceSection>
+        ) : (
+          <div className="sm:col-span-2">
+            <PolicyAudienceFilters
+              scope={form.scope}
+              targets={targets}
+              onChange={(scope) =>
+                setForm({
+                  ...form,
+                  scope,
+                  applies_to: buildScopePayload(scope).applies_to,
+                })
+              }
+            />
+          </div>
+        )
       ) : null}
 
       {showRequirements ? (
-        <>
-        {typeCode === "review_schedule" ? (
+        policyPageWizard ? (
+          typeCode === "retention" ? (
+          <PolicyWizardRetentionConfigureSection>
+            <RetentionPolicyWizardPanel
+              form={form}
+              setForm={setForm}
+              selectableDocumentTypes={selectableDocumentTypes}
+              fieldErrors={fieldErrors}
+              onFieldEdit={clearFieldError}
+            />
+            <PolicyWizardSectionError
+              error={fieldErrors.requirements}
+              className="mt-2"
+            />
+          </PolicyWizardRetentionConfigureSection>
+        ) : (
+          <PolicyWizardRequirementsSection typeName={selectedType?.name}>
+        {typeCode === "renewable_document" ? (
+          <>
+            <div className="sm:col-span-2">
+              <PolicyRequirementsDocumentsSection
+                typeCode={typeCode}
+                form={form}
+                setForm={setForm}
+                selectableDocumentTypes={selectableDocumentTypes}
+                documentTypeError={fieldErrors.document_type_ids}
+                onDocumentTypesChange={() =>
+                  clearFieldError("document_type_ids")
+                }
+              />
+            </div>
+            <RenewableDocumentRequirementFields
+              form={form}
+              setForm={setForm}
+            />
+            <ComplianceVerificationFields
+              form={form}
+              setForm={setForm}
+              typeCode={typeCode}
+              documentTypes={allDocumentTypes}
+              entityName={entityName}
+            />
+          </>
+        ) : typeCode === "review_schedule" ? (
           <ComplianceReviewScheduleFields
             form={form}
             setForm={setForm}
@@ -1412,56 +1683,195 @@ export function PolicyForm({
             targets={targets}
           />
         ) : (
-          <TypeSpecificFields
-            typeCode={typeCode}
-            form={form}
-            setForm={setForm}
-            targets={targets}
-          />
+          <>
+            {policyTypeUsesDocumentTypeList(typeCode) ? (
+              <div className="sm:col-span-2">
+                <PolicyRequirementsDocumentsSection
+                  typeCode={typeCode}
+                  form={form}
+                  setForm={setForm}
+                  selectableDocumentTypes={selectableDocumentTypes}
+                  documentTypeError={fieldErrors.document_type_ids}
+                  onDocumentTypesChange={() =>
+                    clearFieldError("document_type_ids")
+                  }
+                />
+              </div>
+            ) : null}
+            <TypeSpecificFields
+              typeCode={typeCode}
+              form={form}
+              setForm={setForm}
+              targets={targets}
+            />
+            {typeCode === "compliance_request" ? (
+              <ComplianceRequestRequirementsSection
+                form={form}
+                setForm={setForm}
+                documentTypes={allDocumentTypes}
+                linkableContext={{
+                  applies_to: form.applies_to,
+                  scope: form.scope,
+                }}
+                forms={formTemplates}
+                targets={targets}
+              />
+            ) : null}
+            <ComplianceVerificationFields
+              form={form}
+              setForm={setForm}
+              typeCode={typeCode}
+              documentTypes={allDocumentTypes}
+              entityName={entityName}
+            />
+          </>
         )}
-
-        <ComplianceVerificationFields
-          form={form}
-          setForm={setForm}
-          typeCode={typeCode}
-          documentTypes={allDocumentTypes}
-          entityName={entityName}
-        />
-
-        {typeCode === "compliance_request" ? (
-          <ComplianceRequestRequirementsSection
+            <PolicyWizardSectionError
+              error={fieldErrors.requirements}
+              className="sm:col-span-2"
+            />
+          </PolicyWizardRequirementsSection>
+        )
+        ) : (
+        <>
+        {typeCode === "retention" ? (
+          <RetentionPolicyWizardPanel
             form={form}
             setForm={setForm}
-            documentTypes={allDocumentTypes}
-            linkableContext={{
-              applies_to: form.applies_to,
-              scope: form.scope,
-            }}
+            selectableDocumentTypes={selectableDocumentTypes}
+          />
+        ) : typeCode === "renewable_document" ? (
+          <>
+            <div className="sm:col-span-2">
+              <PolicyRequirementsDocumentsSection
+                typeCode={typeCode}
+                form={form}
+                setForm={setForm}
+                selectableDocumentTypes={selectableDocumentTypes}
+                documentTypeError={
+                  formError === "Select at least one required document type."
+                    ? formError
+                    : undefined
+                }
+              />
+            </div>
+            <RenewableDocumentRequirementFields
+              form={form}
+              setForm={setForm}
+              layout="grid"
+            />
+            <ComplianceVerificationFields
+              form={form}
+              setForm={setForm}
+              typeCode={typeCode}
+              documentTypes={allDocumentTypes}
+              entityName={entityName}
+            />
+          </>
+        ) : typeCode === "review_schedule" ? (
+          <ComplianceReviewScheduleFields
+            form={form}
+            setForm={setForm}
             forms={formTemplates}
             targets={targets}
           />
-        ) : typeCode !== "review_schedule" ? (
-          <div className="sm:col-span-2">
-            <span className="label">Required documents</span>
-            <ComplianceDocumentTypeMultiSelect
-              types={selectableDocumentTypes}
-              selected={form.document_type_ids}
-              onChange={(document_type_ids) =>
-                setForm({ ...form, document_type_ids })
-              }
-              expiryTypesOnly={typeCode === "renewable_document"}
-              error={
-                formError === "Select at least one required document type."
-                  ? formError
-                  : undefined
-              }
+        ) : (
+          <>
+            {policyTypeUsesDocumentTypeList(typeCode) ? (
+              <div className="sm:col-span-2">
+                <PolicyRequirementsDocumentsSection
+                  typeCode={typeCode}
+                  form={form}
+                  setForm={setForm}
+                  selectableDocumentTypes={selectableDocumentTypes}
+                  documentTypeError={
+                    formError === "Select at least one required document type."
+                      ? formError
+                      : undefined
+                  }
+                />
+              </div>
+            ) : null}
+            <TypeSpecificFields
+              typeCode={typeCode}
+              form={form}
+              setForm={setForm}
+              targets={targets}
             />
-          </div>
-        ) : null}
+            {typeCode === "compliance_request" ? (
+              <ComplianceRequestRequirementsSection
+                form={form}
+                setForm={setForm}
+                documentTypes={allDocumentTypes}
+                linkableContext={{
+                  applies_to: form.applies_to,
+                  scope: form.scope,
+                }}
+                forms={formTemplates}
+                targets={targets}
+              />
+            ) : null}
+            <ComplianceVerificationFields
+              form={form}
+              setForm={setForm}
+              typeCode={typeCode}
+              documentTypes={allDocumentTypes}
+              entityName={entityName}
+            />
+          </>
+        )}
         </>
+        )
       ) : null}
 
-      {showTiming ? (
+      {showTiming &&
+      typeCode !== "renewable_document" &&
+      typeCode !== "retention" ? (
+        policyPageWizard ? (
+          <PolicyWizardTimingSection>
+        <Field label="Schedule">
+          <ThemedSelect
+            value={form.schedule}
+            onChange={(value) =>
+              setForm({ ...form, schedule: value === "manual" ? "" : value })
+            }
+            options={schedules.map((item) => ({
+              value: item,
+              label: item === "manual" ? "Manual Only" : formatFieldLabel(item),
+            }))}
+          />
+        </Field>
+        <Field label="Effective date" error={fieldErrors.effective_date}>
+          <input
+            required
+            type="date"
+            className="field"
+            value={form.effective_date}
+            onChange={(e) => {
+              setForm({ ...form, effective_date: e.target.value });
+              clearFieldError("effective_date");
+            }}
+          />
+        </Field>
+        {typeCode !== "compliance_request" &&
+        typeCode !== "retention" &&
+        typeCode !== "review_schedule" ? (
+          <Field label="Copies needed" error={fieldErrors.minimum_documents}>
+            <input
+              required
+              min="1"
+              type="number"
+              className="field"
+              value={form.minimum_documents}
+              onChange={(e) => {
+                setForm({ ...form, minimum_documents: e.target.value });
+                clearFieldError("minimum_documents");
+              }}
+            />
+          </Field>
+        ) : null}
+          </PolicyWizardTimingSection>
+        ) : (
         <>
         <Field label="Schedule">
           <ThemedSelect
@@ -1502,30 +1912,19 @@ export function PolicyForm({
             />
           </Field>
         ) : null}
-        {typeCode !== "document_requirement" &&
-        typeCode !== "renewable_document" &&
-        typeCode !== "compliance_request" &&
-        typeCode !== "retention" ? (
-          <Field label="Grace period (days)">
-            <input
-              required
-              min="0"
-              type="number"
-              className="field"
-              value={form.grace_period_days}
-              onChange={(e) =>
-                setForm({ ...form, grace_period_days: e.target.value })
-              }
-            />
-          </Field>
-        ) : null}
         </>
+        )
       ) : null}
-      {(formError || submitError) && (
+      {(formError || submitError) && !policyPageWizard ? (
         <p className="sm:col-span-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
           {formError || submitError}
         </p>
-      )}
+      ) : null}
+      {policyPageWizard && submitError ? (
+        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+          {submitError}
+        </p>
+      ) : null}
       {!isPage ? (
         <div className="flex justify-end gap-3 border-t border-slate-100 pt-3 sm:col-span-2">
           <button
@@ -1542,68 +1941,41 @@ export function PolicyForm({
   );
 
   if (isPage) {
+    const stepperLabels = [...wizardStepperLabels];
+    const stepperActiveIndex =
+      step === "review"
+        ? docReqWizard
+          ? stepperLabels.length
+          : reviewStepIndex
+        : wizardStep;
+    const onLastConfigureStep =
+      wizardStep >= activeWizardStepKeys.length - 1;
+
     return (
-      <div className="app-page min-h-full w-full space-y-8 pb-10">
-        <h1 className="text-3xl font-medium text-slate-900">
-          {step === "review" ? "Review rule" : "Rule wizard"}
-        </h1>
-
-        <ol className="grid gap-2 sm:grid-cols-5">
-          {RULE_WIZARD_STEPS.map((label, index) => (
-            <li
-              key={label}
-              className={`rounded-xl border px-3 py-2 text-xs font-bold ${
-                index === pageStepIndex
-                  ? "border-brand-pink bg-pink-50 text-brand-text"
-                  : index < pageStepIndex
-                    ? "border-slate-200 bg-white text-slate-700"
-                    : "border-slate-100 bg-slate-50 text-slate-400"
-              }`}
-            >
-              {index + 1}. {label}
-            </li>
-          ))}
-        </ol>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-6">
-          {step === "configure" ? configureForm : reviewScreen}
-        </section>
-
-        {step === "configure" ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
-              >
-                Cancel
-              </button>
-              {wizardStep > 0 ? (
-                <button
-                  type="button"
-                  className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
-                  onClick={() => {
-                    setFormError("");
-                    setWizardStep((value) => value - 1);
-                  }}
-                >
-                  Back
-                </button>
-              ) : null}
-            </div>
-            <button
-              type="submit"
-              form="compliance-policy-wizard-form"
-              className="inline-flex rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2 text-sm font-semibold text-white"
-            >
-              {wizardStep < RULE_WIZARD_STEP_KEYS.length - 1
-                ? "Continue"
-                : "Review"}
-            </button>
-          </div>
-        ) : null}
-      </div>
+      <PolicyEngineWizardChrome
+        title={policyEngineWizardTitle(selectedType?.name || "rule", step)}
+        stepperLabels={stepperLabels}
+        stepperActiveIndex={stepperActiveIndex}
+        onStepSelect={goToWizardCard}
+        showFooter={step === "configure"}
+        wizardStep={wizardStep}
+        onCancel={onClose}
+        onBack={() => {
+          setWizardStep((value) => value - 1);
+        }}
+        continueLabel={
+          onLastConfigureStep
+            ? typeCode === "retention"
+              ? "Preview & Save"
+              : "Review"
+            : "Continue"
+        }
+        showContinueArrow={!onLastConfigureStep}
+        formId="compliance-policy-wizard-form"
+        fullWidth={typeCode === "retention"}
+      >
+        {step === "configure" ? configureForm : reviewScreen}
+      </PolicyEngineWizardChrome>
     );
   }
 
@@ -1694,11 +2066,24 @@ function EmployeeChecklist({ employees, form, setForm }: any) {
     </Field>
   );
 }
-function Field({ label, full, children }: any) {
+function Field({ label, full, error, children }: any) {
   return (
     <label className={full ? "sm:col-span-2" : ""}>
-      <span className="label">{label}</span>
-      {children}
+      <span className={`label ${error ? "text-red-600" : ""}`}>{label}</span>
+      <div
+        className={
+          error
+            ? "[&_.field]:border-red-400 [&_.field]:ring-1 [&_.field]:ring-red-200 [&_button[aria-haspopup]]:border-red-400"
+            : ""
+        }
+      >
+        {children}
+      </div>
+      {error ? (
+        <p className="mt-1 text-xs font-medium text-red-600" role="alert">
+          {error}
+        </p>
+      ) : null}
     </label>
   );
 }

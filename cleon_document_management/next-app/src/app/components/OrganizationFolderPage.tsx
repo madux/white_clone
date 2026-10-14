@@ -48,6 +48,7 @@ import DocumentFilterBar, {
 import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
 import LibraryBreadcrumb from "./LibraryBreadcrumb";
 import LibraryFileTable, { type LibraryFileRow } from "./LibraryFileTable";
+import OrgLibraryItemCardGrid from "./OrgLibraryItemCardGrid";
 import OrgFolderIcon from "./OrgFolderIcon";
 import OrganizationalNewMenu from "./OrganizationalNewMenu";
 import FolderActions from "./FolderActions";
@@ -191,6 +192,7 @@ export default function OrganizationFolderPage({
       kind: "folder",
       folderPreview: { hasContent: itemCount > 0, documents: [] },
       folderKind: item.folder_kind,
+      folderColorHex: item.color_hex,
       name: item.folder_name,
       subtitle: `${folderKindLabel(item.folder_kind)}${item.collection_code ? ` · ${item.collection_code}` : ""} · ${itemCount} items`,
       href: onNavigateToFolder
@@ -444,11 +446,18 @@ export default function OrganizationFolderPage({
           filteredCount={mixedRows.length}
           extras={null}
           actions={
-            canViewArchived ? (
-              <Button variant="outline" render={<Link href={myWorkspaceHref("archived")} />}>
-                Archived
-              </Button>
-            ) : null
+            <div className="flex flex-wrap items-center gap-2">
+              <ViewToggle
+                value={viewMode === "cards" ? "card" : "list"}
+                onChange={(value) => setViewMode(value === "card" ? "cards" : "list")}
+                ariaLabel="Folder contents view"
+              />
+              {canViewArchived ? (
+                <Button variant="outline" render={<Link href={myWorkspaceHref("archived")} />}>
+                  Archived
+                </Button>
+              ) : null}
+            </div>
           }
         />
         ) : null}
@@ -471,7 +480,7 @@ export default function OrganizationFolderPage({
             onMove={folderLocked ? undefined : () => setMovingIds(selectedDocumentIds)}
           />
         </div>
-        {viewMode === "list" || !embedded ? (
+        {viewMode === "list" ? (
         <LibraryFileTable
           rows={mixedRows}
           sortKey={librarySortKey}
@@ -502,34 +511,22 @@ export default function OrganizationFolderPage({
           emptyAction={undefined}
         />
         ) : (
-          <div className="grid gap-4 overflow-y-auto p-4 sm:grid-cols-2 xl:grid-cols-3">
-            {mixedRows.map((row) => (
-              <article
-                key={row.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-brand-pink/30 hover:shadow-md"
-              >
-                {row.href ? (
-                  <Link href={row.href} className="block">
-                    <p className="font-semibold text-slate-900">{row.name}</p>
-                    {row.subtitle ? (
-                      <p className="mt-1 text-xs text-slate-500">{row.subtitle}</p>
-                    ) : null}
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    className="block w-full text-left"
-                    onClick={row.onOpen}
-                  >
-                    <p className="font-semibold text-slate-900">{row.name}</p>
-                    {row.subtitle ? (
-                      <p className="mt-1 text-xs text-slate-500">{row.subtitle}</p>
-                    ) : null}
-                  </button>
-                )}
-              </article>
-            ))}
-          </div>
+          <OrgLibraryItemCardGrid
+            rows={mixedRows}
+            selectable
+            emptyTitle={
+              folder?.folder_kind === "policy" ? "No policy documents yet" : "This folder is empty"
+            }
+            emptyDescription={
+              embedded
+                ? folder?.folder_kind === "policy"
+                  ? "Use + New in the header to upload, link, or create policy documents."
+                  : "Use + New in the header to upload, link, or create a subfolder."
+                : folder?.folder_kind === "policy"
+                  ? "Use + New to upload, add from the library, or create a custom policy file."
+                  : "Upload a document, add a link, or create a subfolder."
+            }
+          />
         )}
       </section>
       {viewing && (

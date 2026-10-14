@@ -46,6 +46,37 @@ BRAND_PINK = "#e83e8c"
 LEGACY_PURPLE = {"#9333ea", "#6e5be7", "#7c3aed", "#71639e", "#714b67"}
 
 
+def _safe_m2m_ids(record, field_name):
+    """Avoid reading M2M fields whose comodel is not loaded (Odoo shows this as model '_unknown')."""
+    field = record._fields.get(field_name)
+    if not field or field.type != "many2many":
+        return []
+    comodel = field.comodel_name
+    if not comodel or comodel not in record.env:
+        return []
+    try:
+        return record[field_name].ids
+    except ValueError:
+        return []
+
+
+def _m2m_command(env, field_name, ids):
+    Album = env["social.gallery.album"]
+    field = Album._fields.get(field_name)
+    if not field or field.type != "many2many":
+        return None
+    comodel = field.comodel_name
+    if not comodel or comodel not in env:
+        return None
+    return (6, 0, ids or [])
+
+
+def _normalize_layout(value):
+    if value == "list":
+        return "list"
+    return "grid"
+
+
 def _theme_color(value):
     color = (value or "").strip().lower()
     if not color or color in LEGACY_PURPLE:
@@ -143,15 +174,21 @@ class SocialGalleryController(http.Controller):
             "total_size": album.total_size,
             "create_date": fields.Datetime.to_string(album.create_date),
             "can_edit": album._user_can_edit(user),
+            "legal_hold": album.legal_hold or album.company_id.sg_tenant_legal_hold,
+            "unit_ids": _safe_m2m_ids(album, "unit_ids"),
+            "grade_ids": _safe_m2m_ids(album, "grade_ids"),
+            "custom_group_ids": _safe_m2m_ids(album, "custom_group_ids"),
         }
 
     def _media_data(self, media, user):
         liked = request.env["social.gallery.like"].sudo().search_count([
             ("media_id", "=", media.id), ("user_id", "=", user.id),
         ]) > 0
-        retention_days = media.company_id.sg_deleted_retention_days or 365
         purge_date = False
-        if media.deleted_at:
+        if media.purge_date:
+            purge_date = fields.Datetime.to_string(media.purge_date)
+        elif media.deleted_at:
+            retention_days = media.company_id.sg_deleted_retention_days or 30
             purge_date = fields.Datetime.to_string(
                 fields.Datetime.from_string(media.deleted_at) + timedelta(days=retention_days)
             )
@@ -160,7 +197,6 @@ class SocialGalleryController(http.Controller):
             "display_name": media.display_name,
             "description": media.description or "",
             "album_id": media.album_id.id if media.album_id else False,
-            "album_name": media.album_id.name if media.album_id else "",
             "media_type": media.media_type,
             "uploaded_by": media.uploaded_by.id,
             "uploaded_by_name": media.uploaded_by.name,
@@ -195,6 +231,13 @@ class SocialGalleryController(http.Controller):
             "create_date": fields.Datetime.to_string(media.create_date),
             "can_edit": media._user_can_edit(user),
             "can_moderate": media._user_can_moderate(user),
+            "can_delete": media._user_can_delete(user),
+            "can_withdraw": media._user_can_withdraw(user),
+            "is_unassigned": media._is_unassigned(),
+            "album_name": media.album_id.name if media.album_id else _("No album selected"),
+            "legal_hold": media.legal_hold or media._is_on_legal_hold(),
+            "disposition_state": media.disposition_state,
+            "storage_tier": media.storage_tier,
         }
 
     @staticmethod
@@ -205,7 +248,7 @@ class SocialGalleryController(http.Controller):
             "auto_approve_trusted": company.sg_auto_approve_trusted,
             "auto_create_monthly_album": company.sg_auto_create_monthly_album,
             "max_upload_mb": company.sg_max_upload_mb,
-            "default_layout": company.sg_default_layout,
+            "default_layout": _normalize_layout(company.sg_default_layout),
             "theme_color": _theme_color(company.sg_theme_color),
             "deleted_retention_days": company.sg_deleted_retention_days,
             "notify_new_upload": company.sg_notify_new_upload,
@@ -217,6 +260,13 @@ class SocialGalleryController(http.Controller):
             "weekly_digest": company.sg_weekly_digest,
             "allow_external_share": company.sg_allow_external_share,
             "ai_moderation_enabled": company.sg_ai_moderation_enabled,
+            "supervisor_upload_requires_approval": company.sg_supervisor_upload_requires_approval,
+            "rejected_retention_days": company.sg_rejected_retention_days,
+            "audit_retention_days": company.sg_audit_retention_days,
+            "disposition_review": company.sg_disposition_review,
+            "lifecycle_cold_after_days": company.sg_lifecycle_cold_after_days,
+            "tenant_legal_hold": company.sg_tenant_legal_hold,
+            "tenant_legal_hold_reason": company.sg_tenant_legal_hold_reason or "",
         }
 
     def _comment_data(self, comment):
@@ -306,7 +356,11 @@ class SocialGalleryController(http.Controller):
     @http.route("/api/social-gallery/albums", type="json", auth="user", methods=["POST"], csrf=False)
     def albums_list(self, search="", status="", sort="newest", offset=0, limit=48, **kwargs):
         try:
-            domain = [("company_id", "=", self._company().id), ("active", "=", True)]
+            domain = [
+                ("company_id", "=", self._company().id),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ]
             if search:
                 domain.append(("name", "ilike", search))
             if status:
@@ -341,22 +395,30 @@ class SocialGalleryController(http.Controller):
             name = (kwargs.get("name") or "").strip()
             if not name:
                 raise UserError(_("Album name is required."))
-            status = kwargs.get("status") or "approved"
-            if not self._is_manager() and kwargs.get("visibility") != "private":
-                status = "pending"
-            album = request.env["social.gallery.album"].sudo().create({
+            if not self._is_manager():
+                raise AccessError(_("Only supervisors and administrators can create albums."))
+            env = request.env
+            create_vals = {
                 "name": name,
                 "description": kwargs.get("description") or "",
                 "company_id": self._company().id,
                 "created_by": self._user().id,
                 "visibility": kwargs.get("visibility") or self._company().sg_default_visibility,
                 "access_scope": kwargs.get("access_scope") or "company",
-                "department_ids": [(6, 0, kwargs.get("department_ids") or [])],
-                "branch_ids": [(6, 0, kwargs.get("branch_ids") or [])],
-                "employee_ids": [(6, 0, kwargs.get("employee_ids") or [])],
-                "status": status,
                 "event_name": kwargs.get("event_name") or "",
-            })
+            }
+            for field_name, api_key in (
+                ("department_ids", "department_ids"),
+                ("branch_ids", "branch_ids"),
+                ("employee_ids", "employee_ids"),
+                ("unit_ids", "unit_ids"),
+                ("grade_ids", "grade_ids"),
+                ("custom_group_ids", "custom_group_ids"),
+            ):
+                cmd = _m2m_command(env, field_name, kwargs.get(api_key) or [])
+                if cmd:
+                    create_vals[field_name] = [cmd]
+            album = env["social.gallery.album"].sudo().create(create_vals)
             self._audit("created", "album", album=album, details=album.name)
             return {"success": True, "data": self._album_data(album, self._user())}
         except (UserError, AccessError, ValidationError) as error:
@@ -370,9 +432,11 @@ class SocialGalleryController(http.Controller):
             for key in ("name", "description", "visibility", "access_scope", "status", "event_name"):
                 if key in kwargs and kwargs[key] is not None:
                     vals[key] = kwargs[key]
-            for key in ("department_ids", "branch_ids", "employee_ids"):
+            for key in ("department_ids", "branch_ids", "employee_ids", "unit_ids", "grade_ids", "custom_group_ids"):
                 if key in kwargs:
-                    vals[key] = [(6, 0, kwargs[key] or [])]
+                    cmd = _m2m_command(request.env, key, kwargs[key] or [])
+                    if cmd:
+                        vals[key] = [cmd]
             if vals:
                 album.write(vals)
                 self._audit("modified", "album", album=album)
@@ -386,17 +450,33 @@ class SocialGalleryController(http.Controller):
             album = self._album(id, edit=True)
             if action == "archive":
                 album.write({"status": "archived"})
-            elif action == "restore":
-                album.write({"status": "approved"})
             elif action == "delete":
-                album.write({"active": False})
+                album.action_soft_delete()
                 self._audit("deleted", "album", album=album)
-            elif action == "approve" and self._is_manager():
-                album.write({"status": "approved"})
+            elif action == "restore" and self._is_manager():
+                if album.deleted_at:
+                    album.action_restore()
+                    self._audit("restored", "album", album=album)
+                else:
+                    album.write({"status": "approved"})
+            elif action == "approve" and self._is_admin():
+                if album.created_by == self._user():
+                    raise AccessError(_("You cannot approve an album you created."))
+                album.write({"status": "approved", "rejection_reason": False})
                 self._audit("approved", "album", album=album)
-            elif action == "reject" and self._is_manager():
-                album.write({"status": "rejected"})
-                self._audit("rejected", "album", album=album)
+            elif action == "reject" and self._is_admin():
+                reason = (kwargs.get("comment") or kwargs.get("reason") or "").strip()
+                if not reason:
+                    raise UserError(_("A rejection reason is required."))
+                if album.created_by == self._user():
+                    raise AccessError(_("You cannot reject an album you created."))
+                album.write({"status": "rejected", "rejection_reason": reason})
+                self._audit("rejected", "album", album=album, details=reason)
+            elif action == "resubmit" and album.created_by == self._user():
+                if album.status != "rejected":
+                    raise UserError(_("Only rejected albums can be resubmitted."))
+                album.write({"status": "pending", "resubmitted_at": fields.Datetime.now()})
+                self._audit("modified", "album", album=album, details="Resubmitted for review")
             else:
                 raise UserError(_("Unsupported album action."))
             return {"success": True, "data": self._album_data(album, self._user())}
@@ -421,7 +501,11 @@ class SocialGalleryController(http.Controller):
     @http.route("/api/social-gallery/media", type="json", auth="user", methods=["POST"], csrf=False)
     def media_list(self, album_id=None, search="", media_type="", approval_status="", include_deleted=False, sort="newest", offset=0, limit=48, **kwargs):
         try:
-            domain = [("company_id", "=", self._company().id), ("active", "=", True)]
+            domain = [
+                ("company_id", "=", self._company().id),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ]
             if album_id:
                 domain.append(("album_id", "=", _int(album_id)))
             if search:
@@ -459,15 +543,25 @@ class SocialGalleryController(http.Controller):
     def media_update(self, id, **kwargs):
         try:
             media = self._media(id, edit=True)
+            user = self._user()
             vals = {}
-            for key in ("display_name", "description", "accessible_description", "comments_enabled", "is_pinned", "edit_metadata"):
+            manager = self._is_manager()
+            allowed_keys = (
+                "display_name", "description", "accessible_description",
+                "comments_enabled", "is_pinned", "edit_metadata",
+            ) if manager else ("display_name", "description")
+            for key in allowed_keys:
                 if key in kwargs:
                     vals[key] = kwargs[key]
-            if "tag_ids" in kwargs:
-                vals["tag_ids"] = [(6, 0, kwargs["tag_ids"] or [])]
-            if "album_id" in kwargs and kwargs["album_id"]:
-                self._album(kwargs["album_id"], edit=True)
-                vals["album_id"] = _int(kwargs["album_id"])
+            if manager:
+                if "tag_ids" in kwargs:
+                    vals["tag_ids"] = [(6, 0, kwargs["tag_ids"] or [])]
+                if "album_id" in kwargs and kwargs["album_id"]:
+                    self._album(kwargs["album_id"], edit=True)
+                    vals["album_id"] = _int(kwargs["album_id"])
+            if kwargs.get("trigger_re_review"):
+                media.action_rereview_after_edit()
+                vals.pop("trigger_re_review", None)
             if vals:
                 media.write(vals)
                 self._audit("modified", "media", media=media)
@@ -478,16 +572,26 @@ class SocialGalleryController(http.Controller):
     @http.route("/api/social-gallery/media/action", type="json", auth="user", methods=["POST"], csrf=False)
     def media_action(self, id, action, **kwargs):
         try:
-            media = self._media(id, edit=action in ("delete", "restore", "purge", "pin", "unpin"))
+            media = self._media(id, edit=action in ("withdraw", "restore", "purge", "pin", "unpin") or (
+                action == "delete" and self._is_manager()
+            ))
             user = self._user()
             if action == "delete":
+                if not self._is_manager():
+                    raise AccessError(_("Only supervisors and administrators can delete media."))
                 media.action_soft_delete()
                 self._audit("deleted", "media", media=media)
+            elif action == "withdraw":
+                media.action_withdraw()
+                self._audit("withdrawn", "media", media=media, details="Withdrawn by uploader")
             elif action == "restore" and self._is_manager():
-                media.action_restore()
+                media.action_restore(album_id=_int(kwargs.get("album_id")) if kwargs.get("album_id") else None)
                 self._audit("restored", "media", media=media)
             elif action == "purge" and self._is_admin():
+                if media._is_on_legal_hold():
+                    raise UserError(_("Cannot permanently delete media on legal hold."))
                 media_id = media.id
+                media._create_disposal_record()
                 media.unlink()
                 return {"success": True, "data": {"purged": True, "id": media_id}}
             elif action == "pin":
@@ -495,7 +599,8 @@ class SocialGalleryController(http.Controller):
             elif action == "unpin":
                 media.is_pinned = False
             elif action == "view":
-                media.view_count += 1
+                from_review = bool(kwargs.get("from_review"))
+                media.record_view(user, from_review=from_review)
             else:
                 raise UserError(_("Unsupported media action."))
             return {"success": True, "data": self._media_data(media, user)}
@@ -507,22 +612,47 @@ class SocialGalleryController(http.Controller):
         try:
             if not self._is_manager():
                 raise AccessError(_("Only managers can perform batch actions."))
+            if action == "delete_album_contents":
+                if not album_id:
+                    raise UserError(_("Album is required."))
+                album = self._album(album_id, edit=True)
+                media = album.media_ids.filtered(
+                    lambda m: not m.deleted_at and m.approval_status == "approved"
+                )
+                for item in media:
+                    item.action_soft_delete()
+                    self._audit("deleted", "media", media=item)
+                return {"success": True, "data": {"count": len(media), "results": []}}
             media = request.env["social.gallery.media"].sudo().browse([_int(i) for i in (ids or [])]).exists()
             media = media.filtered(lambda m: m.company_id == self._company())
-            if action == "approve":
-                media.action_approve(album_id=_int(album_id) if album_id else None, comment=comment)
-            elif action == "reject":
-                media.action_reject(comment=comment)
-            elif action == "delete":
-                media.action_soft_delete()
-            elif action == "restore":
-                media.action_restore()
-            elif action == "move":
-                album = self._album(album_id, edit=True)
-                media.write({"album_id": album.id})
-            else:
+            results = []
+            for item in media:
+                try:
+                    if action == "approve":
+                        item.action_approve(
+                            album_id=_int(album_id) if album_id else None,
+                            comment=comment,
+                            reviewer=self._user(),
+                        )
+                        self._audit("approved", "media", media=item)
+                    elif action == "reject":
+                        item.action_reject(comment=comment, reviewer=self._user())
+                        self._audit("rejected", "media", media=item)
+                    elif action == "delete":
+                        item.action_soft_delete()
+                    elif action == "restore":
+                        item.action_restore()
+                    elif action == "move":
+                        album = self._album(album_id, edit=True)
+                        item.write({"album_id": album.id})
+                    else:
+                        raise UserError(_("Unsupported batch action."))
+                    results.append({"id": item.id, "success": True})
+                except (UserError, AccessError, ValidationError) as error:
+                    results.append({"id": item.id, "success": False, "message": str(error)})
+            if action not in ("approve", "reject", "delete", "restore", "move", "delete_album_contents"):
                 raise UserError(_("Unsupported batch action."))
-            return {"success": True, "data": {"count": len(media)}}
+            return {"success": True, "data": {"results": results, "count": len(results)}}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
@@ -532,11 +662,17 @@ class SocialGalleryController(http.Controller):
             if not self._is_manager():
                 raise AccessError(_("Only managers can approve media."))
             media = self._media(id)
+            if not media._user_can_moderate(self._user()):
+                raise AccessError(_("You cannot review media you uploaded."))
             if action == "approve":
-                media.action_approve(album_id=_int(album_id) if album_id else None, comment=comment)
+                media.action_approve(
+                    album_id=_int(album_id) if album_id else None,
+                    comment=comment,
+                    reviewer=self._user(),
+                )
                 self._audit("approved", "media", media=media)
             elif action == "reject":
-                media.action_reject(comment=comment)
+                media.action_reject(comment=comment, reviewer=self._user())
                 self._audit("rejected", "media", media=media)
             else:
                 raise UserError(_("Unsupported approval action."))
@@ -547,6 +683,8 @@ class SocialGalleryController(http.Controller):
     @http.route("/api/social-gallery/media/move", type="json", auth="user", methods=["POST"], csrf=False)
     def media_move(self, id, album_id, **kwargs):
         try:
+            if not self._is_manager():
+                raise AccessError(_("Only supervisors and administrators can move media."))
             media = self._media(id, edit=True)
             album = self._album(album_id, edit=True)
             media.album_id = album.id
@@ -605,7 +743,7 @@ class SocialGalleryController(http.Controller):
     # ── Uploads ─────────────────────────────────────────────────────────────
 
     @http.route("/api/social-gallery/uploads/initiate", type="json", auth="user", methods=["POST"], csrf=False)
-    def uploads_initiate(self, file_name, mime_type, file_size, album_id=None, **kwargs):
+    def uploads_initiate(self, file_name, mime_type, file_size, album_id=None, replace_media_id=None, **kwargs):
         try:
             if mime_type not in ALLOWED_MIME_TYPES:
                 raise UserError(_("Unsupported file type."))
@@ -614,6 +752,13 @@ class SocialGalleryController(http.Controller):
                 raise UserError(_("File exceeds maximum upload size."))
             if album_id:
                 self._album(album_id, edit=True)
+            replace_media = False
+            if replace_media_id:
+                replace_media = self._media(replace_media_id, edit=True)
+                if replace_media.media_type == "video" and not mime_type.startswith("video/"):
+                    raise UserError(_("Replace file must be the same media type."))
+                if replace_media.media_type == "image" and not mime_type.startswith("image/"):
+                    raise UserError(_("Replace file must be the same media type."))
             storage = CloudflareR2Storage(request.env)
             if not storage.is_configured():
                 raise UserError(_("Storage is not configured."))
@@ -634,6 +779,8 @@ class SocialGalleryController(http.Controller):
                 "mime_type": mime_type,
                 "file_size": _int(file_size),
             })
+            if replace_media_id:
+                session.sudo().write({"media_id": replace_media.id})
             part_count = max(1, math.ceil(_int(file_size) / PART_SIZE))
             return {"success": True, "data": {
                 "session_id": session.id,
@@ -641,6 +788,7 @@ class SocialGalleryController(http.Controller):
                 "upload_id": upload_id,
                 "part_size": PART_SIZE,
                 "part_count": part_count,
+                "replace_media_id": _int(replace_media_id) if replace_media_id else False,
             }}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
@@ -693,16 +841,58 @@ class SocialGalleryController(http.Controller):
             storage.complete_multipart(session.object_key, session.upload_id, parts)
             session.state = "completed"
 
+            from odoo.addons.cleon_social_gallery.models.gallery_file_signature import mime_matches_bytes
+            header = storage.get_object_bytes(session.object_key, max_bytes=64)
+            if not mime_matches_bytes(session.mime_type, header):
+                storage.delete_object(session.object_key)
+                raise UserError(_("File content does not match the declared file type."))
+
+            if session.media_id:
+                media = session.media_id
+                user = self._user()
+                old_key = media.storage_key
+                vals = {
+                    "storage_key": session.object_key,
+                    "file_name": session.file_name,
+                    "mime_type": session.mime_type,
+                    "file_size": session.file_size,
+                    "checksum": checksum or media.checksum,
+                    "thumbnail_key": False,
+                    "needs_processing": media.media_type == "image",
+                    "version": media.version + 1,
+                    "replaces_media_id": media.id,
+                }
+                if not self._is_manager() and media.uploaded_by == user:
+                    vals.update({
+                        "approval_status": "pending",
+                        "approved_by": False,
+                        "approved_at": False,
+                    })
+                media.write(vals)
+                if old_key and old_key != session.object_key:
+                    storage.delete_object(old_key)
+                self._audit("modified", "media", media=media, details="File replaced")
+                return {"success": True, "data": self._media_data(media, user)}
+
             media_type = "video" if session.mime_type.startswith("video/") else "image"
             employee = self._user().employee_id
             company = self._company()
-            if not company.sg_ai_moderation_enabled:
-                approval_status = "pending"
+            user = self._user()
+            if self._is_admin():
+                approval_status = "approved"
+                album = session.album_id or self._resolve_auto_album()
+            elif self._is_manager():
+                album = session.album_id or self._resolve_auto_album()
+                # SRS §3.4 FR-042: manager uploads into a chosen album are auto-approved.
+                if session.album_id:
+                    approval_status = "approved"
+                else:
+                    approval_status = (
+                        "pending" if company.sg_supervisor_upload_requires_approval else "approved"
+                    )
             else:
-                trusted = self._is_trusted_user()
-                auto_approve = trusted and company.sg_auto_approve_trusted
-                approval_status = "approved" if auto_approve or self._is_manager() else "pending"
-            album = session.album_id or self._resolve_auto_album()
+                approval_status = "pending"
+                album = session.album_id or False
 
             media = request.env["social.gallery.media"].sudo().create({
                 "display_name": display_name or session.file_name,
@@ -710,7 +900,7 @@ class SocialGalleryController(http.Controller):
                 "album_id": album.id if album else False,
                 "company_id": company.id,
                 "media_type": media_type,
-                "uploaded_by": self._user().id,
+                "uploaded_by": user.id,
                 "department_id": employee.department_id.id if employee and employee.department_id else False,
                 "branch_id": getattr(employee, "branch_id", False) and employee.branch_id.id or False,
                 "file_name": session.file_name,
@@ -719,26 +909,11 @@ class SocialGalleryController(http.Controller):
                 "checksum": checksum or "",
                 "storage_key": session.object_key,
                 "approval_status": approval_status,
-                "comments_enabled": True,
+                "ai_review_status": "skipped",
+                "comments_enabled": False,
+                "needs_processing": media_type == "image",
             })
             session.media_id = media.id
-
-            if not company.sg_ai_moderation_enabled:
-                media._mark_manual_review_only()
-            elif media_type == "image" and session.object_key:
-                image_bytes = storage.get_object_bytes(session.object_key)
-                if image_bytes:
-                    from odoo.addons.cleon_social_gallery.models.gallery_thumbnail import generate_image_thumbnail
-
-                    thumb_bytes, thumb_mime = generate_image_thumbnail(image_bytes)
-                    if thumb_bytes:
-                        thumb_key = "%s-thumb.jpg" % session.object_key.rsplit(".", 1)[0]
-                        if storage.put_object_bytes(thumb_key, thumb_bytes, thumb_mime):
-                            media.thumbnail_key = thumb_key
-                media._run_ai_screening(
-                    image_bytes=image_bytes,
-                    image_mime=session.mime_type,
-                )
 
             request.env["social.gallery.upload.history"].sudo().create({
                 "company_id": company.id,
@@ -963,7 +1138,25 @@ class SocialGalleryController(http.Controller):
                 ("deleted_at", "=", False),
             ], order="create_date asc")
             user = self._user()
-            return {"success": True, "data": [self._media_data(m, user) for m in media]}
+            reviewable_media = media.filtered(lambda m: m._user_can_moderate(user))
+            pending_albums = []
+            if self._is_admin():
+                albums = request.env["social.gallery.album"].sudo().search([
+                    ("company_id", "=", self._company().id),
+                    ("status", "=", "pending"),
+                    ("deleted_at", "=", False),
+                    ("active", "=", True),
+                ], order="create_date asc")
+                pending_albums = [self._album_data(a, user) for a in albums]
+            actionable_count = len(reviewable_media) + len(pending_albums)
+            return {
+                "success": True,
+                "data": {
+                    "media": [self._media_data(m, user) for m in reviewable_media],
+                    "albums": pending_albums,
+                    "actionable_count": actionable_count,
+                },
+            }
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
@@ -1081,12 +1274,36 @@ class SocialGalleryController(http.Controller):
         try:
             if not self._is_manager():
                 raise AccessError(_("Only managers can view the recycle bin."))
-            media = request.env["social.gallery.media"].sudo().search([
+            user = self._user()
+            albums = request.env["social.gallery.album"].sudo().search([
                 ("company_id", "=", self._company().id),
                 ("deleted_at", "!=", False),
             ], order="deleted_at desc")
-            user = self._user()
-            return {"success": True, "data": [self._media_data(m, user) for m in media]}
+            media = request.env["social.gallery.media"].sudo().search([
+                ("company_id", "=", self._company().id),
+                ("deleted_at", "!=", False),
+                ("deleted_with_album_id", "=", False),
+            ], order="deleted_at desc")
+            album_groups = []
+            for album in albums:
+                items = request.env["social.gallery.media"].sudo().search([
+                    ("deleted_with_album_id", "=", album.id),
+                ])
+                album_groups.append({
+                    "id": album.id,
+                    "name": album.name,
+                    "media_count": len(items),
+                    "deleted_at": fields.Datetime.to_string(album.deleted_at),
+                    "deleted_by_name": album.deleted_by.name if album.deleted_by else "",
+                    "media": [self._media_data(m, user) for m in items],
+                })
+            return {
+                "success": True,
+                "data": {
+                    "albums": album_groups,
+                    "media": [self._media_data(m, user) for m in media],
+                },
+            }
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
@@ -1097,6 +1314,11 @@ class SocialGalleryController(http.Controller):
                 raise AccessError(_("Only administrators can permanently delete items."))
             media = request.env["social.gallery.media"].sudo().browse([_int(i) for i in (ids or [])]).exists()
             media = media.filtered(lambda m: m.company_id == self._company() and m.deleted_at)
+            blocked = media.filtered(lambda m: m._is_on_legal_hold())
+            if blocked:
+                raise UserError(_("Cannot permanently delete items on legal hold."))
+            for item in media:
+                item._create_disposal_record()
             count = len(media)
             media.unlink()
             return {"success": True, "data": {"purged": count}}
@@ -1106,8 +1328,8 @@ class SocialGalleryController(http.Controller):
     @http.route("/api/social-gallery/audit", type="json", auth="user", methods=["POST"], csrf=False)
     def audit_log(self, event_type="", entity_type="", offset=0, limit=100, **kwargs):
         try:
-            if not self._is_manager():
-                raise AccessError(_("Only managers can view audit logs."))
+            if not self._is_admin():
+                raise AccessError(_("Only administrators can view audit logs."))
             domain = [("company_id", "=", self._company().id)]
             if event_type:
                 domain.append(("event_type", "=", event_type))
@@ -1151,11 +1373,26 @@ class SocialGalleryController(http.Controller):
             branches = []
             if "multi.branch" in request.env:
                 branches = request.env["multi.branch"].sudo().search([])
+            units = []
+            if "hr.unit" in request.env:
+                units = request.env["hr.unit"].sudo().search([])
+            grades = []
+            if "hr.grade" in request.env:
+                grades = request.env["hr.grade"].sudo().search([])
+            custom_groups = request.env["social.gallery.custom.group"].sudo().search([
+                ("company_id", "=", company.id),
+            ])
             return {
                 "success": True,
                 "data": {
                     "departments": [{"id": d.id, "name": d.name} for d in departments],
                     "branches": [{"id": b.id, "name": b.name} for b in branches],
+                    "units": [{"id": u.id, "name": u.name} for u in units],
+                    "grades": [{"id": g.id, "name": g.name} for g in grades],
+                    "custom_groups": [
+                        {"id": g.id, "name": g.name, "member_count": len(g.employee_ids)}
+                        for g in custom_groups
+                    ],
                     "employees": [
                         {
                             "id": e.id,
@@ -1165,8 +1402,128 @@ class SocialGalleryController(http.Controller):
                         for e in employees
                     ],
                     "branches_available": bool(branches),
+                    "units_available": bool(units),
+                    "grades_available": bool(grades),
                 },
             }
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/social-gallery/media/duplicate", type="json", auth="user", methods=["POST"], csrf=False)
+    def media_duplicate(self, id, **kwargs):
+        try:
+            media = self._media(id)
+            if not self._is_manager():
+                raise AccessError(_("Only supervisors and administrators can duplicate media."))
+            copies = media.action_duplicate()
+            user = self._user()
+            first = copies[:1]
+            return {"success": True, "data": self._media_data(first, user) if first else {}}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/social-gallery/compliance/disposition", type="json", auth="user", methods=["POST"], csrf=False)
+    def compliance_disposition(self, action="list", media_ids=None, **kwargs):
+        try:
+            if not self._is_admin():
+                raise AccessError(_("Only administrators can manage disposition."))
+            Media = request.env["social.gallery.media"].sudo()
+            company = self._company()
+            if action == "list":
+                due = Media.search([
+                    ("company_id", "=", company.id),
+                    ("disposition_state", "=", "due"),
+                ], order="purge_date asc")
+                user = self._user()
+                return {"success": True, "data": [self._media_data(m, user) for m in due]}
+            ids = [_int(i) for i in (media_ids or [])]
+            media = Media.browse(ids).exists().filtered(lambda m: m.company_id == company)
+            if action == "approve":
+                media.write({"disposition_state": "approved"})
+            elif action == "dismiss":
+                media.write({"disposition_state": "none", "purge_date": False})
+            else:
+                raise UserError(_("Unsupported disposition action."))
+            return {"success": True, "data": {"count": len(media)}}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/social-gallery/compliance/legal-hold", type="json", auth="user", methods=["POST"], csrf=False)
+    def compliance_legal_hold(self, action="set", target="tenant", media_id=None, album_id=None, reason="", enabled=True, **kwargs):
+        try:
+            if not self._is_admin():
+                raise AccessError(_("Only administrators can manage legal holds."))
+            company = self._company()
+            if target == "tenant":
+                company.write({
+                    "sg_tenant_legal_hold": bool(enabled),
+                    "sg_tenant_legal_hold_reason": reason if enabled else "",
+                })
+            elif target == "media" and media_id:
+                media = self._media(media_id, edit=True)
+                media.write({
+                    "legal_hold": bool(enabled),
+                    "legal_hold_reason": reason if enabled else "",
+                })
+            elif target == "album" and album_id:
+                album = self._album(album_id, edit=True)
+                album.write({
+                    "legal_hold": bool(enabled),
+                    "legal_hold_reason": reason if enabled else "",
+                })
+            else:
+                raise UserError(_("Invalid legal hold target."))
+            self._audit("modified", "album", details="Legal hold updated: %s" % target)
+            return {"success": True, "data": {"updated": True}}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/social-gallery/compliance/disposal-records", type="json", auth="user", methods=["POST"], csrf=False)
+    def compliance_disposal_records(self, limit=50, **kwargs):
+        try:
+            if not self._is_admin():
+                raise AccessError(_("Only administrators can view disposal records."))
+            records = request.env["social.gallery.disposal.record"].sudo().search([
+                ("company_id", "=", self._company().id),
+            ], limit=min(max(_int(limit, 50), 1), 200), order="purged_at desc")
+            return {"success": True, "data": [{
+                "id": r.id,
+                "media_id": r.media_id,
+                "media_name": r.media_name,
+                "album_name": r.album_name,
+                "purged_at": fields.Datetime.to_string(r.purged_at),
+                "retention_rule": r.retention_rule,
+            } for r in records]}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/social-gallery/custom-groups", type="json", auth="user", methods=["POST"], csrf=False)
+    def custom_groups(self, action="list", name="", description="", employee_ids=None, group_id=None, **kwargs):
+        try:
+            if not self._is_manager():
+                raise AccessError(_("Only managers can manage custom groups."))
+            Group = request.env["social.gallery.custom.group"].sudo()
+            company = self._company()
+            if action == "list":
+                groups = Group.search([("company_id", "=", company.id)])
+                return {"success": True, "data": [{
+                    "id": g.id,
+                    "name": g.name,
+                    "description": g.description or "",
+                    "employee_ids": g.employee_ids.ids,
+                } for g in groups]}
+            if action == "create":
+                group = Group.create({
+                    "name": (name or "").strip(),
+                    "description": description or "",
+                    "company_id": company.id,
+                    "employee_ids": [(6, 0, employee_ids or [])],
+                })
+                return {"success": True, "data": {"id": group.id}}
+            if action == "delete" and group_id:
+                Group.browse(_int(group_id)).unlink()
+                return {"success": True, "data": {"deleted": True}}
+            raise UserError(_("Unsupported custom group action."))
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
@@ -1197,13 +1554,46 @@ class SocialGalleryController(http.Controller):
                     "weekly_digest": "sg_weekly_digest",
                     "allow_external_share": "sg_allow_external_share",
                     "ai_moderation_enabled": "sg_ai_moderation_enabled",
+                    "supervisor_upload_requires_approval": "sg_supervisor_upload_requires_approval",
+                    "rejected_retention_days": "sg_rejected_retention_days",
+                    "audit_retention_days": "sg_audit_retention_days",
+                    "disposition_review": "sg_disposition_review",
+                    "lifecycle_cold_after_days": "sg_lifecycle_cold_after_days",
+                    "tenant_legal_hold": "sg_tenant_legal_hold",
+                    "tenant_legal_hold_reason": "sg_tenant_legal_hold_reason",
                 }
                 vals = {}
                 for api_key, odoo_field in field_map.items():
                     if api_key in kwargs:
-                        vals[odoo_field] = kwargs[api_key]
+                        value = kwargs[api_key]
+                        if api_key == "default_layout":
+                            value = _normalize_layout(value)
+                        vals[odoo_field] = value
+                if "sg_deleted_retention_days" in vals:
+                    days = _int(vals["sg_deleted_retention_days"], 30)
+                    if days < 7 or days > 365:
+                        raise UserError(_("Recycle bin retention must be between 7 and 365 days."))
+                    vals["sg_deleted_retention_days"] = days
+                if "sg_rejected_retention_days" in vals:
+                    days = _int(vals["sg_rejected_retention_days"], 90)
+                    if days < 30 or days > 365:
+                        raise UserError(_("Rejected media retention must be between 30 and 365 days."))
+                    vals["sg_rejected_retention_days"] = days
+                if "sg_audit_retention_days" in vals:
+                    days = _int(vals["sg_audit_retention_days"], 730)
+                    if days < 365 or days > 3650:
+                        raise UserError(_("Audit log retention must be between 365 and 3650 days."))
+                    vals["sg_audit_retention_days"] = days
+                if "sg_lifecycle_cold_after_days" in vals:
+                    days = _int(vals["sg_lifecycle_cold_after_days"], 90)
+                    if days < 30 or days > 3650:
+                        raise UserError(_("Cold storage tier must be between 30 and 3650 days."))
+                    vals["sg_lifecycle_cold_after_days"] = days
+                if "sg_tenant_legal_hold" in vals and not vals["sg_tenant_legal_hold"]:
+                    vals["sg_tenant_legal_hold_reason"] = ""
                 if vals:
                     company.write(vals)
+                    self._audit("modified", "album", details="Gallery settings updated", metadata=vals)
             return {"success": True, "data": self._settings_data(company)}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))

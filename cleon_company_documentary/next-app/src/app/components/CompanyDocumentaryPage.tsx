@@ -1,11 +1,13 @@
 "use client";
 
-import { Check, Plus, UploadCloud, X } from "lucide-react";
+import { Check, X } from "lucide-react";
+import { mediaFiltersForApi, sortLibraryMedia } from "../../../lib/libraryFilters";
 import { useEffect, useMemo, useState } from "react";
 import type { DocumentaryFolder, DocumentaryMedia } from "../../../lib/types";
 import { api } from "../../../lib/api";
 import {
   useContinueWatching,
+  useHomeHero,
   useCreateDocumentaryFolder,
   useDocumentaryFolderAction,
   useDocumentaryFolders,
@@ -33,9 +35,9 @@ import {
 import {
   ApprovalQueue,
   RecycleBinView,
-  SettingsPanelModal,
   ShareModal,
 } from "./modals/FeatureModals";
+import { DocumentarySettingsPage } from "./settings/DocumentarySettingsPage";
 import { MediaEditModal } from "./modals/MediaModals";
 import { UploadModal } from "./modals/UploadModal";
 import { VideoModal } from "./modals/VideoModal";
@@ -50,7 +52,7 @@ export default function CompanyDocumentaryPage() {
   const [search, setSearch] = useState("");
   const [libraryView, setLibraryView] = useState<LibraryView>("home");
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("grid");
-  const [filters, setFilters] = useState<MediaFiltersState>({});
+  const [filters, setFilters] = useState<MediaFiltersState>({ sort: "updated_desc" });
   const [selectedFolder, setSelectedFolder] = useState<DocumentaryFolder | null>(null);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [editingFolder, setEditingFolder] = useState<DocumentaryFolder | null>(null);
@@ -65,10 +67,14 @@ export default function CompanyDocumentaryPage() {
   const [showBatchShare, setShowBatchShare] = useState(false);
   const [notice, setNotice] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [mobileNav, setMobileNav] = useState(false);
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false);
 
   const foldersQuery = useDocumentaryFolders(search);
-  const mediaQuery = useDocumentaryMedia(selectedFolder?.id || null, search, filters);
+  const apiMediaFilters = useMemo(() => mediaFiltersForApi(filters), [filters]);
+  const mediaQuery = useDocumentaryMedia(selectedFolder?.id || null, search, apiMediaFilters);
   const continueQuery = useContinueWatching();
+  const showHomeDashboard = libraryView === "home" && !selectedFolder;
+  const heroQuery = useHomeHero(showHomeDashboard && !search.trim());
   const recycleQuery = useRecycleBin(libraryView === "recycle");
   const userQuery = useDocumentaryUser();
   const createFolder = useCreateDocumentaryFolder();
@@ -85,7 +91,36 @@ export default function CompanyDocumentaryPage() {
     window.setTimeout(() => setNotice(null), 4200);
   }
 
+  useEffect(() => {
+    if (deepLinkHandled || typeof window === "undefined") return;
+    const mediaId = Number(new URLSearchParams(window.location.search).get("openMedia"));
+    if (!mediaId) {
+      setDeepLinkHandled(true);
+      return;
+    }
+    setDeepLinkHandled(true);
+    void api
+      .mediaDetail(mediaId)
+      .then((item) => {
+        setSelectedMedia(item);
+        setLibraryView("all");
+      })
+      .catch(() => showNotice("error", "That video could not be opened."));
+  }, [deepLinkHandled]);
+
+  const canManage = Boolean(
+    userQuery.data?.is_documentary_manager ||
+      userQuery.data?.is_documentary_admin ||
+      userQuery.data?.is_admin,
+  );
+  const isAdministrator = Boolean(
+    userQuery.data?.is_documentary_admin || userQuery.data?.is_admin,
+  );
+  const isSupervisor = Boolean(canManage && !isAdministrator);
+
   const uploadManager = useUploadManager({
+    isAdministrator,
+    isSupervisor,
     onMediaCreated: () => void mediaQuery.refetch(),
     onJobComplete: () => {
       void mediaQuery.refetch();
@@ -121,29 +156,30 @@ export default function CompanyDocumentaryPage() {
     [folders],
   );
   const pendingCount = useMemo(
-    () => media.filter((item) => item.approval_status === "pending").length,
+    () =>
+      media.filter(
+        (item) => item.status === "pending_review" || item.approval_status === "pending",
+      ).length,
     [media],
   );
   const visibleMedia = useMemo(() => {
-    if (libraryView === "favorites") return media.filter((item) => item.favorite);
-    if (libraryView === "recent") return continueQuery.data ?? [];
-    if (libraryView === "approvals")
-      return media.filter((item) =>
-        ["pending", "scheduled", "rejected"].includes(item.approval_status || ""),
+    let items: DocumentaryMedia[];
+    if (libraryView === "favorites") items = media.filter((item) => item.favorite);
+    else if (libraryView === "recent") items = continueQuery.data ?? [];
+    else if (libraryView === "approvals")
+      items = media.filter(
+        (item) =>
+          item.status === "pending_review" ||
+          item.status === "returned" ||
+          item.approval_status === "pending",
       );
-    if (libraryView === "home" && !selectedFolder && !search.trim()) {
-      return media.slice(0, 4);
+    else if (libraryView === "home" && !selectedFolder && !search.trim()) {
+      items = [];
+    } else {
+      items = media;
     }
-    return media;
-  }, [libraryView, media, continueQuery.data, selectedFolder, search]);
-  const canManage = Boolean(
-    userQuery.data?.is_documentary_manager ||
-      userQuery.data?.is_documentary_admin ||
-      userQuery.data?.is_admin,
-  );
-  const isAdmin = Boolean(
-    userQuery.data?.is_documentary_admin || userQuery.data?.is_admin,
-  );
+    return sortLibraryMedia(items, filters.sort || "updated_desc");
+  }, [libraryView, media, continueQuery.data, selectedFolder, search, filters.sort]);
   const isSystemAdmin = Boolean(userQuery.data?.is_admin);
 
   function navigate(view: LibraryView) {
@@ -246,15 +282,13 @@ export default function CompanyDocumentaryPage() {
     }
   }
 
-  async function handleBatchShare(scope: string, departmentIds: number[], gradeIds: number[], employeeIds: number[]) {
+  async function handleBatchShare(scope: string, departmentIds: number[]) {
     try {
       await api.mediaBatchUpdate({
         ids: selectedMediaIds,
         scope_mode: scope === "company" ? "inherited" : "override",
         access_scope: scope,
         department_ids: scope === "department" ? departmentIds : [],
-        grade_ids: scope === "grade" ? gradeIds : [],
-        employee_ids: scope === "employee" ? employeeIds : [],
       });
       setSelectedMediaIds([]);
       setShowBatchShare(false);
@@ -268,7 +302,7 @@ export default function CompanyDocumentaryPage() {
   const pageTitle =
     selectedFolder?.name ||
     {
-      home: "Company Documentary",
+      home: "Home",
       all: "All videos",
       favorites: "Favorites",
       recent: "Continue watching",
@@ -311,7 +345,7 @@ export default function CompanyDocumentaryPage() {
         mediaCount={media.length}
         pendingCount={pendingCount}
         canManage={canManage}
-        isAdmin={isAdmin}
+        isAdmin={isAdministrator}
         mobileNav={mobileNav}
         onNavigate={navigate}
         onOpenFolder={openFolder}
@@ -331,18 +365,6 @@ export default function CompanyDocumentaryPage() {
           />
         </div>
         <div className="content-scroll">
-          {canManage && showLibrary && (
-            <div className="page-actions-row">
-              <div className="primary-actions">
-                <button className="secondary-button" onClick={() => setShowCreateFolder(true)}>
-                  <Plus size={17} /> New folder
-                </button>
-                <button className="primary-button" onClick={() => setShowUpload(true)}>
-                  <UploadCloud size={17} /> Upload video
-                </button>
-              </div>
-            </div>
-          )}
           {libraryView === "recycle" && (
             <RecycleBinView
               media={recycleQuery.data?.media ?? []}
@@ -366,6 +388,10 @@ export default function CompanyDocumentaryPage() {
               folders={folders}
               favoriteFolders={favoriteFolders}
               featuredFolders={featuredFolders}
+              heroMedia={heroQuery.data ?? null}
+              heroLoading={heroQuery.isLoading}
+              continueWatching={continueQuery.data ?? []}
+              continueWatchingLoading={continueQuery.isLoading}
               selectedFolder={selectedFolder}
               libraryView={libraryView}
               search={search}
@@ -426,7 +452,8 @@ export default function CompanyDocumentaryPage() {
         <VideoModal
           media={selectedMedia}
           userId={userQuery.data?.id}
-          isManager={canManage}
+          isAdministrator={isAdministrator}
+          isSupervisor={isSupervisor}
           onClose={() => setSelectedMedia(null)}
           onShare={() => setShareMedia(selectedMedia)}
           onError={(message) => showNotice("error", message)}
@@ -447,17 +474,32 @@ export default function CompanyDocumentaryPage() {
         <ShareModal media={shareMedia} onClose={() => setShareMedia(null)} onError={(message) => showNotice("error", message)} />
       )}
       {editingMedia && (
-        <MediaEditModal media={editingMedia} onClose={() => setEditingMedia(null)} onSaved={() => { setEditingMedia(null); void mediaQuery.refetch(); showNotice("success", "Video settings updated."); }} onError={(message) => showNotice("error", message)} />
+        <MediaEditModal
+          media={editingMedia}
+          canSetHero={canManage}
+          isAdministrator={isAdministrator}
+          isSupervisor={isSupervisor}
+          userId={userQuery.data?.id}
+          onClose={() => setEditingMedia(null)}
+          onSaved={() => {
+            setEditingMedia(null);
+            void mediaQuery.refetch();
+            void heroQuery.refetch();
+            showNotice("success", "Video settings updated.");
+          }}
+          onError={(message) => showNotice("error", message)}
+        />
       )}
       {showBatchShare && (
         <BatchShareModal count={selectedMediaIds.length} onClose={() => setShowBatchShare(false)} onSave={handleBatchShare} />
       )}
       {showAnalytics && <AnalyticsDashboard folders={folders} onClose={() => setShowAnalytics(false)} />}
       {showSettings && (
-        <SettingsPanelModal
+        <DocumentarySettingsPage
           onClose={() => setShowSettings(false)}
           onNotice={showNotice}
           isSystemAdmin={isSystemAdmin}
+          isDocumentaryAdmin={isAdministrator}
         />
       )}
     </main>

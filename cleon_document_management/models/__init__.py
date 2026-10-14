@@ -6,6 +6,7 @@ from . import hr_document
 from . import hr_document_policy_retention
 from . import compliance_registration
 from . import compliance_engine
+from . import compliance_document_requirement_engine
 from . import compliance_versioning
 from . import compliance_work_items
 from . import compliance_verification_service

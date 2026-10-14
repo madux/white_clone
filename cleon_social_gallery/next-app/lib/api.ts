@@ -124,7 +124,7 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: GalleryAlbum; message?: string }>("/api/social-gallery/albums/update", payload));
   },
 
-  async albumAction(payload: { id: number; action: string }) {
+  async albumAction(payload: { id: number; action: string; comment?: string; reason?: string }) {
     return unwrap(await rpc<{ success: boolean; data: GalleryAlbum; message?: string }>("/api/social-gallery/albums/action", payload));
   },
 
@@ -173,6 +173,44 @@ export const api = {
 
   async mediaVersions(id: number) {
     return unwrap(await rpc<{ success: boolean; data: GalleryMedia[]; message?: string }>("/api/social-gallery/media/versions", { id }));
+  },
+
+  async duplicateMedia(id: number) {
+    return unwrap(await rpc<{ success: boolean; data: GalleryMedia; message?: string }>("/api/social-gallery/media/duplicate", { id }));
+  },
+
+  async complianceDispositionList() {
+    return unwrap(await rpc<{ success: boolean; data: GalleryMedia[]; message?: string }>(
+      "/api/social-gallery/compliance/disposition",
+      { action: "list" },
+    ));
+  },
+
+  async complianceDispositionAction(action: "approve" | "dismiss", mediaIds: number[]) {
+    return unwrap(await rpc<{ success: boolean; data: { count: number }; message?: string }>(
+      "/api/social-gallery/compliance/disposition",
+      { action, media_ids: mediaIds },
+    ));
+  },
+
+  async complianceLegalHold(payload: {
+    target: "tenant" | "media" | "album";
+    enabled: boolean;
+    reason?: string;
+    media_id?: number;
+    album_id?: number;
+  }) {
+    return unwrap(await rpc<{ success: boolean; data: { updated: boolean }; message?: string }>(
+      "/api/social-gallery/compliance/legal-hold",
+      { action: "set", ...payload },
+    ));
+  },
+
+  async complianceDisposalRecords(limit = 50) {
+    return unwrap(await rpc<{ success: boolean; data: import("./types").DisposalRecord[]; message?: string }>(
+      "/api/social-gallery/compliance/disposal-records",
+      { limit },
+    ));
   },
 
   async initiateUpload(payload: Record<string, unknown>) {
@@ -224,7 +262,7 @@ export const api = {
   },
 
   async pending() {
-    return unwrap(await rpc<{ success: boolean; data: GalleryMedia[]; message?: string }>("/api/social-gallery/pending"));
+    return unwrap(await rpc<{ success: boolean; data: import("./types").PendingReviewPayload; message?: string }>("/api/social-gallery/pending"));
   },
 
   async pendingAi() {
@@ -244,7 +282,7 @@ export const api = {
   },
 
   async recycleBin() {
-    return unwrap(await rpc<{ success: boolean; data: GalleryMedia[]; message?: string }>("/api/social-gallery/recycle-bin"));
+    return unwrap(await rpc<{ success: boolean; data: import("./types").RecycleBinPayload; message?: string }>("/api/social-gallery/recycle-bin"));
   },
 
   async recycleBinClear(ids: number[]) {

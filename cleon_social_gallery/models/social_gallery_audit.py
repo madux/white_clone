@@ -21,6 +21,7 @@ class SocialGalleryAudit(models.Model):
             ("reported", "Reported"),
             ("shared", "Shared"),
             ("exported", "Exported"),
+            ("withdrawn", "Withdrawn"),
         ],
         required=True,
         index=True,

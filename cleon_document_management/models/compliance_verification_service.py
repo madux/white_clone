@@ -25,15 +25,24 @@ class ComplianceVerificationService(models.AbstractModel):
             return "%s — %s" % (base, note.strip())
         return base
 
+    def user_can_verify(self, user):
+        if not user or not user.active:
+            return False
+        return user.has_group(
+            "cleon_document_management.group_document_admin"
+        ) or user.has_group("cleon_document_management.group_document_manager")
+
     def user_can_act_on_item(self, item, user):
         if user.has_group("cleon_document_management.group_document_admin"):
             return True
-        return item.verifier_id == user
+        if item.verifier_id != user:
+            return False
+        return self.user_can_verify(user)
 
     def clear_duplicate_upload_approvals(self, document):
         """Remove pending upload approval rows when compliance verification owns the gate."""
         document = document.exists()
-        if not document or not document.document_type_id.verification_required:
+        if not document:
             return
         pending_approvals = document.approval_ids.filtered(
             lambda approval: approval.state in ("pending", "waiting")
@@ -83,7 +92,9 @@ class ComplianceVerificationService(models.AbstractModel):
             item.write({"status": "approved"})
             self.clear_duplicate_upload_approvals(document)
             self.env["doc.compliance.recheck.job"].schedule_employee(
-                item.employee_id, item.policy_id, reason="verification_approved"
+                item.employee_id,
+                False,
+                reason="verification_approved",
             )
             Task = self.env["doc.compliance.task"].sudo()
             waiting = Task.search(
@@ -144,7 +155,9 @@ class ComplianceVerificationService(models.AbstractModel):
             )
             self.clear_duplicate_upload_approvals(document)
             self.env["doc.compliance.recheck.job"].schedule_employee(
-                item.employee_id, item.policy_id, reason="verification_rejected"
+                item.employee_id,
+                False,
+                reason="verification_rejected",
             )
             Task = self.env["doc.compliance.task"].sudo()
             waiting = Task.search(
@@ -232,6 +245,9 @@ class ComplianceVerificationService(models.AbstractModel):
                         "id": version.id,
                         "version_number": version.version_number,
                         "upload_date": str(version.upload_date or ""),
+                        "has_expiry": bool(version.has_expiry),
+                        "expiry_date": str(version.expiry_date or ""),
+                        "issue_date": str(version.issue_date or ""),
                     }
                     for version in versions
                 ],

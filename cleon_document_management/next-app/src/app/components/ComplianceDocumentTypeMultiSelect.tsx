@@ -2,9 +2,16 @@
 
 import { ChevronDown, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  dedupeDocumentTypeIds,
+  documentTypeExpiryApplicable,
+  documentTypesForPicker,
+} from "../../../lib/complianceDocumentTypes";
+import type { DocumentType } from "../../../lib/types";
 import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
 
-type DocumentTypeOption = { id: number; name: string };
+type DocumentTypeOption = Pick<DocumentType, "id" | "name"> &
+  Partial<Pick<DocumentType, "expiry_applicable">>;
 
 type ComplianceDocumentTypeMultiSelectProps = {
   types: DocumentTypeOption[];
@@ -14,6 +21,9 @@ type ComplianceDocumentTypeMultiSelectProps = {
   placeholder?: string;
   /** Renewable document rules: only expiry-enabled types; inline create defaults expiry on. */
   expiryTypesOnly?: boolean;
+  /** Full checklist UI without the summary dropdown trigger (for modals). */
+  presentation?: "dropdown" | "panel";
+  listMaxHeightClassName?: string;
 };
 
 function typeId(value: number | string) {
@@ -27,13 +37,16 @@ export default function ComplianceDocumentTypeMultiSelect({
   error,
   placeholder = "Select document types",
   expiryTypesOnly = false,
+  presentation = "dropdown",
+  listMaxHeightClassName = "max-h-48",
 }: ComplianceDocumentTypeMultiSelectProps) {
-  const [open, setOpen] = useState(false);
+  const isPanel = presentation === "panel";
+  const [open, setOpen] = useState(isPanel);
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isPanel) return;
     const onPointerDown = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) {
         setOpen(false);
@@ -42,27 +55,45 @@ export default function ComplianceDocumentTypeMultiSelect({
     };
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
-  }, [open]);
+  }, [open, isPanel]);
+
+  const uniqueTypes = useMemo(() => {
+    const picked = documentTypesForPicker(types);
+    if (!expiryTypesOnly) return picked;
+    return picked.filter((type) => documentTypeExpiryApplicable(type));
+  }, [types, expiryTypesOnly]);
+  const normalizedSelected = useMemo(
+    () => dedupeDocumentTypeIds(selected),
+    [selected],
+  );
 
   const selectedTypes = useMemo(
     () =>
-      selected
-        .map((id) => types.find((type) => typeId(type.id) === typeId(id)))
+      normalizedSelected
+        .map((id) => uniqueTypes.find((type) => typeId(type.id) === typeId(id)))
         .filter(Boolean) as DocumentTypeOption[],
-    [selected, types],
+    [normalizedSelected, uniqueTypes],
   );
 
   const filteredTypes = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return types;
-    return types.filter((type) => type.name.toLowerCase().includes(normalized));
-  }, [query, types]);
+    if (!normalized) return uniqueTypes;
+    return uniqueTypes.filter((type) =>
+      type.name.toLowerCase().includes(normalized),
+    );
+  }, [query, uniqueTypes]);
+
+  const emitSelected = (ids: number[]) => {
+    onChange(dedupeDocumentTypeIds(ids));
+  };
 
   const toggle = (id: number) => {
-    if (selected.some((item) => typeId(item) === typeId(id))) {
-      onChange(selected.filter((item) => typeId(item) !== typeId(id)));
+    if (normalizedSelected.some((item) => typeId(item) === typeId(id))) {
+      emitSelected(
+        normalizedSelected.filter((item) => typeId(item) !== typeId(id)),
+      );
     } else {
-      onChange([...selected, id]);
+      emitSelected([...normalizedSelected, id]);
     }
   };
 
@@ -76,24 +107,12 @@ export default function ComplianceDocumentTypeMultiSelect({
             .map((type) => type.name)
             .join(", ")} +${selectedTypes.length - 2}`;
 
-  return (
-    <div ref={rootRef} className="relative w-full">
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        onClick={() => setOpen((value) => !value)}
-        className={`flex h-8 w-full items-center justify-between gap-2 rounded-lg border bg-white px-2.5 text-left text-sm outline-none transition-colors ${
-          error
-            ? "border-red-400"
-            : "border-slate-200 hover:border-pink-300 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        } ${selectedTypes.length ? "text-slate-800" : "text-muted-foreground"}`}
-      >
-        <span className="min-w-0 flex-1 truncate">{summary}</span>
-        <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-      </button>
-      {open ? (
-        <div className="mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md">
+  const pickerPanel = (
+        <div
+          className={`w-full overflow-hidden rounded-lg border border-slate-200 bg-white ${
+            isPanel ? "" : "mt-1 shadow-md"
+          }`}
+        >
           <div className="relative border-b border-slate-100 p-1.5">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
@@ -104,15 +123,15 @@ export default function ComplianceDocumentTypeMultiSelect({
               className="field pl-8"
             />
           </div>
-          <div className="max-h-48 overflow-y-auto p-1">
+          <div className={`${listMaxHeightClassName} overflow-y-auto p-1`}>
             {filteredTypes.length ? (
               filteredTypes.map((type) => {
-                const checked = selected.some(
+                const checked = normalizedSelected.some(
                   (id) => typeId(id) === typeId(type.id),
                 );
                 return (
                   <label
-                    key={type.id}
+                    key={`doc-type-${typeId(type.id)}`}
                     className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-pink-50"
                   >
                     <input
@@ -141,23 +160,56 @@ export default function ComplianceDocumentTypeMultiSelect({
                 ) {
                   return;
                 }
-                if (!selected.some((id) => typeId(id) === typeId(item.id))) {
-                  onChange([...selected, item.id]);
+                if (
+                  !normalizedSelected.some(
+                    (id) => typeId(id) === typeId(item.id),
+                  )
+                ) {
+                  emitSelected([...normalizedSelected, item.id]);
                 }
               }}
             />
-            {selected.length > 0 ? (
+            {normalizedSelected.length > 0 ? (
               <button
                 type="button"
                 className="text-[11px] font-semibold text-slate-400 hover:text-brand-pink"
-                onClick={() => onChange([])}
+                onClick={() => emitSelected([])}
               >
                 Clear
               </button>
             ) : null}
           </div>
         </div>
-      ) : null}
+  );
+
+  if (isPanel) {
+    return (
+      <div ref={rootRef} className="w-full">
+        {pickerPanel}
+        {error ? (
+          <p className="mt-1 text-xs font-medium text-red-600">{error}</p>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div ref={rootRef} className="relative w-full">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen((value) => !value)}
+        className={`flex h-8 w-full items-center justify-between gap-2 rounded-lg border bg-white px-2.5 text-left text-sm outline-none transition-colors ${
+          error
+            ? "border-red-400"
+            : "border-slate-200 hover:border-pink-300 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        } ${selectedTypes.length ? "text-slate-800" : "text-muted-foreground"}`}
+      >
+        <span className="min-w-0 flex-1 truncate">{summary}</span>
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+      </button>
+      {open ? pickerPanel : null}
       {error ? (
         <p className="mt-1 text-xs font-medium text-red-600">{error}</p>
       ) : null}

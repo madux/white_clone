@@ -1,33 +1,25 @@
 const STATUS_LABELS: Record<string, string> = {
-  approved: "Approved",
-  pending: "Pending",
-  rejected: "Rejected",
-  flagged: "Flagged",
-  scheduled: "Scheduled",
-  draft: "Draft",
-  success: "Success",
-  failed: "Failed",
   processing: "Processing",
-  uploading: "Uploading",
-  ready: "Ready",
-  "pending review": "Pending Review",
+  processing_failed: "Processing Failed",
+  draft: "Draft",
   pending_review: "Pending Review",
+  returned: "Returned",
+  approved: "Approved",
+  published: "Published",
+  archived: "Archived",
+  deleted: "Deleted",
 };
 
 const STATUS_VARIANTS: Record<string, string> = {
-  approved: "approved",
-  success: "success",
-  ready: "approved",
-  pending: "pending",
-  "pending review": "pending",
-  pending_review: "pending",
-  scheduled: "scheduled",
-  rejected: "rejected",
-  failed: "failed",
-  flagged: "flagged",
   processing: "processing",
-  uploading: "uploading",
+  processing_failed: "failed",
   draft: "pending",
+  pending_review: "pending",
+  returned: "rejected",
+  approved: "approved",
+  published: "success",
+  archived: "flagged",
+  deleted: "failed",
 };
 
 export function formatStatusLabel(status?: string | null): string {
@@ -46,9 +38,17 @@ export function statusVariant(status?: string | null): string {
 }
 
 export function mediaStatusInfo(media: {
+  status?: string;
   processing_state?: string;
   approval_status?: string;
 }): { label: string; variant: string } | null {
+  if (media.status) {
+    if (media.status === "published") return null;
+    return {
+      label: formatStatusLabel(media.status),
+      variant: statusVariant(media.status),
+    };
+  }
   if (media.processing_state && media.processing_state !== "ready") {
     return {
       label: formatStatusLabel(media.processing_state),
@@ -58,7 +58,7 @@ export function mediaStatusInfo(media: {
   if (media.approval_status === "pending") {
     return { label: "Pending Review", variant: "pending" };
   }
-  if (media.approval_status) {
+  if (media.approval_status && media.approval_status !== "approved") {
     return {
       label: formatStatusLabel(media.approval_status),
       variant: statusVariant(media.approval_status),

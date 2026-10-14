@@ -1,17 +1,24 @@
 import { validateComplianceRequestConfig } from "./complianceRequestTasks";
 import { validateReviewScheduleConfig } from "./reviewSchedule";
 import type { PolicyCreateFormState, PolicyReviewMeta } from "./policyCreateForm";
-import { hasPolicyScopeFilters } from "./policyScope";
-
 export type PolicyValidationResult = {
   canConfirm: boolean;
   missingFields: string[];
   warnings: string[];
 };
 
-export type PolicyWizardStep = "basics" | "audience" | "requirements" | "timing";
+export type PolicyWizardStep =
+  | "basics"
+  | "audience"
+  | "requirements"
+  | "timing"
+  | "documents"
+  | "verification";
 
-function wizardStepForMissingField(message: string): PolicyWizardStep {
+function wizardStepForMissingField(
+  message: string,
+  typeCode: string,
+): PolicyWizardStep {
   const lower = message.toLowerCase();
   if (message.endsWith(" name")) {
     return "basics";
@@ -27,12 +34,27 @@ function wizardStepForMissingField(message: string): PolicyWizardStep {
     return "audience";
   }
   if (
-    message === "Effective date" ||
-    message.startsWith("Copies needed")
+    message === "At least one required document type" ||
+    message === "Resolve unknown document types" ||
+    lower.includes("document type")
+  ) {
+    return typeCode === "document_requirement" ? "documents" : "requirements";
+  }
+  if (message === "Effective date") {
+    return typeCode === "renewable_document" || typeCode === "retention"
+      ? "basics"
+      : "timing";
+  }
+  if (
+    message.startsWith("Copies needed") ||
+    message.startsWith("Grace period")
   ) {
     return "timing";
   }
-  return "requirements";
+  if (message.startsWith("Assigned reviewer (for verification)")) {
+    return "verification";
+  }
+  return typeCode === "document_requirement" ? "documents" : "requirements";
 }
 
 export function validatePolicyWizardStep(
@@ -49,7 +71,7 @@ export function validatePolicyWizardStep(
     entity,
   );
   const forStep = missingFields.filter(
-    (field) => wizardStepForMissingField(field) === step,
+    (field) => wizardStepForMissingField(field, typeCode) === step,
   );
   return forStep[0] ?? null;
 }
@@ -112,16 +134,26 @@ export function validatePolicyCreateForm(
     missingFields.push("Effective date");
   }
   if (
+    form.grace_period_enabled &&
+    (!form.grace_period_days || Number(form.grace_period_days) < 1)
+  ) {
+    missingFields.push("Grace period (enter at least 1 day)");
+  }
+  if (
+    (form.verification_document_type_ids?.length ?? 0) > 0 &&
+    form.verified_by === "assigned_reviewer" &&
+    !form.assigned_reviewer_id
+  ) {
+    missingFields.push("Assigned reviewer (for verification)");
+  }
+  if (
     typeCode !== "compliance_request" &&
     typeCode !== "retention" &&
     typeCode !== "review_schedule" &&
+    typeCode !== "renewable_document" &&
     (!form.minimum_documents || Number(form.minimum_documents) < 1)
   ) {
     missingFields.push("Copies needed (minimum 1)");
-  }
-
-  if (form.applies_to !== "all" && !hasPolicyScopeFilters(form.scope)) {
-    missingFields.push(`Audience (select who this ${lower} applies to)`);
   }
 
   if (typeCode === "retention") {

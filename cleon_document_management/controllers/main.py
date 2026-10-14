@@ -426,10 +426,32 @@ class DocumentUICreation(http.Controller):
     )
     def get_document_types(self, **kwargs):
         """Return active document types available to document-management forms."""
-        types = request.env["doc.document.type"].search([("active", "=", True)])
+        types = request.env["doc.document.type"].search(
+            [("active", "=", True)],
+            order="sequence, name, id",
+        )
+        by_name = {}
+        for item in types:
+            key = (item.name or "").strip().casefold()
+            if not key:
+                continue
+            previous = by_name.get(key)
+            if not previous:
+                by_name[key] = item
+                continue
+            # Prefer catalog-linked types over legacy orphans with the same label.
+            if item.category_id and not previous.category_id:
+                by_name[key] = item
+            elif not previous.category_id and not item.category_id:
+                if item.id < previous.id:
+                    by_name[key] = item
+        ordered = sorted(
+            by_name.values(),
+            key=lambda row: ((row.sequence or 0), (row.name or "").lower(), row.id),
+        )
         return {
             "success": True,
-            "data": [item.serialize_for_api() for item in types],
+            "data": [item.serialize_for_api() for item in ordered],
         }
 
     @http.route(
@@ -996,6 +1018,7 @@ class DocumentUICreation(http.Controller):
                         "folder_kind",
                         "organize_by",
                         "folder_color",
+                        "color_hex",
                         "retention_period",
                         "department_ids",
                         "grade_ids",
@@ -1075,6 +1098,9 @@ class DocumentUICreation(http.Controller):
             }
             if folder_type == "organizational":
                 values["organize_by"] = kwargs.get("organize_by") or "none"
+                color_hex = (kwargs.get("color_hex") or "").strip()
+                if color_hex:
+                    values["color_hex"] = color_hex
             if parent:
                 values["parent_id"] = parent.id
             Folder = request.env["doc.folder"]
@@ -2751,6 +2777,9 @@ class DocumentUICreation(http.Controller):
                     "change_note": version.change_note or "",
                     "file_size": version.file_attachment.file_size or 0,
                     "mime_type": version.file_attachment.mimetype or "",
+                    "has_expiry": bool(version.has_expiry),
+                    "expiry_date": str(version.expiry_date or ""),
+                    "issue_date": str(version.issue_date or ""),
                 }
                 for version in versions
             ],

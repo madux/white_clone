@@ -32,6 +32,7 @@ export const REVIEW_COMPLETION_LABELS: Record<string, string> = {
 export const REVIEW_OVERDUE_LABELS: Record<string, string> = {
   after_due: "After due date",
   after_grace: "After grace period",
+  never: "Never automatically",
 };
 
 export function defaultReviewMilestone(): ReviewMilestoneDefinition {

@@ -223,6 +223,23 @@ class CloudflareR2Storage:
             _logger.exception("Failed to delete R2 object %s", object_key)
             return False
 
+    def copy_object(self, source_key, dest_key):
+        if not source_key or not dest_key:
+            return False
+        config = self.config()
+        if not self.is_configured():
+            return False
+        try:
+            self._client().copy_object(
+                Bucket=config["bucket"],
+                CopySource={"Bucket": config["bucket"], "Key": source_key},
+                Key=dest_key,
+            )
+            return True
+        except Exception:
+            _logger.exception("Failed to copy R2 object %s -> %s", source_key, dest_key)
+            return False
+
     def delete_objects(self, object_keys):
         keys = [k for k in (object_keys or []) if k]
         if not keys:

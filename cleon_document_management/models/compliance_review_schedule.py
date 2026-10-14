@@ -30,6 +30,7 @@ REVIEW_COMPLETION_MODES = [
 REVIEW_OVERDUE_MODES = [
     ("after_due", "After due date"),
     ("after_grace", "After grace period"),
+    ("never", "Never automatically"),
 ]
 
 REVIEW_INSTANCE_STATES = [

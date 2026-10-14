@@ -10,6 +10,7 @@ import {
   useEvaluatePolicy,
   usePolicies,
   useUpdatePolicy,
+  useRetentionComplianceSettings,
 } from "../../../hooks/useDocuments";
 import { api } from "../../../lib/api";
 import { canImportDocumentAsPolicy } from "../../../lib/policyDocumentName";
@@ -17,9 +18,11 @@ import { useAppDialog } from "../../../hooks/useAppDialog";
 import { useComplianceRunToast } from "../../../hooks/useComplianceRunToast";
 import ModalDialog from "./ModalDialog";
 import ComplianceRuleSourceUploadModal from "./ComplianceRuleSourceUploadModal";
-import ComplianceDocumentTypeMultiSelect from "./ComplianceDocumentTypeMultiSelect";
 import ThemedSelect from "./ThemedSelect";
-import { AlertCadenceSelector } from "./CompliancePage";
+import { PolicyRequirementsDocumentsSection } from "./compliance/PolicyRequirementsDocumentsSection";
+import { RenewableDocumentRequirementFields } from "./compliance/RenewableDocumentRequirementFields";
+import { policyTypeUsesDocumentTypeList } from "../../../lib/policyDocumentPicker";
+import { RENEWABLE_POLICY_GRACE_PAYLOAD } from "../../../lib/policyGraceAndNonCompliance";
 import { PolicyAudienceFilters } from "./PolicyAudienceFilters";
 import {
   buildScopePayload,
@@ -34,10 +37,18 @@ import {
   eventTriggerLabel,
 } from "../../../lib/complianceCopy";
 import {
+  coerceNonComplianceMode,
+  policyGraceFieldsFromApi,
+} from "../../../lib/policyGraceAndNonCompliance";
+import {
   documentTypesForCompliancePolicy,
   pruneDocumentTypeIdsForPolicy,
 } from "../../../lib/complianceDocumentTypes";
-import type { PolicyCreateFormState } from "../../../lib/policyCreateForm";
+import {
+  changePolicyFormType,
+  mergePolicyCreateFormState,
+  type PolicyCreateFormState,
+} from "../../../lib/policyCreateForm";
 import type { DocumentType } from "../../../lib/types";
 import ComplianceRetentionFields from "./ComplianceRetentionFields";
 import ComplianceReviewScheduleFields from "./ComplianceReviewScheduleFields";
@@ -105,7 +116,7 @@ export default function ComplianceRuleActions({
     schedule: policy.schedule === "manual" ? "" : policy.schedule,
     custom_schedule_days: String(policy.custom_schedule_days ?? 30),
     minimum_documents: String(policy.minimum_documents ?? 1),
-    grace_period_days: String(policy.grace_period_days ?? 0),
+    ...policyGraceFieldsFromApi(policy),
     effective_date: policy.effective_date || "",
     active: policy.active,
     // Type-specific parameters
@@ -135,10 +146,19 @@ export default function ComplianceRuleActions({
     review_reviewer_mode: policy.review_reviewer_mode || "line_manager",
     review_completion_mode: policy.review_completion_mode || "all_scheduled",
     review_completion_minimum: policy.review_completion_minimum ?? 1,
-    review_overdue_mode: policy.review_overdue_mode || "after_grace",
+    review_overdue_mode: coerceNonComplianceMode(
+      policy.review_overdue_mode || "after_grace",
+      policy.grace_period_enabled ?? (policy.grace_period_days ?? 0) > 0,
+    ),
     review_milestones: policy.review_milestones ?? [],
     verified_by: policy.verified_by || "hr_admin",
     verification_sla_days: policy.verification_sla_days ?? 3,
+    verification_document_type_ids: policy.verification_document_type_ids ?? [],
+    verification_sla_escalation_user_id: policy.verification_sla_escalation_user_id
+      ? String(policy.verification_sla_escalation_user_id)
+      : "",
+    verification_sla_escalation_user_label:
+      policy.verification_sla_escalation_user_name || "",
   });
   const [retentionBatches, setRetentionBatches] = useState<any[]>([]);
   const [formTemplates, setFormTemplates] = useState<{ id: number; name: string }[]>([]);
@@ -172,9 +192,17 @@ export default function ComplianceRuleActions({
   const typeCode = selectedType?.code || policy.policy_type_code || "";
   const allDocumentTypes = (documentTypes.data ??
     documents) as DocumentType[];
+  const retentionSettingsQuery = useRetentionComplianceSettings(
+    typeCode === "retention",
+  );
   const selectableDocumentTypes = useMemo(
-    () => documentTypesForCompliancePolicy(typeCode, allDocumentTypes),
-    [typeCode, allDocumentTypes],
+    () =>
+      documentTypesForCompliancePolicy(
+        typeCode,
+        allDocumentTypes,
+        retentionSettingsQuery.data,
+      ),
+    [typeCode, allDocumentTypes, retentionSettingsQuery.data],
   );
 
   useEffect(() => {
@@ -208,10 +236,7 @@ export default function ComplianceRuleActions({
     )
       return setError("Select at least one required document type.");
     setError("");
-    const scopePayload =
-      form.applies_to === "all"
-        ? buildScopePayload(emptyPolicyScope())
-        : buildScopePayload(form.scope);
+    const scopePayload = buildScopePayload(form.scope);
     try {
       await update.mutateAsync({
         id: policy.id,
@@ -219,17 +244,31 @@ export default function ComplianceRuleActions({
         description: form.description.trim(),
         policy_type_id: Number(form.policy_type_id),
         document_type_ids: form.document_type_ids,
-        applies_to: form.applies_to === "all" ? "all" : scopePayload.applies_to,
+        applies_to: scopePayload.applies_to,
         department_ids: scopePayload.department_ids,
         grade_ids: scopePayload.grade_ids,
         employee_ids: scopePayload.employee_ids,
         work_location_ids: scopePayload.work_location_ids,
         employment_type_ids: scopePayload.employment_type_ids,
         branch_ids: scopePayload.branch_ids,
-        schedule: form.schedule || false,
+        schedule:
+          typeCode === "renewable_document" || typeCode === "retention"
+            ? false
+            : form.schedule || false,
         custom_schedule_days: Number(form.custom_schedule_days),
-        minimum_documents: Number(form.minimum_documents),
-        grace_period_days: Number(form.grace_period_days),
+        minimum_documents:
+          typeCode === "renewable_document"
+            ? 1
+            : Number(form.minimum_documents),
+        ...(typeCode === "renewable_document"
+          ? RENEWABLE_POLICY_GRACE_PAYLOAD
+          : {
+              grace_period_days: form.grace_period_enabled
+                ? Number(form.grace_period_days)
+                : 0,
+              grace_period_enabled: Boolean(form.grace_period_enabled),
+              non_compliance_mode: form.non_compliance_mode,
+            }),
         effective_date: form.effective_date,
         active: form.active,
         allow_waiver: form.allow_waiver,
@@ -268,6 +307,11 @@ export default function ComplianceRuleActions({
           ? {
               verified_by: form.verified_by,
               verification_sla_days: form.verification_sla_days,
+              verification_document_type_ids:
+                form.verification_document_type_ids,
+              verification_sla_escalation_user_id: form.verification_sla_escalation_user_id
+                ? Number(form.verification_sla_escalation_user_id)
+                : false,
             }
           : {}),
       });
@@ -489,30 +533,38 @@ export default function ComplianceRuleActions({
                       ).join("; ") || formatFieldLabel(policy.applies_to)
                     }
                   />
-                  <Info
-                    label="Schedule"
-                    value={
-                      policy.schedule === "manual"
-                        ? "Manual only"
-                        : formatFieldLabel(policy.schedule)
-                    }
-                  />
-                  <Info
-                    label="Grace period"
-                    value={`${policy.grace_period_days} days`}
-                  />
+                  {policy.policy_type_code !== "renewable_document" &&
+                  policy.policy_type_code !== "retention" ? (
+                    <Info
+                      label="Schedule"
+                      value={
+                        policy.schedule === "manual"
+                          ? "Manual only"
+                          : formatFieldLabel(policy.schedule)
+                      }
+                    />
+                  ) : null}
+                  {policy.policy_type_code !== "renewable_document" ? (
+                    <Info
+                      label="Grace period"
+                      value={`${policy.grace_period_days} days`}
+                    />
+                  ) : null}
                   <Info
                     label="Last run"
                     value={formatDateTime(policy.last_run_at)}
                   />
-                  <Info
-                    label="Next run"
-                    value={
-                      policy.schedule === "manual"
-                        ? "Manual only"
-                        : formatDateTime(policy.next_run_at)
-                    }
-                  />
+                  {policy.policy_type_code !== "renewable_document" &&
+                  policy.policy_type_code !== "retention" ? (
+                    <Info
+                      label="Next run"
+                      value={
+                        policy.schedule === "manual"
+                          ? "Manual only"
+                          : formatDateTime(policy.next_run_at)
+                      }
+                    />
+                  ) : null}
                   {policy.policy_type_code === "renewable_document" && (
                     <>
                       <Info
@@ -688,21 +740,14 @@ export default function ComplianceRuleActions({
                   <span className="label">Policy type</span>
                   <ThemedSelect
                     value={form.policy_type_id}
-                    onChange={(value) => {
-                      const nextTypeCode =
-                        (types || []).find(
-                          (item: any) => String(item.id) === value,
-                        )?.code ?? "";
-                      setForm({
-                        ...form,
-                        policy_type_id: value,
-                        document_type_ids: pruneDocumentTypeIdsForPolicy(
-                          nextTypeCode,
-                          form.document_type_ids,
-                          allDocumentTypes,
+                    onChange={(value) =>
+                      setForm((prev) =>
+                        changePolicyFormType(
+                          mergePolicyCreateFormState(prev),
+                          value,
                         ),
-                      });
-                    }}
+                      )
+                    }
                     options={types.map((item: any) => ({
                       value: String(item.id),
                       label: item.name,
@@ -720,6 +765,24 @@ export default function ComplianceRuleActions({
                     }
                   />
                 </label>
+
+                {policyTypeUsesDocumentTypeList(typeCode) ? (
+                  <div className="sm:col-span-2">
+                    <PolicyRequirementsDocumentsSection
+                      typeCode={typeCode}
+                      form={form as PolicyCreateFormState}
+                      setForm={
+                        setForm as (next: PolicyCreateFormState) => void
+                      }
+                      selectableDocumentTypes={selectableDocumentTypes}
+                      documentTypeError={
+                        error === "Select at least one required document type."
+                          ? error
+                          : undefined
+                      }
+                    />
+                  </div>
+                ) : null}
 
                 {typeCode === "document_requirement" && (
                   <>
@@ -753,59 +816,13 @@ export default function ComplianceRuleActions({
                 )}
 
                 {typeCode === "renewable_document" && (
-                  <>
-                    <AlertCadenceSelector
-                      value={form.alert_schedule_days}
-                      onChange={(val: string) =>
-                        setForm({ ...form, alert_schedule_days: val })
-                      }
+                  <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2">
+                    <RenewableDocumentRequirementFields
+                      form={form as PolicyCreateFormState}
+                      setForm={setForm as (next: PolicyCreateFormState) => void}
+                      layout="grid"
                     />
-                    <label>
-                      <span className="label">Also notify HR</span>
-                      <ThemedSelect
-                        value={String(form.escalate_hr_days)}
-                        onChange={(val) =>
-                          setForm({ ...form, escalate_hr_days: Number(val) })
-                        }
-                        options={[
-                          { value: "15", label: "15 days before expiry" },
-                          { value: "7", label: "7 days before expiry" },
-                          { value: "3", label: "3 days before expiry" },
-                          { value: "1", label: "1 day before expiry" },
-                          { value: "0", label: "On expiry day" },
-                        ]}
-                      />
-                    </label>
-                    <label>
-                      <span className="label">Extra days after expiry</span>
-                      <input
-                        type="number"
-                        min="0"
-                        className="field"
-                        value={form.grace_period_days}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            grace_period_days: e.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                    <label className="flex items-end gap-2 pb-1 text-sm text-slate-700 sm:col-span-2">
-                      <input
-                        type="checkbox"
-                        checked={form.auto_request_renewal}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            auto_request_renewal: e.target.checked,
-                          })
-                        }
-                        className="h-4 w-4 accent-pink-600 rounded"
-                      />
-                      Create a renewal task for the employee
-                    </label>
-                  </>
+                  </div>
                 )}
 
                 {typeCode === "compliance_request" && (
@@ -843,59 +860,35 @@ export default function ComplianceRuleActions({
                   />
                 ) : null}
 
-                {typeCode !== "compliance_request" && typeCode !== "review_schedule" ? (
-                  <div className="sm:col-span-2">
-                    <span className="label">Required documents</span>
-                    <ComplianceDocumentTypeMultiSelect
-                      types={selectableDocumentTypes}
-                      selected={form.document_type_ids}
-                      expiryTypesOnly={typeCode === "renewable_document"}
-                      onChange={(document_type_ids) =>
-                        setForm({ ...form, document_type_ids })
-                      }
-                      error={
-                        error === "Select at least one required document type."
-                          ? error
-                          : undefined
-                      }
-                    />
-                  </div>
-                ) : null}
                 <div className="sm:col-span-2">
                   <PolicyAudienceFilters
                     scope={form.scope}
                     targets={targets}
-                    allEmployees={form.applies_to === "all"}
-                    onAllEmployeesChange={(all) =>
-                      setForm({
-                        ...form,
-                        applies_to: all ? "all" : "filtered",
-                        scope: all ? emptyPolicyScope() : form.scope,
-                      })
-                    }
                     onChange={(scope) =>
                       setForm({
                         ...form,
-                        applies_to: "filtered",
                         scope,
+                        applies_to: buildScopePayload(scope).applies_to,
                       })
                     }
                   />
                 </div>
-                <label>
-                  <span className="label">Schedule</span>
-                  <ThemedSelect
-                    value={form.schedule}
-                    onChange={(value) => setForm({ ...form, schedule: value })}
-                    options={[
-                      { value: "", label: "Manual" },
-                      ...schedules.map((item) => ({
-                        value: item,
-                        label: formatFieldLabel(item),
-                      })),
-                    ]}
-                  />
-                </label>
+                {typeCode !== "renewable_document" && typeCode !== "retention" ? (
+                  <label>
+                    <span className="label">Schedule</span>
+                    <ThemedSelect
+                      value={form.schedule}
+                      onChange={(value) => setForm({ ...form, schedule: value })}
+                      options={[
+                        { value: "", label: "Manual" },
+                        ...schedules.map((item) => ({
+                          value: item,
+                          label: formatFieldLabel(item),
+                        })),
+                      ]}
+                    />
+                  </label>
+                ) : null}
                 <label>
                   <span className="label">Effective date</span>
                   <input
@@ -908,32 +901,36 @@ export default function ComplianceRuleActions({
                     }
                   />
                 </label>
-                <label>
-                  <span className="label">Minimum documents</span>
-                  <input
-                    required
-                    min="1"
-                    type="number"
-                    className="field"
-                    value={form.minimum_documents}
-                    onChange={(e) =>
-                      setForm({ ...form, minimum_documents: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  <span className="label">Grace period (days)</span>
-                  <input
-                    required
-                    min="0"
-                    type="number"
-                    className="field"
-                    value={form.grace_period_days}
-                    onChange={(e) =>
-                      setForm({ ...form, grace_period_days: e.target.value })
-                    }
-                  />
-                </label>
+                {typeCode !== "renewable_document" && typeCode !== "retention" ? (
+                  <label>
+                    <span className="label">Minimum documents</span>
+                    <input
+                      required
+                      min="1"
+                      type="number"
+                      className="field"
+                      value={form.minimum_documents}
+                      onChange={(e) =>
+                        setForm({ ...form, minimum_documents: e.target.value })
+                      }
+                    />
+                  </label>
+                ) : null}
+                {typeCode !== "renewable_document" ? (
+                  <label>
+                    <span className="label">Grace period (days)</span>
+                    <input
+                      required
+                      min="0"
+                      type="number"
+                      className="field"
+                      value={form.grace_period_days}
+                      onChange={(e) =>
+                        setForm({ ...form, grace_period_days: e.target.value })
+                      }
+                    />
+                  </label>
+                ) : null}
                 {form.schedule === "custom" && (
                   <label>
                     <span className="label">Custom interval (days)</span>

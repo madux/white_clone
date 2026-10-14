@@ -3,11 +3,11 @@
 import type { PolicyCreateFormState } from "../../../lib/policyCreateForm";
 import {
   REVIEW_COMPLETION_LABELS,
-  REVIEW_OVERDUE_LABELS,
   REVIEW_REVIEWER_LABELS,
   REVIEW_TRIGGER_LABELS,
 } from "../../../lib/reviewSchedule";
 import ComplianceReviewMilestoneList from "./ComplianceReviewMilestoneList";
+import { PolicyWizardGraceAndNonComplianceFields } from "./compliance/PolicyWizardGraceAndNonComplianceFields";
 import ThemedSelect from "./ThemedSelect";
 
 export default function ComplianceReviewScheduleFields({
@@ -101,29 +101,12 @@ export default function ComplianceReviewScheduleFields({
           />
         </label>
       ) : null}
-      <label>
-        <span className="label">Mark as overdue</span>
-        <ThemedSelect
-          value={form.review_overdue_mode}
-          onChange={(v) => setForm({ ...form, review_overdue_mode: v })}
-          options={Object.entries(REVIEW_OVERDUE_LABELS).map(([value, label]) => ({
-            value,
-            label,
-          }))}
-        />
-      </label>
-      <label>
-        <span className="label">Grace period (days)</span>
-        <input
-          type="number"
-          min={0}
-          className="field"
-          value={form.grace_period_days}
-          onChange={(e) =>
-            setForm({ ...form, grace_period_days: e.target.value })
-          }
-        />
-      </label>
+      <PolicyWizardGraceAndNonComplianceFields
+        form={form}
+        setForm={setForm}
+        modeKey="review_overdue_mode"
+        nonComplianceLabel="Mark as overdue"
+      />
       <p className="sm:col-span-2 text-xs text-slate-500">
         Reviewers are resolved from People when each review is created; legal hold and
         exemptions follow standard compliance rules.

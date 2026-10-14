@@ -32,4 +32,37 @@
         <field name="numbercall">-1</field>
         <field name="active" eval="True"/>
     </record>
+
+    <record id="ir_cron_social_gallery_process_uploads" model="ir.cron">
+        <field name="name">Social Gallery: Process Upload Thumbnails</field>
+        <field name="model_id" ref="model_social_gallery_media"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_process_uploads()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="numbercall">-1</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="ir_cron_social_gallery_lifecycle_tiers" model="ir.cron">
+        <field name="name">Social Gallery: Lifecycle Storage Tiers</field>
+        <field name="model_id" ref="model_social_gallery_media"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_lifecycle_tiers()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="ir_cron_social_gallery_purge_audit_logs" model="ir.cron">
+        <field name="name">Social Gallery: Purge Audit Logs</field>
+        <field name="model_id" ref="model_social_gallery_media"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_purge_audit_logs()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active" eval="True"/>
+    </record>
 </odoo>

@@ -13,6 +13,7 @@ import {
   canCreateOrgPolicy,
   canUploadOrgDocuments,
 } from "../../../lib/organizationalFilesAccess";
+import { orgLibraryKindFromSearchParams } from "../../../lib/orgLibraryTabParams";
 import { normalizeRoutePath } from "../../../lib/navigation";
 import { myWorkspaceHref, resolveWorkspaceTab } from "../../../lib/workspaceRoutes";
 import CreateNamedFolderDialog from "./CreateNamedFolderDialog";
@@ -52,8 +53,7 @@ export default function HeaderPrimaryAction() {
   const canUploadOrg = canUploadOrgDocuments(currentUser.data);
   const canCreateFolder = canCreateOrgFolder(currentUser.data);
   const canCreatePolicy = canCreateOrgPolicy(currentUser.data);
-  const orgSectionTab =
-    params.get("tab") === "policies" ? "policies" : "folders";
+  const orgSummaryTab = orgLibraryKindFromSearchParams(params);
 
   const pushUploadQuery = () => {
     const next = new URLSearchParams(params.toString());
@@ -64,19 +64,6 @@ export default function HeaderPrimaryAction() {
 
   if (isOrgLibraryRoute(route)) {
     const menu = (() => {
-      if (orgSectionTab === "policies") {
-        if (!canCreateFolder && !canCreatePolicy) return null;
-        return (
-          <OrganizationalNewMenu
-            chrome
-            canUpload={canUploadOrg}
-            canCreateFolder={canCreateFolder}
-            canCreatePolicy={canCreatePolicy}
-            libraryTab="policies"
-            onCreateRootFolder={() => setShowCreateOrgFolder(true)}
-          />
-        );
-      }
       if (activeFolder) {
         return (
           <OrganizationalNewMenu
@@ -87,6 +74,7 @@ export default function HeaderPrimaryAction() {
             canCreateFolder={canCreateFolder && !activeFolder.locked}
             canCreatePolicy={canCreatePolicy}
             folderDocuments={folderDocuments.data ?? []}
+            summaryTab={orgSummaryTab}
           />
         );
       }
@@ -97,6 +85,7 @@ export default function HeaderPrimaryAction() {
           canUpload={canUploadOrg}
           canCreateFolder={canCreateFolder}
           canCreatePolicy={canCreatePolicy}
+          summaryTab={orgSummaryTab}
           onCreateRootFolder={() => setShowCreateOrgFolder(true)}
         />
       );

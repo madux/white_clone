@@ -10,6 +10,7 @@ import {
   emptyPolicyScope,
   type PolicyScopeState,
 } from "./policyScope";
+import { RENEWABLE_POLICY_GRACE_PAYLOAD } from "./policyGraceAndNonCompliance";
 import { policyTypeUsesVerification } from "./verificationPolicy";
 
 export type PolicyCreateFormState = {
@@ -23,6 +24,8 @@ export type PolicyCreateFormState = {
   custom_schedule_days: string;
   minimum_documents: string;
   grace_period_days: string;
+  grace_period_enabled: boolean;
+  non_compliance_mode: string;
   effective_date: string;
   allow_waiver: boolean;
   alert_schedule_days: string;
@@ -60,6 +63,9 @@ export type PolicyCreateFormState = {
   review_milestones: ReviewMilestoneDefinition[];
   verified_by: string;
   verification_sla_days: number;
+  verification_document_type_ids: number[];
+  verification_sla_escalation_user_id: string;
+  verification_sla_escalation_user_label: string;
 };
 
 export type PolicyReviewMeta = {
@@ -69,6 +75,43 @@ export type PolicyReviewMeta = {
   fieldNotes?: string[];
   aiSuggested?: boolean;
 };
+
+/** Merge persisted or partial form state with current defaults (new fields, scope). */
+/** Reset type-specific fields when the user picks a different policy / rule type. */
+export function changePolicyFormType(
+  prev: PolicyCreateFormState,
+  newPolicyTypeId: string,
+): PolicyCreateFormState {
+  if (String(prev.policy_type_id) === String(newPolicyTypeId)) {
+    return prev;
+  }
+  const fresh = defaultPolicyForm(newPolicyTypeId);
+  return {
+    ...fresh,
+    name: prev.name,
+    description: prev.description,
+  };
+}
+
+export function mergePolicyCreateFormState(
+  saved: Partial<PolicyCreateFormState>,
+): PolicyCreateFormState {
+  const policyTypeId =
+    saved.policy_type_id != null ? String(saved.policy_type_id) : "";
+  const base = defaultPolicyForm(policyTypeId);
+  return {
+    ...base,
+    ...saved,
+    policy_type_id: policyTypeId || base.policy_type_id,
+    document_type_ids: saved.document_type_ids ?? base.document_type_ids,
+    verification_document_type_ids:
+      saved.verification_document_type_ids ??
+      base.verification_document_type_ids,
+    request_tasks: saved.request_tasks ?? base.request_tasks,
+    review_milestones: saved.review_milestones ?? base.review_milestones,
+    scope: saved.scope ? { ...base.scope, ...saved.scope } : base.scope,
+  };
+}
 
 export function defaultPolicyForm(policyTypeId = ""): PolicyCreateFormState {
   return {
@@ -82,6 +125,8 @@ export function defaultPolicyForm(policyTypeId = ""): PolicyCreateFormState {
     custom_schedule_days: "30",
     minimum_documents: "1",
     grace_period_days: "0",
+    grace_period_enabled: false,
+    non_compliance_mode: "after_due",
     effective_date: new Date().toISOString().slice(0, 10),
     allow_waiver: true,
     alert_schedule_days: "60,30,15,7,0",
@@ -114,6 +159,9 @@ export function defaultPolicyForm(policyTypeId = ""): PolicyCreateFormState {
     review_milestones: [],
     verified_by: "hr_admin",
     verification_sla_days: 3,
+    verification_document_type_ids: [],
+    verification_sla_escalation_user_id: "",
+    verification_sla_escalation_user_label: "",
   };
 }
 
@@ -121,12 +169,20 @@ export function buildCreatePolicyPayload(
   form: PolicyCreateFormState,
   typeCode = "",
 ) {
-  const scopePayload =
-    form.applies_to === "all"
-      ? { ...buildScopePayload(emptyPolicyScope()), applies_to: "all" as const }
-      : buildScopePayload(form.scope);
+  const scopePayload = buildScopePayload(form.scope);
 
   const { verified_by, verification_sla_days, ...formRest } = form;
+
+  const graceFields =
+    typeCode === "renewable_document"
+      ? RENEWABLE_POLICY_GRACE_PAYLOAD
+      : {
+          grace_period_days: form.grace_period_enabled
+            ? Number(form.grace_period_days)
+            : 0,
+          grace_period_enabled: Boolean(form.grace_period_enabled),
+          non_compliance_mode: form.non_compliance_mode || "after_due",
+        };
 
   return {
     ...formRest,
@@ -140,8 +196,7 @@ export function buildCreatePolicyPayload(
     employment_type_ids: scopePayload.employment_type_ids,
     branch_ids: scopePayload.branch_ids,
     custom_schedule_days: Number(form.custom_schedule_days),
-    minimum_documents: Number(form.minimum_documents),
-    grace_period_days: Number(form.grace_period_days),
+    ...graceFields,
     assigned_reviewer_id: form.assigned_reviewer_id
       ? Number(form.assigned_reviewer_id)
       : false,
@@ -155,7 +210,14 @@ export function buildCreatePolicyPayload(
     policy_visibility: form.policy_visibility || "employees",
     policy_audience: form.policy_audience || "everyone",
     ai_drafted: Boolean(form.ai_drafted),
-    schedule: form.schedule || false,
+    schedule:
+      typeCode === "renewable_document" || typeCode === "retention"
+        ? false
+        : form.schedule || false,
+    minimum_documents:
+      typeCode === "renewable_document"
+        ? Math.max(1, Number(form.minimum_documents) || 1)
+        : Number(form.minimum_documents),
     request_trigger: form.request_trigger,
     request_start_date: form.request_start_date || false,
     repeat_every_months: form.repeat_every_months,
@@ -176,6 +238,10 @@ export function buildCreatePolicyPayload(
       ? {
           verified_by: verified_by || "hr_admin",
           verification_sla_days: verification_sla_days || 3,
+          verification_document_type_ids: form.verification_document_type_ids,
+          verification_sla_escalation_user_id: form.verification_sla_escalation_user_id
+            ? Number(form.verification_sla_escalation_user_id)
+            : false,
         }
       : {}),
   };

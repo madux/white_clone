@@ -3,16 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Upload } from "lucide-react";
 import type { GalleryMedia, LayoutMode } from "@/lib/types";
-import { api } from "@/lib/api";
+import type { GalleryStatusFilter } from "./gallery/GalleryLibraryChrome";
 import Sidebar from "./layout/Sidebar";
 import { GalleryHeader } from "./layout/GalleryHeader";
 import DashboardView from "./views/DashboardView";
 import AlbumsView from "./views/AlbumsView";
-import GalleryFeedView, { AlbumDetailView } from "./views/GalleryViews";
+import GalleryFeedView from "./views/GalleryViews";
+import AlbumDetailView from "./views/AlbumDetailView";
 import SettingsView from "./views/SettingsView";
 import {
-  AuditLogView, ContributionsView, DuplicateScanView, FlaggedContentView,
-  PendingAIReviewView, PendingReviewView, RecycleBinView, UploadHistoryView,
+  AuditLogView, ContributionsView, PendingReviewView, RecycleBinView, UploadHistoryView,
 } from "./views/AdminViews";
 import MediaDetailModal from "./modals/MediaDetailModal";
 import CreateAlbumModal from "./modals/CreateAlbumModal";
@@ -22,10 +22,17 @@ import { QueryError } from "./shared/QueryError";
 import type { GalleryView } from "@/lib/types";
 import { useNavigationHistory } from "@/hooks/useNavigationHistory";
 import {
-  isValidLayout, useGalleryAlbums, useGalleryAudit,
-  useGalleryDashboard, useGalleryDuplicates, useGalleryFlagged, useGalleryMedia, useGalleryPending,
-  useGalleryPendingAi, useGalleryRecycle, useGallerySettings, useGalleryUploadHistory, useGalleryUser,
+  normalizeLayout, useGalleryAlbums, useGalleryAudit,
+  useGalleryDashboard, useGalleryMedia, useGalleryPending,
+  useGalleryRecycle, useGallerySettings, useGalleryUploadHistory, useGalleryUser,
 } from "@/hooks/useSocialGallery";
+import {
+  canAccessGalleryView,
+  canCreateAlbum,
+  canShowListUploadButton,
+  defaultGalleryViewForTier,
+  resolveGalleryTier,
+} from "@/lib/galleryAccess";
 
 type GalleryNavState = {
   activeView: GalleryView;
@@ -37,12 +44,9 @@ const VIEW_LABELS: Record<GalleryView, string> = {
   albums: "Albums",
   gallery: "Gallery",
   pending: "Pending Review",
-  "pending-ai": "Pending AI Review",
-  flagged: "Flagged Content",
   recycle: "Recycle Bin",
   contributions: "My Contributions",
   "upload-history": "Upload History",
-  duplicates: "Duplicate Media Manager",
   audit: "Audit Log",
   settings: "Settings",
 };
@@ -53,47 +57,52 @@ export default function SocialGalleryPage() {
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
   const [selectedMedia, setSelectedMedia] = useState<GalleryMedia | null>(null);
   const [browseList, setBrowseList] = useState<GalleryMedia[]>([]);
-
-  const openMedia = (item: GalleryMedia, list: GalleryMedia[] = []) => {
-    setSelectedMedia(item);
-    setBrowseList(list.length ? list : [item]);
-  };
   const [layout, setLayout] = useState<LayoutMode>("grid");
+  const [galleryAlbumFilter, setGalleryAlbumFilter] = useState<number | null>(null);
+  const [galleryStatus, setGalleryStatus] = useState<GalleryStatusFilter>("");
+  const [gallerySort, setGallerySort] = useState("newest");
   const [mobileNav, setMobileNav] = useState(false);
   const [showCreateAlbum, setShowCreateAlbum] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
-  const [sharePrompt, setSharePrompt] = useState<{ token: string } | null>(null);
-  const [sharePassword, setSharePassword] = useState("");
 
   const userQuery = useGalleryUser();
   const user = userQuery.data;
-  const isManager = !!(user?.is_gallery_manager || user?.is_gallery_admin || user?.is_admin);
-  const isAdmin = !!(user?.is_gallery_admin || user?.is_admin);
+  const roleTier = resolveGalleryTier(user);
+  const isManager = roleTier !== "employee";
+  const isAdmin = roleTier === "administrator";
+  const isEmployee = roleTier === "employee";
   const isSystemAdmin = !!user?.is_admin;
 
-  const dashboardQuery = useGalleryDashboard();
+  const dashboardQuery = useGalleryDashboard(canAccessGalleryView(roleTier, "dashboard"));
   const albumsQuery = useGalleryAlbums(search);
-  const mediaParams = useMemo(() => ({
-    search,
-    album_id: selectedAlbumId || undefined,
-    approval_status: activeView === "gallery" || selectedAlbumId ? "approved" : undefined,
-  }), [search, selectedAlbumId, activeView]);
+  const mediaParams = useMemo(() => {
+    if (activeView === "gallery") {
+      return {
+        search,
+        album_id: galleryAlbumFilter || undefined,
+        approval_status: isManager ? (galleryStatus || undefined) : "approved",
+        sort: gallerySort,
+      };
+    }
+    return {
+      search,
+      album_id: selectedAlbumId || undefined,
+      approval_status: selectedAlbumId ? "approved" : undefined,
+    };
+  }, [search, selectedAlbumId, activeView, galleryAlbumFilter, galleryStatus, gallerySort, isManager]);
   const mediaQuery = useGalleryMedia(mediaParams);
-  const pendingQuery = useGalleryPending(isManager);
-  const pendingAiQuery = useGalleryPendingAi(isManager);
-  const flaggedQuery = useGalleryFlagged(isManager);
-  const recycleQuery = useGalleryRecycle(isManager);
+  const pendingQuery = useGalleryPending(canAccessGalleryView(roleTier, "pending"));
+  const recycleQuery = useGalleryRecycle(canAccessGalleryView(roleTier, "recycle"));
   const uploadHistoryQuery = useGalleryUploadHistory(true);
-  const auditQuery = useGalleryAudit({}, isManager);
+  const auditQuery = useGalleryAudit({}, isAdmin);
   const settingsQuery = useGallerySettings(isAdmin);
-  const duplicatesQuery = useGalleryDuplicates(activeView === "duplicates" && isManager);
   const { trackNavigation, registerRestore } = useNavigationHistory<GalleryNavState>();
 
-  const pendingCount = pendingQuery.data?.length || 0;
-  const aiReviewCount = pendingAiQuery.data?.length || 0;
-  const flaggedReports = Array.isArray(flaggedQuery.data) ? flaggedQuery.data : [];
-  const flaggedCount = flaggedReports.length;
+  const pendingPayload = pendingQuery.data;
+  const pendingMedia = pendingPayload?.media || [];
+  const pendingAlbums = pendingPayload?.albums || [];
+  const pendingCount = pendingPayload?.actionable_count ?? pendingMedia.length;
 
   const showToast = (message: string, error = false) => {
     setToast({ message, error });
@@ -101,52 +110,36 @@ export default function SocialGalleryPage() {
   };
 
   useEffect(() => {
-    if (!settingsQuery.data) return;
-    if (isValidLayout(settingsQuery.data.default_layout)) {
-      setLayout(settingsQuery.data.default_layout);
-    }
-  }, [settingsQuery.data]);
-
-  const resolveShareLink = async (token: string, password?: string) => {
-    try {
-      const result = await api.shareResolve(token, password);
-      setSharePrompt(null);
-      setSharePassword("");
-      if (result.type === "media") {
-        openMedia(result.media, [result.media]);
-      } else {
-        setActiveView("albums");
-        setSelectedAlbumId(result.album.id);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Invalid share link";
-      if (/password/i.test(message)) {
-        setSharePrompt({ token });
-        return;
-      }
-      showToast(message, true);
-    }
-  };
+    if (!user) return;
+    setActiveView(defaultGalleryViewForTier(roleTier));
+  }, [user?.id, roleTier]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("share");
-    if (!token) return;
-    resolveShareLink(token);
-  }, []);
+    if (!user) return;
+    if (!canAccessGalleryView(roleTier, activeView)) {
+      setActiveView(defaultGalleryViewForTier(roleTier));
+    }
+  }, [user, roleTier, activeView]);
+
+  useEffect(() => {
+    if (!settingsQuery.data) return;
+    setLayout(normalizeLayout(settingsQuery.data.default_layout));
+  }, [settingsQuery.data]);
+
+  const openMedia = (item: GalleryMedia, list: GalleryMedia[] = []) => {
+    setSelectedMedia(item);
+    setBrowseList(list.length ? list : [item]);
+  };
 
   const refreshAll = () => {
-    dashboardQuery.refetch();
+    if (!isEmployee) dashboardQuery.refetch();
     albumsQuery.refetch();
     mediaQuery.refetch();
     if (isManager) {
       pendingQuery.refetch();
-      pendingAiQuery.refetch();
-      flaggedQuery.refetch();
       recycleQuery.refetch();
-      auditQuery.refetch();
-      if (activeView === "duplicates") duplicatesQuery.refetch();
     }
+    if (isAdmin) auditQuery.refetch();
     uploadHistoryQuery.refetch();
     if (isAdmin) settingsQuery.refetch();
   };
@@ -161,7 +154,13 @@ export default function SocialGalleryPage() {
   const headerTitle = selectedAlbum
     ? `Albums › ${selectedAlbum.name}`
     : VIEW_LABELS[activeView];
-  const showUploadActions = !selectedAlbumId && (activeView === "albums" || activeView === "gallery");
+
+  const showEmployeeUpload = !selectedAlbumId
+    && canShowListUploadButton(roleTier)
+    && (activeView === "albums" || activeView === "gallery");
+  const showCreateAlbumAction = !selectedAlbumId
+    && canCreateAlbum(roleTier)
+    && activeView === "albums";
 
   useEffect(() => {
     registerRestore((state) => {
@@ -173,17 +172,17 @@ export default function SocialGalleryPage() {
 
   useEffect(() => {
     const navKey = `${activeView}:${selectedAlbumId ?? ""}`;
-    trackNavigation(
-      { activeView, selectedAlbumId },
-      headerTitle,
-      navKey,
-    );
+    trackNavigation({ activeView, selectedAlbumId }, headerTitle, navKey);
   }, [activeView, selectedAlbumId, headerTitle, trackNavigation]);
 
   const navigate = (view: GalleryView) => {
     setActiveView(view);
     setSelectedAlbumId(null);
     setMobileNav(false);
+    if (view === "gallery") {
+      setLayout("grid");
+      setGalleryAlbumFilter(null);
+    }
   };
 
   const openAlbum = (id: number) => {
@@ -213,16 +212,13 @@ export default function SocialGalleryPage() {
           album={selectedAlbum}
           media={mediaQuery.items}
           loading={mediaQuery.isLoading}
-          layout={layout}
-          onLayoutChange={setLayout}
           onOpenMedia={(item) => openMedia(item, mediaQuery.items)}
           onRefresh={refreshAll}
-          onUpload={() => setShowUpload(true)}
+          onUpload={isManager ? () => setShowUpload(true) : undefined}
           total={mediaQuery.total}
           onLoadMore={() => mediaQuery.fetchNextPage()}
           loadingMore={mediaQuery.isFetchingNextPage}
           canManage={isManager}
-          albums={albumsQuery.items}
           onError={(msg) => showToast(msg, true)}
         />
       );
@@ -230,6 +226,9 @@ export default function SocialGalleryPage() {
 
     switch (activeView) {
       case "dashboard":
+        if (!canAccessGalleryView(roleTier, "dashboard")) {
+          return null;
+        }
         if (dashboardQuery.isError) {
           return <QueryError message={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : undefined} onRetry={() => dashboardQuery.refetch()} />;
         }
@@ -240,16 +239,11 @@ export default function SocialGalleryPage() {
             userName={user?.name}
             isManager={isManager}
             pendingCount={pendingCount}
-            aiReviewCount={aiReviewCount}
-            flaggedCount={flaggedCount}
             onOpenPending={() => navigate("pending")}
-            onOpenAiReview={() => navigate("pending-ai")}
-            onOpenFlagged={() => navigate("flagged")}
             onOpenAlbum={openAlbum}
             onOpenMedia={(item, list) => openMedia(item, list || [])}
             onBrowseGallery={() => navigate("gallery")}
-            onUpload={() => setShowUpload(true)}
-            onCreateAlbum={() => setShowCreateAlbum(true)}
+            onCreateAlbum={canCreateAlbum(roleTier) ? () => setShowCreateAlbum(true) : undefined}
           />
         );
       case "albums":
@@ -265,8 +259,9 @@ export default function SocialGalleryPage() {
             loadingMore={albumsQuery.isFetchingNextPage}
             onOpenAlbum={openAlbum}
             onRefresh={refreshAll}
-            onCreateAlbum={() => setShowCreateAlbum(true)}
+            onCreateAlbum={canCreateAlbum(roleTier) ? () => setShowCreateAlbum(true) : undefined}
             isManager={isManager}
+            isAdmin={isAdmin}
           />
         );
       case "gallery":
@@ -282,49 +277,47 @@ export default function SocialGalleryPage() {
             onOpenMedia={(item) => openMedia(item, mediaQuery.items)}
             albums={albumsQuery.items}
             onRefresh={refreshAll}
-            onUpload={() => setShowUpload(true)}
+            onUpload={canShowListUploadButton(roleTier) ? () => setShowUpload(true) : undefined}
             total={mediaQuery.total}
             onLoadMore={() => mediaQuery.fetchNextPage()}
             loadingMore={mediaQuery.isFetchingNextPage}
             canManage={isManager}
             onError={(msg) => showToast(msg, true)}
+            libraryMode
+            albumFilterId={galleryAlbumFilter}
+            onAlbumFilter={setGalleryAlbumFilter}
+            statusFilter={galleryStatus}
+            onStatusFilter={setGalleryStatus}
+            sort={gallerySort}
+            onSort={setGallerySort}
+            onCreateAlbum={canCreateAlbum(roleTier) ? () => setShowCreateAlbum(true) : undefined}
+            statusCounts={{
+              all: mediaQuery.total,
+              approved: mediaQuery.total,
+              pending: pendingCount,
+              rejected: 0,
+            }}
+            search={search}
+            onSearch={setSearch}
           />
         );
       case "pending":
         return (
           <PendingReviewView
-            media={pendingQuery.data || []}
+            media={pendingMedia}
+            pendingAlbums={pendingAlbums}
             loading={pendingQuery.isLoading}
             error={pendingQuery.isError ? (pendingQuery.error instanceof Error ? pendingQuery.error.message : "Failed to load") : undefined}
-            albums={albumsQuery.items.map((a) => ({ id: a.id, name: a.name }))}
+            albums={albumsQuery.items}
+            isAdmin={isAdmin}
             onRefresh={() => { refreshAll(); showToast("Review updated"); }}
-            onError={(msg) => showToast(msg, true)}
-          />
-        );
-      case "pending-ai":
-        return (
-          <PendingAIReviewView
-            media={pendingAiQuery.data || []}
-            loading={pendingAiQuery.isLoading}
-            onRefresh={refreshAll}
-            onOpenMedia={(item) => openMedia(item, pendingAiQuery.data || [])}
-            onError={(msg) => showToast(msg, true)}
-          />
-        );
-      case "flagged":
-        return (
-          <FlaggedContentView
-            reports={flaggedReports}
-            loading={flaggedQuery.isLoading}
-            onRefresh={() => { refreshAll(); showToast("Flag resolved"); }}
-            onOpenMedia={(item) => openMedia(item, flaggedReports.map((r) => r.media).filter(Boolean) as GalleryMedia[])}
             onError={(msg) => showToast(msg, true)}
           />
         );
       case "recycle":
         return (
           <RecycleBinView
-            media={recycleQuery.data || []}
+            payload={recycleQuery.data}
             loading={recycleQuery.isLoading}
             isAdmin={isAdmin}
             onRefresh={() => { refreshAll(); showToast("Recycle bin updated"); }}
@@ -332,11 +325,10 @@ export default function SocialGalleryPage() {
           />
         );
       case "contributions":
+        if (!canAccessGalleryView(roleTier, "contributions")) return null;
         return (
           <ContributionsView
             onOpenMedia={(item) => openMedia(item, [])}
-            isAdmin={isAdmin}
-            albums={albumsQuery.items}
             onRefresh={() => { refreshAll(); showToast("Contributions updated"); }}
             onError={(msg) => showToast(msg, true)}
           />
@@ -349,9 +341,8 @@ export default function SocialGalleryPage() {
             onOpenMedia={(item) => openMedia(item, [])}
           />
         );
-      case "duplicates":
-        return <DuplicateScanView groups={duplicatesQuery.data || []} loading={duplicatesQuery.isLoading} onRefresh={refreshAll} onError={(msg) => showToast(msg, true)} />;
       case "audit":
+        if (!canAccessGalleryView(roleTier, "audit")) return null;
         return (
           <AuditLogView
             logs={auditQuery.items}
@@ -362,6 +353,7 @@ export default function SocialGalleryPage() {
           />
         );
       case "settings":
+        if (!canAccessGalleryView(roleTier, "settings")) return null;
         return (
           <SettingsView
             settings={settingsQuery.data}
@@ -384,10 +376,7 @@ export default function SocialGalleryPage() {
         activeView={activeView}
         onNavigate={navigate}
         pendingCount={pendingCount}
-        aiReviewCount={aiReviewCount}
-        flaggedCount={flaggedCount}
-        isManager={isManager}
-        isAdmin={isAdmin}
+        roleTier={roleTier}
         mobileNav={mobileNav}
         onClose={() => setMobileNav(false)}
       />
@@ -398,22 +387,28 @@ export default function SocialGalleryPage() {
             search={search}
             userName={user?.name}
             companyName={user?.company_name}
+            searchPlaceholder="Search albums and media"
             onSearch={setSearch}
+            hideSearch={activeView === "gallery"}
             onOpenMobileNav={() => setMobileNav(true)}
           />
         </div>
         <div className="content-scroll">
-          {showUploadActions && (
+          {(showEmployeeUpload || showCreateAlbumAction) && (
             <div className="page-actions-row">
               <div className="primary-actions">
-                <button type="button" className="secondary-button" onClick={() => setShowCreateAlbum(true)}>
-                  <Plus size={16} />
-                  Create Album
-                </button>
-                <button type="button" className="primary-button" onClick={() => setShowUpload(true)}>
-                  <Upload size={16} />
-                  Upload Media
-                </button>
+                {showCreateAlbumAction && (
+                  <button type="button" className="secondary-button" onClick={() => setShowCreateAlbum(true)}>
+                    <Plus size={16} />
+                    Create Album
+                  </button>
+                )}
+                {showEmployeeUpload && (
+                  <button type="button" className="primary-button" onClick={() => setShowUpload(true)}>
+                    <Upload size={16} />
+                    Upload Media
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -427,7 +422,6 @@ export default function SocialGalleryPage() {
           albums={albumsQuery.items}
           userId={user?.id}
           isManager={isManager}
-          allowExternalShare={settingsQuery.data?.allow_external_share}
           onClose={() => { setSelectedMedia(null); setBrowseList([]); }}
           onRefresh={refreshAll}
           onError={(msg) => showToast(msg, true)}
@@ -443,7 +437,7 @@ export default function SocialGalleryPage() {
           }}
         />
       )}
-      {showCreateAlbum && (
+      {showCreateAlbum && canCreateAlbum(roleTier) && (
         <CreateAlbumModal
           onClose={() => setShowCreateAlbum(false)}
           onCreated={() => { setShowCreateAlbum(false); refreshAll(); showToast("Album created"); }}
@@ -453,36 +447,11 @@ export default function SocialGalleryPage() {
         <UploadModal
           albumId={selectedAlbumId || undefined}
           albums={albumsQuery.items}
+          employeeMode={isEmployee}
+          lockedAlbumId={selectedAlbumId && isManager ? selectedAlbumId : undefined}
           onClose={() => setShowUpload(false)}
           onComplete={() => { setShowUpload(false); refreshAll(); showToast("Uploads complete"); }}
         />
-      )}
-      {sharePrompt && (
-        <div className="modal-backdrop">
-          <div className="modal-card">
-            <h3>Password required</h3>
-            <p>This shared link is protected. Enter the password to continue.</p>
-            <input
-              type="password"
-              value={sharePassword}
-              onChange={(event) => setSharePassword(event.target.value)}
-              placeholder="Share password"
-              className="field"
-            />
-            <div className="modal-actions">
-              <button type="button" className="secondary-button" onClick={() => { setSharePrompt(null); setSharePassword(""); }}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="primary-button"
-                onClick={() => resolveShareLink(sharePrompt.token, sharePassword)}
-              >
-                Open link
-              </button>
-            </div>
-          </div>
-        </div>
       )}
       {toast && (
         <div className={`toast ${toast.error ? "error" : ""}`}>

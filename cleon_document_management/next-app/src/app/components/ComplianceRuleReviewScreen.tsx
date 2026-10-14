@@ -128,10 +128,12 @@ export default function ComplianceRuleReviewScreen({
           </>
         ) : null}
         <ReviewRow label="Applies to" value={scopeLabels.join(", ") || "—"} />
-        <ReviewRow
-          label="Schedule"
-          value={formatFieldLabel(form.schedule || "manual")}
-        />
+        {typeCode !== "renewable_document" && typeCode !== "retention" ? (
+          <ReviewRow
+            label="Schedule"
+            value={formatFieldLabel(form.schedule || "manual")}
+          />
+        ) : null}
         <ReviewRow label="Effective date" value={form.effective_date || "—"} />
         {typeCode === "retention" ? (
           <>
@@ -155,6 +157,21 @@ export default function ComplianceRuleReviewScreen({
               />
             ) : null}
           </>
+        ) : typeCode === "renewable_document" ? (
+          <>
+            <ReviewRow
+              label="Reminders"
+              value={form.alert_schedule_days || "—"}
+            />
+            <ReviewRow
+              label="Notify HR"
+              value={`${form.escalate_hr_days} days before expiry`}
+            />
+            <ReviewRow
+              label="Renewal task"
+              value={form.auto_request_renewal ? "Yes" : "No"}
+            />
+          </>
         ) : (
           <>
             <ReviewRow label="Minimum documents" value={form.minimum_documents} />
@@ -165,10 +182,21 @@ export default function ComplianceRuleReviewScreen({
           </>
         )}
         {policyTypeUsesVerification(typeCode) ? (
-          <ReviewRow
-            label="Verified by"
-            value={`${VERIFIED_BY_LABELS[form.verified_by] || VERIFIED_BY_LABELS.hr_admin} · ${form.verification_sla_days} day SLA`}
-          />
+          <>
+            <ReviewRow
+              label="Verified by"
+              value={`${VERIFIED_BY_LABELS[form.verified_by] || VERIFIED_BY_LABELS.hr_admin} · ${form.verification_sla_days} day SLA`}
+            />
+            <ReviewRow
+              label="SLA alert contact"
+              value={
+                form.verification_sla_escalation_user_label ||
+                (form.verification_sla_escalation_user_id
+                  ? `User #${form.verification_sla_escalation_user_id}`
+                  : "Policy owner (default)")
+              }
+            />
+          </>
         ) : null}
       </dl>
       {policyTypeUsesVerification(typeCode) ? (

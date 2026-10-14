@@ -28,7 +28,7 @@ import { PolicyForm } from "./CompliancePage";
 import ModalDialog from "./ModalDialog";
 import ComplianceDocumentPickerModal from "./ComplianceDocumentPickerModal";
 import ComplianceImportAnalyzeProgressModal from "./ComplianceImportAnalyzeProgressModal";
-import ComplianceDocumentTypeMultiSelect from "./ComplianceDocumentTypeMultiSelect";
+import { AiPolicyDocumentTypePicker } from "./compliance/AiPolicyDocumentTypePicker";
 import ThemedSelect from "./ThemedSelect";
 
 const AI_BRIEF_CHIPS = [
@@ -391,14 +391,13 @@ export default function OrganizationalCreatePolicyFlow({
                     }))}
                   />
                 </label>
-                <div className="block space-y-1 text-sm sm:col-span-2">
-                  <span className="font-semibold">Required documents</span>
-                  <ComplianceDocumentTypeMultiSelect
-                    types={aiSelectableDocumentTypes}
-                    selected={aiDocumentTypeIds}
-                    onChange={setAiDocumentTypeIds}
-                    placeholder="Select document types"
-                    expiryTypesOnly={aiPolicyTypeCode === "renewable_document"}
+                <div className="sm:col-span-2">
+                  <AiPolicyDocumentTypePicker
+                    typeCode={aiPolicyTypeCode}
+                    policyTypeId={aiPolicyTypeId}
+                    documentTypeIds={aiDocumentTypeIds}
+                    onDocumentTypeIdsChange={setAiDocumentTypeIds}
+                    selectableDocumentTypes={aiSelectableDocumentTypes}
                   />
                 </div>
               </div>

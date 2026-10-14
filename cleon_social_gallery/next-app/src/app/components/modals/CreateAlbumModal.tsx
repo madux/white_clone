@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { AlbumAccessScopeFields, type AlbumAccessScope } from "../shared/AlbumAccessScopeFields";
+import AppSelect from "../shared/AppSelect";
 import { ModalShell } from "../shared/ModalShell";
+
+const VISIBILITY_OPTIONS = [
+  { value: "public", label: "Public — all employees can view" },
+  { value: "private", label: "Private — admin approval required" },
+];
 
 export default function CreateAlbumModal({
   onClose, onCreated,
@@ -17,6 +23,9 @@ export default function CreateAlbumModal({
   const [accessScope, setAccessScope] = useState<AlbumAccessScope>("company");
   const [departmentIds, setDepartmentIds] = useState<number[]>([]);
   const [branchIds, setBranchIds] = useState<number[]>([]);
+  const [unitIds, setUnitIds] = useState<number[]>([]);
+  const [gradeIds, setGradeIds] = useState<number[]>([]);
+  const [customGroupIds, setCustomGroupIds] = useState<number[]>([]);
   const [employeeIds, setEmployeeIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +38,18 @@ export default function CreateAlbumModal({
     }
     if (accessScope === "branch" && !branchIds.length) {
       setError("Select at least one branch.");
+      return;
+    }
+    if (accessScope === "unit" && !unitIds.length) {
+      setError("Select at least one unit.");
+      return;
+    }
+    if (accessScope === "grade" && !gradeIds.length) {
+      setError("Select at least one grade.");
+      return;
+    }
+    if (accessScope === "custom_group" && !customGroupIds.length) {
+      setError("Select at least one custom group.");
       return;
     }
     if (accessScope === "employee" && !employeeIds.length) {
@@ -45,6 +66,9 @@ export default function CreateAlbumModal({
         access_scope: accessScope,
         department_ids: departmentIds,
         branch_ids: branchIds,
+        unit_ids: unitIds,
+        grade_ids: gradeIds,
+        custom_group_ids: customGroupIds,
         employee_ids: employeeIds,
       });
       onCreated();
@@ -69,21 +93,29 @@ export default function CreateAlbumModal({
         </label>
         <label>
           Visibility *
-          <select value={visibility} onChange={(e) => setVisibility(e.target.value)}>
-            <option value="public">Public — all employees can view</option>
-            <option value="private">Private — admin approval required</option>
-          </select>
+          <AppSelect
+            value={visibility}
+            options={VISIBILITY_OPTIONS}
+            onChange={setVisibility}
+            ariaLabel="Album visibility"
+          />
           <span className="form-hint">Private albums require manager approval before media is visible.</span>
         </label>
         <AlbumAccessScopeFields
           accessScope={accessScope}
           departmentIds={departmentIds}
           branchIds={branchIds}
+          unitIds={unitIds}
+          gradeIds={gradeIds}
+          customGroupIds={customGroupIds}
           employeeIds={employeeIds}
           onChange={(values) => {
             setAccessScope(values.access_scope);
             setDepartmentIds(values.department_ids);
             setBranchIds(values.branch_ids);
+            setUnitIds(values.unit_ids);
+            setGradeIds(values.grade_ids);
+            setCustomGroupIds(values.custom_group_ids);
             setEmployeeIds(values.employee_ids);
           }}
         />

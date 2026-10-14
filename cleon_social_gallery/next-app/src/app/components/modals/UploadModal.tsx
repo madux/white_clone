@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Check, LoaderCircle, Trash2, UploadCloud } from "lucide-react";
 import type { GalleryAlbum } from "@/lib/types";
 import { api } from "@/lib/api";
+import AppSelect from "../shared/AppSelect";
 import { ModalShell } from "../shared/ModalShell";
 
 type QueueItem = {
@@ -28,10 +29,18 @@ function stripExtension(name: string) {
 }
 
 export default function UploadModal({
-  albumId, albums = [], onClose, onComplete,
+  albumId,
+  albums = [],
+  employeeMode = false,
+  lockedAlbumId,
+  onClose,
+  onComplete,
 }: {
   albumId?: number;
   albums?: GalleryAlbum[];
+  employeeMode?: boolean;
+  /** Album detail (§3.4): all files go to this album; picker hidden. */
+  lockedAlbumId?: number;
   onClose: () => void;
   onComplete: () => void;
 }) {
@@ -39,7 +48,7 @@ export default function UploadModal({
   const sessionRef = useRef<number | null>(null);
   const cancelRef = useRef(false);
   const [queue, setQueue] = useState<QueueItem[]>([]);
-  const [defaultAlbumId, setDefaultAlbumId] = useState<number | "">(albumId || "");
+  const [defaultAlbumId, setDefaultAlbumId] = useState<number | "">(lockedAlbumId || albumId || "");
   const [description, setDescription] = useState("");
   const [progressPct, setProgressPct] = useState(0);
   const [progressLabel, setProgressLabel] = useState("");
@@ -59,7 +68,7 @@ export default function UploadModal({
           id: `${fileKey(file)}-${Math.random().toString(36).slice(2, 8)}`,
           file,
           displayName: stripExtension(file.name),
-          albumId: defaultAlbumId,
+          albumId: employeeMode ? "" : (lockedAlbumId || defaultAlbumId),
         }));
       return [...prev, ...next];
     });
@@ -238,26 +247,40 @@ export default function UploadModal({
           />
         </button>
 
-        <div className="upload-defaults">
-          <label>
-            Default album for new files
-            <select
-              value={defaultAlbumId}
-              onChange={(e) => setDefaultAlbumId(e.target.value ? Number(e.target.value) : "")}
-              disabled={uploading}
-            >
-              <option value="">Auto — monthly album</option>
-              {albums.map((album) => (
-                <option key={album.id} value={album.id}>{album.name}</option>
-              ))}
-            </select>
-          </label>
-          {queue.length > 1 && (
-            <button type="button" className="text-button" disabled={uploading} onClick={applyDefaultAlbumToAll}>
-              Apply default to all
-            </button>
-          )}
-        </div>
+        {!employeeMode && !lockedAlbumId && (
+          <div className="upload-defaults">
+            <label>
+              Default album for new files
+              <AppSelect
+                value={defaultAlbumId === "" ? "" : String(defaultAlbumId)}
+                placeholder="No default album"
+                disabled={uploading}
+                options={[
+                  { value: "", label: "No default album" },
+                  ...albums.filter((a) => a.status === "approved").map((album) => ({
+                    value: String(album.id),
+                    label: album.name,
+                  })),
+                ]}
+                onChange={(value) => setDefaultAlbumId(value ? Number(value) : "")}
+                ariaLabel="Default album for new files"
+              />
+            </label>
+            {queue.length > 1 && (
+              <button type="button" className="text-button" disabled={uploading} onClick={applyDefaultAlbumToAll}>
+                Apply default to all
+              </button>
+            )}
+          </div>
+        )}
+        {lockedAlbumId && (
+          <p className="meta-muted">
+            Uploads are added to this album and are auto-approved for supervisors and administrators.
+          </p>
+        )}
+        {employeeMode && (
+          <p className="meta-muted">Employee uploads are always submitted for review. A reviewer will assign an album before approval.</p>
+        )}
 
         {queue.length > 0 && (
           <div className="upload-queue">
@@ -275,19 +298,25 @@ export default function UploadModal({
                     disabled={uploading}
                   />
                 </label>
-                <label>
-                  Album
-                  <select
-                    value={item.albumId}
-                    onChange={(e) => updateItem(item.id, { albumId: e.target.value ? Number(e.target.value) : "" })}
-                    disabled={uploading}
-                  >
-                    <option value="">Auto — monthly album</option>
-                    {albums.map((album) => (
-                      <option key={album.id} value={album.id}>{album.name}</option>
-                    ))}
-                  </select>
-                </label>
+                {!employeeMode && !lockedAlbumId && (
+                  <label>
+                    Album
+                    <AppSelect
+                      value={item.albumId === "" ? "" : String(item.albumId)}
+                      placeholder="Unassigned (reviewer chooses)"
+                      disabled={uploading}
+                      options={[
+                        { value: "", label: "Unassigned (reviewer chooses)" },
+                        ...albums.filter((a) => a.status === "approved").map((album) => ({
+                          value: String(album.id),
+                          label: album.name,
+                        })),
+                      ]}
+                      onChange={(value) => updateItem(item.id, { albumId: value ? Number(value) : "" })}
+                      ariaLabel={`Album for ${item.file.name}`}
+                    />
+                  </label>
+                )}
                 <button
                   type="button"
                   className="icon-button danger"

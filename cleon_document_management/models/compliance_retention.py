@@ -17,9 +17,15 @@ RETENTION_ITEM_STATES = [
     ("due_delete", "Due to delete"),
     ("on_hold", "On legal hold"),
     ("blocked_backup", "Blocked — backup required"),
+    ("blocked_error", "Blocked — action failed"),
     ("pending_owner", "Pending owner approval"),
     ("deleted", "Deleted"),
     ("reported", "Reported only"),
+]
+
+RETENTION_REPORT_REASONS = [
+    ("archive", "Due to archive"),
+    ("delete", "Due to delete"),
 ]
 
 
@@ -43,6 +49,9 @@ class DocDocumentDeletionRecord(models.Model):
     )
     deleted_at = fields.Datetime(default=fields.Datetime.now, required=True)
     deleted_by_id = fields.Many2one("res.users", default=lambda self: self.env.user)
+    archive_due = fields.Date()
+    delete_due = fields.Date()
+    policy_version_id = fields.Many2one("doc.compliance.policy.version", ondelete="set null")
 
 
 class ComplianceRetentionOwnerBatch(models.Model):
@@ -71,6 +80,9 @@ class ComplianceRetentionOwnerBatch(models.Model):
         index=True,
     )
     notified_at = fields.Datetime()
+    backup_blocked_notified_at = fields.Datetime(
+        string="Backup block notice sent",
+    )
     item_ids = fields.One2many(
         "doc.compliance.retention.item",
         "owner_batch_id",
@@ -83,7 +95,14 @@ class ComplianceRetentionOwnerBatch(models.Model):
             batch.item_ids._execute_batch_action(batch.action)
 
     def action_reject(self):
-        self.filtered(lambda b: b.state == "open").write({"state": "rejected"})
+        open_batches = self.filtered(lambda b: b.state == "open")
+        for batch in open_batches:
+            for item in batch.item_ids:
+                if batch.action == "archive":
+                    item.write({"state": "due_archive", "owner_batch_id": False})
+                else:
+                    item.write({"state": "due_delete", "owner_batch_id": False})
+        open_batches.write({"state": "rejected"})
 
 
 class ComplianceRetentionItem(models.Model):
@@ -108,6 +127,17 @@ class ComplianceRetentionItem(models.Model):
     archive_due = fields.Date(index=True)
     delete_due = fields.Date(index=True)
     state = fields.Selection(RETENTION_ITEM_STATES, default="retaining", index=True)
+    reported_reason = fields.Selection(
+        RETENTION_REPORT_REASONS,
+        string="Report reason",
+        index=True,
+    )
+    delete_notice_sent_at = fields.Date(
+        string="Delete notice sent",
+        help="When the owner was notified that delete is approaching or due.",
+    )
+    backup_block_notified_at = fields.Datetime()
+    last_error = fields.Text(string="Last action error")
     owner_batch_id = fields.Many2one(
         "doc.compliance.retention.owner.batch",
         ondelete="set null",
@@ -127,14 +157,45 @@ class ComplianceRetentionItem(models.Model):
         Engine = self.env["doc.compliance.retention.engine"]
         for item in self:
             policy = item.policy_id
-            if action == "archive" and item.state in ("due_archive", "pending_owner"):
+            if action == "archive" and item.state in (
+                "due_archive",
+                "pending_owner",
+                "blocked_error",
+            ):
                 Engine._apply_archive(item, policy)
             elif action == "delete" and item.state in (
                 "due_delete",
                 "archived",
                 "pending_owner",
+                "blocked_error",
             ):
+                if item.document_id.distribution_status != "archived":
+                    continue
                 Engine._apply_delete(item, policy)
+
+    def to_report_dict(self):
+        self.ensure_one()
+        document = self.document_id
+        employee = document.employee_id
+        return {
+            "id": self.id,
+            "policy_id": self.policy_id.id,
+            "policy": self.policy_id.name,
+            "document_id": document.id,
+            "document": document.name,
+            "employee_id": employee.id if employee else False,
+            "employee": employee.name if employee else "",
+            "document_type": document.document_type_id.name
+            if document.document_type_id
+            else "",
+            "state": self.state,
+            "reported_reason": self.reported_reason or "",
+            "archive_due": str(self.archive_due or ""),
+            "delete_due": str(self.delete_due or ""),
+            "clock_start": str(self.clock_start or ""),
+            "last_evaluated_at": str(self.last_evaluated_at or ""),
+            "last_error": self.last_error or "",
+        }
 
 
 class CompliancePolicyRetention(models.Model):
