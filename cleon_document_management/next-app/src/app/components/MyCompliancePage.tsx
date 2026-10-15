@@ -1,7 +1,8 @@
 "use client";
 
 import { AlertCircle, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS, useMyCompliance } from "../../../hooks/useDocuments";
 import type {
@@ -14,6 +15,7 @@ import ComplianceTaskCompleteDialog from "./ComplianceTaskCompleteDialog";
 import ModalDialog from "./ModalDialog";
 import SectionTabs from "./SectionTabs";
 import StatusPill from "./StatusPill";
+import { resolveComplianceInboxTab } from "../../../lib/workspaceRoutes";
 
 const TABS: { id: MyComplianceInboxTab; label: string }[] = [
   { id: "todo", label: "To do" },
@@ -63,9 +65,33 @@ export default function MyCompliancePage({
   embedded?: boolean;
 }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const compliance = useMyCompliance();
   const data = compliance.data;
-  const [tab, setTab] = useState<MyComplianceInboxTab>("todo");
+  const [tab, setTab] = useState<MyComplianceInboxTab>(() =>
+    resolveComplianceInboxTab(searchParams.get("inbox")),
+  );
+
+  useEffect(() => {
+    setTab(resolveComplianceInboxTab(searchParams.get("inbox")));
+  }, [searchParams]);
+
+  const setComplianceTab = (value: MyComplianceInboxTab) => {
+    setTab(value);
+    const next = new URLSearchParams(searchParams.toString());
+    if (pathname.includes("/my-workspace")) {
+      next.set("tab", "policies");
+    }
+    if (value === "todo") {
+      next.delete("inbox");
+    } else {
+      next.set("inbox", value);
+    }
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
   const [detailItem, setDetailItem] = useState<MyComplianceInboxItem | null>(null);
   const [submitItem, setSubmitItem] = useState<{
     item: MyComplianceInboxItem;
@@ -135,7 +161,7 @@ export default function MyCompliancePage({
         level="nested"
         ariaLabel="My Compliance sections"
         value={tab}
-        onChange={(value) => setTab(value as MyComplianceInboxTab)}
+        onChange={(value) => setComplianceTab(value as MyComplianceInboxTab)}
         items={tabItems}
       />
 

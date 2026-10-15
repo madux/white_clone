@@ -12,11 +12,11 @@ import {
   Recycle,
   Settings2,
   Star,
-  X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { DocumentaryFolder } from "../../../../lib/types";
 import type { LibraryView } from "../library/libraryTypes";
+import { initials } from "../documentaryUtils";
 
 const SIDEBAR_COLLAPSED_KEY = "cleon-documentary-sidebar-collapsed";
 
@@ -33,7 +33,8 @@ export function DocumentarySidebar({
   onOpenFolder,
   onAnalytics,
   onSettings,
-  onClose,
+  userName,
+  companyName,
 }: {
   folders: DocumentaryFolder[];
   selectedFolder: DocumentaryFolder | null;
@@ -47,9 +48,12 @@ export function DocumentarySidebar({
   onOpenFolder: (folder: DocumentaryFolder) => void;
   onAnalytics: () => void;
   onSettings: () => void;
-  onClose: () => void;
+  userName?: string;
+  companyName?: string;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const effectiveCollapsed = mobileNav ? false : collapsed;
+  const avatarInitials = initials(userName || "CD");
   const pinned = folders.filter((folder) => folder.is_pinned);
   const otherFolders = folders.filter((folder) => !folder.is_pinned);
 
@@ -77,43 +81,38 @@ export function DocumentarySidebar({
       type="button"
       className={`sidebar-link ${active ? "active" : ""}`}
       onClick={onClick}
-      title={collapsed ? label : undefined}
+      title={effectiveCollapsed ? label : undefined}
       aria-current={active ? "page" : undefined}
     >
       {icon}
-      {!collapsed && <span>{label}</span>}
-      {!collapsed && count}
+      {!effectiveCollapsed && <span>{label}</span>}
+      {!effectiveCollapsed && count}
     </button>
   );
 
   return (
     <aside
-      className={`documentary-sidebar ${mobileNav ? "is-open" : ""} ${collapsed ? "is-collapsed" : ""}`}
+      className={`documentary-sidebar ${mobileNav ? "is-open" : ""} ${effectiveCollapsed ? "is-collapsed" : ""}`}
     >
-      <div className={`sidebar-brand-row ${collapsed ? "is-collapsed" : ""}`}>
-        {!collapsed && (
+      <div className={`sidebar-brand-row ${effectiveCollapsed ? "is-collapsed" : ""}`}>
+        {!effectiveCollapsed && (
           <div className="brand-lockup">
             <span className="directory-brand">Company Documentary</span>
           </div>
         )}
-        <button
-          type="button"
-          className="sidebar-collapse-toggle"
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
+        {!mobileNav ? (
+          <button
+            type="button"
+            className="sidebar-collapse-toggle"
+            onClick={toggleCollapsed}
+            aria-label={effectiveCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={effectiveCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {effectiveCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        ) : null}
       </div>
-      <button
-        className="mobile-close"
-        onClick={onClose}
-        aria-label="Close navigation"
-      >
-        <X size={18} />
-      </button>
-      {!collapsed && <div className="sidebar-section-label">Workspace</div>}
+      {!effectiveCollapsed && <div className="sidebar-section-label">Workspace</div>}
       <nav className="sidebar-nav">
         {renderLink(
           "Documentary home",
@@ -160,7 +159,7 @@ export function DocumentarySidebar({
           </>
         )}
       </nav>
-      {!collapsed && (
+      {!effectiveCollapsed && (
         <div className="sidebar-section-label folder-label">
           Folders <span>{folders.length}</span>
         </div>
@@ -171,10 +170,10 @@ export function DocumentarySidebar({
             key={folder.id}
             className={`sidebar-link pinned ${selectedFolder?.id === folder.id ? "selected" : ""}`}
             onClick={() => onOpenFolder(folder)}
-            title={collapsed ? folder.name : undefined}
+            title={effectiveCollapsed ? folder.name : undefined}
           >
             <Star size={14} fill="currentColor" />
-            {!collapsed && <span>{folder.name}</span>}
+            {!effectiveCollapsed && <span>{folder.name}</span>}
           </button>
         ))}
         {otherFolders.map((folder) => (
@@ -182,34 +181,35 @@ export function DocumentarySidebar({
             key={folder.id}
             className={`sidebar-link ${selectedFolder?.id === folder.id ? "selected" : ""}`}
             onClick={() => onOpenFolder(folder)}
-            title={collapsed ? folder.name : undefined}
+            title={effectiveCollapsed ? folder.name : undefined}
           >
             <Folder size={16} />
-            {!collapsed && <span>{folder.name}</span>}
+            {!effectiveCollapsed && <span>{folder.name}</span>}
           </button>
         ))}
-        {!folders.length && !collapsed && (
+        {!folders.length && !effectiveCollapsed && (
           <p className="sidebar-empty">Your folders will appear here.</p>
         )}
       </div>
       <div className="sidebar-bottom">
-        {canManage && (
-          <>
-            {renderLink(
+        {canManage
+          ? renderLink(
               "Library analytics",
               <BarChart3 size={17} />,
               false,
               onAnalytics,
-            )}
-            {isAdmin &&
-              renderLink(
-                "Settings",
-                <Settings2 size={17} />,
-                false,
-                onSettings,
-              )}
-          </>
-        )}
+            )
+          : null}
+        {isAdmin
+          ? renderLink("Settings", <Settings2 size={17} />, false, onSettings)
+          : null}
+        <div className="sidebar-user" aria-label="Signed in user">
+          <div className="sidebar-user-avatar">{avatarInitials}</div>
+          <div className="sidebar-user-copy">
+            <strong>{userName || "Signed in"}</strong>
+            {companyName ? <span>{companyName}</span> : null}
+          </div>
+        </div>
       </div>
     </aside>
   );

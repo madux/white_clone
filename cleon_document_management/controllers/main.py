@@ -2422,48 +2422,27 @@ class DocumentUICreation(http.Controller):
         shared = Document.search(shared_domain, order="write_date desc")
         shared = shared.filter_for_organizational_access(user)
         combined = own | shared
-        outstanding = []
-        if employee:
-            policies = request.env["doc.compliance.policy"].search(
-                [("active", "=", True)]
-            )
-            for policy in policies:
-                if not policy._applies_to_employee(employee):
-                    continue
-                evaluation = request.env["doc.compliance.evaluation"].search(
-                    [("policy_id", "=", policy.id), ("employee_id", "=", employee.id)],
-                    limit=1,
-                )
-                for line in evaluation.line_ids.filtered(lambda item: item.status in ("missing", "grace")):
-                    document_type = line.document_type_id
-                    if document_type:
-                        outstanding.append(
-                            {
-                                "id": -(policy.id * 10000 + document_type.id + line.id),
-                                "name": document_type.name,
-                                "description": (
-                                    "Required by %s · grace period"
-                                    if line.status == "grace"
-                                    else "Required by %s"
-                                ) % policy.name,
-                                "folder_id": False,
-                                "folder_name": "Outstanding requirements",
-                                "employee_id": employee.id,
-                                "employee_name": employee.name,
-                                "document_type_id": document_type.id,
-                                "document_type": document_type.name,
-                                "state": line.status,
-                                "approval_state": "pending",
-                                "ocr_state": "pending",
-                                "has_expiry": False,
-                                "expiry_date": False,
-                                "mime_type": "",
-                                "file_size": 0,
-                                "attachment_id": False,
-                                "created_at": "",
-                                "write_date": "",
-                            }
-                        )
+
+        def _shared_by_profile(document):
+            sharer = document.uploaded_by or document.owner_id
+            if not sharer:
+                return {
+                    "shared_by": "Document administrator",
+                    "shared_by_id": False,
+                    "shared_by_subtitle": "",
+                }
+            subtitle = ""
+            employee = sharer.sudo().employee_id
+            if employee:
+                if employee.job_id:
+                    subtitle = employee.job_id.name or ""
+                elif getattr(employee, "job_title", None):
+                    subtitle = employee.job_title or ""
+            return {
+                "shared_by": sharer.name,
+                "shared_by_id": sharer.id or False,
+                "shared_by_subtitle": subtitle,
+            }
 
         def serialize(document):
             acknowledgement = document.acknowledgement_ids.filtered(
@@ -2471,12 +2450,7 @@ class DocumentUICreation(http.Controller):
             )[:1]
             return document.serialize_for_api(
                 user,
-                shared_by=document.uploaded_by.name
-                or document.owner_id.name
-                or "Document administrator",
-                shared_by_id=document.uploaded_by.id
-                or document.owner_id.id
-                or False,
+                **_shared_by_profile(document),
                 favorite=user in document.favorite_user_ids,
                 acknowledged=bool(acknowledgement),
                 acknowledged_at=(
@@ -2544,7 +2518,6 @@ class DocumentUICreation(http.Controller):
                 "shared_documents": [
                     serialize(document) for document in shared if document not in own
                 ],
-                "outstanding": outstanding,
                 "activity": activities,
                 "expiring_documents": [
                     _serialize_expiring_document(document) for document in expiring
@@ -2653,12 +2626,24 @@ class DocumentUICreation(http.Controller):
                 "success": True,
                 "data": {
                     "evaluations": [],
-                    "outstanding": [],
+                    "inbox": {
+                        "todo": [],
+                        "waiting": [],
+                        "done": [],
+                        "coming_up": [],
+                        "exceptions": [],
+                    },
+                    "inbox_summary": {
+                        "todo": 0,
+                        "waiting": 0,
+                        "done": 0,
+                        "coming_up": 0,
+                        "exceptions": 0,
+                    },
                     "summary": {
                         "compliant": 0,
                         "partial": 0,
                         "non_compliant": 0,
-                        "outstanding_count": 0,
                     },
                 },
             }
@@ -2668,7 +2653,6 @@ class DocumentUICreation(http.Controller):
             order="evaluated_at desc",
         )
         evaluation_data = []
-        outstanding = []
         for evaluation in evaluations:
             lines = []
             for line in evaluation.line_ids:
@@ -2681,14 +2665,6 @@ class DocumentUICreation(http.Controller):
                     "matched_count": line.matched_count,
                 }
                 lines.append(line_data)
-                if line.status in ("missing", "grace"):
-                    outstanding.append(
-                        {
-                            "policy": evaluation.policy_id.name,
-                            "document_type": line.document_type_id.name,
-                            "status": line.status,
-                        }
-                    )
             evaluation_data.append(
                 {
                     "id": evaluation.id,
@@ -2721,7 +2697,6 @@ class DocumentUICreation(http.Controller):
             "non_compliant": len(
                 evaluations.filtered(lambda item: item.status == "non_compliant")
             ),
-            "outstanding_count": len(outstanding),
         }
         open_tasks = request.env["doc.compliance.task"].sudo().search(
             [
@@ -2737,7 +2712,6 @@ class DocumentUICreation(http.Controller):
             "data": {
                 "employee_id": employee.id,
                 "evaluations": evaluation_data,
-                "outstanding": outstanding,
                 "inbox": inbox,
                 "items": inbox_payload["items"],
                 "inbox_summary": inbox_payload["inbox_summary"],

@@ -35,6 +35,20 @@ export interface ModuleRoleAssignment {
   enabled: boolean;
 }
 
+export interface ModuleRoleMemberPage {
+  items: ModuleRoleMember[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ModuleRoleMemberStats {
+  total: number;
+  administrator: number;
+  supervisor: number;
+  employee: number;
+}
+
 export interface WatchProgress {
   position_seconds: number;
   completion_percent: number;

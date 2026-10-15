@@ -12,10 +12,23 @@ export function useModuleRoleDefinitions(enabled = true) {
   });
 }
 
-export function useModuleRoleMembers(search = "", enabled = true, limit = 50) {
+export function useModuleRoleMembers(
+  search = "",
+  enabled = true,
+  limit = 5,
+  offset = 0,
+) {
   return useQuery({
-    queryKey: ["company-documentary", "roles", "members", search, limit],
-    queryFn: () => api.roleMembers(search, limit),
+    queryKey: ["company-documentary", "roles", "members", search, limit, offset],
+    queryFn: () => api.roleMembers(search, limit, offset),
+    enabled,
+  });
+}
+
+export function useModuleRoleMemberStats(enabled = true) {
+  return useQuery({
+    queryKey: ["company-documentary", "roles", "member-stats"],
+    queryFn: api.roleMemberStats,
     enabled,
   });
 }
@@ -30,6 +43,9 @@ export function useAssignModuleRoles() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["company-documentary", "roles", "members"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["company-documentary", "roles", "member-stats"],
       });
     },
   });

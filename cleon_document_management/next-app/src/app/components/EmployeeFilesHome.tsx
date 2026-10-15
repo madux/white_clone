@@ -28,6 +28,7 @@ import {
 } from "../../../lib/employeeFilesBrowsePreferences";
 import type { DocDocument } from "../../../lib/types";
 import { documentPreviewUrl } from "../../../lib/documentPreviewUrls";
+import AskAiDocumentButton from "./AskAiDocumentButton";
 import DocumentViewerDialog from "./DocumentViewerDialog";
 
 type HomeView = "groups" | "employees" | "documents";
@@ -454,6 +455,9 @@ export default function EmployeeFilesHome() {
           documentId={viewingDocument.id}
           currentVersionNumber={viewingDocument.current_version_number}
           previewUrl={documentPreviewUrl(viewingDocument.id)}
+          headerActions={
+            <AskAiDocumentButton documentId={viewingDocument.id} />
+          }
         />
       ) : null}
     </div>

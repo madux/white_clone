@@ -505,6 +505,9 @@ export interface DocDocument {
   favorite?: boolean;
   acknowledged?: boolean;
   acknowledged_at?: string | false;
+  shared_by?: string;
+  shared_by_id?: number | false;
+  shared_by_subtitle?: string;
   pinned?: boolean;
   distribution_status?: "active" | "archived" | "deactivated";
   version_count?: number;
@@ -569,7 +572,6 @@ export interface ExpiringDocument {
 export interface MyWorkspace {
   my_files: DocDocument[];
   shared_documents: DocDocument[];
-  outstanding: DocDocument[];
   expiring_documents?: ExpiringDocument[];
   activity: { id: number; document_id: number; document: string; folder: string; event: string; occurred_at: string }[];
   dashboard: { total: number; expiring: number; states: Record<string, number> };
@@ -729,11 +731,6 @@ export interface MyComplianceInboxItem {
 export interface MyCompliance {
   employee_id?: number;
   evaluations: MyComplianceEvaluation[];
-  outstanding: Array<{
-    policy: string;
-    document_type: string;
-    status: string;
-  }>;
   inbox?: {
     todo: MyComplianceInboxItem[];
     waiting: MyComplianceInboxItem[];
@@ -749,7 +746,6 @@ export interface MyCompliance {
     compliant: number;
     partial: number;
     non_compliant: number;
-    outstanding_count: number;
   };
   tasks?: Array<Record<string, unknown>>;
 }

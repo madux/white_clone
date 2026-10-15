@@ -5,12 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import { dmsContractsApi } from "../../../lib/dmsContractsApi";
 import {
   Activity,
+  Archive,
   FileText,
   ListTodo,
   ScrollText,
   Search,
   Send,
   Share2,
+  Trash2,
 } from "lucide-react";
 import {
   type WorkspaceTabId,
@@ -21,6 +23,16 @@ import {
 } from "../../../lib/workspaceRoutes";
 import type { WorkspaceWorkItemsPayload } from "../../../lib/workspaceWorkItems";
 import SectionTabs from "./SectionTabs";
+
+type DocumentsSubview = "active" | "archived" | "recycle";
+
+function resolveDocumentsSubview(
+  lifecycle: string | null,
+): DocumentsSubview {
+  if (lifecycle === "archived") return "archived";
+  if (lifecycle === "recycle") return "recycle";
+  return "active";
+}
 import MyDocumentsPage from "./MyDocumentsPage";
 import DocumentLifecyclePage from "./DocumentLifecyclePage";
 import QuickAccessPage from "./QuickAccessPage";
@@ -57,6 +69,12 @@ export default function MyWorkspacePage() {
     const timer = window.setTimeout(() => setDebouncedTodoSearch(todoSearch.trim()), 250);
     return () => window.clearTimeout(timer);
   }, [todoSearch]);
+
+  useEffect(() => {
+    if (searchParams.get("scope") === "outstanding") {
+      router.replace(myWorkspaceHref("policies", { inbox: "todo" }));
+    }
+  }, [router, searchParams]);
 
   useEffect(() => {
     const legacyTab = searchParams.get("tab");
@@ -134,10 +152,21 @@ export default function MyWorkspacePage() {
     [workPayload],
   );
 
+  const documentsSubview = resolveDocumentsSubview(lifecycle);
+
+  const documentsSubnavItems = useMemo(
+    () => [
+      { id: "active" as const, label: "Active", icon: FileText },
+      { id: "archived" as const, label: "Archived", icon: Archive },
+      { id: "recycle" as const, label: "Recycle bin", icon: Trash2 },
+    ],
+    [],
+  );
+
   const documentsView =
-    lifecycle === "archived"
+    documentsSubview === "archived"
       ? <DocumentLifecyclePage lifecycle="archived" embedded />
-      : lifecycle === "recycle"
+      : documentsSubview === "recycle"
         ? <DocumentLifecyclePage lifecycle="recycle_bin" embedded />
         : scope === "quick-access"
           ? <QuickAccessPage embedded />
@@ -188,7 +217,24 @@ export default function MyWorkspacePage() {
       {tab === "todo" ? (
         <WorkspaceTodoTab payload={workPayload} loading={workLoading} />
       ) : null}
-      {tab === "documents" ? documentsView : null}
+      {tab === "documents" ? (
+        <div className="space-y-4">
+          <SectionTabs
+            items={documentsSubnavItems}
+            value={documentsSubview}
+            onChange={(next: DocumentsSubview) => {
+              if (next === "active") {
+                router.replace(myWorkspaceHref("documents"));
+                return;
+              }
+              router.replace(myWorkspaceHref(next));
+            }}
+            level="nested"
+            ariaLabel="My documents views"
+          />
+          {documentsView}
+        </div>
+      ) : null}
       {tab === "policies" ? <WorkspacePoliciesTab /> : null}
       {tab === "requests" ? <WorkspaceMyRequestsTab /> : null}
       {tab === "activity" ? <ActivityPage embedded /> : null}

@@ -60,7 +60,14 @@ export default function AppSelect({
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(-1);
-  const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [menuStyle, setMenuStyle] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    width: number;
+    maxHeight: number;
+    placement: "above" | "below";
+  } | null>(null);
 
   const stringValue = value === "" || value == null ? "" : String(value);
 
@@ -83,16 +90,57 @@ export default function AppSelect({
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
     const gap = 6;
+    const margin = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const width = Math.min(
+      Math.max(rect.width, variant === "chip" ? rect.width : 220),
+      vw - margin * 2,
+    );
+
+    let left = rect.left;
+    if (left + width > vw - margin) left = vw - width - margin;
+    left = Math.max(margin, left);
+
+    const menuEl = menuRef.current;
+    const measuredHeight = menuEl?.getBoundingClientRect().height ?? 0;
+    const estimatedHeight = Math.min(
+      Math.max(options.length, 1) * 40 + 16,
+      320,
+    );
+    const menuHeight = measuredHeight > 0 ? measuredHeight : estimatedHeight;
+
+    const spaceBelow = vh - rect.bottom - gap - margin;
+    const spaceAbove = rect.top - gap - margin;
+    const openAbove = menuHeight > spaceBelow && spaceAbove > spaceBelow;
+
+    if (openAbove) {
+      const maxHeight = Math.max(120, Math.min(320, spaceAbove));
+      setMenuStyle({
+        bottom: vh - rect.top + gap,
+        left,
+        width,
+        maxHeight,
+        placement: "above",
+      });
+      return;
+    }
+
+    const maxHeight = Math.max(120, Math.min(320, spaceBelow));
     setMenuStyle({
       top: rect.bottom + gap,
-      left: rect.left,
-      width: Math.max(rect.width, variant === "chip" ? rect.width : 220),
+      left,
+      width,
+      maxHeight,
+      placement: "below",
     });
-  }, [variant]);
+  }, [options.length, variant]);
 
   useLayoutEffect(() => {
     if (!open) return;
     positionMenu();
+    const frame = requestAnimationFrame(() => positionMenu());
+    return () => cancelAnimationFrame(frame);
   }, [open, positionMenu, options.length]);
 
   useEffect(() => {
@@ -212,11 +260,13 @@ export default function AppSelect({
         ? createPortal(
             <div
               ref={menuRef}
-              className="app-select-menu"
+              className={`app-select-menu app-select-menu--${menuStyle.placement}`}
               style={{
                 top: menuStyle.top,
+                bottom: menuStyle.bottom,
                 left: menuStyle.left,
                 width: menuStyle.width,
+                maxHeight: menuStyle.maxHeight,
               }}
               role="presentation"
             >

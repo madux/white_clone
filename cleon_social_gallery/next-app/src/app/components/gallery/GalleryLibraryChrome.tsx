@@ -1,22 +1,11 @@
 "use client";
 
 import type { GalleryAlbum, LayoutMode } from "@/lib/types";
-import {
-  ArrowDownUp,
-  LayoutGrid,
-  List,
-  Plus,
-  Search,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ArrowDownUp, Plus, Search } from "lucide-react";
 import AppSelect from "../shared/AppSelect";
+import { GalleryViewToggle } from "./GalleryViewToggle";
 
 export type GalleryStatusFilter = "" | "approved" | "pending" | "rejected";
-
-const VIEW_MODES: { id: LayoutMode; label: string; icon: LucideIcon }[] = [
-  { id: "grid", label: "Cards", icon: LayoutGrid },
-  { id: "list", label: "List", icon: List },
-];
 
 const SORT_LABELS: Record<string, string> = {
   newest: "Newest Added",
@@ -117,25 +106,7 @@ export function GalleryLibraryChrome({
           />
         </div>
 
-        <div className="gallery-view-toggle gallery-view-toggle--library" role="group" aria-label="Gallery view mode">
-          {VIEW_MODES.map((mode) => {
-            const active = layout === mode.id;
-            const Icon = mode.icon;
-            return (
-              <button
-                key={mode.id}
-                type="button"
-                className={active ? "active" : ""}
-                onClick={() => onLayoutChange(mode.id)}
-                aria-pressed={active}
-                aria-label={`${mode.label} view`}
-              >
-                <Icon size={18} strokeWidth={2} aria-hidden />
-                <span className="gallery-view-toggle-label">{mode.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        <GalleryViewToggle layout={layout} onLayoutChange={onLayoutChange} />
       </section>
 
       <section className="gallery-album-bar" aria-label="Album filter">
@@ -144,6 +115,31 @@ export function GalleryLibraryChrome({
           <span className="gallery-showing-count">
             <strong>{shown}</strong> / <strong>{total}</strong>
           </span>
+        </div>
+        <div className="gallery-album-dropdown-row">
+          <AppSelect
+            variant="chip"
+            className="gallery-album-dropdown"
+            chipPrefix="Album"
+            value={albumFilterId == null ? "" : String(albumFilterId)}
+            displayValue={
+              albumFilterId == null
+                ? "All albums"
+                : albums.find((a) => a.id === albumFilterId)?.name || "Album"
+            }
+            options={[
+              { value: "", label: "All albums" },
+              ...albums.map((album) => ({ value: String(album.id), label: album.name })),
+            ]}
+            onChange={(value) => onAlbumFilter(value ? Number(value) : null)}
+            ariaLabel="Filter by album"
+          />
+          {onCreateAlbum && (
+            <button type="button" className="gallery-album-new-mobile" onClick={onCreateAlbum}>
+              <Plus size={16} aria-hidden />
+              New
+            </button>
+          )}
         </div>
         <div className="gallery-album-pills-scroll">
           <div className="gallery-album-pills">

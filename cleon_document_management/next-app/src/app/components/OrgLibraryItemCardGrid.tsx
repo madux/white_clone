@@ -94,13 +94,15 @@ function OrgLibraryItemCard({
   return (
     <article
       className={cn(
-        "group relative flex h-full min-h-[220px] flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white via-white to-slate-50/80 shadow-sm ring-1 ring-black/[0.03] transition duration-200",
-        "hover:-translate-y-0.5 hover:border-slate-300/90 hover:shadow-md hover:shadow-slate-200/60",
+        "group relative flex h-full min-h-[220px] flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white via-white to-slate-50/80 shadow-sm ring-1 ring-black/[0.03]",
         !isFolder && "hover:border-primary/25",
       )}
       style={folderAccent}
     >
-      <div className="flex h-10 shrink-0 items-center justify-between gap-2 px-3">
+      <div
+        className="relative z-20 flex h-10 shrink-0 items-center justify-between gap-2 px-3"
+        onPointerDown={(event) => event.stopPropagation()}
+      >
         {selectable && row.onSelectChange ? (
           <Checkbox
             checked={row.selected}
@@ -115,13 +117,20 @@ function OrgLibraryItemCard({
         <div
           className="flex min-h-8 shrink-0 items-center justify-end gap-1 opacity-100 sm:opacity-70 sm:group-hover:opacity-100"
           onClick={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
         >
           {row.extra}
           {row.actions}
         </div>
       </div>
 
-      <CardMain row={row}>
+      <div
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col transition duration-200",
+          "hover:-translate-y-0.5 hover:border-slate-300/90 hover:shadow-md hover:shadow-slate-200/60",
+        )}
+      >
+      <CardMain row={row} className="flex-1">
         <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
           <div className="flex shrink-0 justify-center pt-0.5">
             <div
@@ -179,6 +188,7 @@ function OrgLibraryItemCard({
           )}
         </div>
       </CardMain>
+      </div>
     </article>
   );
 }

@@ -2,7 +2,7 @@
 
 import { Upload } from "lucide-react";
 import Link from "next/link";
-import { useMyWorkspace } from "../../../hooks/useDocuments";
+import { useMyCompliance, useMyWorkspace } from "../../../hooks/useDocuments";
 import { formatStatusLabel } from "../../../lib/formatLabel";
 import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
 
@@ -12,8 +12,11 @@ export default function EmployeeDashboard({
   showActivity?: boolean;
 }) {
   const workspace = useMyWorkspace();
+  const compliance = useMyCompliance();
   const data = workspace.data;
-  const outstanding = data?.outstanding ?? [];
+  const policyTodo = compliance.data?.inbox?.todo ?? [];
+  const policyTodoCount =
+    compliance.data?.inbox_summary?.todo ?? policyTodo.length;
   const myFiles = data?.my_files ?? [];
   const shared = data?.shared_documents ?? [];
   const recent = [...myFiles, ...shared].slice(0, 12);
@@ -87,8 +90,10 @@ export default function EmployeeDashboard({
           <strong>{workspace.isLoading ? "—" : data?.dashboard.total ?? 0}</strong>
         </div>
         <div className="app-page-metric">
-          <span>Outstanding</span>
-          <strong>{workspace.isLoading ? "—" : outstanding.length}</strong>
+          <span>Policy to do</span>
+          <strong>
+            {compliance.isLoading ? "—" : policyTodoCount}
+          </strong>
         </div>
         <div className="app-page-metric">
           <span>Pending review</span>
@@ -139,20 +144,17 @@ export default function EmployeeDashboard({
             </tr>
           </thead>
           <tbody>
-            {outstanding.length ? (
-              outstanding.slice(0, 8).map((document) => (
-                <tr key={document.id}>
-                  <td className="font-semibold">{document.name}</td>
-                  <td>{document.document_type}</td>
+            {policyTodo.length ? (
+              policyTodo.slice(0, 8).map((item) => (
+                <tr key={item.id}>
+                  <td className="font-semibold">{item.title}</td>
+                  <td>{item.document_type || item.policy}</td>
                   <td>
                     <Link
-                      href={myWorkspaceHref("documents", {
-                        upload: "1",
-                        type: String(document.document_type_id),
-                      })}
+                      href={myWorkspaceHref("policies", { inbox: "todo" })}
                       className="font-semibold text-brand-pink"
                     >
-                      Upload
+                      Open in Policies
                     </Link>
                   </td>
                 </tr>
@@ -160,7 +162,7 @@ export default function EmployeeDashboard({
             ) : (
               <tr>
                 <td colSpan={3} className="text-slate-500">
-                  No outstanding requirements.
+                  No policy requirements in your to do list.
                 </td>
               </tr>
             )}

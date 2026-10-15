@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, LoaderCircle, Trash2, UploadCloud } from "lucide-react";
+import { Camera, Check, FolderOpen, LoaderCircle, Trash2, UploadCloud } from "lucide-react";
 import type { GalleryAlbum } from "@/lib/types";
 import { api } from "@/lib/api";
 import AppSelect from "../shared/AppSelect";
 import { ModalShell } from "../shared/ModalShell";
+import { useGalleryMobile } from "@/hooks/useMediaQuery";
 
 type QueueItem = {
   id: string;
@@ -45,6 +46,9 @@ export default function UploadModal({
   onComplete: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraPhotoRef = useRef<HTMLInputElement>(null);
+  const cameraVideoRef = useRef<HTMLInputElement>(null);
+  const isMobile = useGalleryMobile();
   const sessionRef = useRef<number | null>(null);
   const cancelRef = useRef(false);
   const [queue, setQueue] = useState<QueueItem[]>([]);
@@ -56,6 +60,7 @@ export default function UploadModal({
   const [error, setError] = useState("");
   const [duplicateItemId, setDuplicateItemId] = useState<string | null>(null);
   const [resumeIndex, setResumeIndex] = useState(0);
+  const [showCameraOptions, setShowCameraOptions] = useState(false);
 
   const addFiles = (files: File[]) => {
     const accepted = files.filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"));
@@ -214,38 +219,145 @@ export default function UploadModal({
           </div>
         )}
 
-        <button
-          type="button"
-          className="file-dropzone"
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => {
-            event.preventDefault();
-            addFiles(Array.from(event.dataTransfer.files));
-          }}
-          disabled={uploading}
-        >
-          <div className="file-drop-icon">
-            {queue.length ? <Check size={22} /> : <UploadCloud size={22} />}
+        {isMobile ? (
+          <div className="upload-mobile-pickers">
+            {queue.length > 0 && (
+              <p className="upload-mobile-queue-summary">
+                <Check size={16} aria-hidden />
+                {queue.length} file{queue.length === 1 ? "" : "s"} ready to upload
+              </p>
+            )}
+            {showCameraOptions ? (
+              <div className="upload-camera-options" role="group" aria-label="Camera capture">
+                <button
+                  type="button"
+                  className="upload-mobile-picker upload-mobile-picker--compact"
+                  disabled={uploading}
+                  onClick={() => {
+                    cameraPhotoRef.current?.click();
+                    setShowCameraOptions(false);
+                  }}
+                >
+                  <Camera size={20} aria-hidden />
+                  <strong>Take photo</strong>
+                </button>
+                <button
+                  type="button"
+                  className="upload-mobile-picker upload-mobile-picker--compact"
+                  disabled={uploading}
+                  onClick={() => {
+                    cameraVideoRef.current?.click();
+                    setShowCameraOptions(false);
+                  }}
+                >
+                  <Camera size={20} aria-hidden />
+                  <strong>Record video</strong>
+                </button>
+                <button
+                  type="button"
+                  className="text-button upload-camera-back"
+                  onClick={() => setShowCameraOptions(false)}
+                >
+                  Back
+                </button>
+              </div>
+            ) : (
+              <div className="upload-mobile-picker-grid">
+                <button
+                  type="button"
+                  className="upload-mobile-picker"
+                  disabled={uploading}
+                  onClick={() => setShowCameraOptions(true)}
+                >
+                  <Camera size={22} aria-hidden />
+                  <strong>Camera</strong>
+                  <span>Take photo or video</span>
+                </button>
+                <button
+                  type="button"
+                  className="upload-mobile-picker"
+                  disabled={uploading}
+                  onClick={() => inputRef.current?.click()}
+                >
+                  <FolderOpen size={22} aria-hidden />
+                  <strong>Choose files</strong>
+                  <span>From your device</span>
+                </button>
+              </div>
+            )}
+            {!showCameraOptions && (
+              <p className="meta-muted upload-mobile-picker-hint">
+                Use Camera to capture now, or Choose files to pick from your gallery or files app.
+              </p>
+            )}
+            <input
+              ref={cameraPhotoRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={(e) => {
+                addFiles(Array.from(e.target.files || []));
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={cameraVideoRef}
+              type="file"
+              accept="video/*"
+              capture="environment"
+              hidden
+              onChange={(e) => {
+                addFiles(Array.from(e.target.files || []));
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              hidden
+              onChange={(e) => {
+                addFiles(Array.from(e.target.files || []));
+                e.target.value = "";
+              }}
+            />
           </div>
-          <strong>
-            {queue.length
-              ? `${queue.length} file${queue.length === 1 ? "" : "s"} selected`
-              : "Drop files or click to browse"}
-          </strong>
-          <span>Photos and videos supported · select multiple</span>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            hidden
-            onChange={(e) => {
-              addFiles(Array.from(e.target.files || []));
-              e.target.value = "";
+        ) : (
+          <button
+            type="button"
+            className="file-dropzone"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              addFiles(Array.from(event.dataTransfer.files));
             }}
-          />
-        </button>
+            disabled={uploading}
+          >
+            <div className="file-drop-icon">
+              {queue.length ? <Check size={22} /> : <UploadCloud size={22} />}
+            </div>
+            <strong>
+              {queue.length
+                ? `${queue.length} file${queue.length === 1 ? "" : "s"} selected`
+                : "Drop files or click to browse"}
+            </strong>
+            <span>Photos and videos supported · select multiple</span>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              hidden
+              onChange={(e) => {
+                addFiles(Array.from(e.target.files || []));
+                e.target.value = "";
+              }}
+            />
+          </button>
+        )}
 
         {!employeeMode && !lockedAlbumId && (
           <div className="upload-defaults">

@@ -64,9 +64,7 @@ class DocumentaryRoleService(models.AbstractModel):
         }
 
     @api.model
-    def list_members(self, search="", limit=50):
-        self._require_role_admin()
-        self.env["documentary.role.definition"].sync_registry()
+    def _member_search_domain(self, search=""):
         domain = self._company_employee_domain()
         if search:
             domain = [
@@ -78,12 +76,51 @@ class DocumentaryRoleService(models.AbstractModel):
                 ("work_email", "ilike", search),
                 ("user_id.login", "ilike", search),
             ]
-        employees = (
-            self.env["hr.employee"]
-            .sudo()
-            .search(domain, order="name", limit=min(int(limit or 50), 200))
+        return domain
+
+    @api.model
+    def _member_tier_from_roles(self, roles):
+        if roles.get("admin"):
+            return "administrator"
+        if roles.get("manager"):
+            return "supervisor"
+        return "employee"
+
+    @api.model
+    def list_member_stats(self):
+        self._require_role_admin()
+        self.env["documentary.role.definition"].sync_registry()
+        employees = self.env["hr.employee"].sudo().search(
+            self._member_search_domain(),
+            order="name",
         )
-        return [self._serialize_member(employee) for employee in employees]
+        counts = {"administrator": 0, "supervisor": 0, "employee": 0}
+        for employee in employees:
+            tier = self._member_tier_from_roles(self._serialize_member(employee)["roles"])
+            counts[tier] += 1
+        return {"total": len(employees), **counts}
+
+    @api.model
+    def list_members(self, search="", limit=5, offset=0):
+        self._require_role_admin()
+        self.env["documentary.role.definition"].sync_registry()
+        domain = self._member_search_domain(search)
+        page_limit = min(max(int(limit or 5), 1), 100)
+        page_offset = max(int(offset or 0), 0)
+        Employee = self.env["hr.employee"].sudo()
+        total = Employee.search_count(domain)
+        employees = Employee.search(
+            domain,
+            order="name",
+            limit=page_limit,
+            offset=page_offset,
+        )
+        return {
+            "items": [self._serialize_member(employee) for employee in employees],
+            "total": total,
+            "limit": page_limit,
+            "offset": page_offset,
+        }
 
     @api.model
     def _definition_for(self, role_key):

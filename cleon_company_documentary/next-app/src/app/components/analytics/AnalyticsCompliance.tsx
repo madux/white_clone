@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useDocumentaryCompliance } from "../../../../hooks/useDocumentary";
+import { useMediaQuery } from "../../../../hooks/useMediaQuery";
 import type {
   ComplianceMandatoryFilter,
   ComplianceRow,
@@ -124,6 +125,8 @@ export function AnalyticsCompliance({
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
+  const [mobileScreen, setMobileScreen] = useState<"library" | "detail">("library");
+  const isMobile = useMediaQuery("(max-width: 850px)");
   const pageSize = 10;
 
   useEffect(() => {
@@ -168,16 +171,18 @@ export function AnalyticsCompliance({
     ],
   );
 
-  const libraryQuery = useDocumentaryCompliance(
-    {
+  const libraryFilters = useMemo(
+    () => ({
       ...(departmentId ? { department_id: departmentId } : {}),
       ...(folderId ? { folder_id: folderId } : {}),
       mandatory,
       page: 1,
-      page_size: 1,
-    },
-    true,
+      page_size: pageSize,
+    }),
+    [departmentId, folderId, mandatory, pageSize],
   );
+
+  const libraryQuery = useDocumentaryCompliance(libraryFilters, true);
 
   const detailQuery = useDocumentaryCompliance(filters, !!selectedMediaId);
   const library = libraryQuery.data?.library ?? [];
@@ -188,6 +193,7 @@ export function AnalyticsCompliance({
     : 1;
 
   useEffect(() => {
+    if (isMobile) return;
     if (selectedMediaId) return;
     const firstVideo = library[0]?.videos[0];
     if (firstVideo) {
@@ -197,7 +203,20 @@ export function AnalyticsCompliance({
         [library[0].folder_id]: true,
       }));
     }
-  }, [library, selectedMediaId]);
+  }, [isMobile, library, selectedMediaId]);
+
+  useEffect(() => {
+    if (!isMobile) setMobileScreen("library");
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (isMobile) setMobileScreen("library");
+  }, [departmentId, folderId, mandatory, isMobile]);
+
+  function selectVideo(mediaId: number) {
+    setSelectedMediaId(mediaId);
+    if (isMobile) setMobileScreen("detail");
+  }
 
   useEffect(() => {
     setPage(1);
@@ -210,9 +229,229 @@ export function AnalyticsCompliance({
     }));
   }
 
+  const libraryPanel = (
+    <aside className="analytics-panel compliance-library-panel">
+      <div className="analytics-panel-heading">
+        <div>
+          <h3>Video library</h3>
+          <p>{isMobile ? "Tap a video to view employee compliance." : "Browse folders and select a video to inspect employee compliance."}</p>
+        </div>
+      </div>
+      {libraryQuery.isLoading ? (
+        <div className="analytics-loading inline">Loading library…</div>
+      ) : !library.length ? (
+        <p className="sidebar-empty">No videos match the current filters.</p>
+      ) : isMobile ? (
+        <div className="compliance-mobile-library">
+          {library.map((folder) => (
+            <section key={folder.folder_id} className="compliance-mobile-folder">
+              <h4>{folder.folder_name}</h4>
+              <ul>
+                {folder.videos.map((video) => (
+                  <li key={video.media_id}>
+                    <button
+                      type="button"
+                      className={`compliance-video-row${selectedMediaId === video.media_id ? " selected" : ""}`}
+                      onClick={() => selectVideo(video.media_id)}
+                    >
+                      <Video size={14} />
+                      <div className="compliance-video-copy">
+                        <strong>{video.title}</strong>
+                        <div className="compliance-video-meta">
+                          <span
+                            className={
+                              video.mandatory
+                                ? "compliance-mandatory-pill"
+                                : "compliance-optional-pill"
+                            }
+                          >
+                            {video.mandatory ? "Mandatory" : "Optional"}
+                          </span>
+                          <span>{video.completed_count}/{video.audience_count} completed</span>
+                        </div>
+                        <div className="compliance-mini-progress">
+                          <i style={{ width: `${video.completion_rate}%` }} />
+                        </div>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <div className="compliance-folder-accordion">
+          {library.map((folder) => {
+            const expanded = expandedFolders[folder.folder_id] ?? true;
+            return (
+              <div className="compliance-folder-block" key={folder.folder_id}>
+                <button
+                  type="button"
+                  className="compliance-folder-header"
+                  onClick={() => toggleFolder(folder.folder_id)}
+                >
+                  <Folder size={15} />
+                  <span>{folder.folder_name}</span>
+                  <small>{folder.videos.length}</small>
+                  <ChevronDown size={15} className={expanded ? "expanded" : ""} />
+                </button>
+                {expanded && (
+                  <div className="compliance-video-list">
+                    {folder.videos.map((video) => (
+                      <button
+                        key={video.media_id}
+                        type="button"
+                        className={`compliance-video-row${selectedMediaId === video.media_id ? " selected" : ""}`}
+                        onClick={() => selectVideo(video.media_id)}
+                      >
+                        <Video size={14} />
+                        <div className="compliance-video-copy">
+                          <strong>{video.title}</strong>
+                          <div className="compliance-video-meta">
+                            <span
+                              className={
+                                video.mandatory
+                                  ? "compliance-mandatory-pill"
+                                  : "compliance-optional-pill"
+                              }
+                            >
+                              {video.mandatory ? "Mandatory" : "Optional"}
+                            </span>
+                            <span>{video.completed_count}/{video.audience_count} completed</span>
+                          </div>
+                          <div className="compliance-mini-progress">
+                            <i style={{ width: `${video.completion_rate}%` }} />
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </aside>
+  );
+
+  const detailPanel = (
+    <section className="analytics-panel table-panel compliance-detail-panel">
+      {isMobile ? (
+        <button
+          type="button"
+          className="compliance-mobile-back"
+          onClick={() => setMobileScreen("library")}
+        >
+          <ChevronLeft size={18} aria-hidden />
+          Video library
+        </button>
+      ) : null}
+      {!selectedMediaId || !videoSummary ? (
+        <div className="analytics-loading inline">
+          {isMobile ? "Choose a video from the library." : "Select a video from the library to view employee compliance."}
+        </div>
+      ) : (
+        <>
+          <div className="compliance-detail-header">
+            <div>
+              <h3>{videoSummary.title}</h3>
+              <p>
+                {videoSummary.mandatory ? "Mandatory training" : "Optional training"} ·{" "}
+                {videoSummary.completion_threshold}% required to complete ·{" "}
+                {videoSummary.audience_count} employees in scope
+              </p>
+            </div>
+            <ComplianceDonut video={videoSummary} />
+          </div>
+
+          <label className="compliance-search">
+            <Search size={15} />
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Search employee or department"
+            />
+          </label>
+
+          <div className="analytics-panel-heading compact">
+            <div>
+              <h3>Employee roster</h3>
+              <p>{pageSize} employees per page for this video.</p>
+            </div>
+            {data && (
+              <span className="form-hint">
+                Showing {data.rows.length} of {data.total.toLocaleString()}
+              </span>
+            )}
+          </div>
+
+          {detailQuery.isLoading ? (
+            <div className="analytics-loading inline">Loading employees…</div>
+          ) : isMobile ? (
+            <ul className="compliance-mobile-roster">
+              {data?.rows.map((row) => (
+                <ComplianceEmployeeCard key={row.employee_id} row={row} />
+              ))}
+              {!data?.rows.length && (
+                <li className="sidebar-empty">No employees match this search.</li>
+              )}
+            </ul>
+          ) : (
+            <div className="analytics-table-wrap">
+              <table className="analytics-table compliance-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th>Completion</th>
+                    <th>Last watched</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data?.rows.map((row) => (
+                    <ComplianceEmployeeRow key={row.employee_id} row={row} />
+                  ))}
+                </tbody>
+              </table>
+              {!data?.rows.length && (
+                <p className="sidebar-empty">No employees match this search.</p>
+              )}
+            </div>
+          )}
+
+          {data && data.total > pageSize && (
+            <div className="compliance-pagination">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={page <= 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+              >
+                <ChevronLeft size={15} /> Previous
+              </button>
+              <span>Page {page} of {totalPages}</span>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              >
+                Next <ChevronRight size={15} />
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+
   return (
-    <div className="analytics-tab-content">
-      <div className="compliance-summary-grid">
+    <div className={`analytics-tab-content${isMobile ? " is-mobile-compliance" : ""}`}>
+      <div className={`compliance-summary-grid${isMobile ? " is-compact" : ""}`}>
         {[
           ["Eligible assignments", libraryQuery.data?.summary.eligible_assignments],
           ["Completed", libraryQuery.data?.summary.completed],
@@ -262,169 +501,36 @@ export function AnalyticsCompliance({
         </label>
       </div>
 
-      <div className="compliance-library-layout">
-        <aside className="analytics-panel compliance-library-panel">
-          <div className="analytics-panel-heading">
-            <div>
-              <h3>Video library</h3>
-              <p>Browse folders and select a video to inspect employee compliance.</p>
-            </div>
-          </div>
-          {libraryQuery.isLoading ? (
-            <div className="analytics-loading inline">Loading library…</div>
-          ) : !library.length ? (
-            <p className="sidebar-empty">No videos match the current filters.</p>
-          ) : (
-            <div className="compliance-folder-accordion">
-              {library.map((folder) => {
-                const expanded = expandedFolders[folder.folder_id] ?? true;
-                return (
-                  <div className="compliance-folder-block" key={folder.folder_id}>
-                    <button
-                      type="button"
-                      className="compliance-folder-header"
-                      onClick={() => toggleFolder(folder.folder_id)}
-                    >
-                      <Folder size={15} />
-                      <span>{folder.folder_name}</span>
-                      <small>{folder.videos.length}</small>
-                      <ChevronDown
-                        size={15}
-                        className={expanded ? "expanded" : ""}
-                      />
-                    </button>
-                    {expanded && (
-                      <div className="compliance-video-list">
-                        {folder.videos.map((video) => (
-                          <button
-                            key={video.media_id}
-                            type="button"
-                            className={`compliance-video-row${selectedMediaId === video.media_id ? " selected" : ""}`}
-                            onClick={() => setSelectedMediaId(video.media_id)}
-                          >
-                            <Video size={14} />
-                            <div className="compliance-video-copy">
-                              <strong>{video.title}</strong>
-                              <div className="compliance-video-meta">
-                                <span
-                                  className={
-                                    video.mandatory
-                                      ? "compliance-mandatory-pill"
-                                      : "compliance-optional-pill"
-                                  }
-                                >
-                                  {video.mandatory ? "Mandatory" : "Optional"}
-                                </span>
-                                <span>{video.completed_count}/{video.audience_count} completed</span>
-                              </div>
-                              <div className="compliance-mini-progress">
-                                <i style={{ width: `${video.completion_rate}%` }} />
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </aside>
-
-        <section className="analytics-panel table-panel compliance-detail-panel">
-          {!selectedMediaId || !videoSummary ? (
-            <div className="analytics-loading inline">
-              Select a video from the library to view employee compliance.
-            </div>
-          ) : (
-            <>
-              <div className="compliance-detail-header">
-                <div>
-                  <h3>{videoSummary.title}</h3>
-                  <p>
-                    {videoSummary.mandatory ? "Mandatory training" : "Optional training"} ·{" "}
-                    {videoSummary.completion_threshold}% required to complete ·{" "}
-                    {videoSummary.audience_count} employees in scope
-                  </p>
-                </div>
-                <ComplianceDonut video={videoSummary} />
-              </div>
-
-              <label className="compliance-search">
-                <Search size={15} />
-                <input
-                  type="search"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Search employee or department"
-                />
-              </label>
-
-              <div className="analytics-panel-heading compact">
-                <div>
-                  <h3>Employee roster</h3>
-                  <p>First {pageSize} employees per page for this video.</p>
-                </div>
-                {data && (
-                  <span className="form-hint">
-                    Showing {data.rows.length} of {data.total.toLocaleString()}
-                  </span>
-                )}
-              </div>
-
-              {detailQuery.isLoading ? (
-                <div className="analytics-loading inline">Loading employees…</div>
-              ) : (
-                <div className="analytics-table-wrap">
-                  <table className="analytics-table compliance-table">
-                    <thead>
-                      <tr>
-                        <th>Employee</th>
-                        <th>Department</th>
-                        <th>Status</th>
-                        <th>Completion</th>
-                        <th>Last watched</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data?.rows.map((row) => (
-                        <ComplianceEmployeeRow key={row.employee_id} row={row} />
-                      ))}
-                    </tbody>
-                  </table>
-                  {!data?.rows.length && (
-                    <p className="sidebar-empty">No employees match this search.</p>
-                  )}
-                </div>
-              )}
-
-              {data && data.total > pageSize && (
-                <div className="compliance-pagination">
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    disabled={page <= 1}
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                  >
-                    <ChevronLeft size={15} /> Previous
-                  </button>
-                  <span>Page {page} of {totalPages}</span>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                  >
-                    Next <ChevronRight size={15} />
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </section>
+      <div className={`compliance-library-layout${isMobile ? " is-mobile" : ""}`}>
+        {isMobile ? (
+          mobileScreen === "library" ? libraryPanel : detailPanel
+        ) : (
+          <>
+            {libraryPanel}
+            {detailPanel}
+          </>
+        )}
       </div>
     </div>
+  );
+}
+
+function ComplianceEmployeeCard({ row }: { row: ComplianceRow }) {
+  return (
+    <li className="compliance-employee-card">
+      <div className="compliance-employee-card-head">
+        <strong>{row.employee_name}</strong>
+        <StatusBadge status={row.status} />
+      </div>
+      <p className="compliance-employee-card-dept">{row.department_name}</p>
+      <div className="table-progress compliance-employee-card-progress">
+        <i style={{ width: `${row.completion_percent}%` }} />
+        <span>{row.completion_percent.toFixed(1)}%</span>
+      </div>
+      <p className="compliance-employee-card-meta">
+        Last watched: {formatWhen(row.last_watched_at)}
+      </p>
+    </li>
   );
 }
 

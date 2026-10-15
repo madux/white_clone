@@ -140,7 +140,6 @@ export default function HeaderPrimaryAction() {
     const onMyFilesTab =
       onDocuments &&
       scope !== "shared" &&
-      scope !== "outstanding" &&
       scope !== "needs_ack" &&
       params.get("ack") !== "needs";
 

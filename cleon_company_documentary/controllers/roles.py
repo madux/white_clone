@@ -22,12 +22,27 @@ class CompanyDocumentaryRolesController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def members(self, search="", limit=50, **kwargs):
+    def members(self, search="", limit=5, offset=0, **kwargs):
         service = request.env["documentary.role.service"].sudo()
         return {
             "success": True,
-            "data": service.list_members(search=search or "", limit=limit),
+            "data": service.list_members(
+                search=search or "",
+                limit=limit,
+                offset=offset,
+            ),
         }
+
+    @http.route(
+        "/api/company-documentary/roles/member-stats",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def member_stats(self, **kwargs):
+        service = request.env["documentary.role.service"].sudo()
+        return {"success": True, "data": service.list_member_stats()}
 
     @http.route(
         "/api/company-documentary/roles/assign",

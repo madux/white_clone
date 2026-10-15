@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, LoaderCircle, Save, Settings2, X } from "lucide-react";
+import { Check, ChevronLeft, LoaderCircle, Save, Settings2, X } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useMediaQuery } from "../../../../hooks/useMediaQuery";
 import type { DocumentarySettings } from "../../../../lib/types";
 import { api } from "../../../../lib/api";
 import {
@@ -13,6 +14,7 @@ import {
   DocumentarySettingsSidebar,
   type DocumentarySettingsSidebarGroup,
 } from "./DocumentarySettingsSidebar";
+import { DocumentarySettingsMobileMenu } from "./DocumentarySettingsMobileMenu";
 
 type SettingsSection = "general" | "uploads" | "retention" | "roles";
 
@@ -129,6 +131,8 @@ export function DocumentarySettingsPage({
   isSystemAdmin?: boolean;
 }) {
   const canConfigure = isDocumentaryAdmin || isSystemAdmin;
+  const isCompactSettings = useMediaQuery("(max-width: 1023px)");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(true);
   const query = useDocumentarySettings(true);
   const save = useSaveDocumentarySettings();
   const [section, setSection] = useState<SettingsSection>("general");
@@ -200,15 +204,26 @@ export function DocumentarySettingsPage({
   }
 
   const loading = query.isLoading && !form;
+  const activeSectionLabel =
+    SECTION_DEFS.find((item) => item.id === section)?.label || "Settings";
+
+  function selectSection(id: SettingsSection) {
+    setSection(id);
+    if (isCompactSettings) setMobileMenuOpen(false);
+  }
 
   return (
     <div className="analytics-backdrop is-fullscreen documentary-settings-backdrop" role="dialog" aria-modal="true">
-      <div className="analytics-shell documentary-settings-shell font-sans">
+      <div
+        className={`analytics-shell documentary-settings-shell font-sans${isCompactSettings ? " is-compact" : ""}`}
+      >
         <header className="documentary-settings-header">
           <div>
             <p className="documentary-settings-eyebrow">Company Documentary</p>
             <h1>Settings</h1>
-            <p>Configure library policies, uploads, retention, and access.</p>
+            <p className="documentary-settings-subtitle">
+              Configure library policies, uploads, retention, and access.
+            </p>
           </div>
           <div className="modal-header-actions">
             {canConfigure && section !== "roles" && form ? (
@@ -229,15 +244,37 @@ export function DocumentarySettingsPage({
         </header>
 
         <div className="documentary-settings-body">
-          <DocumentarySettingsSidebar
-            groups={sidebarGroups}
-            activeId={section}
-            onSelect={(id) => setSection(id as SettingsSection)}
-            search={settingsFind}
-            onSearchChange={setSettingsFind}
-          />
+          {isCompactSettings && mobileMenuOpen ? (
+            <DocumentarySettingsMobileMenu
+              groups={sidebarGroups}
+              search={settingsFind}
+              onSearchChange={setSettingsFind}
+              onSelect={(id) => selectSection(id as SettingsSection)}
+            />
+          ) : (
+            <>
+              {!isCompactSettings ? (
+                <DocumentarySettingsSidebar
+                  groups={sidebarGroups}
+                  activeId={section}
+                  onSelect={(id) => selectSection(id as SettingsSection)}
+                  search={settingsFind}
+                  onSearchChange={setSettingsFind}
+                />
+              ) : null}
 
-          <main className="documentary-settings-main">
+              <main className="documentary-settings-main">
+                {isCompactSettings ? (
+                  <button
+                    type="button"
+                    className="documentary-settings-mobile-back"
+                    onClick={() => setMobileMenuOpen(true)}
+                  >
+                    <ChevronLeft size={18} aria-hidden />
+                    <span>All settings</span>
+                    <strong>{activeSectionLabel}</strong>
+                  </button>
+                ) : null}
             {loading ? (
               <div className="loading-state">
                 <LoaderCircle className="spin" size={24} />
@@ -414,7 +451,9 @@ export function DocumentarySettingsPage({
                 ) : null}
               </form>
             ) : null}
-          </main>
+              </main>
+            </>
+          )}
         </div>
       </div>
     </div>

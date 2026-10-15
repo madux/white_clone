@@ -16,6 +16,7 @@ import OrgLibraryItemCardGrid from "./OrgLibraryItemCardGrid";
 import { type LibraryFileRow } from "./LibraryFileTable";
 import StatusPill from "./StatusPill";
 import OrgFolderIcon from "./OrgFolderIcon";
+import OrganizationalPolicyAssignmentsBanner from "./OrganizationalPolicyAssignmentsBanner";
 
 function statusLabel(status: OrganizationalPolicy["lifecycle_status"]) {
   if (status === "active") return "Active";
@@ -186,9 +187,12 @@ export default function OrganizationalPoliciesPanel({
 
   return (
     <div className="space-y-4 p-4">
-      <p className="text-sm text-slate-500">
-        {items.length} {items.length === 1 ? "policy" : "policies"}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-slate-500">
+          {items.length} {items.length === 1 ? "policy" : "policies"}
+        </p>
+        <OrganizationalPolicyAssignmentsBanner />
+      </div>
       {canManageFolders && selectedFolderIds.length ? (
         <BulkFolderActions
           selected={selectedFolderIds}

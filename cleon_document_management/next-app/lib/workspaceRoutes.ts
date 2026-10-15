@@ -1,4 +1,23 @@
+import type { MyComplianceInboxTab } from "./types";
+
 export const MY_WORKSPACE_PATH = "/pages/my-workspace";
+
+export const COMPLIANCE_INBOX_TAB_IDS: MyComplianceInboxTab[] = [
+  "todo",
+  "waiting",
+  "done",
+  "coming_up",
+  "exceptions",
+];
+
+export function resolveComplianceInboxTab(
+  value: string | null | undefined,
+): MyComplianceInboxTab {
+  if (value && COMPLIANCE_INBOX_TAB_IDS.includes(value as MyComplianceInboxTab)) {
+    return value as MyComplianceInboxTab;
+  }
+  return "todo";
+}
 
 /** My Workspace primary tabs */
 export type WorkspaceTabId =
@@ -141,7 +160,10 @@ export function mapLegacyDocumentsParams(search: URLSearchParams) {
     next.set("tab", "documents");
     next.set("scope", "shared");
     next.set("ack", "needs");
-  } else if (tab === "shared" || tab === "files" || tab === "outstanding") {
+  } else if (tab === "outstanding" || search.get("scope") === "outstanding") {
+    next.set("tab", "policies");
+    next.set("inbox", "todo");
+  } else if (tab === "shared" || tab === "files") {
     next.set("tab", "documents");
     next.set("scope", tab);
   } else if (search.get("scope") === "needs_ack") {
@@ -154,7 +176,7 @@ export function mapLegacyDocumentsParams(search: URLSearchParams) {
   } else if (tab) {
     next.set("tab", tab);
   }
-  ["doc", "upload", "guide", "type", "lifecycle", "kind", "ack"].forEach((key) => {
+  ["doc", "upload", "guide", "type", "lifecycle", "kind", "ack", "inbox"].forEach((key) => {
     const value = search.get(key);
     if (value) next.set(key, value);
   });

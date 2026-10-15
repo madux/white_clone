@@ -12,6 +12,8 @@ import type {
   ModuleRoleAssignment,
   ModuleRoleDefinition,
   ModuleRoleMember,
+  ModuleRoleMemberPage,
+  ModuleRoleMemberStats,
   RecycleBinData,
   Tag,
   UploadInit,
@@ -243,11 +245,19 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: ModuleRoleDefinition[]; message?: string }>("/api/company-documentary/roles/definitions"));
   },
 
-  async roleMembers(search = "", limit = 50) {
+  async roleMembers(search = "", limit = 5, offset = 0) {
     return unwrap(
-      await rpc<{ success: boolean; data: ModuleRoleMember[]; message?: string }>(
+      await rpc<{ success: boolean; data: ModuleRoleMemberPage; message?: string }>(
         "/api/company-documentary/roles/members",
-        { search, limit },
+        { search, limit, offset },
+      ),
+    );
+  },
+
+  async roleMemberStats() {
+    return unwrap(
+      await rpc<{ success: boolean; data: ModuleRoleMemberStats; message?: string }>(
+        "/api/company-documentary/roles/member-stats",
       ),
     );
   },

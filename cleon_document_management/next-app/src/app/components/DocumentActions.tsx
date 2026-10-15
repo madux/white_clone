@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import type { DocDocument } from "../../../lib/types";
 import DocumentDetailsPanel from "./DocumentDetailsPanel";
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../../../lib/api";
 import {
   canArchiveEmployeeDocuments,
@@ -53,6 +54,7 @@ import {
 import { useComplianceTargets } from "../../../hooks/useDocuments";
 import ActionMenuCategory from "./ActionMenuCategory";
 import { ORG_ACTION_MENU_CATEGORIES } from "../../../lib/orgActionCatalog";
+import { positionActionMenu } from "../../../lib/positionActionMenu";
 
 export default function DocumentActions({
   documentId,
@@ -123,7 +125,10 @@ export default function DocumentActions({
   const showPolicyEmployeeAssign =
     organizational && Boolean(policyRegistryId) && document?.is_policy === true;
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const MENU_WIDTH = 224;
+  const MENU_HEIGHT_ESTIMATE = organizational ? 420 : 220;
   const [open, setOpen] = useState(false);
   const [manageAccessOpen, setManageAccessOpen] = useState(false);
   const [copyToOpen, setCopyToOpen] = useState(false);
@@ -135,23 +140,35 @@ export default function DocumentActions({
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignEmployeeIds, setAssignEmployeeIds] = useState<number[]>([]);
   const [automateOpen, setAutomateOpen] = useState(false);
-  const [position, setPosition] = useState({ top: 0, right: 0 });
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const canManage = canManageOrgDocuments(currentUser.data);
   const canManageAccess = canManageOrgDocumentAccess(currentUser.data);
   const canAutomate = organizational
     ? canManage
     : canAutomateEmployeeDocuments(currentUser.data);
 
-  useClickOutside(rootRef, () => setOpen(false));
-  useEffect(() => {
+  useClickOutside(menuRef, () => setOpen(false), [buttonRef]);
+
+  useLayoutEffect(() => {
     if (!open || !buttonRef.current) return;
-    const rect = buttonRef.current.getBoundingClientRect();
-    const menuHeight = organizational ? 420 : canArchive ? 220 : 180;
-    setPosition({
-      top: Math.max(12, Math.min(rect.top, window.innerHeight - menuHeight - 16)),
-      right: Math.max(12, window.innerWidth - rect.right),
-    });
-  }, [open, organizational, canArchive]);
+    const updatePosition = () => {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const menuEl = menuRef.current;
+      const width = menuEl?.offsetWidth || MENU_WIDTH;
+      const height = menuEl?.offsetHeight || MENU_HEIGHT_ESTIMATE;
+      setMenuPosition(positionActionMenu(rect, { width, height }));
+    };
+    updatePosition();
+    const raf = window.requestAnimationFrame(updatePosition);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, MENU_HEIGHT_ESTIMATE]);
 
   const guardOnline = async () => {
     if (online) return true;
@@ -208,7 +225,12 @@ export default function DocumentActions({
   };
 
   return (
-    <div ref={rootRef} onClick={(event) => event.stopPropagation()}>
+    <div
+      ref={rootRef}
+      className="relative text-left"
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
       <button
         ref={buttonRef}
         type="button"
@@ -219,10 +241,18 @@ export default function DocumentActions({
       >
         <Ellipsis className="h-5 w-5" />
       </button>
-      {open && (
+      {open &&
+        typeof window !== "undefined" &&
+        createPortal(
         <div
+          ref={menuRef}
           className="org-action-sheet fixed z-[100] w-56 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-2xl"
-          style={{ top: position.top, right: position.right, maxHeight: "70vh" }}
+          style={{
+            top: menuPosition.top,
+            left: menuPosition.left,
+            maxHeight: "min(70vh, calc(100vh - 24px))",
+          }}
+          onPointerDown={(event) => event.stopPropagation()}
         >
           <ActionMenuCategory label={ORG_ACTION_MENU_CATEGORIES.information} />
           <button type="button" onClick={() => { setDetailsOpen(true); setOpen(false); }} className="menu-item">
@@ -381,7 +411,8 @@ export default function DocumentActions({
               Check link
             </button>
           ) : null}
-        </div>
+        </div>,
+        window.document.body,
       )}
       {detailsOpen ? (
         <DocumentDetailsPanel

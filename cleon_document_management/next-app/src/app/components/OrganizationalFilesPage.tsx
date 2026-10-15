@@ -36,7 +36,6 @@ import OrgLibraryRootContents from "./OrgLibraryRootContents";
 import OrgLibraryDocumentsContents from "./OrgLibraryDocumentsContents";
 import OrganizationFolderPage from "./OrganizationFolderPage";
 import OrganizationalPoliciesPanel from "./OrganizationalPoliciesPanel";
-import OrganizationalLibraryAdminLinks from "./OrganizationalLibraryAdminLinks";
 import OrgLibraryFilterBar from "./OrgLibraryFilterBar";
 import AppToolbar from "./AppToolbar";
 
@@ -185,8 +184,6 @@ export default function OrganizationalFilesPage() {
           router.replace(query ? `${basePath}?${query}` : basePath);
         }}
       />
-
-      <OrganizationalLibraryAdminLinks />
 
       <div className="org-library-shell flex min-h-[min(72vh,52rem)] flex-col gap-4 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:gap-6 lg:p-5">
         <div className="w-full shrink-0 lg:w-60 xl:w-72">

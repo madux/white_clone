@@ -3,6 +3,7 @@
 import {
   AlertTriangle,
   Check,
+  ChevronLeft,
   Circle,
   Crown,
   LoaderCircle,
@@ -13,9 +14,11 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useMediaQuery } from "../../../hooks/useMediaQuery";
 import {
   useAssignModuleRoles,
   useModuleRoleDefinitions,
+  useModuleRoleMemberStats,
   useModuleRoleMembers,
 } from "../../../hooks/useModuleRoles";
 import {
@@ -33,6 +36,8 @@ import { RoleCapabilitiesMatrix } from "./RoleCapabilitiesMatrix";
 
 type RolesTab = "assignments" | "matrix";
 
+const MEMBER_PAGE_SIZE = 5;
+
 function RoleBadge({ tier }: { tier: DocumentaryRoleTier }) {
   return <span className={`roles-tier-badge roles-tier-badge--${tier}`}>{tierLabel(tier)}</span>;
 }
@@ -42,9 +47,14 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tab, setTab] = useState<RolesTab>("assignments");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+  const [selectedMemberRecord, setSelectedMemberRecord] = useState<ModuleRoleMember | null>(null);
+  const [page, setPage] = useState(1);
   const [draftRoles, setDraftRoles] = useState<ModuleRoleMember | null>(null);
   const [draftTier, setDraftTier] = useState<DocumentaryRoleTier | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const isCompactRoles = useMediaQuery("(max-width: 900px)");
+  const [mobileRolesPanel, setMobileRolesPanel] = useState<"list" | "detail">("list");
+  const compactRoles = embedded && isCompactRoles;
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
@@ -52,42 +62,69 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
   }, [search]);
 
   useModuleRoleDefinitions();
-  const rosterQuery = useModuleRoleMembers("", true, 200);
-  const membersQuery = useModuleRoleMembers(debouncedSearch, true, 200);
+  const memberOffset = (page - 1) * MEMBER_PAGE_SIZE;
+  const statsQuery = useModuleRoleMemberStats();
+  const membersQuery = useModuleRoleMembers(
+    debouncedSearch,
+    true,
+    MEMBER_PAGE_SIZE,
+    memberOffset,
+  );
   const assignMutation = useAssignModuleRoles();
 
-  const members = membersQuery.data || [];
-  const roster = rosterQuery.data || [];
+  const members = membersQuery.data?.items ?? [];
+  const totalMembers = membersQuery.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(totalMembers / MEMBER_PAGE_SIZE));
 
   const selectedMember =
-    draftRoles || members.find((member) => member.employee_id === selectedEmployeeId) || null;
+    draftRoles ||
+    (selectedMemberRecord?.employee_id === selectedEmployeeId ? selectedMemberRecord : null) ||
+    members.find((member) => member.employee_id === selectedEmployeeId) ||
+    null;
 
   useEffect(() => {
-    if (selectedEmployeeId || !members.length) return;
+    setPage(1);
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
+  useEffect(() => {
+    if (selectedEmployeeId || membersQuery.isLoading || !members.length) return;
     setSelectedEmployeeId(members[0].employee_id);
-  }, [members, selectedEmployeeId]);
+    setSelectedMemberRecord(members[0]);
+  }, [members, membersQuery.isLoading, selectedEmployeeId]);
 
   useEffect(() => {
     setDraftRoles(null);
     setDraftTier(null);
   }, [selectedEmployeeId]);
 
+  useEffect(() => {
+    if (!compactRoles) setMobileRolesPanel("list");
+  }, [compactRoles]);
+
   const activeMember = draftRoles || selectedMember;
   const activeTier =
     draftTier ?? (activeMember ? memberRoleTier(activeMember) : "employee");
 
-  const stats = useMemo(() => {
-    const counts = { administrator: 0, supervisor: 0, employee: 0 };
-    for (const member of roster) {
-      counts[memberRoleTier(member)] += 1;
-    }
-    return { total: roster.length, ...counts };
-  }, [roster]);
+  const stats = statsQuery.data ?? {
+    total: 0,
+    administrator: 0,
+    supervisor: 0,
+    employee: 0,
+  };
 
-  const baselineMember = useMemo(
-    () => members.find((member) => member.employee_id === selectedEmployeeId) || null,
-    [members, selectedEmployeeId],
-  );
+  const baselineMember = useMemo(() => {
+    const fromPage = members.find((member) => member.employee_id === selectedEmployeeId);
+    if (fromPage) return fromPage;
+    if (selectedMemberRecord?.employee_id === selectedEmployeeId) return selectedMemberRecord;
+    return null;
+  }, [members, selectedEmployeeId, selectedMemberRecord]);
+
+  const rangeStart = totalMembers === 0 ? 0 : memberOffset + 1;
+  const rangeEnd = Math.min(memberOffset + members.length, totalMembers);
 
   const hasChanges = Boolean(
     draftRoles &&
@@ -119,8 +156,9 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
       });
       setDraftRoles(null);
       setDraftTier(null);
+      if (updated) setSelectedMemberRecord(updated);
       setNotice("Assignments saved successfully.");
-      void rosterQuery.refetch();
+      void statsQuery.refetch();
       void membersQuery.refetch();
       return updated;
     } catch (error) {
@@ -129,7 +167,9 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
   }
 
   return (
-    <div className={`roles-access-page ${embedded ? "is-embedded" : ""}`}>
+    <div
+      className={`roles-access-page ${embedded ? "is-embedded" : ""}${compactRoles ? " is-compact" : ""}`}
+    >
       <header className="roles-access-header roles-access-header--toolbar">
         <div className="roles-access-header-actions">
           <div className="roles-access-tabs" role="tablist">
@@ -208,8 +248,10 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
           </div>
 
           <div className="roles-access-layout">
-            <section className="roles-access-list-panel">
-              <h2>Employee search ({members.length})</h2>
+            <section
+              className={`roles-access-list-panel${compactRoles && mobileRolesPanel === "detail" ? " is-hidden-mobile" : ""}`}
+            >
+              <h2>Employee search ({totalMembers})</h2>
               <div className="roles-access-search">
                 <Search size={16} />
                 <input
@@ -234,7 +276,11 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
                         key={member.employee_id}
                         type="button"
                         className={`roles-access-member-row${selected ? " is-selected" : ""}`}
-                        onClick={() => setSelectedEmployeeId(member.employee_id)}
+                        onClick={() => {
+                          setSelectedEmployeeId(member.employee_id);
+                          setSelectedMemberRecord(member);
+                          if (compactRoles) setMobileRolesPanel("detail");
+                        }}
                       >
                         <span className={`roles-avatar roles-avatar--${avatarTone(member.employee_name)}`}>
                           {initialsFromName(member.employee_name)}
@@ -249,9 +295,49 @@ export default function RolesPage({ embedded = false }: { embedded?: boolean }) 
                   })
                 )}
               </div>
+              {totalMembers > MEMBER_PAGE_SIZE ? (
+                <div className="roles-access-pagination">
+                  <p>
+                    {rangeStart}–{rangeEnd} of {totalMembers}
+                  </p>
+                  <div className="roles-access-pagination-actions">
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={page <= 1 || membersQuery.isFetching}
+                      onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    >
+                      Previous
+                    </button>
+                    <span className="roles-access-pagination-meta">
+                      Page {page} of {pageCount}
+                    </span>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={page >= pageCount || membersQuery.isFetching}
+                      onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </section>
 
-            <section className="roles-access-detail-panel">
+            <section
+              className={`roles-access-detail-panel${compactRoles && mobileRolesPanel === "list" ? " is-hidden-mobile" : ""}`}
+            >
+              {compactRoles && mobileRolesPanel === "detail" ? (
+                <button
+                  type="button"
+                  className="roles-access-mobile-back"
+                  onClick={() => setMobileRolesPanel("list")}
+                >
+                  <ChevronLeft size={18} aria-hidden />
+                  Employees
+                </button>
+              ) : null}
               {!activeMember ? (
                 <p className="roles-admin-empty">Select an employee to assign a Documentary role.</p>
               ) : (

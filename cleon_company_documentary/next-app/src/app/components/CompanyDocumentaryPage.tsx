@@ -349,10 +349,25 @@ export default function CompanyDocumentaryPage() {
         mobileNav={mobileNav}
         onNavigate={navigate}
         onOpenFolder={openFolder}
-        onAnalytics={() => setShowAnalytics(true)}
-        onSettings={() => setShowSettings(true)}
-        onClose={() => setMobileNav(false)}
+        onAnalytics={() => {
+          setShowAnalytics(true);
+          setMobileNav(false);
+        }}
+        onSettings={() => {
+          setShowSettings(true);
+          setMobileNav(false);
+        }}
+        userName={userQuery.data?.name}
+        companyName={userQuery.data?.company_name}
       />
+      {mobileNav ? (
+        <button
+          type="button"
+          className="documentary-sidebar-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setMobileNav(false)}
+        />
+      ) : null}
       <section className="documentary-content">
         <div className="documentary-header-wrap">
           <DocumentaryHeader
@@ -361,7 +376,8 @@ export default function CompanyDocumentaryPage() {
             userName={userQuery.data?.name}
             companyName={userQuery.data?.company_name}
             onSearch={setSearch}
-            onOpenMobileNav={() => setMobileNav(true)}
+            mobileNavOpen={mobileNav}
+            onToggleMobileNav={() => setMobileNav((open) => !open)}
           />
         </div>
         <div className="content-scroll">

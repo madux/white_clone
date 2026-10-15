@@ -14,11 +14,13 @@ import {
   Sparkles,
   Star,
   Upload,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useClickOutside } from "../../../hooks/useClickOutside";
 import {
   QUERY_KEYS,
   useAcknowledgeDocument,
@@ -31,11 +33,8 @@ import {
 } from "../../../hooks/useDocuments";
 import { useAppDialog } from "../../../hooks/useAppDialog";
 import { api } from "../../../lib/api";
-import DocumentActions from "./DocumentActions";
-import SortableTable from "./SortableTable";
 import SectionTabs from "./SectionTabs";
 import DocumentFilterBar, { FilterState, INITIAL_FILTER_STATE, applyDocumentFilters } from "./DocumentFilterBar";
-import BulkDocumentActions from "./BulkDocumentActions";
 import DocumentViewerDialog from "./DocumentViewerDialog";
 import type { DocDocument } from "../../../lib/types";
 import DocumentUploadModal, {
@@ -52,258 +51,24 @@ import {
   preventConflictMessage,
 } from "../../../lib/uploadConflictHelpers";
 import type { UploadConflict } from "../../../lib/types";
-import StatusPill from "./StatusPill";
-import { formatStatusLabel } from "../../../lib/formatLabel";
-import { formatDocumentDateShort } from "../../../lib/formatDocumentDate";
-import { folderColorHex } from "../../../lib/folderColor";
 import { FileTypeIcon } from "./FileTypeIcon";
-import EmptyState from "./EmptyState";
+import SharedDocumentsTable from "./SharedDocumentsTable";
 import AppToolbar from "./AppToolbar";
+import FilterToggleButton from "./FilterToggleButton";
 import PersonalDocumentTree from "./PersonalDocumentTree";
 import LibraryBreadcrumb from "./LibraryBreadcrumb";
 import { documentPreviewUrl } from "../../../lib/documentPreviewUrls";
+import { myWorkspaceHref } from "../../../lib/workspaceRoutes";
 
-type Tab = "files" | "shared" | "outstanding";
+type Tab = "files" | "shared";
 type SharedAckFilter = "all" | "needs_ack";
+
+const SHARED_ACK_FILTER_OPTIONS: { value: SharedAckFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "needs_ack", label: "Needs acknowledgement" },
+];
 const DEFAULT_TAB_KEY = "cleon-doc-default-tab";
-const VALID_TABS: Tab[] = ["files", "shared", "outstanding"];
-
-function FolderNameLabel({
-  name,
-  colorHex,
-}: {
-  name?: string;
-  colorHex?: string;
-}) {
-  const hex = folderColorHex(colorHex);
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      {hex ? (
-        <span
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ backgroundColor: hex }}
-          aria-hidden
-        />
-      ) : null}
-      <span>{name}</span>
-    </span>
-  );
-}
-
-function DocumentTable({
-  documents,
-  search,
-  shared,
-  readOnly,
-  onView,
-  onRequestApproval,
-  onUploadOutstanding,
-  guideTarget,
-  sharedAckFilter = "all",
-  pendingStatusById = {},
-}: {
-  documents: any[];
-  search: string;
-  shared?: boolean;
-  readOnly?: boolean;
-  onView: (document: any) => void;
-  onRequestApproval?: (document: any) => void;
-  onUploadOutstanding?: (document: any) => void;
-  guideTarget?: string;
-  sharedAckFilter?: "all" | "needs_ack";
-  pendingStatusById?: Record<number, string>;
-}) {
-  const rows = documents.filter((document) => {
-    if (shared && sharedAckFilter === "needs_ack" && document.acknowledged) {
-      return false;
-    }
-    return `${document.name} ${document.document_type} ${document.folder_name}`
-      .toLowerCase()
-      .includes(search.toLowerCase());
-  });
-  const [selected, setSelected] = useState<number[]>([]);
-  const selectable = !shared && !readOnly;
-  const visibleIds = rows.map((document) => document.id);
-  const allSelected = selectable && visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
-  return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="overflow-x-auto">
-        <SortableTable className="w-full min-w-[850px]">
-          <thead>
-            <tr>
-              {selectable && (
-                <th className="dms-col-check">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={() =>
-                      setSelected(allSelected ? [] : visibleIds)
-                    }
-                    aria-label="Select all my files"
-                    className="h-4 w-4 accent-pink-600"
-                  />
-                </th>
-              )}
-              <th>Document</th>
-              <th>Category</th>
-              <th
-                className={
-                  guideTarget === "approval" ? "guide-status-emphasis" : ""
-                }
-              >
-                Status
-              </th>
-              <th>{shared ? "Shared by" : "Last updated"}</th>
-              <th className="dms-col-actions">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-              {rows.map((document) => (
-              <tr key={document.id} className="transition hover:bg-pink-50/30">
-                {selectable && (
-                  <td className="dms-col-check">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(document.id)}
-                      onChange={() =>
-                        setSelected((current) =>
-                          current.includes(document.id)
-                            ? current.filter((id) => id !== document.id)
-                            : [...current, document.id],
-                        )
-                      }
-                      aria-label={`Select ${document.name}`}
-                      className="h-4 w-4 accent-pink-600"
-                    />
-                  </td>
-                )}
-                <td>
-                  <button
-                    type="button"
-                    onClick={() => onView(document)}
-                    className="flex items-center gap-3 text-left"
-                  >
-                    <FileTypeIcon
-                      name={document.name}
-                      mime_type={document.mime_type}
-                      document_type={document.document_type}
-                      source_url={document.source_url}
-                    />
-                    <span>
-                      <strong className="block text-sm text-slate-800 hover:text-brand-pink">
-                        {document.name}
-                      </strong>
-                      <small className="mt-1 block text-xs text-slate-400">
-                        <FolderNameLabel
-                          name={document.folder_name}
-                          colorHex={document.folder_color_hex}
-                        />
-                      </small>
-                      {shared && !document.acknowledged && (
-                        <span className="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                          Needs acknowledgement
-                        </span>
-                      )}
-                      {!shared && pendingStatusById[document.id] && (
-                        <span className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                          {pendingStatusById[document.id]}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                </td>
-                <td className="text-sm text-slate-600">
-                  {document.document_type}
-                </td>
-                <td
-                  className={
-                    guideTarget === "approval" ? "guide-status-emphasis" : ""
-                  }
-                >
-                  {(() => {
-                    const isOutstandingPlaceholder = document.id < 0;
-                    const requiresApproval =
-                      !isOutstandingPlaceholder &&
-                      document.approval_state === "pending";
-                    const label =
-                      shared && document.acknowledged
-                        ? document.acknowledged_at
-                          ? `Acknowledged ${String(document.acknowledged_at).slice(0, 10)}`
-                          : "Acknowledged"
-                        : isOutstandingPlaceholder
-                          ? formatStatusLabel(document.state)
-                          : requiresApproval
-                            ? "Requires Approval"
-                            : formatStatusLabel(document.state);
-                    return (
-                      <span className={guideTarget === "approval" ? "guide-status-badge" : undefined}>
-                        <StatusPill label={label} />
-                      </span>
-                    );
-                  })()}
-                </td>
-                <td className="text-sm text-slate-500">
-                  {shared
-                    ? document.shared_by || "Document administrator"
-                    : formatDocumentDateShort(document.write_date, "Required")}
-                </td>
-                <td className="dms-col-actions">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onView(document)}
-                      className="rounded-full border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-brand-pink hover:text-brand-pink"
-                    >
-                      View
-                    </button>
-                    {document.state === "missing" && onUploadOutstanding && (
-                      <button
-                        type="button"
-                        onClick={() => onUploadOutstanding(document)}
-                        className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-3 py-2 text-xs font-bold text-white"
-                      >
-                        Upload
-                      </button>
-                    )}
-                    {!readOnly && !shared && (
-                      <>
-                        {(document.state === "draft" ||
-                          document.state === "rejected") &&
-                        document.approval_state !== "pending" &&
-                        !pendingStatusById[document.id] ? (
-                          <button
-                            type="button"
-                            onClick={() => onRequestApproval?.(document)}
-                            className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-3 py-2 text-xs font-bold text-white"
-                          >
-                            Request approval
-                          </button>
-                        ) : null}
-                        <DocumentActions
-                          documentId={document.id}
-                          documentName={document.name}
-                          document={document}
-                          organizational={document.folder_type === "organizational"}
-                        />
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </SortableTable>
-      </div>
-      {selectable && <BulkDocumentActions selected={selected} onClear={() => setSelected([])} documents={rows} />}
-      {!rows.length && (
-        <EmptyState
-          title="No documents yet"
-          description="Upload a file to start building this workspace."
-        />
-      )}
-    </div>
-  );
-}
+const VALID_TABS: Tab[] = ["files", "shared"];
 
 export default function MyDocumentsPage({
   embedded = false,
@@ -325,6 +90,9 @@ export default function MyDocumentsPage({
   const documentTypes = useDocumentTypes();
   const [tab, setTab] = useState<Tab>("files");
   const [sharedAckFilter, setSharedAckFilter] = useState<SharedAckFilter>("all");
+  const [sharedFilterOpen, setSharedFilterOpen] = useState(false);
+  const sharedFilterRef = useRef<HTMLDivElement>(null);
+  useClickOutside(sharedFilterRef, () => setSharedFilterOpen(false));
   const [ackMessage, setAckMessage] = useState("");
   const [ackError, setAckError] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
@@ -340,12 +108,10 @@ export default function MyDocumentsPage({
     proceedSeparate: () => Promise<void>;
   } | null>(null);
   const pendingUploadRef = useRef<DocumentUploadPayload | null>(null);
-  const [uploadRequirement, setUploadRequirement] = useState<any>(null);
   const [uploadError, setUploadError] = useState("");
   const [docFilters, setDocFilters] = useState<FilterState>(INITIAL_FILTER_STATE);
   useEffect(() => {
     if (params.get("upload") === "1") {
-      setUploadRequirement(null);
       setUploadError("");
       setShowUpload(true);
       const next = new URLSearchParams(params.toString());
@@ -364,8 +130,7 @@ export default function MyDocumentsPage({
       return;
     }
     if (scope === "outstanding") {
-      setTab("outstanding");
-      setSharedAckFilter("all");
+      router.replace(myWorkspaceHref("policies", { inbox: "todo" }));
       return;
     }
     if (scope === "files") {
@@ -389,7 +154,7 @@ export default function MyDocumentsPage({
     if (saved && VALID_TABS.includes(saved as Tab)) {
       setTab(saved as Tab);
     }
-  }, [guideTarget, params]);
+  }, [guideTarget, params, pathname, router]);
   useEffect(() => {
     const docId = Number(params.get("doc") || 0);
     if (!docId || !workspace.data) return;
@@ -411,7 +176,6 @@ export default function MyDocumentsPage({
   const data = workspace.data;
   const myFiles = data?.my_files ?? [];
   const shared = data?.shared_documents ?? [];
-  const outstanding = data?.outstanding ?? [];
   const filteredMyFiles = useMemo(
     () => applyDocumentFilters(myFiles, docFilters),
     [myFiles, docFilters]
@@ -421,6 +185,7 @@ export default function MyDocumentsPage({
     setSearch("");
     if (next !== "shared") {
       setSharedAckFilter("all");
+      setSharedFilterOpen(false);
     }
     const nextParams = new URLSearchParams(params.toString());
     if (next === "files") {
@@ -428,9 +193,6 @@ export default function MyDocumentsPage({
       nextParams.delete("ack");
     } else if (next === "shared") {
       nextParams.set("scope", "shared");
-    } else if (next === "outstanding") {
-      nextParams.set("scope", "outstanding");
-      nextParams.delete("ack");
     }
     const query = nextParams.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
@@ -452,6 +214,7 @@ export default function MyDocumentsPage({
     (pendingUploads.data?.items ?? []).map((item) => [item.id, item.status_label]),
   );
   const needsAckCount = shared.filter((document) => !document.acknowledged).length;
+  const sharedAckFilterActive = sharedAckFilter !== "all";
   const previewUrl =
     viewing?.id > 0
       ? documentPreviewUrl(viewing.id, { variant: "current" })
@@ -538,7 +301,6 @@ export default function MyDocumentsPage({
         );
       setUploadProgress("");
       pendingUploadRef.current = null;
-      setUploadRequirement(null);
       setShowUpload(false);
     } catch (caught: any) {
       setUploadProgress("");
@@ -568,44 +330,9 @@ export default function MyDocumentsPage({
         onChange={setPage}
         items={[
           { id: "files", label: "My files", count: myFiles.length },
-          { id: "outstanding", label: "Outstanding", count: outstanding.length },
           { id: "shared", label: "Shared", count: shared.length },
         ]}
       />
-      {tab === "shared" ? (
-        <div
-          className="flex flex-wrap items-center gap-2"
-          role="group"
-          aria-label="Shared documents filter"
-        >
-          <span className="text-xs font-semibold text-slate-500">Show</span>
-          <button
-            type="button"
-            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-              sharedAckFilter === "all"
-                ? "bg-brand-pink/15 text-brand-pink ring-1 ring-brand-pink/30"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-            aria-pressed={sharedAckFilter === "all"}
-            onClick={() => setSharedAckFilterAndUrl("all")}
-          >
-            All
-          </button>
-          <button
-            type="button"
-            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-              sharedAckFilter === "needs_ack"
-                ? "bg-brand-pink/15 text-brand-pink ring-1 ring-brand-pink/30"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-            aria-pressed={sharedAckFilter === "needs_ack"}
-            onClick={() => setSharedAckFilterAndUrl("needs_ack")}
-          >
-            Needs acknowledgement
-            {needsAckCount > 0 ? ` (${needsAckCount})` : ""}
-          </button>
-        </div>
-      ) : null}
       {tab === "files" ? (
         <DocumentFilterBar
           filters={docFilters}
@@ -614,6 +341,79 @@ export default function MyDocumentsPage({
           showDepartmentFilter={false}
           totalCount={myFiles.length}
           filteredCount={filteredMyFiles.length}
+        />
+      ) : tab === "shared" ? (
+        <AppToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search shared documents..."
+          extras={
+            <>
+              <div className="relative shrink-0" ref={sharedFilterRef}>
+                <FilterToggleButton
+                  aria-expanded={sharedFilterOpen}
+                  aria-controls="shared-doc-ack-filters"
+                  aria-haspopup="menu"
+                  className="font-semibold text-slate-600 hover:border-brand-pink hover:text-brand-pink"
+                  onClick={() => setSharedFilterOpen((open) => !open)}
+                  badge={
+                    sharedAckFilterActive ? (
+                      <span className="rounded-full bg-brand-pink px-2 py-0.5 text-[11px] font-bold text-white">
+                        1
+                      </span>
+                    ) : null
+                  }
+                >
+                  Filters
+                </FilterToggleButton>
+                {sharedFilterOpen ? (
+                  <div
+                    id="shared-doc-ack-filters"
+                    role="menu"
+                    className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                  >
+                    {SHARED_ACK_FILTER_OPTIONS.map((option) => {
+                      const count =
+                        option.value === "all" ? shared.length : needsAckCount;
+                      const selected = sharedAckFilter === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={selected}
+                          className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-pink-50 ${
+                            selected
+                              ? "bg-pink-50/80 font-semibold text-slate-900"
+                              : "text-slate-700"
+                          }`}
+                          onClick={() => {
+                            setSharedAckFilterAndUrl(option.value);
+                            setSharedFilterOpen(false);
+                          }}
+                        >
+                          <span>{option.label}</span>
+                          <span className="text-xs tabular-nums text-slate-500">
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+              {sharedAckFilterActive ? (
+                <button
+                  type="button"
+                  onClick={() => setSharedAckFilterAndUrl("all")}
+                  className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 hover:text-brand-pink"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Clear
+                </button>
+              ) : null}
+            </>
+          }
         />
       ) : (
         <AppToolbar
@@ -636,7 +436,7 @@ export default function MyDocumentsPage({
       )}
       {!workspace.isLoading && (
       <>
-      {(tab === "files" || tab === "shared" || tab === "outstanding") && (
+      {(tab === "files" || tab === "shared") && (
         <section className="app-table-well app-page-body">
           {tab === "files" ? (
             <PersonalDocumentTree
@@ -677,45 +477,13 @@ export default function MyDocumentsPage({
               }}
             />
           ) : (
-            <DocumentTable
-              documents={
-                tab === "outstanding"
-                  ? outstanding
-                  : shared
-              }
+            <SharedDocumentsTable
+              documents={shared}
               search={search}
-              shared={tab === "shared"}
-              readOnly={tab === "outstanding"}
-              guideTarget={guideTarget || undefined}
-              sharedAckFilter={tab === "shared" ? sharedAckFilter : "all"}
-              pendingStatusById={pendingStatusById}
-              onView={setViewing}
-              onRequestApproval={async (document) => {
-                if (
-                  !(await showConfirm(
-                    `Send "${document.name}" to an administrator for review?`,
-                    { title: "Request review", confirmLabel: "Send" },
-                  ))
-                ) {
-                  return;
-                }
-                try {
-                  await requestApproval.mutateAsync(document.id);
-                  await showAlert(
-                    "Your document was sent for review. Administrators will see it in the approval inbox.",
-                    { title: "Submitted for review" },
-                  );
-                } catch (error: any) {
-                  await showAlert(
-                    error?.message || "Could not submit this document for approval.",
-                    { title: "Request failed" },
-                  );
-                }
-              }}
-              onUploadOutstanding={(document) => {
-                setUploadRequirement(document);
-                setUploadError("");
-                setShowUpload(true);
+              sharedAckFilter={sharedAckFilter}
+              onView={(document) => {
+                setViewing(document);
+                setViewingVersionId(null);
               }}
             />
           )}
@@ -870,29 +638,16 @@ export default function MyDocumentsPage({
         <DocumentUploadModal
           draftKey="my-workspace-upload"
           zIndex={80}
-          title={uploadRequirement ? "Complete outstanding document" : "Upload documents"}
+          title="Upload documents"
           eyebrow="My Workspace"
-          description={
-            uploadRequirement
-              ? "This upload will be sent to an administrator for review immediately."
-              : undefined
-          }
           documentTypes={documentTypes.data ?? []}
-          lockedTypeId={
-            uploadRequirement?.document_type_id
-              ? String(uploadRequirement.document_type_id)
-              : undefined
-          }
-          lockedTypeLabel={uploadRequirement?.document_type}
           pending={upload.isPending}
           error={uploadError}
           progress={uploadProgress}
-          submitLabel={uploadRequirement ? "Upload and request review" : undefined}
           onClose={() => {
             setShowUpload(false);
             setUploadError("");
             setUploadProgress("");
-            setUploadRequirement(null);
             pendingUploadRef.current = null;
           }}
           onSubmit={handleUploadSubmit}

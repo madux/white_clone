@@ -76,7 +76,6 @@ import OrgFolderIcon from "./OrgFolderIcon";
 import SectionTabs from "./SectionTabs";
 import OrganizationalPoliciesPanel from "./OrganizationalPoliciesPanel";
 import OrganizationalStorageBar from "./OrganizationalStorageBar";
-import OrganizationalLibraryAdminLinks from "./OrganizationalLibraryAdminLinks";
 import { useToast } from "../../../hooks/useToast";
 import {
   isPendingApprovalResponse,
@@ -241,7 +240,6 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
           ]}
         />
       ) : null}
-      {isOrganizationPage ? <OrganizationalLibraryAdminLinks /> : null}
       <section className="app-table-well app-page-body">
         <AppToolbar
           search={search}

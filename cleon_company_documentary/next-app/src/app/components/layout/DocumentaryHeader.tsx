@@ -10,14 +10,16 @@ export function DocumentaryHeader({
   userName,
   companyName,
   onSearch,
-  onOpenMobileNav,
+  mobileNavOpen,
+  onToggleMobileNav,
 }: {
   pageTitle: string;
   search: string;
   userName?: string;
   companyName?: string;
   onSearch: (value: string) => void;
-  onOpenMobileNav: () => void;
+  mobileNavOpen: boolean;
+  onToggleMobileNav: () => void;
 }) {
   const avatarInitials = initials(userName || "CD");
 
@@ -28,8 +30,9 @@ export function DocumentaryHeader({
           <button
             type="button"
             className="mobile-menu inline-flex shrink-0 items-center justify-center rounded-xl border border-slate-200 p-2 text-slate-500 transition hover:border-pink-200 hover:text-brand-pink"
-            onClick={onOpenMobileNav}
-            aria-label="Open navigation"
+            onClick={onToggleMobileNav}
+            aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={mobileNavOpen}
           >
             <Menu size={20} />
           </button>
@@ -56,7 +59,7 @@ export function DocumentaryHeader({
             />
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="header-user-block flex shrink-0 items-center gap-2 sm:gap-3">
           <div className="hidden h-4 w-px bg-slate-200 sm:block" />
           <div className="flex items-center gap-2.5">
             <div className="header-user-avatar flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-pink text-xs font-semibold text-white shadow-sm ring-2 ring-white">

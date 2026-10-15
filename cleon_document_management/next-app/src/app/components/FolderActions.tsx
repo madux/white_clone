@@ -397,6 +397,7 @@ export default function FolderActions({
       ref={containerRef}
       className="relative text-left"
       onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
     >
       <button
         ref={triggerRef}

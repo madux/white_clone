@@ -2912,6 +2912,20 @@ table.dms-table thead th.cursor-pointer:hover {
   vertical-align: middle;
 }
 
+.dms-table.shared-documents-table .shared-documents-col-document {
+  min-width: 16rem;
+}
+
+.dms-table.shared-documents-table .shared-documents-col-person {
+  min-width: 11rem;
+}
+
+.dms-table.shared-documents-table .shared-documents-col-date,
+.dms-table.shared-documents-table th.shared-documents-col-date {
+  min-width: 7.5rem;
+  text-align: right;
+}
+
 .dms-table-wrap {
   overflow-x: auto;
 }

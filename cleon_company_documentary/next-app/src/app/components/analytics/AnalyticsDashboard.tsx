@@ -1,7 +1,8 @@
 "use client";
 
-import { Download, LoaderCircle, Maximize2, Minimize2, ShieldCheck, X } from "lucide-react";
+import { Download, LoaderCircle, Maximize2, Minimize2, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useMediaQuery } from "../../../../hooks/useMediaQuery";
 import { api } from "../../../../lib/api";
 import type { ComplianceMandatoryFilter, DocumentaryFolder } from "../../../../lib/types";
 import { useDocumentaryAnalytics, useDocumentarySettings } from "../../../../hooks/useDocumentary";
@@ -34,6 +35,8 @@ export function AnalyticsDashboard({
     status: "all",
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const isMobileAnalytics = useMediaQuery("(max-width: 850px)");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const handleClose = useCallback(() => {
     setIsFullscreen(false);
@@ -171,12 +174,15 @@ export function AnalyticsDashboard({
 
   return (
     <div className={`analytics-backdrop${isFullscreen ? " is-fullscreen" : ""}`}>
-      <section className="analytics-shell" aria-label="Library analytics">
+      <section
+        className={`analytics-shell${isMobileAnalytics ? " is-mobile" : ""}`}
+        aria-label="Library analytics"
+      >
         <header className="analytics-header">
           <div>
             <div className="eyebrow">Manager workspace</div>
             <h2>Library analytics</h2>
-            <p>
+            <p className="analytics-header-subtitle">
               Understand reach, learning effectiveness, and the content your
               company needs next.
             </p>
@@ -201,7 +207,31 @@ export function AnalyticsDashboard({
             </button>
           </div>
         </header>
-        <div className="analytics-toolbar">
+        {isMobileAnalytics ? (
+          <div className="analytics-mobile-toolbar">
+            <button
+              type="button"
+              className={`secondary-button analytics-mobile-filters-btn${filtersOpen ? " is-open" : ""}`}
+              onClick={() => setFiltersOpen((open) => !open)}
+              aria-expanded={filtersOpen}
+            >
+              <SlidersHorizontal size={15} />
+              Filters
+            </button>
+            <button
+              className="secondary-button analytics-mobile-export-btn"
+              onClick={() => void exportReport()}
+              disabled={tab === "compliance" ? !complianceExport.mediaId : !data}
+            >
+              <Download size={15} /> Export
+            </button>
+            <span className="analytics-freshness analytics-mobile-freshness">
+              <span className="status-dot" />
+              {query.isFetching ? "Refreshing" : "Live"}
+            </span>
+          </div>
+        ) : null}
+        <div className={`analytics-toolbar${isMobileAnalytics && !filtersOpen ? " is-collapsed-mobile" : ""}`}>
           <label>
             From
             <input

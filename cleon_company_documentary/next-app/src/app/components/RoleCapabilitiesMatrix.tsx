@@ -23,22 +23,6 @@ function formatCell(value: Cell) {
   return "No";
 }
 
-const ROLE_DESCRIPTIONS = [
-  {
-    title: "Employee",
-    body:
-      "Viewing only. Browse and play published documentaries, read transcripts, and use captions.",
-  },
-  {
-    title: "Supervisor",
-    body: "Video management, review, transcripts, captions, and analytics.",
-  },
-  {
-    title: "Administrator",
-    body: "Full library governance including publishing, settings, and role assignments.",
-  },
-];
-
 export function RoleCapabilitiesMatrix({ variant = "full" }: { variant?: "full" | "matrix" }) {
   return (
     <section className={`roles-capabilities-matrix${variant === "matrix" ? " is-matrix-tab" : ""}`}>
@@ -47,14 +31,6 @@ export function RoleCapabilitiesMatrix({ variant = "full" }: { variant?: "full" 
           <h3>Role based access matrix</h3>
         </div>
       ) : null}
-      <div className="roles-capabilities-descriptions">
-        {ROLE_DESCRIPTIONS.map((role) => (
-          <article key={role.title}>
-            <strong>{role.title}</strong>
-            <p>{role.body}</p>
-          </article>
-        ))}
-      </div>
       <div className="roles-matrix-table-wrap">
         <table className="roles-matrix-table">
           <thead>

@@ -212,6 +212,9 @@ export default function SocialGalleryPage() {
           album={selectedAlbum}
           media={mediaQuery.items}
           loading={mediaQuery.isLoading}
+          albums={albumsQuery.items}
+          layout={layout}
+          onLayoutChange={setLayout}
           onOpenMedia={(item) => openMedia(item, mediaQuery.items)}
           onRefresh={refreshAll}
           onUpload={isManager ? () => setShowUpload(true) : undefined}
