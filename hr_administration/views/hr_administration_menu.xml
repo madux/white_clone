@@ -78,11 +78,11 @@
         <field name="arch" type="xml">
             <search string="Employees">
                 <field name="name" string="Employee" filter_domain="['|', ('work_email', 'ilike', self), ('name', 'ilike', self)]"/>
-                <searchpanel>
+                <!-- <searchpanel>
                     <field name="company_id" groups="base.group_multi_company" icon="fa-building" enable_counters="1"/>
                     <field name="department_id" icon="fa-users" enable_counters="1"/>
                             <field name="department_id" icon="fa-users" enable_counters="1"/>
-                </searchpanel>
+                </searchpanel> -->
                 <field name="parent_id" string="Manager"/>
                 <field name="job_id"/>
                 <field name="coach_id"/>

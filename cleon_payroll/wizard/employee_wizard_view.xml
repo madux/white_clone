@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cleon_structure_employee_wizard_form"
+            model="ir.ui.view">
+        <field name="name">cleon.structure.employee.wizard.form</field>
+        <field name="model">cleon.structure.employee.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Add Employees to Payroll Structure">
+                
+                <sheet>
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon" style="background:#DC3545;">
+                            <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        </div>
+                        <span class="qms-card-title">Assign employees to structure and forward for approval</span>
+                    </div>
+                    <group>
+                        <field name="structure_id"/>
+                        <field name="employee_ids"
+                            widget="many2many_tags"
+                            options="{
+                                'no_create': True, 
+                                'no_open': True,
+                                'no_create_edit': True
+                            }"
+                            domain="[('active', '=', True)]"/>
+                        <field name="approver_user_id"
+                            options="{
+                                'no_create': True,
+                                'no_open': True,
+                                'no_create_edit': True
+                            }"/>
+                    </group>
+                </sheet>
+                <footer>
+                    
+                    <button name="action_send_for_approval"
+                            string="Send for Approval"
+                            type="object"
+                            class="btn-primary"/>
+                    <button name="remove_ineligible_employees"
+                        string="Remove Ineligible Employees"
+                        type="object"
+                        class="btn-primary"/>
+                    <button string="Cancel"
+                            special="cancel"
+                            class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

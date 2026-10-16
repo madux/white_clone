@@ -29,6 +29,17 @@ class HrPayrollCycle(models.Model):
         'cleon.payroll.structure',
         string='Applicable Structures'
     )
+    show_payroll_link = fields.Boolean(
+                string="Payroll menu Link",
+                default=True,
+                help="Used to hold widget in form view"
+            )
+    payroll_setup_ids = fields.One2many(
+            "hr.payroll.setup",
+            "pay_cycle_id",
+            string="Payroll Group"
+        )
+    
 
     company_id = fields.Many2one(
         'res.company',

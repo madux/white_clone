@@ -71,6 +71,21 @@ $cc-radius:     8px;
         // z-index: 99999;
     }
 
+    .cpd-sidebar-admin {
+        width: 220px;
+        flex-shrink:0;
+        background: #fff;
+        color:#fff;
+        display:flex;
+        flex-direction:column;
+        position:sticky;
+        border-right: 1px solid $cc-gray-200;
+        top:0;
+        height:100vh;
+        overflow-y:auto;
+        z-index:20;
+        }
+
     // ── Row 2: calendar renderer (centre, fills remaining space) ──
     > .o_calendar_renderer {
         flex: 1 1 0% !important;
@@ -232,6 +247,7 @@ $cc-radius:     8px;
     flex-shrink: 0;
 }
 .o_cc_status_green { background: #22c55e; }
+.o_cc_status_white { color: #ffffff }
 
 // ── TOP BAR BUTTONS ───────────────────────────────────────────
 

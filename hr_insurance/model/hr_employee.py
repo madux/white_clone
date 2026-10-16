@@ -10,6 +10,7 @@ class HrGrade(models.Model):
     _description = "HR GRADE"
 
     name = fields.Char("Name", required=True)
+    
 
 
 class HrEmployee(models.Model):

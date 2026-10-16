@@ -39,187 +39,531 @@
         <field name="model">cleon.payroll.rule</field>
         <field name="arch" type="xml">
             <form>
-                <header>
-                    <button name="generate_AI_rule" type="object" string="Generate with AI"
-                            class="btn-secondary" groups="base.group_system"
-                            invisible="amount_select != 'formula'"/>
-                    <button name="action_open_tax_explain" type="object" string="Explain / Simulate Tax"
-                            class="btn-primary" invisible="amount_select != 'bracket' or not id"/>
-                </header>
-                <sheet>
-                    <div class="oe_title">
-                        <label for="name"/>
-                        <h1><field name="name" placeholder="e.g. PAYE Tax"/></h1>
+                <div class="o_hr_payroll_form_layout">
+                    <field name="show_payroll_link" widget="payroll_app_link"/>
+                    <div class="hd-main">
+                        <header>
+                            
+                            <button name="action_open_tax_explain" type="object" string="Explain / Simulate Tax"
+                                    class="btn-primary m-6" invisible="amount_select != 'bracket' or not id"/>
+                        </header>
+                        <sheet>
+
+                            <div class="rc_modal_wrapper">
+
+                                <div class="rc_screen_header">
+                                    <div class="rc_screen_icon_wrap rc_icon_bg_pink">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e91e8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                                            <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                            <path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h2 class="rc_screen_title">Manual Entry</h2>
+                                        <p class="rc_screen_subtitle">Enter details manually</p>
+                                    </div>
+                                </div>
+
+                                <div class="rc_divider"/>
+
+                                <!-- Basic Information -->
+                                <div class="rc_section">
+                                    <h3 class="rc_section_title">Basic Information</h3>
+                                    <div class="rc_field_group">
+                                        <label class="rc_label rc_required" for="name">Name</label>
+                                        <field name="name" placeholder="BASIC" nolabel="1" class="rc_input"/>
+                                    </div>
+                                    <div class="rc_row_2col">
+                                        
+                                        <div class="rc_field_group">
+                                            <label class="rc_label rc_required" for="code">code</label>
+                                            <field name="code" placeholder="BASIC" nolabel="1" class="rc_input"/>
+                                        </div>
+                                        <div class="rc_field_group">
+                                            <label class="rc_label rc_required" for="sequence">Sequence</label>
+                                            <field name="sequence" placeholder="1" nolabel="1" class="rc_input"/>
+                                        </div>
+                                    </div>
+                                    <div class="rc_row_2col">
+                                        <div class="rc_field_group">
+                                            <label class="rc_label rc_required" for="category_id">Category</label>
+                                            <field name="category_id" placeholder="GROSS" nolabel="1" class="rc_input"/>
+                                        </div>
+
+                                        <div class="rc_field_group">
+                                            <label class="rc_label" for="rule_type">Rule type</label>
+                                            <field name="rule_type" nolabel="1" class="rc_input"/>
+                                        </div>
+                                    </div>
+                                    <div class="rc_row_2col"> 
+                                        <div class="rc_field_group">
+                                            <label class="rc_label rc_required" for="company_id">Nigeria</label>
+                                            <field name="company_id" nolabel="1" class="rc_input"/>
+                                        </div>
+                                        <div class="rc_field_group">
+                                            <label class="rc_label rc_required" for="appears_on_payslip">Appear on payslip?</label>
+                                            <field name="appears_on_payslip" widget="boolean_toggle" placeholder="1" nolabel="1" class="rc_input"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="rc_divider"/>
+
+                                <!-- Professional Information -->
+                            
+                                <div class="rc_section">
+                                    <h3 class="rc_section_title">Professional Setup</h3>
+                                    <notebook>
+                                        <!-- ===== CONDITION ===== -->
+                                        <page string="Condition" name="condition">
+
+                                            <div class="rc_field_group">
+                                                <label class="rc_label" for="condition_select">Rule condition</label>
+                                                <field name="condition_select" placeholder="Select Normal if not dynamic rule" nolabel="1" class="rc_input"/>
+                                            </div>
+                                            <div class="rc_row_2col" invisible="condition_select != 'range'">
+                                                
+                                                <div class="rc_field_group">
+                                                    <label class="rc_label rc_required" for="condition_range_min">Minimum Wage Range</label>
+                                                    <field name="condition_range_min" placeholder="2000" nolabel="1" class="rc_input"/>
+                                                </div>
+                                                <div class="rc_field_group">
+                                                    <label class="rc_label rc_required" for="condition_range_max">Maximum Wage Range</label>
+                                                    <field name="condition_range_max" placeholder="1" nolabel="1" class="rc_input"/>
+                                                </div>
+                                            </div>
+
+                                            <div class="rc_row_2col" invisible="condition_select != 'builder'">
+                                                
+                                                <field name="condition_line_ids" context="{'default_purpose': 'condition'}">
+                                                    <tree string="Conditions">
+                                                            <field name="sequence" widget="handle"/>
+                                                            <field name="rule_id" column_invisible="1"/>
+                                                            <field name="purpose"/>
+                                                            <field name="token_type"/>
+                                                            <field name="model_id" column_invisible="1" string="RELATION"/>
+                                                            <field name="field_id" column_invisible="1"/>
+                                                            <field name="compatible_fields" column_invisible="1"/>
+                                                            <field name="ref_category_id" column_invisible="1"/>
+                                                            <field name="text_value" column_invisible="1"/>
+                                                            <field name="expr"/> 
+                                                    </tree>
+                                                    <form string="Conditions">
+                                                        <sheet>
+                                                            <group>
+                                                                <group>
+                                                                    <!-- <field name="sequence"/> -->
+                                                                    <field name="rule_id" readonly="1"/>
+                                                                    <field name="purpose"/>
+                                                                    <field name="token_type"/>
+                                                                    <field name="model_id"/>
+                                                                    <field name="field_id"/>
+                                                                </group>
+                                                                <group>
+                                                                    <field name="compatible_fields"/>
+                                                                    <field name="ref_category_id"/>
+                                                                    <field name="ref_code"/>
+                                                                    <field name="is_percent"/> 
+                                                                    <field name="number_value"/> 
+                                                                    <field name="operator"/> 
+                                                                    <field name="function"/> 
+
+                                                                </group>
+                                                                <group>
+                                                                    <field name="text_value" readonly="1"/>
+                                                                    <field name="expr"/> 
+
+                                                                </group>
+                                                            </group>
+                                                        </sheet>
+
+                                                    </form> 
+                                                    
+                                                </field>
+                                                <div class="rc_field_group">
+                                                    <label class="rc_label" for="condition_preview">Condition Preview</label>
+                                                    <field name="condition_preview" readonly="1" nolabel="1" class="rc_input"/>
+                                                </div>
+                                            </div>
+                                            <div class="rc_row_2col" invisible="condition_select != 'python'">
+                                                <field name="condition_python" widget="ace" options="{'mode': 'python'}"/>
+                                            </div> 
+                                        </page>
+                                        <page string="Rule Setup" name="amount">
+                                            <button name="generate_AI_rule" type="object" string="Generate with AI"
+                                            class="rc_ai_btn_primary m-4"
+                                            invisible="amount_select != 'formula'"/>
+                                            <div class="rc_field_group">
+                                                <label class="rc_label" for="amount_select">Rule Formula</label>
+                                                <field name="amount_select" nolabel="1" class="rc_input"/>
+                                            </div>
+                                            <div class="rc_field_group" invisible="amount_select != 'fixed'">
+                                                <label class="rc_label rc_required" for="amount_fixed">Fixed Amount</label>
+                                                <field name="amount_fixed" placeholder="e.g 2000" nolabel="1" class="rc_input" required="amount_select == 'fixed'"/>
+                                            </div>
+                                            <div class="rc_row_2col" invisible="amount_select != 'percentage'">
+                                                
+                                                <div class="rc_field_group">
+                                                    <label class="rc_label rc_required" for="amount_percentage">Percentage (%)</label>
+                                                    <field name="amount_percentage" placeholder="2000" nolabel="1" class="rc_input" required="amount_select == 'percentage'"/>
+                                                </div>
+                                                <div class="rc_field_group">
+                                                    <label class="rc_label rc_required" for="amount_percentage_base">Percentage Based On</label>
+                                                    <field name="amount_percentage_base" placeholder="e.g. categories.BASIC" nolabel="1" class="rc_input" required="amount_select == 'percentage'"/>
+                                                </div>
+                                            </div>
+
+                                            <div class="rc_field_group" invisible="amount_select != 'builder'">
+                                                <label class="rc_label rc_required" for="amount_line_ids">Formula builder</label>
+                                                 <field name="amount_line_ids" context="{'default_purpose': 'condition'}">
+                                                    <tree string="Formula builder">
+                                                            <field name="sequence"/>
+                                                            <field name="rule_id"/>
+                                                            <field name="purpose"/>
+                                                            <field name="token_type"/>
+                                                            <field name="model_id" string="RELATION" column_invisible="1"/>
+                                                            <field name="field_id" column_invisible="1"/>
+                                                            <field name="compatible_fields" column_invisible="1"/>
+                                                            <field name="ref_category_id" column_invisible="1"/>
+                                                            <field name="text_value" column_invisible="1"/>
+                                                            <field name="expr"/> 
+                                                    </tree>
+                                                    <form string="Formula builder">
+                                                        <sheet>
+                                                            <group>
+                                                                <group>
+                                                                    <field name="sequence"/>
+                                                                    <field name="rule_id" readonly="1"/>
+                                                                    <field name="purpose"/>
+                                                                    <field name="token_type"/>
+                                                                    <field name="model_id"/>
+                                                                    <field name="field_id"/>
+                                                                </group>
+                                                                <group>
+                                                                    <field name="compatible_fields"/>
+                                                                    <field name="ref_category_id"/>
+                                                                    <field name="ref_code"/>
+                                                                    <field name="is_percent"/> 
+                                                                    <field name="number_value"/> 
+                                                                    <field name="operator"/> 
+                                                                    <field name="function"/> 
+
+                                                                </group>
+                                                                <group>
+                                                                    <field name="text_value" readonly="1"/>
+                                                                    <field name="expr"/> 
+
+                                                                </group>
+                                                            </group>
+                                                        </sheet>
+
+                                                    </form> 
+                                                    
+                                                </field>
+                                                <div class="rc_field_group">
+                                                    <field name="amount_preview" readonly="1"/>
+                                                </div>
+                                            </div>
+
+                                            <div class="rc_field_group" invisible="amount_select != 'formula'" >
+                                                <field name="raw_ai_text" class="rc_input"/>
+                                                <field name="amount_python_compute" widget="ace" options="{'mode': 'python'}" class="rc_input"/>
+                                                <field name="ai_response" class="rc_input"/>
+                                                <field name="formula_help" class="rc_input"/>
+                                            </div>
+                                        </page>
+                                         <page string="Tax Setup" name="tax_setup" invisible="amount_select != 'bracket'">
+                                            <group>
+                                                <field name="periods_per_year"/>
+                                            </group>
+                                            <separator string="Taxable Base (e.g. Gross - Pension - NHF - NHIS - Rent Relief)"/>
+                                            <field name="base_line_ids"
+                                                context="{'default_purpose': 'base', 'tree_view_ref': 'cleon_payroll.view_cleon_payroll_rule_line_tree'}"/>
+                                            <group>
+                                                <field name="base_preview" readonly="1"/>
+                                            </group>
+                                            <separator string="Tax Brackets (Annual)"/>
+                                            <button name="action_load_nigeria_bands" type="object"
+                                                    string="Load Nigeria Template" class="btn-secondary"
+                                                    confirm="This replaces the current brackets. Continue?"/>
+                                            <field name="bracket_ids">
+                                                <tree editable="bottom">
+                                                    <field name="sequence" widget="handle"/>
+                                                    <field name="lower_limit"/>
+                                                    <field name="upper_limit"/>
+                                                    <field name="rate"/>
+                                                </tree>
+                                            </field>
+                                        </page>
+
+                                        <!-- ===== CONTRIBUTION SETUP ===== -->
+                                        <page string="Contribution Setup" name="contribution_setup"
+                                            invisible="amount_select != 'contribution'">
+                                            <group>
+                                                <group>
+                                                    <field name="contribution_preset"/>
+                                                    <button name="action_apply_contribution_preset" type="object"
+                                                            string="Apply Template" class="btn-secondary"
+                                                            invisible="not contribution_preset"/>
+                                                </group>
+                                                <group>
+                                                    <field name="contribution_rate"/>
+                                                    <field name="contribution_base_floor"/>
+                                                    <field name="contribution_base_cap"/>
+                                                    <field name="contribution_amount_cap"/>
+                                                </group>
+                                            </group>
+                                            <separator string="Contribution Base (e.g. Basic + Housing + Transport)"/>
+                                            <field name="base_line_ids" context="{'default_purpose': 'base'}">
+                                                <tree string="Conditions">
+                                                    <field name="sequence" widget="handle"/>
+                                                    <field name="rule_id" column_invisible="1"/>
+                                                    <field name="purpose"/>
+                                                    <field name="token_type"/>
+                                                    <field name="model_id" column_invisible="1" string="RELATION"/>
+                                                    <field name="field_id" column_invisible="1"/>
+                                                    <field name="compatible_fields" column_invisible="1"/>
+                                                    <field name="ref_category_id" column_invisible="1"/>
+                                                    <field name="text_value" column_invisible="1"/>
+                                                    <field name="expr"/> 
+                                                </tree>
+                                            </field>
+                                            <group>
+                                                <field name="base_preview" readonly="1"/>
+                                            </group>
+                                        </page>
+
+                                        <!-- ===== ACCOUNTING ===== -->
+                                        <page string="Accounting" name="accounting">
+                                            <group>
+                                                <field name="account_debit_id"/>
+                                                <field name="account_credit_id"/>
+                                                <field name="tax_id"/>
+                                                <field name="struct_ids" widget="many2many_tags"/>
+                                            </group>
+                                        </page>
+                                        <page string="Notes" name="notes">
+                                            <field name="note"/>
+                                        </page>
+                                    </notebook>
+                                </div>
+                                <!-- <div class="oe_chatter">
+                                    <field name="message_follower_ids"/>
+                                    <field name="message_ids"/>
+                                </div> --> 
+                                 
+
+                                <div class="rc_divider"/>
+                                <!-- Footer Buttons -->
+                                <!-- <div class="rc_footer">
+                                    <button class="rc_btn_back" name="action_mode_select" type="object">Back</button>
+                                    <button class="rc_btn_primary" name="action_add_candidate_manual" type="object">Add Candidate</button>
+                                </div> -->
+                            </div>
+                        </sheet>
                     </div>
-                    <group>
-                        <group>
-                            <field name="code"/>
-                            <field name="category_id"/>
-                            <field name="rule_type"/>
-                            <field name="sequence"/>
-                        </group>
-                        <group>
-                            <field name="appears_on_payslip"/>
-                            <field name="active"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
-                        </group>
-                    </group>
-
-                    <notebook>
-                        <!-- ===== CONDITION ===== -->
-                        <page string="Condition" name="condition">
-                            <group>
-                                <field name="condition_select"/>
-                            </group>
-                            <group invisible="condition_select != 'range'">
-                                <field name="condition_range_min"/>
-                                <field name="condition_range_max"/>
-                            </group>
-                            <div invisible="condition_select != 'builder'">
-                                <field name="condition_line_ids" context="{'default_purpose': 'condition'}">
-                                    <tree string="Conditions">
-                                            <field name="sequence"/>
-                                            <field name="rule_id" column_invisible="1"/>
-                                            <field name="purpose"/>
-                                            <field name="token_type"/>
-                                            <field name="model_id"/>
-                                            <field name="field_id"/>
-                                            <field name="compatible_fields" widget="text"/>
-                                            <field name="ref_category_id"/>
-                                            <field name="text_value"/>
-                                    </tree>
-                                    <form string="Conditions">
-                                        <group>
-                                            <group>
-                                                <field name="sequence"/>
-                                                <field name="rule_id" readonly="1"/>
-                                                <field name="purpose"/>
-                                                <field name="token_type"/>
-                                                <field name="model_id"/>
-                                                <field name="field_id"/>
-                                            </group>
-                                            <group>
-                                                <field name="compatible_fields" widget="text"/>
-                                                <field name="ref_category_id"/>
-                                                <field name="ref_code"/>
-                                                <field name="is_percent"/>
-                                                <field name="text_value"/>
-                                            </group>
-                                            <group>
-                                                <field name="text_value" readonly="1"/>
-                                            </group>
-                                        </group>
-
-                                    </form> 
-                                    <group>
-                                        <field name="condition_preview" readonly="1"/>
-                                    </group>
-                                </field>
-                            </div>
-                            <group invisible="condition_select != 'python'" groups="base.group_system">
-                                <field name="condition_python" widget="ace" options="{'mode': 'python'}"/>
-                            </group>
-                        </page>
-
-                        <!-- ===== AMOUNT ===== -->
-                        <page string="Amount" name="amount">
-                            <group>
-                                <field name="amount_select"/>
-                            </group>
-                            <group invisible="amount_select != 'fixed'">
-                                <field name="amount_fixed"/>
-                            </group>
-                            <group invisible="amount_select != 'percentage'">
-                                <field name="amount_percentage"/>
-                                <field name="amount_percentage_base"/>
-                            </group>
-                            <div invisible="amount_select != 'builder'">
-                                <field name="amount_line_ids"
-                                       context="{'default_purpose': 'amount', 'tree_view_ref': 'cleon_payroll.view_cleon_payroll_rule_line_tree'}"/>
-                                <group>
-                                    <field name="amount_preview" readonly="1"/>
-                                </group>
-                            </div>
-                            <group invisible="amount_select != 'formula'" groups="base.group_system">
-                                <field name="raw_ai_text"/>
-                                <field name="amount_python_compute" widget="ace" options="{'mode': 'python'}"/>
-                                <field name="ai_response"/>
-                                <field name="formula_help"/>
-                            </group>
-                        </page>
-
-                        <!-- ===== TAX SETUP ===== -->
-                        <page string="Tax Setup" name="tax_setup" invisible="amount_select != 'bracket'">
-                            <group>
-                                <field name="periods_per_year"/>
-                            </group>
-                            <separator string="Taxable Base (e.g. Gross - Pension - NHF - NHIS - Rent Relief)"/>
-                            <field name="base_line_ids"
-                                   context="{'default_purpose': 'base', 'tree_view_ref': 'cleon_payroll.view_cleon_payroll_rule_line_tree'}"/>
-                            <group>
-                                <field name="base_preview" readonly="1"/>
-                            </group>
-                            <separator string="Tax Brackets (Annual)"/>
-                            <button name="action_load_nigeria_bands" type="object"
-                                    string="Load Nigeria Template" class="btn-secondary"
-                                    confirm="This replaces the current brackets. Continue?"/>
-                            <field name="bracket_ids">
-                                <tree editable="bottom">
-                                    <field name="sequence" widget="handle"/>
-                                    <field name="lower_limit"/>
-                                    <field name="upper_limit"/>
-                                    <field name="rate"/>
-                                </tree>
-                            </field>
-                        </page>
-
-                        <!-- ===== CONTRIBUTION SETUP ===== -->
-                        <page string="Contribution Setup" name="contribution_setup"
-                              invisible="amount_select != 'contribution'">
-                            <group>
-                                <group>
-                                    <field name="contribution_preset"/>
-                                    <button name="action_apply_contribution_preset" type="object"
-                                            string="Apply Template" class="btn-secondary"
-                                            invisible="not contribution_preset"/>
-                                </group>
-                                <group>
-                                    <field name="contribution_rate"/>
-                                    <field name="contribution_base_floor"/>
-                                    <field name="contribution_base_cap"/>
-                                    <field name="contribution_amount_cap"/>
-                                </group>
-                            </group>
-                            <separator string="Contribution Base (e.g. Basic + Housing + Transport)"/>
-                            <field name="base_line_ids"
-                                   context="{'default_purpose': 'base', 'tree_view_ref': 'cleon_payroll.view_cleon_payroll_rule_line_tree'}"/>
-                            <group>
-                                <field name="base_preview" readonly="1"/>
-                            </group>
-                        </page>
-
-                        <!-- ===== ACCOUNTING ===== -->
-                        <page string="Accounting" name="accounting">
-                            <group>
-                                <field name="account_debit_id"/>
-                                <field name="account_credit_id"/>
-                                <field name="tax_id"/>
-                                <field name="struct_ids" widget="many2many_tags"/>
-                            </group>
-                        </page>
-
-                        <page string="Notes" name="notes">
-                            <field name="note"/>
-                        </page>
-                    </notebook>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
+                    <aside class="aside_right_card">
+                        <div class="pg_summary_title">
+                            Setup Guide
+                        </div>
+                        
+                        <div class="pg_summary_row">
+                            <span>Important tips</span>
+                            <strong>Setup the Rule Code </strong>
+                        </div>
+                        <div class="pg_summary_row">
+                            <span>Formula builder</span>
+                            <strong>Use the formula builder only when you are not an admin·</strong>
+                        </div>
+                        <div class="pg_summary_row">
+                            <span>Condition Tab </span>
+                            <strong>Specifies the condition applicable to your rule</strong>
+                        </div>
+                        <div class="pg_summary_row">
+                            <span>Use AI </span>
+                            <strong> AI to generate a rule based on prompt</strong>
+                        </div>
+                        <div class="pg_preview">
+                            More tips
+                        </div>
+                    </aside>
                 </div>
             </form>
         </field>
     </record>
+
+    <record id="view_cleon_payroll_rule_list" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.list</field>
+        <field name="model">cleon.payroll.rule</field>
+        <field name="arch" type="xml">
+            <tree string="Payroll Rules">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="rule_type"/>
+                <field name="amount_select"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_cleon_payroll_rule_search" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.search</field>
+        <field name="model">cleon.payroll.rule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="category_id"/>
+                <filter string="Gross / Allowance" name="filter_gross" domain="[('rule_type','=','gross')]"/>
+                <filter string="Deductions" name="filter_deduction" domain="[('rule_type','=','deduction')]"/>
+                <filter string="Employer Contributions" name="filter_employer" domain="[('rule_type','=','employer_contribution')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Category" name="group_category" context="{'group_by': 'category_id'}"/>
+                    <filter string="Rule Type" name="group_type" context="{'group_by': 'rule_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_cleon_payroll_rule_kanban" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.kanban</field>
+        <field name="model">cleon.payroll.rule</field>
+
+        <field name="arch" type="xml">
+
+            <kanban class="o_payroll_kanban"
+                    create="1"
+                    records_draggable="0" js_class="payroll_kanban_sidebar">
+
+                <field name="name" string="Name"/>
+                    <field name="name" string="Name" optional="show"/>
+                    <field name="code"/>
+                    <field name="category_id"/>
+                    <field name="rule_type"/>
+                    <field name="appears_on_payslip"/>
+                    <field name="condition_select"/>
+                    <field name="amount_select"/>
+                    <field name="condition_range_min"/>
+                    <field name="condition_range_max"/>
+                    <field name="amount_fixed"/>
+                    <field name="amount_percentage"/>
+                    <field name="amount_percentage_base"/>
+                    <!-- <field name="active"/> -->
+                <!-- STATIC HEADER (unchanged) -->
+                <header>
+                    <div class="marketplace-header">
+                        <div class="topbar">
+                            <div>
+                                <h1>Rules</h1>
+                                <p>Click to setup or view</p>
+                            </div>
+                            <div class="top-actions">
+                                <button type="object" name="open_record" class="btn-hmo btn-primary-hmo">＋ Onboard Your HMO plans</button>
+                            </div>
+                        </div>
+                        <div class="toolbar">
+                            <div class="search-box">🔍</div>
+                            <div class="toolbar-actions">
+                                <button name="open_record" type="object" class="icon-btn active">▦</button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <templates> 
+                    <t t-name="kanban-box">
+                        <div class="payroll-card">
+                            <!-- Header -->
+                            <div class="payroll-card-header">
+                                <div class="payroll-avatar">
+                                    <t t-esc="record.name.value ? record.name.value.substring(0,2).toUpperCase() : ''"/>
+                                </div>
+
+                                <div class="payroll-title">
+                                    <h4>
+                                        <field name="name" readonly="1"/>
+                                    </h4>
+                                    <span class="payroll-status">
+                                        <field name="category_id" widget="badge" readonly="1"/>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Metrics -->
+                            <div class="payroll-metrics">
+
+                                <div class="metric-box">
+                                    <span class="metric-label">Frequency</span>
+                                    <span class="metric-value">
+                                        <t t-esc="record.amount_select.value"/>
+                                    </span>
+                                </div>
+
+                                <div class="metric-box">
+                                    <span class="metric-label">Type</span>
+                                    <span class="metric-value">
+                                        <field name="amount_select" readonly="1"/>
+                                    </span>
+                                </div>
+                            </div>
+                            <!-- Dates -->
+                            <div class="payroll-dates">
+                                <div>
+                                    <i class="fa fa-calendar pl-2"/>
+                                    <strong> Mode: </strong>
+                                    <field name="amount_percentage" readonly="1"/>
+                                </div>
+                                <div>
+                                    <i class="fa fa-calendar-check-o pl-2"/>
+                                    <strong> Type: </strong>
+                                    <field name="amount_select" readonly="1"/>
+                                </div> 
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="payroll-footer">
+                                <button name="open_record"
+                                        type="object"
+                                        class="payroll-btn">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+
+        </field>
+    </record> 
+
+    <record id="action_cleon_payroll_rule" model="ir.actions.act_window">
+        <field name="name">Payroll Rules</field>
+        <field name="res_model">cleon.payroll.rule</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="search_view_id" ref="view_cleon_payroll_rule_search"/>
+    </record>
+
+    <!-- Statutory Payroll Rules Action -->
+    <record id="action_cleon_statutory_payroll_rules" model="ir.actions.act_window">
+        <field name="name">Statutory Payroll Rules</field>
+        <field name="res_model">cleon.payroll.rule</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('is_statutory', '=', 'True')]</field>
+        <field name="context">
+            {'default_is_statutory': 'True'}
+        </field>
+    </record>
+
+    <!-- Statutory Payroll Rules Menu -->
+    <menuitem id="menu_cleon_statutory_payroll_rules"
+              name="Statutory Rules"
+              parent="menu_cleon_payroll_root"
+              action="action_cleon_statutory_payroll_rules"
+              sequence="30" groups="cleon_payroll.group_root_user"/>
+
+
 
     <!-- ============ Tax explain wizard ============ -->
     <record id="view_cleon_payroll_tax_explain_form" model="ir.ui.view">

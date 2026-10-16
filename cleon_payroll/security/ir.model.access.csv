@@ -35,3 +35,9 @@ access_cleon_payroll_rule_line_user,cleon.payroll.rule.line user,model_cleon_pay
 access_cleon_payroll_tax_bracket_user,cleon.payroll.tax.bracket user,model_cleon_payroll_tax_bracket,,1,1,1,1
 access_cleon.payroll.tax.explain_user,cleon.payroll.tax.explain user,model_cleon_payroll_tax_explain,,1,1,1,1
 access_cleon.payroll.tax.explain_line_user,cleon.payroll.tax.explain line user,model_cleon_payroll_tax_explain_line,,1,1,1,1
+access_cleon_hr_payroll_group_employee,cleon.hr_payroll_group,model_cleon_payroll_group,group_payroll_employee,1,1,1,1
+access_cleon_hr_payroll_groupbaseuser,cleon.hr_payroll_group_baseuser,model_cleon_payroll_group,base.group_user,1,1,0,0
+access_cleon_hr_payroll_group_group_payroll_manager,cleon.hr_payroll_group_group_payroll_manager,model_cleon_payroll_group,group_payroll_manager,1,1,1,1
+access_cleon.payroll.template_manager,cleon.payroll.templateuser,model_cleon_payroll_template,,1,1,1,1
+access_cleon_structure_approval_user,cleon.structure.approval user,model_cleon_structure_approval,base.group_user,1,1,1,0
+access_cleon_structure_employee_wizard_user,cleon.structure.employee.wizard user,model_cleon_structure_employee_wizard,base.group_user,1,1,1,1

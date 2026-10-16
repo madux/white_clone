@@ -12,7 +12,11 @@ class CleonPayrollCategory(models.Model):
     sequence = fields.Integer(default=10)
     parent_id = fields.Many2one("cleon.payroll.category", string="Parent")
     note = fields.Text()
-
+    show_payroll_link = fields.Boolean(
+                    string="Payroll menu Link",
+                    default=True,
+                    help="Used to hold widget in form view"
+                )
     _sql_constraints = [
         ("code_uniq", "unique(code)", "Category code must be unique."),
     ]

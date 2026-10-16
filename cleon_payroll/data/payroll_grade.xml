@@ -1,0 +1,882 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ================================================= -->
+        <!-- CONPSS: CONSOLIDATED PUBLIC SERVICE SALARY STRUCTURE -->
+        <!-- GL 01 - GL 17                                     -->
+        <!-- ================================================= -->
+
+        <record id="grade_conpss_gl01" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 01</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl02" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 02</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl03" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 03</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl04" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 04</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl05" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 05</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl06" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 06</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl07" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 07</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl08" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 08</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl09" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 09</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl10" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 10</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl11" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 11</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl12" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 12</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl13" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 13</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl14" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 14</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl15" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 15</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl16" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 16</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+        <record id="grade_conpss_gl17" model="cleon.hr.grade">
+            <field name="name">CONPSS GL 17</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conpss"/>
+        </record>
+
+        <!-- ================================================= -->
+        <!-- CONUASS: UNIVERSITY ACADEMIC STAFF                 -->
+        <!-- ================================================= -->
+
+        <!-- <record id="grade_conuass_01" model="cleon.hr.grade">
+            <field name="name">CONUASS 1 - Graduate Assistant</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+        </record>
+        <record id="grade_conuass_02" model="cleon.hr.grade">
+            <field name="name">CONUASS 2 - Assistant Lecturer</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+        </record>
+        <record id="grade_conuass_03" model="cleon.hr.grade">
+            <field name="name">CONUASS 3 - Lecturer II</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+        </record>
+        <record id="grade_conuass_04" model="cleon.hr.grade">
+            <field name="name">CONUASS 4 - Lecturer I</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+        </record>
+        <record id="grade_conuass_05" model="cleon.hr.grade">
+            <field name="name">CONUASS 5 - Senior Lecturer</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+        </record>
+        <record id="grade_conuass_06" model="cleon.hr.grade">
+            <field name="name">CONUASS 6 - Associate Professor / Reader</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+        </record>
+        <record id="grade_conuass_07" model="cleon.hr.grade">
+            <field name="name">CONUASS 7 - Professor</field>
+            <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+        </record> -->
+
+
+        <!-- CONPASS -->
+    <record id="grade_conpass_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_08" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_09" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_10" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 10</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_11" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 11</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_12" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 12</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_13" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 13</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_14" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 14</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_15" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 15</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_16" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 16</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_17" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 17</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>        
+
+    <record id="grade_conpass_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_08" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_09" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_10" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 10</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_11" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 11</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_12" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 12</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_13" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 13</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_14" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 14</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_15" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 15</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_16" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 16</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+    <record id="grade_conpass_17" model="cleon.hr.grade">
+      <field name="name">Consolidated Para-Military Salary Structure Grade 17</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpass"/>
+    </record>
+
+    <record id="grade_conposs_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_08" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_09" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_10" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 10</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_11" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 11</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_12" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 12</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_13" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 13</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_14" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 14</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_15" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 15</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_16" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 16</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+    <record id="grade_conposs_17" model="cleon.hr.grade">
+      <field name="name">Consolidated Police Salary Structure Grade 17</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conposs"/>
+    </record>
+
+    <record id="grade_conafss_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_08" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_09" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_10" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 10</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_11" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 11</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_12" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 12</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_13" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 13</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_14" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 14</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_15" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 15</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_16" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 16</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+    <record id="grade_conafss_17" model="cleon.hr.grade">
+      <field name="name">Consolidated Armed Forces Salary Structure Grade 17</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conafss"/>
+    </record>
+
+    <record id="grade_conhess_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_08" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_09" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_10" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 10</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_11" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 11</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_12" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 12</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_13" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 13</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_14" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 14</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+    <record id="grade_conhess_15" model="cleon.hr.grade">
+      <field name="name">Consolidated Health Salary Structure Grade 15</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conhess"/>
+    </record>
+
+    <record id="grade_conmess_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Medical Salary Structure Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conmess"/>
+    </record>
+    <record id="grade_conmess_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Medical Salary Structure Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conmess"/>
+    </record>
+    <record id="grade_conmess_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Medical Salary Structure Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conmess"/>
+    </record>
+    <record id="grade_conmess_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Medical Salary Structure Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conmess"/>
+    </record>
+    <record id="grade_conmess_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Medical Salary Structure Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conmess"/>
+    </record>
+    <record id="grade_conmess_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Medical Salary Structure Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conmess"/>
+    </record>
+    <record id="grade_conmess_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Medical Salary Structure Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conmess"/>
+    </record>
+
+    <record id="grade_conuass_01" model="cleon.hr.grade">
+      <field name="name">CONUASS 01 - Graduate Assistant</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+    </record>
+    <record id="grade_conuass_02" model="cleon.hr.grade">
+      <field name="name">CONUASS 02 - Assistant Lecturer</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+    </record>
+    <record id="grade_conuass_03" model="cleon.hr.grade">
+      <field name="name">CONUASS 03 - Lecturer II</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+    </record>
+    <record id="grade_conuass_04" model="cleon.hr.grade">
+      <field name="name">CONUASS 04 - Lecturer I</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+    </record>
+    <record id="grade_conuass_05" model="cleon.hr.grade">
+      <field name="name">CONUASS 05 - Senior Lecturer</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+    </record>
+    <record id="grade_conuass_06" model="cleon.hr.grade">
+      <field name="name">CONUASS 06 - Associate Professor / Reader</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+    </record>
+    <record id="grade_conuass_07" model="cleon.hr.grade">
+      <field name="name">CONUASS 07 - Professor</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conuass"/>
+    </record>
+
+    <record id="grade_contiss2_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_08" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_09" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_10" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 10</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_11" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 11</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_12" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 12</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_13" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 13</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_14" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 14</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+    <record id="grade_contiss2_15" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Institutions Salary Structure II Grade 15</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contiss2"/>
+    </record>
+
+    <record id="grade_contediss_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_08" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_09" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_10" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 10</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_11" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 11</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_12" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 12</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_13" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 13</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_14" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 14</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+    <record id="grade_contediss_15" model="cleon.hr.grade">
+      <field name="name">Consolidated Tertiary Education Institutions Salary Structure Grade 15</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contediss"/>
+    </record>
+
+    <record id="grade_conpcass_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Polytechnics and Colleges of Education Academic Staff Salary Structure Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpcass"/>
+    </record>
+    <record id="grade_conpcass_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Polytechnics and Colleges of Education Academic Staff Salary Structure Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpcass"/>
+    </record>
+    <record id="grade_conpcass_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Polytechnics and Colleges of Education Academic Staff Salary Structure Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpcass"/>
+    </record>
+    <record id="grade_conpcass_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Polytechnics and Colleges of Education Academic Staff Salary Structure Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpcass"/>
+    </record>
+    <record id="grade_conpcass_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Polytechnics and Colleges of Education Academic Staff Salary Structure Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpcass"/>
+    </record>
+    <record id="grade_conpcass_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Polytechnics and Colleges of Education Academic Staff Salary Structure Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpcass"/>
+    </record>
+    <record id="grade_conpcass_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Polytechnics and Colleges of Education Academic Staff Salary Structure Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpcass"/>
+    </record>
+    <record id="grade_conpcass_08" model="cleon.hr.grade">
+      <field name="name">Consolidated Polytechnics and Colleges of Education Academic Staff Salary Structure Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpcass"/>
+    </record>
+    <record id="grade_conpcass_09" model="cleon.hr.grade">
+      <field name="name">Consolidated Polytechnics and Colleges of Education Academic Staff Salary Structure Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conpcass"/>
+    </record>
+
+    <record id="grade_conraiss_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_08" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_09" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_10" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 10</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_11" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 11</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_12" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 12</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_13" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 13</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_14" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 14</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+    <record id="grade_conraiss_15" model="cleon.hr.grade">
+      <field name="name">Consolidated Research and Allied Institutions Salary Structure Grade 15</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conraiss"/>
+    </record>
+
+    <record id="grade_conicss_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_08" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_09" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_10" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 10</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_11" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 11</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_12" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 12</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_13" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 13</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_14" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 14</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_15" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 15</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_16" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 16</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+    <record id="grade_conicss_17" model="cleon.hr.grade">
+      <field name="name">Consolidated Intelligence Community Salary Structure Grade 17</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conicss"/>
+    </record>
+
+    <record id="grade_contopsal_01" model="cleon.hr.grade">
+      <field name="name">Consolidated Top Federal Public Office Holders Salary Structure Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contopsal"/>
+    </record>
+    <record id="grade_contopsal_02" model="cleon.hr.grade">
+      <field name="name">Consolidated Top Federal Public Office Holders Salary Structure Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contopsal"/>
+    </record>
+    <record id="grade_contopsal_03" model="cleon.hr.grade">
+      <field name="name">Consolidated Top Federal Public Office Holders Salary Structure Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contopsal"/>
+    </record>
+    <record id="grade_contopsal_04" model="cleon.hr.grade">
+      <field name="name">Consolidated Top Federal Public Office Holders Salary Structure Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contopsal"/>
+    </record>
+    <record id="grade_contopsal_05" model="cleon.hr.grade">
+      <field name="name">Consolidated Top Federal Public Office Holders Salary Structure Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contopsal"/>
+    </record>
+    <record id="grade_contopsal_06" model="cleon.hr.grade">
+      <field name="name">Consolidated Top Federal Public Office Holders Salary Structure Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contopsal"/>
+    </record>
+    <record id="grade_contopsal_07" model="cleon.hr.grade">
+      <field name="name">Consolidated Top Federal Public Office Holders Salary Structure Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contopsal"/>
+    </record>
+    <record id="grade_contopsal_08" model="cleon.hr.grade">
+      <field name="name">Consolidated Top Federal Public Office Holders Salary Structure Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contopsal"/>
+    </record>
+    <record id="grade_contopsal_09" model="cleon.hr.grade">
+      <field name="name">Consolidated Top Federal Public Office Holders Salary Structure Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contopsal"/>
+    </record>
+    <record id="grade_contopsal_10" model="cleon.hr.grade">
+      <field name="name">Consolidated Top Federal Public Office Holders Salary Structure Grade 10</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_contopsal"/>
+    </record>
+
+    <record id="grade_conjuss_01" model="cleon.hr.grade">
+      <field name="name">Judicial remuneration structure (verify official applicable scheme) Grade 01</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conjuss"/>
+    </record>
+    <record id="grade_conjuss_02" model="cleon.hr.grade">
+      <field name="name">Judicial remuneration structure (verify official applicable scheme) Grade 02</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conjuss"/>
+    </record>
+    <record id="grade_conjuss_03" model="cleon.hr.grade">
+      <field name="name">Judicial remuneration structure (verify official applicable scheme) Grade 03</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conjuss"/>
+    </record>
+    <record id="grade_conjuss_04" model="cleon.hr.grade">
+      <field name="name">Judicial remuneration structure (verify official applicable scheme) Grade 04</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conjuss"/>
+    </record>
+    <record id="grade_conjuss_05" model="cleon.hr.grade">
+      <field name="name">Judicial remuneration structure (verify official applicable scheme) Grade 05</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conjuss"/>
+    </record>
+    <record id="grade_conjuss_06" model="cleon.hr.grade">
+      <field name="name">Judicial remuneration structure (verify official applicable scheme) Grade 06</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conjuss"/>
+    </record>
+    <record id="grade_conjuss_07" model="cleon.hr.grade">
+      <field name="name">Judicial remuneration structure (verify official applicable scheme) Grade 07</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conjuss"/>
+    </record>
+    <record id="grade_conjuss_08" model="cleon.hr.grade">
+      <field name="name">Judicial remuneration structure (verify official applicable scheme) Grade 08</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conjuss"/>
+    </record>
+    <record id="grade_conjuss_09" model="cleon.hr.grade">
+      <field name="name">Judicial remuneration structure (verify official applicable scheme) Grade 09</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conjuss"/>
+    </record>
+    <record id="grade_conjuss_10" model="cleon.hr.grade">
+      <field name="name">Judicial remuneration structure (verify official applicable scheme) Grade 10</field>
+      <field name="structure_id" ref="cleon_payroll.structure_ng_conjuss"/>
+    </record>
+
+
+    </data>
+</odoo>

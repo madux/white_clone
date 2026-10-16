@@ -8,6 +8,35 @@
   --os-font: 'DM Sans', sans-serif;
 }
 
+.rc_ai_btn_primary {
+    background: linear-gradient(135deg, #3e1b77, #b326c9) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 9px 22px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    transition: opacity .15s;
+}
+.rc_ai_btn_primary:hover { opacity: .9; }
+
+
+.rc_btn_primary {
+    background: linear-gradient(135deg, #f472b6, #ec4899) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 9px 22px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    transition: opacity .15s;
+}
+.rc_btn_primary:hover { opacity: .9; }
+
+
+
 .o_insurance_benefits {
     display: flex;
     flex-direction: column;

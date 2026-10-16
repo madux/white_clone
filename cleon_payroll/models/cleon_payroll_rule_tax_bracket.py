@@ -13,7 +13,11 @@ class CleonPayrollTaxBracket(models.Model):
     lower_limit = fields.Float(string="From (Annual)", required=True)
     upper_limit = fields.Float(string="To (Annual)", help="Leave 0 for 'and above'.")
     rate = fields.Float(string="Rate (%)", required=True)
-
+    show_payroll_link = fields.Boolean(
+                        string="Payroll menu Link",
+                        default=True,
+                        help="Used to hold widget in form view"
+                    )
     @api.constrains("lower_limit", "upper_limit", "rate")
     def _check_values(self):
         for b in self:

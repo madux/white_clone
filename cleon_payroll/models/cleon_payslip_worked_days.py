@@ -15,3 +15,4 @@ class CleonPayslipWorkedDays(models.Model):
     number_of_days = fields.Float(default=0.0)
     number_of_hours = fields.Float(default=0.0)
     work_overtime_hours = fields.Float(default=0.0)
+    

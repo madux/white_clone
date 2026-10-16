@@ -15,7 +15,11 @@ class CleonPayrollTaxExplain(models.TransientModel):
     period_tax = fields.Float(string="Tax per Period", readonly=True)
     effective_rate = fields.Float(string="Effective Rate (%)", readonly=True)
     line_ids = fields.One2many("cleon.payroll.tax.explain.line", "wizard_id", readonly=True)
-
+    show_payroll_link = fields.Boolean(
+                        string="Payroll menu Link",
+                        default=True,
+                        help="Used to hold widget in form view"
+                    )
     @api.onchange("rule_id", "base_period")
     def _onchange_calc(self):
         for w in self:

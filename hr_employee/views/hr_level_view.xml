@@ -19,50 +19,55 @@
         <field name="model">hr.level</field>
         <field name="arch" type="xml">
             <form string="Level">
-                <sheet>
-                    <!-- HEADER CARD -->
+                <div class="o_hr_payroll_form_layout">
+                    <field name="show_payroll_link" widget="payroll_app_link"/>
+                    <div class="hd-main">
+                        <sheet>
+                            <!-- HEADER CARD -->
 
-                    <div class="p-4 mb-4 bg-primary-subtle rounded shadow-sm">
+                            <div class="p-4 mb-4 bg-primary-subtle rounded shadow-sm">
 
-                        <div class="d-flex align-items-center">
+                                <div class="d-flex align-items-center">
 
-                            <div class="me-3">
-                                <i class="fa fa-university fa-3x text-primary"/>
-                            </div>
+                                    <div class="me-3">
+                                        <i class="fa fa-university fa-3x text-primary"/>
+                                    </div>
 
-                            <div class="oe_title">
+                                    <div class="oe_title">
 
-                                <label for="name"/>
+                                        <label for="name"/>
 
-                                <h1>
-                                    <field name="name"
-                                           placeholder="Level"/>
-                                </h1>
+                                        <h1>
+                                            <field name="name"
+                                                placeholder="Level"/>
+                                        </h1>
 
-                                <div class="text-muted">
-                                    Configure Level classifications for employees.
+                                        <div class="text-muted">
+                                            Configure Level classifications for employees.
+                                        </div>
+
+                                    </div>
+
                                 </div>
 
                             </div>
 
-                        </div>
+                            <group>
 
+                                <group string="Basic Information">
+                                    <field name="description"/>
+                                </group>
+
+                                <group string="Details">
+
+                                    <field name="country_id" options="{'no_open': true, 'no_create': true}" invisible="0"/>
+                                </group>
+
+                            </group>
+
+                        </sheet>
                     </div>
-
-                    <group>
-
-                        <group string="Basic Information">
-                            <field name="description"/>
-                        </group>
-
-                        <group string="Details">
-
-                            <field name="country_id" options="{'no_open': true, 'no_create': true}" invisible="0"/>
-                        </group>
-
-                    </group>
-
-                </sheet>
+                </div>
 
             </form>
         </field>

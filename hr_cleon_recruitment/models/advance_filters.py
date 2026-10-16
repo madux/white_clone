@@ -28,7 +28,7 @@ class advanceFiltersWizard(models.TransientModel):
         )
         
     branch_id = fields.Many2one('multi.branch', string='Location')
-    grade_id = fields.Many2one('hr.grade', string='Grade')
+    grade_id = fields.Many2one('cleon.hr.grade', string='Grade')
     employee_type_id = fields.Many2one('hr.core_employment_type', string='Employment type')
     priority = fields.Selection([
             ('low', 'Low'),

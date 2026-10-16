@@ -23,7 +23,11 @@ class CleonLocation(models.Model):
     employee_count = fields.Integer(
         compute="_compute_employee_count", string="Employees")
     active = fields.Boolean(default=True)
-
+    show_payroll_link = fields.Boolean(
+                    string="Payroll menu Link",
+                    default=True,
+                    help="Used to hold widget in form view"
+                )
     _sql_constraints = [
         ("code_company_uniq", "unique(code, company_id)",
          "Location code must be unique per company."),

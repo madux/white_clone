@@ -6,50 +6,57 @@
         <field name="model">cleon.payslip.run</field>
         <field name="arch" type="xml">
             <form string="Payroll Run" class="o_qms_form">
-                <div class="qms-card">
-                    <div class="qms-card-header">
-                        <div class="qms-card-icon">
-                            <svg viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        </div>
-                        <span class="qms-card-title">Payroll Run</span>
-                    </div>
-                    <div class="pink-card-body">
-                        <group>
-                            <group col="4">
-                                <field name="name" class="pink-text" readonly="1"/>
-                                <field name="state" widget="badge"
-                                       decoration-danger="state == 'draft'"
-                                       decoration-warning="state == 'verify'"
-                                       decoration-success="state == 'close'"/>
-                            </group>
-                            <group>
-                                <field name="schedule_pay" readonly="state != 'draft'"/>
-                                <field name="company_id" options="{'no_open': true, 'no_create': true}"/>
-                            </group>
-                        </group>
-                    </div>
-                    <div class="ash-card-body text-sm">
-                        <span class="qms-card-title">Period</span>
-                        <group>
-                            <group>
-                                <field name="date_start" readonly="state != 'draft'"/>
-                                <field name="date_end" readonly="state != 'draft'"/>
-                            </group>
-                            <group>
-                                <field name="slip_count" readonly="1"/>
-                                <field name="clear_existing_payslip" readonly="0" widget="boolean_toggle"/>
+                <div class="o_hr_payroll_form_layout">
+                    <field name="show_payroll_link" widget="payroll_app_link"/>
+                    <div class="hd-main">
+                        <sheet>
+                            <div class="qms-card">
+                                <div class="qms-card-header">
+                                    <div class="qms-card-icon">
+                                        <svg viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    </div>
+                                    <span class="qms-card-title">Payroll Run</span>
+                                </div>
+                                <div class="pink-card-body">
+                                    <group>
+                                        <group col="4">
+                                            <field name="name" class="pink-text" readonly="1"/>
+                                            <field name="state" widget="badge"
+                                                decoration-danger="state == 'draft'"
+                                                decoration-warning="state == 'verify'"
+                                                decoration-success="state == 'close'"/>
+                                        </group>
+                                        <group>
+                                            <field name="schedule_pay" readonly="state != 'draft'"/>
+                                            <field name="company_id" options="{'no_open': true, 'no_create': true}"/>
+                                        </group>
+                                    </group>
+                                </div>
+                                <div class="ash-card-body text-sm">
+                                    <span class="qms-card-title">Period</span>
+                                    <group>
+                                        <group>
+                                            <field name="date_start" readonly="state != 'draft'"/>
+                                            <field name="date_end" readonly="state != 'draft'"/>
+                                        </group>
+                                        <group>
+                                            <field name="slip_count" readonly="1"/>
+                                            <field name="clear_existing_payslip" readonly="0" widget="boolean_toggle"/>
 
-                            </group>
-                        </group>
+                                        </group>
+                                    </group>
+                                </div>
+                                <header>
+                                    <button class="btn btn-success" name="action_generate_payslips" type="object"
+                                            string="Generate Payslips" invisible="state != 'draft'"/>
+                                    <button class="btn btn-success" name="action_confirm_payslips" type="object"
+                                            string="Compute &amp; Confirm All" invisible="state != 'verify'"/>
+                                    <button class="btn btn-secondary" name="action_view_payslips" type="object"
+                                            string="View Payslips"/>
+                                </header>
+                            </div>
+                        </sheet>
                     </div>
-                    <header>
-                        <button class="btn btn-success" name="action_generate_payslips" type="object"
-                                string="Generate Payslips" invisible="state != 'draft'"/>
-                        <button class="btn btn-success" name="action_confirm_payslips" type="object"
-                                string="Compute &amp; Confirm All" invisible="state != 'verify'"/>
-                        <button class="btn btn-secondary" name="action_view_payslips" type="object"
-                                string="View Payslips"/>
-                    </header>
                 </div>
             </form>
         </field>

@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="cleon_payroll_dashboard.CustomPayrollKanbanRenderer" t-inherit="web.KanbanRenderer" t-inherit-mode="primary">
+        <xpath expr="//div[@t-ref='root']" position="before">
+            <!-- ===== Sidebar ===== -->
+            <div class="cpd-sidebar" id="cpdSidebar">
+
+                <!-- SIDEBAR BRAND -->
+                <div class="cpd-sidebar-brand">
+
+                    <span class="cpd-brand-text" id="cpdApps">
+                        <i class="fa-solid fa-chart-pie"/>
+                    </span>
+
+                    <a href="#"
+                    t-on-click="openRecord"
+                    data-action="cleon_payroll.action_cleon_payslip_run">
+
+                        <span class="cpd-logo-dot"/>
+
+                        <span class="cpd-brand-text">
+                            Cleon <b>Payroll</b>
+                        </span>
+                    </a>
+
+                    <button class="cpd-sidebar-close d-lg-none"
+                            id="cpdSidebarClose"
+                            type="button">
+                        <i class="fa-solid fa fa-times"/>
+                    </button>
+
+                </div>
+
+
+                <!-- SIDEBAR NAVIGATION -->
+                <nav class="cpd-nav" id="cpdNav">
+
+
+                    <!-- ================================================= -->
+                    <!-- OVERVIEW PARENT -->
+                    <!-- ================================================= -->
+
+                    <div class="cpd-nav-group">
+
+                        <a href="#"
+                        class="cpd-nav-link cpd-nav-parent"
+                        data-menu="overview"
+                        t-att-class="state.expandedMenus.overview ? 'expanded' : ''"
+                        t-on-click="toggleMenu">
+
+                            <i class="fa-solid fa fa-dashboard"/>
+                            <span>Overview</span>
+
+                            <i t-att-class="'fa-solid fa-chevron-down cpd-nav-chevron ' +
+                                (state.expandedMenus.overview ? 'expanded' : '')"/>
+                        </a>
+
+
+                        <div class="cpd-subnav"
+                            t-att-class="state.expandedMenus.overview ? 'show' : ''">
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="overview"
+                            data-key="overview_dashboard"
+                            data-action="cleon_payroll.action_cleon_payslip"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'overview_dashboard' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-tachometer"/>
+                                <span>Dashboard</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="overview"
+                            data-key="payslips"
+                            data-action="cleon_payroll.action_cleon_payslip"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'payslips' ? 'active' : '')">
+
+                                <i class="fa-solid fa-file-text-o"/>
+                                <span>Payslips</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="overview"
+                            data-key="employees"
+                            data-action="cleon_payroll.action_hr_employee_pink_kanban"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'employees' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-users"/>
+                                <span>Employees</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="overview"
+                            data-key="all_payments"
+                            data-action="cleon_payroll.action_cleon_payslip"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'all_payments' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-calendar-check-o"/>
+                                <span>All Payments</span>
+                            </a>
+
+                        </div>
+                    </div>
+
+
+
+                    <!-- ================================================= -->
+                    <!-- PAYROLL PARENT -->
+                    <!-- ================================================= -->
+
+                    <div class="cpd-nav-group">
+
+                        <a href="#"
+                        class="cpd-nav-link cpd-nav-parent"
+                        data-menu="payroll"
+                        t-att-class="state.expandedMenus.payroll ? 'expanded' : ''"
+                        t-on-click="toggleMenu">
+
+                            <i class="fa-solid fa fa-money"/>
+                            <span>Payroll</span>
+
+                            <i t-att-class="'fa-solid fa fa-chevron-down cpd-nav-chevron ' +
+                                (state.expandedMenus.payroll ? 'expanded' : '')"/>
+                        </a>
+
+
+                        <div class="cpd-subnav"
+                            t-att-class="state.expandedMenus.payroll ? 'show' : ''">
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="payroll"
+                            data-key="batch_payroll"
+                            data-action="cleon_payroll.action_cleon_payslip_run"
+                            id="payroll_run_menu"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'batch_payroll' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-object-group"/>
+                                <span>Batch Payroll</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="payroll"
+                            data-key="pay_cycle"
+                            data-action="cleon_payroll.action_cleon_payroll_cycle"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'pay_cycle' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-calendar"/>
+                                <span>Pay Cycle</span>
+                            </a>
+
+                        </div>
+                    </div>
+
+
+
+                    <!-- ================================================= -->
+                    <!-- SETUPS PARENT -->
+                    <!-- ================================================= -->
+
+                    <div class="cpd-nav-group">
+
+                        <a href="#"
+                        class="cpd-nav-link cpd-nav-parent"
+                        data-menu="setups"
+                        t-att-class="state.expandedMenus.setups ? 'expanded' : ''"
+                        t-on-click="toggleMenu">
+
+                            <i class="fa-solid fa fa-sliders"/>
+                            <span>Setups</span>
+
+                            <i t-att-class="'fa-solid fa-chevron-down cpd-nav-chevron ' +
+                                (state.expandedMenus.setups ? 'expanded' : '')"/>
+                        </a>
+
+
+                        <div class="cpd-subnav"
+                            t-att-class="state.expandedMenus.setups ? 'show' : ''">
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="setups"
+                            data-key="salary_structure"
+                            data-action="cleon_payroll.action_cleon_payroll_structure"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'salary_structure' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-sitemap"/>
+                                <span>Salary Structure</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="setups"
+                            data-key="pay_group"
+                            data-action="cleon_payroll.action_cleon_payroll_setup"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'pay_group' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-users"/>
+                                <span>Pay Group</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="setups"
+                            data-key="payroll_rules"
+                            data-action="cleon_payroll.action_cleon_payroll_rule"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'payroll_rules' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-list-ul"/>
+                                <span>Rules</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="setups"
+                            data-key="overtime"
+                            data-action="cleon_payroll.action_cleon_payroll_setup"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'overtime' ? 'active' : '')">
+
+                                <i class="fa-solid fa-business-time"/>
+                                <span>Overtime</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="setups"
+                            data-key="template"
+                            data-action="cleon_payroll.action_cleon_payroll_template"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'template' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-cog"/>
+                                <span>Template</span>
+                            </a>
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="setups"
+                            data-key="category"
+                            data-action="cleon_payroll.action_cleon_payroll_category"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'category' ? 'active' : '')">
+                                <i class="fa-solid fa fa-cog"/>
+                                <span>Categories</span>
+                            </a> 
+                        </div>
+                    </div>
+
+
+
+                    <!-- ================================================= -->
+                    <!-- COMPLIANCE PARENT -->
+                    <!-- ================================================= -->
+
+                    <div class="cpd-nav-group">
+
+                        <a href="#"
+                        class="cpd-nav-link cpd-nav-parent"
+                        data-menu="compliance"
+                        t-att-class="state.expandedMenus.compliance ? 'expanded' : ''"
+                        t-on-click="toggleMenu">
+
+                            <i class="fa-solid fa fa-shield"/>
+                            <span>Compliance</span>
+
+                            <i t-att-class="'fa-solid fa-chevron-down cpd-nav-chevron ' +
+                                (state.expandedMenus.compliance ? 'expanded' : '')"/>
+                        </a>
+
+
+                        <div class="cpd-subnav"
+                            t-att-class="state.expandedMenus.compliance ? 'show' : ''">
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="compliance"
+                            data-key="remittance"
+                            data-action="cleon_payroll.action_cleon_payroll_setup"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'remittance' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-file-text"/>
+                                <span>Remittance</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="compliance"
+                            data-key="pension"
+                            data-action="cleon_payroll.action_cleon_payroll_setup"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'pension' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-university"/>
+                                <span>Pension Contributions</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="compliance"
+                            data-key="payroll_compliance"
+                            data-action="cleon_payroll.action_cleon_payroll_setup"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'payroll_compliance' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-shield"/>
+                                <span>Payroll Compliance</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="compliance"
+                            data-key="payroll_exceptions"
+                            data-action="cleon_payroll.action_cleon_payroll_setup"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'payroll_exceptions' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-triangle-exclamation"/>
+                                <span>Payroll Exceptions</span>
+                            </a>
+
+
+                            <a href="#"
+                            t-on-click="openRecord"
+                            data-menu="compliance"
+                            data-key="audit_compliance"
+                            data-action="cleon_payroll.action_cleon_payroll_setup"
+                            t-att-class="'cpd-nav-link cpd-subnav-link ' +
+                                (state.activeMenu === 'audit_compliance' ? 'active' : '')">
+
+                                <i class="fa-solid fa fa-clipboard"/>
+                                <span>Audit &amp; Compliance</span>
+                            </a>
+
+                        </div>
+                    </div>
+
+
+
+                    <!-- ================================================= -->
+                    <!-- SIDEBAR FOOTER -->
+                    <!-- ================================================= -->
+
+                    <div class="o_cc_sidebar_footer">
+
+                        <span class="o_cc_footer_label">
+                            Solution By MaachSoftware
+                        </span>
+
+                        <div class="o_cc_footer_status">
+                            <span class="o_cc_status_dot o_cc_status_green"/>
+                            All integrations active
+                        </div>
+
+                    </div>
+
+                </nav>
+            </div>
+            <!-- <div class="cpd-sidebar" id="cpdSidebar">
+                <div class="cpd-sidebar-brand">
+                    <span class="cpd-brand-text" id="cpdApps"><i class="fa-solid fa-chart-pie"></i>
+                    </span>
+                    <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payslip_run">
+                        <span class="cpd-logo-dot"></span>
+                        <span class="cpd-brand-text">Cleon <b>Payroll</b>
+                        </span>
+                    </a>
+                    <button class="cpd-sidebar-close d-lg-none" id="cpdSidebarClose"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
+                <nav class="cpd-nav" id="cpdNav">
+                    <div class="cpd-nav-section">Overview</div>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payslip" class="cpd-nav-link active" data-panel="panel-overview">
+                            <i class="fa-solid fa-chart-pie"></i><span>Overview</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payslip" class="cpd-nav-link" data-panel="panel-overview2">
+                            <i class="fa-solid fa-chart-pie"></i><span>Payslips</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_cycle" class="cpd-nav-link" data-panel="panel-trend">
+                            <i class="fa-solid fa-chart-line"></i><span>Payroll Cycle</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_hr_employee_pink_kanban" class="cpd-nav-link" data-panel="panel-department">
+                            <i class="fa-solid fa-sitemap"></i><span>Employees</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payslip" class="cpd-nav-link" data-panel="panel-upcoming">
+                            <i class="fa-solid fa-calendar-check"></i><span>All Payments</span>
+                        </a>
+
+                        <div class="cpd-nav-section">Payroll</div>
+                        
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payslip_run" class="cpd-nav-link" id="payroll_run_menu" data-panel="panel-trend2">
+                            <i class="fa-solid fa-chart-line"></i><span>Batch Payroll</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_cycle" class="cpd-nav-link" data-panel="panel-department2">
+                            <i class="fa-solid fa-sitemap"></i><span>Pay Cycle</span>
+                        </a> 
+                        <div class="cpd-nav-section">Setups</div>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_structure" class="cpd-nav-link" data-panel="panel-compensation">
+                            <i class="fa-solid fa-layer-group"></i><span>Salary Structure</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_category" class="cpd-nav-link" data-panel="panel-compensation">
+                            <i class="fa-solid fa-layer-group"></i><span>Pay Group</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_rule" class="cpd-nav-link" data-panel="panel-benefits">
+                            <i class="fa-solid fa-hand-holding-heart"></i><span>Rules</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_setup" class="cpd-nav-link" data-panel="panel-overtime">
+                            <i class="fa-solid fa-business-time"></i><span>Overtime</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_setup" class="cpd-nav-link" data-panel="panel-bands">
+                            <i class="fa-solid fa-layer-group"></i><span>Configuration</span>
+                        </a>
+
+                        <div class="cpd-nav-section">Compliance</div>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_setup" class="cpd-nav-link" data-panel="panel-tax">
+                            <i class="fa-solid fa-file-invoice-dollar"></i><span>Remittance</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_setup" class="cpd-nav-link" data-panel="panel-pension">
+                            <i class="fa-solid fa-piggy-bank"></i><span>Pension Contributions</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_setup" class="cpd-nav-link" data-panel="panel-compliance">
+                            <i class="fa-solid fa-shield-halved"></i><span>Payroll Compliance</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_setup" class="cpd-nav-link" data-panel="panel-exceptions">
+                            <i class="fa-solid fa-triangle-exclamation"></i><span>Payroll Exceptions</span>
+                        </a>
+                        <a t-on-click="openRecord" data-action="cleon_payroll.action_cleon_payroll_setup" class="cpd-nav-link" data-panel="panel-audit">
+                            <i class="fa-solid fa-clipboard-check"></i><span>Audit &amp; Compliance</span>
+                        </a> 
+                        <div class="o_cc_sidebar_footer">
+                            <span class="o_cc_footer_label">Solution By MaachSoftware</span>
+                            <div class="o_cc_footer_status">
+                                <span class="o_cc_status_dot o_cc_status_green"/>
+                                All integrations active
+                            </div>
+                        </div>
+                    </nav>
+                </div> -->
+                
+            </xpath>
+        </t> 
+</templates>

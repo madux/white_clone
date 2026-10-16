@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 
-    <t t-name="hr_employee.CustomKanbanRenderer" t-inherit="web.KanbanRenderer" t-inherit-mode="primary">
+    <t t-name="hr_employee.CustomKanbanRenderer" 
+    t-inherit="web.KanbanRenderer" 
+    t-inherit-mode="primary">
 
         <!-- <xpath expr="//div[@t-ref='root']" position="before">
             <h1 style="color:red;">
@@ -63,7 +65,7 @@
 
         </xpath> -->
         <xpath expr="//div[@t-ref='root']" position="before">
-            <div class="o_cc_admin_sidebar">
+            <div class="cpd-sidebar-admin">
  
                 <div class="o_cc_sidebar_header">
                     <span class="o_cc_header_dot"/>

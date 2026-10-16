@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cleon_lookup_table_form" model="ir.ui.view">
+        <field name="name">cleon.payroll.lookup.table.form</field>
+        <field name="model">cleon.payroll.lookup.table</field>
+        <field name="arch" type="xml">
+            <form string="Lookup Table" class="o_qms_form">
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M3 10h18M3 14h18M10 4v16M4 4h16v16H4z"/></svg>
+                        </div>
+                        <span class="qms-card-title">Lookup Table</span>
+                    </div>
+                    <div class="pink-card-body">
+                        <group>
+                            <group>
+                                <field name="name" class="pink-text" placeholder="Car allowance by grade"/>
+                                <field name="code" placeholder="CAR_GRADE_TABLE"/>
+                            </group>
+                            <group>
+                                <field name="company_id" options="{'no_open': true, 'no_create': true}"/>
+                            </group>
+                        </group>
+                    </div>
+                    <div class="ash-card-body">
+                        <span class="qms-card-title">Rows (key matches the person's value, e.g. grade G7)</span>
+                        <field name="row_ids">
+                            <tree editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="key"/>
+                                <field name="value"/>
+                            </tree>
+                        </field>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_lookup_table_list" model="ir.ui.view">
+        <field name="name">cleon.payroll.lookup.table.list</field>
+        <field name="model">cleon.payroll.lookup.table</field>
+        <field name="arch" type="xml">
+            <tree string="Lookup Tables">
+                <field name="code"/>
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_cleon_lookup_table" model="ir.actions.act_window">
+        <field name="name">Lookup Tables</field>
+        <field name="res_model">cleon.payroll.lookup.table</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- <menuitem id="menu_cleon_lookup_table" name="Lookup Tables"
+              parent="cleon_payroll.menu_cleon_payroll_config"
+              action="action_cleon_lookup_table" sequence="26"/> -->
+</odoo>

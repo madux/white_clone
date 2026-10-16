@@ -247,7 +247,7 @@ class Hrofferwizard(models.TransientModel):
     
     salary_currency = fields.Many2one('res.currency', string="Currency")
     job_id = fields.Many2one('hr.job', string="Job Role")
-    # grade_id = fields.Many2one('hr.grade', string="Grade")
+    # grade_id = fields.Many2one('cleon.hr.grade', string="Grade")
  
     candidate_ids = fields.Many2many(
         'hr.applicant',

@@ -31,7 +31,7 @@
 
         <record id="action_hr_core_organisation_setup_grade_levels" model="ir.actions.act_window">
             <field name="name">Grade &amp; Level</field>
-            <field name="res_model">hr.grade</field>
+            <field name="res_model">cleon.hr.grade</field>
             <field name="view_mode">tree,form</field>
         </record>
 

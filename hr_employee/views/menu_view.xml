@@ -74,12 +74,12 @@
                         name="🎖️Grade &amp; Level"
                         parent="menu_hr_core_organisation_setup"
                         sequence="40"
-                        action="hr_employee.action_core_grade" groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+                        action="hr_employee.action_core_job" groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
         <menuitem id="menu_hr_core_grade2"
                         name="🎖️Grade"
                         parent="menu_hr_core_grade"
                         sequence="10"
-                        action="hr_employee.action_core_grade" groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+                        action="hr_employee.action_core_job" groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
         <menuitem id="menu_hr_core_level"
                         name="🎖️Level"
                         parent="menu_hr_core_grade"

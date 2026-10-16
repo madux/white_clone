@@ -102,7 +102,7 @@ class CleonPayrollRule(models.Model):
 
     # ---- Condition ----
     condition_select = fields.Selection([
-        ("none", "Always True"),
+        ("none", "Normal"),
         ("range", "Wage Range"),
         ("builder", "Condition Builder"),
         ("python", "Programming Expression (admin)"),
@@ -126,7 +126,7 @@ class CleonPayrollRule(models.Model):
         ("bracket", "Tax Brackets"),
         ("contribution", "Contribution"),
         ("formula", "Python Formula (admin)"),
-    ], default="fixed", required=True, string="Amount Type", tracking=True)
+    ], default="fixed", required=True, string="Rule Formula", tracking=True)
     amount_fixed = fields.Float(string="Fixed Amount", digits="Payroll")
     amount_percentage = fields.Float(string="Percentage (%)", digits="Payroll")
     amount_percentage_base = fields.Char(
@@ -139,7 +139,21 @@ class CleonPayrollRule(models.Model):
                 "rules, worked_days, inputs\nresult = contract.wage")
     formula_help = fields.Text(default=FORMULA_HELP, readonly=True)
     ai_response = fields.Text(readonly=True)
-
+    is_statutory = fields.Boolean(
+        string="Statutory Rule",
+        default=False,
+        tracking=True,
+    )
+    show_payroll_link = fields.Boolean(
+                    string="Payroll menu Link",
+                    default=True,
+                    help="Used to hold widget in form view"
+                )
+    is_government_rule = fields.Boolean(
+        string="Government Payroll Rule",
+        default=False,
+        tracking=True,
+    )
     # ---- Builder lines (one One2many per purpose) ----
     condition_line_ids = fields.One2many(
         "cleon.payroll.rule.line", "rule_id", string="Condition Lines",
@@ -184,7 +198,14 @@ class CleonPayrollRule(models.Model):
     tax_id = fields.Many2one(
         "account.tax", string="Related Tax",
         help="Statutory tax/deduction this rule represents, if any.")
-
+    country_id = fields.Many2one(
+            "res.country", string="Country",
+            related="company_id.country_id"
+    ) 
+    active = fields.Boolean(
+                string="Active",
+                default=True,
+            )   
     _sql_constraints = [
         ("code_company_uniq", "unique(code, company_id)",
          "Rule code must be unique per company."),
@@ -488,7 +509,7 @@ class CleonPayrollRule(models.Model):
             "name": _("Tax Explain / Simulator"),
             "res_model": "cleon.payroll.tax.explain",
             "view_mode": "form",
-            "target": "new",
+            "target": "current",
             "context": {"default_rule_id": self.id},
         }
 
@@ -503,7 +524,7 @@ class CleonPayrollRule(models.Model):
             'res_id': self.id,
             'type': 'ir.actions.act_window',
             'domain': [],
-            'target': 'new'
+            'target': 'current'
         }
 
     def generate_AI_rule(self):

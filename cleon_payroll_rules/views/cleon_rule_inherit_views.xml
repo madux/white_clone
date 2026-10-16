@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Rule form: lifecycle, level, reads, lookup, percentage-base dropdowns, test -->
+    <record id="view_cleon_payroll_rule_form_f4" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.form.f4</field>
+        <field name="model">cleon.payroll.rule</field>
+        <field name="inherit_id" ref="cleon_payroll.view_cleon_payroll_rule_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+                        </div>
+                        <span class="qms-card-title">Rule Builder: level, reads and approval</span>
+                    </div>
+                    <div class="qms-card-header">
+                        <button name="action_open_test" type="object" string="Test on a person" class="btn btn-success"/>
+                    </div>
+                    
+                    <div class="qms-card-header">
+                        <button name="action_submit" type="object" string="Submit for approval"
+                                class="btn btn-warning" invisible="state != 'draft'"/>
+                        <button name="action_approve" type="object" string="Approve"
+                                class="btn btn-success" invisible="state != 'pending'"/>
+                        <button name="action_set_draft" type="object" string="Back to draft"
+                                class="btn btn-danger" invisible="state not in ('pending', 'active')"/>
+                        <button name="action_supersede" type="object" string="Supersede"
+                                class="btn btn-danger" invisible="state != 'active'"/>
+                    </div>
+                    <div class="pink-card-body">
+                        <group>
+                            <field name="state" widget="badge"
+                                    decoration-danger="state == 'draft'"
+                                    decoration-warning="state == 'pending'"
+                                    decoration-success="state == 'active'"
+                                    decoration-muted="state == 'superseded'"/>
+                                <field name="rule_level"/>
+                                <field name="is_ai_assisted"/>
+                                <field name="tested_ok"/>
+                                <field name="reads_rules"/>
+                                <field name="reads_categories"/>
+                                <field name="reads_params"/>
+                        </group>
+                    </div>
+                    
+                    <div class="ash-card-body text-sm" invisible="amount_select != 'lookup'">
+                        <span class="qms-card-title">Lookup</span>
+                        <group>
+                            <group>
+                                <field name="lookup_table_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="lookup_key_field_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="lookup_not_found"/>
+                            </group>
+                        </group>
+                    </div>
+                </div>
+            </xpath>
+
+            <xpath expr="//field[@name='amount_percentage']">
+                <div class="ash-card-body text-sm" invisible="amount_select != 'percentage'">
+                    <span class="qms-card-title">Percentage based on (pick a component)</span>
+                    <group>
+                        <field name="percentage_base_rule_id" options="{'no_open': true, 'no_create': true}"/>
+                        <field name="percentage_base_category_id" options="{'no_open': true, 'no_create': true}"/>
+                    </group>   
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Rules list: Level / Reads / Status columns (AC-RS-001) -->
+    <record id="view_cleon_payroll_rule_list_f4" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.list.f4</field>
+        <field name="model">cleon.payroll.rule</field>
+        <field name="inherit_id" ref="cleon_payroll.view_cleon_payroll_rule_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="inside">
+                <field name="rule_level"/>
+                <field name="reads_rules"/>
+                <field name="state" widget="badge"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Category classification -->
+    <record id="view_cleon_payroll_category_form_f4" model="ir.ui.view">
+        <field name="name">cleon.payroll.category.form.f4</field>
+        <field name="model">cleon.payroll.category</field>
+        <field name="inherit_id" ref="cleon_payroll.view_cleon_payroll_category_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='code']" position="after">
+                <field name="kind"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Structure: computed run order -->
+    <record id="view_cleon_payroll_structure_form_f4" model="ir.ui.view">
+        <field name="name">cleon.payroll.structure.form.f4</field>
+        <field name="model">cleon.payroll.structure</field>
+        <field name="inherit_id" ref="cleon_payroll.view_cleon_payroll_structure_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <div class="qms-card">
+                    <div class="ash-card-body text-sm">
+                        <span class="qms-card-title">Compiled run order (from declared reads)</span>
+                        <field name="compiled_order" readonly="1" nolabel="1"/>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -26,6 +26,20 @@
   --profile-mono:         'DM Mono', monospace;
 }
 
+.hd-main {
+    flex: 1;
+    /* overflow-y: auto; */
+    min-width: 0;
+}
+
+.hd-main .o_form_sheet_bg,
+.hd-main .o_form_view,
+.hd-main > sheet {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
 profile-body {
   font-family: var(--profile-font);
   background: var(--profile-bg);
@@ -33,6 +47,8 @@ profile-body {
   min-height: 100vh;
   display: flex;
 }
+
+
 
 /* ─── Layout ────────────────────────────────────────────────────── */
 .profile-layout {

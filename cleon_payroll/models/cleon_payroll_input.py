@@ -17,6 +17,11 @@ class CleonPayrollInputType(models.Model):
             ("employer_contribution", "Employer Contribution"),
             ("net", "Net"),
         ], default="gross", required=True, tracking=True)
+    show_payroll_link = fields.Boolean(
+                    string="Payroll menu Link",
+                    default=True,
+                    help="Used to hold widget in form view"
+                )
     _sql_constraints = [
         ("code_uniq", "unique(code)", "Input type code must be unique."),
     ]

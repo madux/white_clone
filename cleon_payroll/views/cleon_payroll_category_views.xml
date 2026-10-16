@@ -6,30 +6,35 @@
         <field name="model">cleon.payroll.category</field>
         <field name="arch" type="xml">
             <form string="Rule Category" class="o_qms_form">
-                <div class="qms-card">
-                    <div class="qms-card-header">
-                        <div class="qms-card-icon">
-                            <svg viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h6"/></svg>
+                <div class="o_hr_payroll_form_layout">
+                    <field name="show_payroll_link" widget="payroll_app_link"/>
+                    <div class="hd-main">
+                        <div class="qms-card">
+                            <div class="qms-card-header">
+                                <div class="qms-card-icon">
+                                    <svg viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h6"/></svg>
+                                </div>
+                                <span class="qms-card-title">Category Details</span>
+                            </div>
+                            <div class="pink-card-body">
+                                <group>
+                                    <group col="4">
+                                        <field name="name" class="pink-text" placeholder="Allowances"/>
+                                        <field name="code" placeholder="ALW"/>
+                                    </group>
+                                    <group>
+                                        <field name="parent_id" options="{'no_open': true, 'no_create': true}"/>
+                                        <field name="sequence"/>
+                                    </group>
+                                </group>
+                            </div>
+                            <div class="ash-card-body text-sm">
+                                <span class="qms-card-title">Notes</span>
+                                <group>
+                                    <field name="note" nolabel="1"/>
+                                </group>
+                            </div>
                         </div>
-                        <span class="qms-card-title">Category Details</span>
-                    </div>
-                    <div class="pink-card-body">
-                        <group>
-                            <group col="4">
-                                <field name="name" class="pink-text" placeholder="Allowances"/>
-                                <field name="code" placeholder="ALW"/>
-                            </group>
-                            <group>
-                                <field name="parent_id" options="{'no_open': true, 'no_create': true}"/>
-                                <field name="sequence"/>
-                            </group>
-                        </group>
-                    </div>
-                    <div class="ash-card-body text-sm">
-                        <span class="qms-card-title">Notes</span>
-                        <group>
-                            <field name="note" nolabel="1"/>
-                        </group>
                     </div>
                 </div>
             </form>

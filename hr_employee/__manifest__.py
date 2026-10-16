@@ -67,6 +67,7 @@
             'hr_employee/static/src/css/hr_employee_form.css',
             'hr_employee/static/src/css/hr_department.css',
             'hr_employee/static/src/css/benefit_form.css',
+            'hr_employee/static/src/css/hr_grade.css',
             # 'hr_warning/static/src/xml/list_dropdown_action.xml',
             # 'hr_warning/static/src/js/list_dropdown_action.js',
             # 'hr_warning/static/src/component/**/*',
@@ -79,7 +80,7 @@
             'hr_employee/static/src/component/organisation_template.js',
             'hr_employee/static/src/component/attendance_clock_widget.xml',
             'hr_employee/static/src/component/attendance_clock_widget.js',
-            
+            'hr_employee/static/src/component/button_spinner.js',
             # 'hr_warning/static/src/component/overwrite_template.xml',
         ],
     },

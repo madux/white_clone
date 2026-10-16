@@ -34,7 +34,7 @@ class HrJob(models.Model):
         copy=False,
     )
     grade_id = fields.Many2one(
-        'hr.grade',
+        'cleon.hr.grade',
         string='Grade', 
     )
     # @api.onchange('grade_id')

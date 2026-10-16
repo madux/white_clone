@@ -8,7 +8,7 @@ from odoo.exceptions import ValidationError
 SOURCE_MODELS = {
     "hr.contract": "contract",
     "hr.employee": "employee",
-    "cleon.payroll.structure": "payslip.struct_id",
+    "cleon.payroll.structure": "payslip.structure_id",
 }
 COMPATIBLE_TTYPES = ["integer", "float", "monetary", "char", "text"]
 

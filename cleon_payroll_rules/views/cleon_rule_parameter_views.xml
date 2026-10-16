@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cleon_rule_parameter_form" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.parameter.form</field>
+        <field name="model">cleon.payroll.rule.parameter</field>
+        <field name="arch" type="xml">
+            <form string="Rule Parameter" class="o_qms_form">
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 6v6l4 2M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+                        </div>
+                        <span class="qms-card-title">Rule Parameter</span>
+                    </div>
+                    <div class="pink-card-body">
+                        <group>
+                            <group>
+                                <field name="name" class="pink-text" placeholder="Transport rate"/>
+                                <field name="code" placeholder="TRANSPORT_RATE"/>
+                            </group>
+                            <group>
+                                <field name="unit"/>
+                                <field name="current_value" readonly="1"/>
+                                <field name="company_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="active" widget="boolean_toggle"/>
+                            </group>
+                        </group>
+                    </div>
+                    <div class="ash-card-body">
+                        <span class="qms-card-title">Dated values (no overlaps; leave 'To' empty for open ended)</span>
+                        <field name="value_ids">
+                            <tree editable="bottom">
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                                <field name="value"/>
+                            </tree>
+                        </field>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_rule_parameter_list" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.parameter.list</field>
+        <field name="model">cleon.payroll.rule.parameter</field>
+        <field name="arch" type="xml">
+            <tree string="Rule Parameters">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="unit"/>
+                <field name="current_value"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_cleon_rule_parameter" model="ir.actions.act_window">
+        <field name="name">Rule Parameters</field>
+        <field name="res_model">cleon.payroll.rule.parameter</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_cleon_rule_parameter" name="Rule Parameters"
+              parent="cleon_payroll.menu_cleon_payroll_config"
+              action="action_cleon_rule_parameter" sequence="25"/>
+</odoo>

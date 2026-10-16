@@ -1,3 +1,5 @@
+from . import payroll_template
+from . import payroll_group
 from . import cleon_location
 from . import cleon_payroll_category
 from . import cleon_payroll_rule
@@ -16,3 +18,6 @@ from . import cleon_payslip_input_line
 from . import resource_calendar
 from . import payroll_setting
 from . import payroll_cycle
+from . import res_company
+from . import hr_grade
+from . import structure_approval

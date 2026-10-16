@@ -54,17 +54,19 @@
                             <div class="p-3 mb-3 rounded-3 border bg-white shadow-sm">
                                 <group class="m-0">
                                     <group string="Contact Info" class="m-0">
-                                        <field name="mobile_phone" widget="phone"/>
+                                        <field name="mobile_phone"/>
                                         <field name="work_phone" widget="phone"/>
                                         <field name="work_email" widget="email"/>
-                                        <field name="company_id" groups="base.group_multi_company"/>
+                                        <field name="company_id" options="{'no_create': True, 'no_open': True, 'no_create_edit': True}"/>
                                     </group>
                                     <group string="Organizational Info" class="m-0">
-                                        <field name="department_id"/>
+                                        <field name="department_id" options="{'no_create': True, 'no_open': True, 'no_create_edit': True}"/>
                                         <field name="job_id"/>
                                         <field name="employee_number"/>
-                                        <field name="parent_id" widget="many2one_avatar_user"/>
-                                        <field name="coach_id" widget="many2one_avatar_user"/>
+                                        <field name="parent_id" widget="many2one_avatar_user" options="{'no_create': True, 'no_open': True, 'no_create_edit': True}"/>
+                                        <field name="coach_id" string="Mentor" widget="many2one_avatar_user" options="{'no_create': True, 'no_open': True, 'no_create_edit': True}"/>
+                                        <field name="grade_id" string="Grade" widget="many2one_avatar_user" options="{'no_create': True, 'no_open': True, 'no_create_edit': True}"/>
+                                        <field name="level_band_id" string="Level / step" widget="many2one_avatar_user" options="{'no_create': True, 'no_open': True, 'no_create_edit': True}"/>
                                     </group>
                                 </group>
                             </div>

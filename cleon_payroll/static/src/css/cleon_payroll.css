@@ -57,6 +57,541 @@ table{ border-collapse:collapse; width:100%; }
 .d-lg-none{ display:none; }
 
 
+/* Convert Bootstrap switch into a standard checkbox */
+.form-switch .form-check-input {
+    width: 1em !important;
+    height: 1em !important;
+    margin-left: -1.5em !important;
+
+    background-image: none !important;
+    background-position: center !important;
+
+    border-radius: 0.2em !important;
+    transition: none !important;
+
+    appearance: auto !important;
+    -webkit-appearance: checkbox !important;
+}
+
+mark, .mark {
+    background: #dd4381 !important;
+    color: #fff !important;
+}
+
+/* Checked checkbox */
+.form-switch .form-check-input:checked {
+    background-image: none !important;
+    background-position: center !important;
+}
+
+/* Optional: keep the checkbox aligned */
+.form-switch {
+    padding-left: 1.5em !important;
+}
+
+.o_hr_payroll_form_layout {
+    display: flex;
+    min-height: 100vh;
+    background: #f1f4f9;
+}
+
+/* Pay Group form — Odoo 17 */
+
+.o_form_view.cleon_pay_group_form,
+.cleon_pay_group_form {
+    --pg-pink: #f20d5e;
+    --pg-pink-light: #fff0f5;
+    --pg-border: #e9ddeb;
+    --pg-text: #242033;
+    --pg-muted: #777187;
+    --pg-green: #dff6ed;
+
+    background: #f7f4f9 !important;
+    color: var(--pg-text);
+    font-size: 12px;
+}
+
+.cleon_pay_group_form .o_form_sheet_bg {
+    background: #f7f4f9;
+}
+
+.cleon_pay_group_form .o_form_sheet {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 12px 18px 24px !important;
+    background: #f7f4f9 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.cleon_pay_group_form .o_form_label {
+    font-weight: 600;
+}
+
+.cleon_pay_group_form .pg_header {
+    margin-bottom: 18px;
+}
+
+.cleon_pay_group_form .pg_breadcrumb {
+    color: #70697d;
+    font-size: 11px;
+    margin-bottom: 6px;
+}
+
+.cleon_pay_group_form .pg_title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cleon_pay_group_form .pg_title h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    color: #201a2d;
+}
+
+.cleon_pay_group_form .pg_draft {
+    background: #fff0d5;
+    color: #a66a00;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 10px;
+}
+
+.cleon_pay_group_form .pg_subtitle {
+    font-size: 11px;
+    margin-top: 7px;
+    color: #4f485c;
+}
+
+/* Three-step navigation */
+
+.cleon_pay_group_form .pg_steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    background: #fff;
+    border: 1px solid var(--pg-border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 14px 0 12px;
+}
+
+.cleon_pay_group_form .pg_step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 12px;
+    border-right: 1px solid var(--pg-border);
+}
+
+.cleon_pay_group_form .pg_step:last-child {
+    border-right: 0;
+}
+
+.cleon_pay_group_form .pg_step.active {
+    background: #fff7fa;
+    color: var(--pg-pink);
+}
+
+.cleon_pay_group_form .pg_number {
+    display: flex;
+    flex: 0 0 23px;
+    width: 23px;
+    height: 23px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f0edf4;
+    font-weight: 700;
+}
+
+.cleon_pay_group_form .pg_step.active .pg_number {
+    background: var(--pg-pink);
+    color: white;
+}
+
+.cleon_pay_group_form .pg_step strong,
+.cleon_pay_group_form .pg_step small {
+    display: block;
+}
+
+.cleon_pay_group_form .pg_step strong {
+    font-size: 11px;
+}
+
+.cleon_pay_group_form .pg_step small {
+    font-size: 10px;
+    color: var(--pg-muted);
+    margin-top: 3px;
+}
+
+/* Main layout */
+
+.cleon_pay_group_form .pg_layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 248px;
+    gap: 12px;
+    align-items: start;
+}
+
+.cleon_pay_group_form .pg_main {
+    min-width: 0;
+}
+
+.cleon_pay_group_form .pg_card,
+.cleon_pay_group_form .pg_summary {
+    background: #fff;
+    border: 1px solid var(--pg-border);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(40, 20, 60, 0.03);
+}
+
+.aside_right_card {
+    background: #fee6f0;
+    border: 1px solid var(--pg-border);
+    border-radius: 12px;
+    padding: 16px 14px;
+    margin-bottom: 10px;
+    margin-top: 40px;
+    box-shadow: 0 1px 3px rgba(40, 20, 60, 0.03);
+}
+
+
+.cleon_pay_group_form .pg_card {
+    padding: 16px 14px;
+    margin-bottom: 10px;
+}
+
+.cleon_pay_group_form .pg_card_title {
+    color: var(--pg-pink);
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+/* Two-column identity fields */
+
+.cleon_pay_group_form .pg_grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+    row-gap: 12px;
+}
+
+.cleon_pay_group_form .pg_field {
+    display: grid;
+    grid-template-columns: minmax(105px, 0.7fr) minmax(0, 1.3fr);
+    align-items: start;
+    column-gap: 10px;
+    min-width: 0;
+}
+
+.cleon_pay_group_form .pg_field > label {
+    font-weight: 600;
+    padding-top: 9px;
+    font-size: 11px;
+}
+
+.cleon_pay_group_form .pg_field .o_field_widget {
+    min-width: 0;
+}
+
+.cpd-nav-group {
+    width: 100%;
+}
+
+.cpd-nav-parent {
+    cursor: pointer;
+}
+
+.cpd-nav-parent > span {
+    flex: 1;
+}
+
+.cpd-nav-chevron {
+    margin-left: auto;
+    width: auto !important;
+    font-size: 10px !important;
+    transition: transform 0.2s ease;
+}
+
+.cpd-nav-chevron.expanded {
+    transform: rotate(180deg);
+}
+
+.cpd-subnav {
+    display: none;
+    padding-left: 12px;
+}
+
+.cpd-subnav.show {
+    display: block;
+}
+
+.cpd-nav-link.cpd-subnav-link {
+    margin-left: 8px;
+    padding: 9px 10px;
+    font-size: 12.5px;
+    border-left: 2px solid rgba(255, 255, 255, 0.18);
+    border-radius: 0 8px 8px 0;
+}
+
+.cpd-nav-link.cpd-subnav-link i {
+    width: 18px;
+    text-align: center;
+    font-size: 13px;
+}
+
+.cpd-nav-link.cpd-subnav-link.active {
+    background: #fff;
+    color: var(--cpd-pink-700);
+    font-weight: 600;
+    border-left-color: var(--cpd-pink-700);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.10);
+}
+
+.cpd-nav-parent.expanded {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.cpd-nav-link {
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+.cleon_pay_group_form .pg_field .o_field_widget input,
+.cleon_pay_group_form .pg_field .o_field_widget select,
+.cleon_pay_group_form .pg_field .o_field_widget .o_input {
+    min-height: 34px;
+    border: 1px solid #dcd2e5;
+    border-radius: 7px;
+    padding: 6px 9px;
+    background-color: white;
+}
+
+.cleon_pay_group_form .pg_field > small {
+    grid-column: 2;
+    color: var(--pg-muted);
+    font-size: 10px;
+    margin-top: -5px;
+}
+
+/* Inherited defaults */
+
+.cleon_pay_group_form .pg_section_heading {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.cleon_pay_group_form .pg_section_heading p {
+    margin: -5px 0 0;
+    color: var(--pg-muted);
+    font-size: 10px;
+}
+
+.cleon_pay_group_form .pg_help {
+    white-space: nowrap;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.cleon_pay_group_form .pg_default_row {
+    display: grid;
+    grid-template-columns: 145px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.cleon_pay_group_form .pg_default_row:last-child {
+    margin-bottom: 0;
+}
+
+.cleon_pay_group_form .pg_default_row > label {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.cleon_pay_group_form .pg_default_control {
+    position: relative;
+    min-width: 0;
+}
+
+.cleon_pay_group_form .pg_default_control .o_field_widget {
+    width: 100%;
+}
+
+.cleon_pay_group_form .pg_default_control input,
+.cleon_pay_group_form .pg_default_control select,
+.cleon_pay_group_form .pg_default_control .o_input {
+    min-height: 36px;
+    width: 100%;
+    border: 1px solid #ded4e8;
+    border-radius: 7px;
+    padding: 7px 10px;
+    background: white;
+}
+
+.cleon_pay_group_form .pg_inherited {
+    position: absolute;
+    right: 28px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    pointer-events: none;
+    background: var(--pg-green);
+    color: #258866;
+    font-size: 9px;
+    border-radius: 9px;
+    padding: 3px 6px;
+    white-space: nowrap;
+}
+
+/* Right summary */
+
+.cleon_pay_group_form .pg_summary {
+    padding: 14px 12px;
+}
+
+.cleon_pay_group_form .pg_summary_title {
+    font-size: 10px;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+.pg_summary_title {
+    font-size: 10px;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+.pg_summary_row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0ebf3;
+    font-size: 10px;
+}
+
+.pg_preview {
+    color: var(--pg-pink);
+    font-weight: 600;
+    font-size: 10px;
+    margin-top: 13px;
+}
+
+
+
+
+.cleon_pay_group_form .pg_summary_row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0ebf3;
+    font-size: 10px;
+}
+
+.cleon_pay_group_form .pg_summary_row span {
+    color: #756d84;
+}
+
+.cleon_pay_group_form .pg_summary_row strong {
+    text-align: right;
+    font-size: 10px;
+}
+
+.cleon_pay_group_form .pg_preview {
+    color: var(--pg-pink);
+    font-weight: 600;
+    font-size: 10px;
+    margin-top: 13px;
+}
+
+/* Footer */
+
+.cleon_pay_group_form .pg_footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: white;
+    border: 1px solid var(--pg-border);
+    border-radius: 10px;
+}
+
+.cleon_pay_group_form .pg_footer_note {
+    flex: 1;
+    color: var(--pg-muted);
+    font-size: 10px;
+}
+
+.cleon_pay_group_form .pg_footer .btn-primary,
+.cleon_pay_group_form .o_form_button_save {
+    background: var(--pg-pink) !important;
+    border-color: var(--pg-pink) !important;
+    color: white !important;
+    border-radius: 7px;
+}
+
+.cleon_pay_group_form .pg_footer .btn-secondary {
+    border: 1px solid #ded4e8;
+    background: white;
+    border-radius: 7px;
+}
+
+/* Responsive layout */
+
+@media (max-width: 1100px) {
+    .cleon_pay_group_form .pg_layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cleon_pay_group_form .pg_summary {
+        order: -1;
+    }
+}
+
+@media (max-width: 760px) {
+    .cleon_pay_group_form .pg_grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cleon_pay_group_form .pg_steps {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cleon_pay_group_form .pg_step {
+        border-right: 0;
+        border-bottom: 1px solid var(--pg-border);
+    }
+
+    .cleon_pay_group_form .pg_field {
+        grid-template-columns: 110px minmax(0, 1fr);
+    }
+
+    .cleon_pay_group_form .pg_default_row {
+        grid-template-columns: 1fr;
+        gap: 5px;
+    }
+
+    .cleon_pay_group_form .pg_inherited {
+        display: none;
+    }
+}
+
+.o_kanban_view >.o_content {
+    display: flex !important;
+    flex-direction: row;
+}
+
 .o_content:has(.cpd-sidebar) {
     display: flex !important; 
 }
@@ -71,8 +606,8 @@ table{ border-collapse:collapse; width:100%; }
   display:flex;
   flex-direction:column;
   position:sticky;
-  top:0;
-  height:100vh;
+  top:20;
+  height:150vh;
   overflow-y:auto;
   z-index:20;
 }
@@ -105,10 +640,36 @@ table{ border-collapse:collapse; width:100%; }
   transition: background .15s ease, transform .1s ease;
 }
 .cpd-nav-link i{ width:18px; text-align:center; font-size:14px; }
-.cpd-nav-link:hover{ background:rgba(255,255,255,0.12); }
+.cpd-nav-link:hover{ background: #ffffff; }
 .cpd-nav-link.active{
-  background:#fff; color: var(--cpd-pink-700); font-weight:600;
+  background:#ff7dad; color: var(--cpd-pink-700); font-weight:600;
   box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+
+
+.cpd-subnav {
+    display: none;
+    padding-left: 12px;
+}
+
+.cpd-subnav.show {
+    display: block;
+}
+
+.cpd-nav-link.cpd-subnav-link {
+    margin-left: 8px;
+    padding: 9px 10px;
+    font-size: 12.5px;
+    border-left: 2px solid rgba(255, 255, 255, 0.18);
+    border-radius: 0 8px 8px 0;
+}
+
+.cpd-nav-link.cpd-subnav-link.active {
+    background: #fff;
+    color: var(--cpd-pink-700);
+    font-weight: 600;
+    border-left-color: var(--cpd-pink-700);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.10);
 }
 
 /* ---------------- Main ---------------- */

@@ -147,7 +147,8 @@ class HrEmployee(models.Model):
     first_name = fields.Char(string="First name", required=True, copy=False)
     middle_name = fields.Char(string="Middle name", copy=False)
     branch_id = fields.Many2one('multi.branch', string='Branch')
-    grade_id = fields.Many2one('hr.grade', string='Grade')
+    grade_id = fields.Many2one('cleon.hr.grade', string='Grade')
+    level_band_id = fields.Many2one('hr.level.band', string='Level / Step')
     employee_type_id = fields.Many2one('hr.core_employment_type', string='Employment type')
     
     last_name = fields.Char("Surname", required=True, copy=False)

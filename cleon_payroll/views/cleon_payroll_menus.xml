@@ -6,32 +6,44 @@
     <!-- Payroll Processing --> 
     <menuitem id="menu_cleon_payroll_processing" name="Payroll"
               parent="menu_cleon_payroll_root" sequence="10"/>
-    <menuitem id="menu_cleon_payslip_run" name="Payroll Runs"
-              parent="menu_cleon_payroll_processing" action="action_cleon_payslip_run" sequence="10"/>
-    <menuitem id="menu_cleon_payslip" name="Payslips" 
-              parent="menu_cleon_payroll_processing" action="action_cleon_payslip" sequence="20"/>
+    <menuitem id="menu_cleon_payslip_run" name="Payroll Run"
+              parent="menu_cleon_payroll_processing" action="action_cleon_payslip_run" sequence="10" groups="cleon_payroll.group_root_user"/>
 
-    <record id="cleon_payroll.menu_cleon_payslip_run" model="ir.ui.menu">
+    <menuitem id="menu_cleon_payslip_main" name="Payroll" 
+              parent="menu_cleon_payroll_processing" action="action_cleon_payslip" sequence="20"/>
+    <menuitem id="menu_cleon_payslip" name="Payslips" 
+              parent="menu_cleon_payroll_processing" action="action_cleon_payslip" sequence="20" groups="cleon_payroll.group_root_user" />
+
+    <record id="cleon_payroll.menu_cleon_payslip_main" model="ir.ui.menu">
         <field name="icon_class">fa fa-money</field>
         <field name="category_name">CleonHR-FINANCE</field>
     </record>
 
     <!-- Employees (reuse hr.employee) -->
+
+    <!-- <menuitem id="menu_cleon_payroll_overview" name="Overview"
+              parent="menu_cleon_payroll_root" sequence="20"
+              action="cleon_payroll.menu_cleon_payslip" groups="cleon_payroll.group_root_user"/> -->
+
     <menuitem id="menu_cleon_employees" name="Employees"
               parent="menu_cleon_payroll_root" sequence="20"
-              action="cleon_payroll.action_hr_employee_pink_kanban"/>
+              action="cleon_payroll.action_hr_employee_pink_kanban" groups="cleon_payroll.group_root_user"/>
 
     <menuitem id="menu_cleon_contract" name="Contract"
               parent="menu_cleon_payroll_root" sequence="30"
-              action="hr_contract.action_hr_contract"/>
-    <menuitem id="menu_cleon_paycycle" name="Pay Cycle"
+              action="hr_contract.action_hr_contract" groups="cleon_payroll.group_root_user"/>
+    <menuitem id="menu_cleon_paycycle" name="Pay Cycle" groups="cleon_payroll.group_root_user"
               parent="menu_cleon_payroll_root" action="action_cleon_payroll_cycle" sequence="60"/>
-    <menuitem id="menu_cleon_paysetup" name="Payroll Setup"
+    <menuitem id="menu_cleon_paysetup" name="Pay Group" groups="cleon_payroll.group_root_user"
               parent="menu_cleon_payroll_root" action="action_cleon_payroll_setup" sequence="70"/>
     <!-- Configuration -->
     <menuitem id="menu_cleon_payroll_config" name="Configuration"
-              parent="menu_cleon_payroll_root" sequence="90"/>
-    <menuitem id="menu_cleon_payroll_structure" name="Pay Structures / Group"
+              parent="menu_cleon_payroll_root" sequence="90" groups="cleon_payroll.group_root_user"/>
+
+
+    <menuitem id="menu_cleon_payroll_template" name="Pay Template"
+              parent="menu_cleon_payroll_config" action="action_cleon_payroll_template" sequence="8"/>
+    <menuitem id="menu_cleon_payroll_structure" name="Pay Structures"
               parent="menu_cleon_payroll_config" action="action_cleon_payroll_structure" sequence="10"/>
     <menuitem id="menu_cleon_payroll_rule" name="Rules &amp; Components"
               parent="menu_cleon_payroll_config" action="cleon_payroll.action_cleon_payroll_rule" sequence="20"/>
@@ -40,10 +52,26 @@
     <menuitem id="menu_cleon_payroll_input_type" name="Input Types"
               parent="menu_cleon_payroll_config" action="action_cleon_payroll_input_type" sequence="40"/>
     
-    <menuitem id="menu_cleon_payroll_grade" name="Grade"
-              parent="menu_cleon_payroll_config" action="hr_employee.action_core_grade" sequence="60"/>
-    
-    <!-- <menuitem id="menu_cleon_location" name="Locations"
-              parent="menu_cleon_payroll_config" action="action_cleon_location" sequence="50"/> -->
+    <record id="action_cleon_grade_payroll" model="ir.actions.act_window">
+        <field name="name">Grade</field>
+        <field name="res_model">cleon.hr.grade</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="target">current</field> 
+        <field name="search_view_id" ref="cleon_payroll.view_cleon_hr_grade_search"/>
+        <field name="context">
+            {'search_default_group_by_structure': 1}
+        </field>
+    </record>
 
+    <record id="action_hr_cpayroll_level" model="ir.actions.act_window">
+        <field name="name">Level &amp; Steps</field>
+        <field name="res_model">hr.level</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="target">current</field> 
+    </record>
+    <menuitem id="menu_cleon_payroll_grade" name="Grade"
+              parent="menu_cleon_payroll_config" action="cleon_payroll.action_cleon_grade_payroll" sequence="60"/>
+    <menuitem id="menu_cleon_payroll_level" name="Level"
+              parent="menu_cleon_payroll_config" action="cleon_payroll.action_hr_cpayroll_level" sequence="70"/>
+    
 </odoo>

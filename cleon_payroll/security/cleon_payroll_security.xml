@@ -22,7 +22,13 @@
             <field name="name">Payroll Manager</field>
             <field name="category_id" ref="module_category_cleon_payroll"/>
             <field name="implied_ids" eval="[(4, ref('group_payroll_officer'))]"/>
-            <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        </record>
+
+        <record id="group_root_user" model="res.groups">
+            <field name="name">Payroll Super Admin</field>
+            <field name="category_id" ref="module_category_cleon_payroll"/>
+            <field name="implied_ids" eval="[(4, ref('group_payroll_officer')), (4, ref('group_payroll_manager'))]"/>
+            <!-- <field name="users" eval="[(4, ref('base.user_admin'))]"/> -->
         </record>
 
         <!-- Employees can only see their own payslips -->
