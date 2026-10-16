@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ================================================= -->
+        <!-- NIGERIAN GOVERNMENT PAYROLL CATEGORIES             -->
+        <!-- ================================================= -->
+
+        <record id="category_ng_basic" model="cleon.payroll.category">
+            <field name="name">Basic Salary</field>
+            <field name="code">BASIC-NG</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <record id="category_ng_allowance" model="cleon.payroll.category">
+            <field name="name">Allowances</field>
+            <field name="code">ALW-NG</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <record id="category_ng_gross" model="cleon.payroll.category">
+            <field name="name">Gross Earnings</field>
+            <field name="code">GROSS-NG</field>
+            <field name="sequence">30</field>
+        </record>
+
+        <record id="category_ng_deduction" model="cleon.payroll.category">
+            <field name="name">Employee Deductions(Nigeria)</field>
+            <field name="code">DED-NG</field>
+            <field name="sequence">40</field>
+        </record>
+
+        <record id="category_ng_employer_contribution"
+                model="cleon.payroll.category">
+            <field name="name">Employer Contributions</field>
+            <field name="code">ERCON-NG</field>
+            <field name="sequence">50</field>
+        </record>
+
+        <record id="category_ng_net" model="cleon.payroll.category">
+            <field name="name">Net Salary</field>
+            <field name="code">NET-NG</field>
+            <field name="sequence">60</field>
+        </record>
+
+        <!-- ================================================= -->
+        <!-- BASIC SALARY                                       -->
+        <!-- ================================================= -->
+
+        <record id="rule_ng_basic" model="cleon.payroll.rule">
+            <field name="name">Basic Salary</field>
+            <field name="code">BASIC-NG</field>
+            <field name="sequence">10</field>
+            <field name="category_id" ref="category_ng_basic"/>
+            <field name="rule_type">gross</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">formula</field>
+            <field name="amount_python_compute"><![CDATA[
+result = contract.wage
+            ]]></field>
+            <field name="appears_on_payslip">True</field>
+            <field name="is_statutory" eval="False"/>
+            <field name="is_government_rule">True</field>
+            <field name="active" eval="False"/>
+            <field name="note">Basic salary supplied by the employee's approved salary scale or contract wage. Configure the applicable grade and step before payroll processing.</field>
+        </record>
+
+        <!-- ================================================= -->
+        <!-- ALLOWANCES                                          -->
+        <!-- Configure amounts/rates from the applicable        -->
+        <!-- government salary circular.                        -->
+        <!-- ================================================= -->
+
+        <record id="rule_ng_housing" model="cleon.payroll.rule">
+            <field name="name">Housing Allowance</field>
+            <field name="code">HOUSING-NG</field>
+            <field name="sequence">20</field>
+            <field name="category_id" ref="category_ng_allowance"/>
+            <field name="rule_type">gross</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">fixed</field>
+            <field name="amount_fixed">0.0</field>
+            <field name="appears_on_payslip">True</field>
+            <field name="is_statutory" eval="False"/>
+            <field name="is_government_rule">True</field>
+            <field name="active" eval="False"/>
+            <field name="note">Configure the approved amount or rate for the applicable employee category. Zero is a placeholder, not an official rate.</field>
+        </record>
+
+        <record id="rule_ng_transport" model="cleon.payroll.rule">
+            <field name="name">Transport Allowance</field>
+            <field name="code">TRANSPORT-NG</field>
+            <field name="sequence">21</field>
+            <field name="category_id" ref="category_ng_allowance"/>
+            <field name="rule_type">gross</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">fixed</field>
+            <field name="amount_fixed">0.0</field>
+            <field name="appears_on_payslip">True</field>
+            <field name="is_statutory" eval="False"/>
+            <field name="is_government_rule">True</field>
+            <field name="active" eval="False"/>
+            <field name="note">Configure the approved amount or rate for the applicable employee category. Zero is a placeholder, not an official rate.</field>
+        </record>
+
+        <record id="rule_ng_utility" model="cleon.payroll.rule">
+            <field name="name">Utility Allowance</field>
+            <field name="code">UTILITY-NG</field>
+            <field name="sequence">22</field>
+            <field name="category_id" ref="category_ng_allowance"/>
+            <field name="rule_type">gross</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">fixed</field>
+            <field name="amount_fixed">0.0</field>
+            <field name="appears_on_payslip">True</field>
+            <field name="is_statutory" eval="False"/>
+            <field name="is_government_rule">True</field>
+            <field name="active" eval="False"/>
+            <field name="note">Optional allowance. Enable only where the applicable remuneration policy authorizes it.</field>
+        </record>
+
+        <record id="rule_ng_responsibility" model="cleon.payroll.rule">
+            <field name="name">Responsibility Allowance</field>
+            <field name="code">RESP-NG</field>
+            <field name="sequence">23</field>
+            <field name="category_id" ref="category_ng_allowance"/>
+            <field name="rule_type">gross</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">fixed</field>
+            <field name="amount_fixed">0.0</field>
+            <field name="appears_on_payslip">True</field>
+            <field name="is_statutory" eval="False"/>
+            <field name="is_government_rule">True</field>
+            <field name="active" eval="False"/>
+            <field name="note">Optional allowance for approved responsibilities. Configure eligibility and rates according to the applicable policy.</field>
+        </record>
+
+        <record id="rule_ng_hazard" model="cleon.payroll.rule">
+            <field name="name">Hazard Allowance</field>
+            <field name="code">HAZARD-NG</field>
+            <field name="sequence">24</field>
+            <field name="category_id" ref="category_ng_allowance"/>
+            <field name="rule_type">gross</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">fixed</field>
+            <field name="amount_fixed">0.0</field>
+            <field name="appears_on_payslip">True</field>
+            <field name="is_statutory" eval="False"/>
+            <field name="is_government_rule">True</field>
+            <field name="active" eval="False"/>
+            <field name="note">Use only for eligible roles and approved hazard allowance rates.</field>
+        </record>
+
+        <!-- ================================================= -->
+        <!-- EMPLOYEE PENSION: 8%                                -->
+        <!-- Pensionable emoluments must be defined correctly.   -->
+        <!-- ================================================= -->
+
+        <record id="rule_ng_pension_employee" model="cleon.payroll.rule">
+            <field name="name">Employee Pension Contribution</field>
+            <field name="code">PENSION_EE-NG</field>
+            <field name="sequence">60</field>
+            <field name="category_id" ref="category_ng_deduction"/>
+            <field name="rule_type">deduction</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">percentage</field>
+            <field name="amount_percentage">8.0</field>
+            <field name="amount_percentage_base">categories.BASIC</field>
+            <field name="appears_on_payslip">True</field>
+            <field name="is_statutory" eval="True"/>
+            <field name="is_government_rule">True</field>
+            <field name="active" eval="False"/>
+            <field name="note">Illustrative standard employee contribution rate. Confirm coverage and the correct pensionable-emoluments base before production use.</field>
+        </record>
+
+        <!-- ================================================= -->
+        <!-- EMPLOYER PENSION: 10%                               -->
+        <!-- ================================================= -->
+
+        <record id="rule_ng_pension_employer" model="cleon.payroll.rule">
+            <field name="name">Employer Pension Contribution</field>
+            <field name="code">PENSION_ER-NG</field>
+            <field name="sequence">70</field>
+            <field name="category_id"
+                   ref="category_ng_employer_contribution"/>
+            <field name="rule_type">employer_contribution</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">percentage</field>
+            <field name="amount_percentage">10.0</field>
+            <field name="amount_percentage_base">categories.BASIC</field>
+            <field name="appears_on_payslip">False</field>
+            <field name="is_statutory" eval="True"/>
+            <field name="is_government_rule">True</field>
+            <field name="active" eval="False"/>
+            <field name="note">Illustrative standard employer contribution rate. Confirm coverage and pensionable emoluments before production use.</field>
+        </record>
+
+        <!-- ================================================= -->
+        <!-- NATIONAL HOUSING FUND                              -->
+        <!-- ================================================= -->
+
+        <record id="rule_ng_nhf" model="cleon.payroll.rule">
+            <field name="name">National Housing Fund</field>
+            <field name="code">NHF-NG</field>
+            <field name="sequence">80</field>
+            <field name="category_id" ref="category_ng_deduction"/>
+            <field name="rule_type">deduction</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">fixed</field>
+            <field name="amount_fixed">0.0</field>
+            <field name="appears_on_payslip">True</field>
+            <field name="is_statutory" eval="True"/>
+            <field name="is_government_rule">True</field>
+            <field name="active" eval="False"/>
+            <field name="note">Placeholder. Apply only when legally applicable and configure the applicable contribution base and rate.</field>
+        </record>
+
+        <!-- ================================================= -->
+        <!-- PAYE: FORMULA MUST BE CONFIGURED FOR TAXABLE INCOME -->
+        <!-- ================================================= -->
+
+        <record id="rule_ng_paye" model="cleon.payroll.rule">
+            <field name="name">PAYE Income Tax</field>
+            <field name="code">PAYE-NG</field>
+            <field name="sequence">90</field>
+            <field name="category_id" ref="category_ng_deduction"/>
+            <field name="rule_type">deduction</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">formula</field>
+            <field name="amount_python_compute"><![CDATA[
+# Do not calculate PAYE until the annual taxable-income
+# base, statutory reliefs, exemptions and effective tax
+# bands have been implemented in the payroll engine.
+result = 0.0
+            ]]></field>
+            <field name="appears_on_payslip">True</field>
+            <field name="is_statutory" eval="True"/>
+            <field name="is_government_rule">True</field>
+            <field name="active" eval="False"/>
+            <field name="note">Inactive template. Implement the applicable Nigeria Tax Act 2025 rules and relief calculations before activating.</field>
+        </record>
+
+        <!-- ================================================= -->
+        <!-- NET PAY                                             -->
+        <!-- ================================================= -->
+
+        <record id="rule_ng_net" model="cleon.payroll.rule">
+            <field name="name">Net Salary</field>
+            <field name="code">NET-NG</field>
+            <field name="sequence">100</field>
+            <field name="category_id" ref="category_ng_net"/>
+            <field name="rule_type">net</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">formula</field>
+            <field name="amount_python_compute"><![CDATA[
+# Assumes the payroll engine exposes accumulated
+# gross and deduction categories as below.
+result = categories.GROSS - categories.DED
+            ]]></field>
+            <field name="appears_on_payslip">True</field>
+            <field name="is_statutory" eval="False"/>
+            <field name="is_government_rule">True</field>
+            <field name="active" eval="False"/>
+            <field name="note">Verify that your rule engine accumulates category totals with these names before enabling this rule.</field>
+        </record>
+
+    </data>
+</odoo>

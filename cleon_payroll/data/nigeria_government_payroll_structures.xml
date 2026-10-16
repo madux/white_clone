@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ================================================== -->
+        <!-- NIGERIAN GOVERNMENT PAYROLL STRUCTURES              -->
+        <!-- These are shared templates, not employee pay scales -->
+        <!-- ================================================== -->
+
+        <record id="structure_ng_conpss"
+                model="cleon.payroll.structure">
+            <field name="name">CONPSS - Consolidated Public Service Salary Structure</field>
+            <field name="code">NG_CONPSS</field>
+            <field name="country_id" ref="base.ng"/> 
+            
+            <field name="is_government_structure" eval="True"/>
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('cleon_payroll.rule_ng_basic'),
+                ref('cleon_payroll.rule_ng_housing'),
+                ref('cleon_payroll.rule_ng_transport'),
+                ref('cleon_payroll.rule_ng_utility'),
+                ref('cleon_payroll.rule_ng_responsibility'),
+                ref('cleon_payroll.rule_ng_pension_employee'),
+                ref('cleon_payroll.rule_ng_pension_employer'),
+                ref('cleon_payroll.rule_ng_nhf'),
+                ref('cleon_payroll.rule_ng_paye'),
+                ref('cleon_payroll.rule_ng_net')
+            ])]"/>
+        </record>
+
+        <record id="structure_ng_conpass"
+                model="cleon.payroll.structure">
+            <field name="name">CONPASS - Consolidated Para-Military Salary Structure</field>
+            <field name="code">NG_CONPASS</field>
+            <field name="country_id" ref="base.ng"/> 
+            <field name="is_government_structure" eval="True"/>
+            
+
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('cleon_payroll.rule_ng_basic'),
+                ref('cleon_payroll.rule_ng_housing'),
+                ref('cleon_payroll.rule_ng_transport'),
+                ref('cleon_payroll.rule_ng_pension_employee'),
+                ref('cleon_payroll.rule_ng_pension_employer'),
+                ref('cleon_payroll.rule_ng_nhf'),
+                ref('cleon_payroll.rule_ng_paye'),
+                ref('cleon_payroll.rule_ng_net')
+            ])]"/>
+        </record>
+
+        <record id="structure_ng_conhess"
+                model="cleon.payroll.structure">
+            <field name="name">CONHESS - Consolidated Health Salary Structure</field>
+            <field name="code">NG_CONHESS</field>
+            <field name="country_id" ref="base.ng"/> 
+            <field name="is_government_structure" eval="True"/>
+            
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('cleon_payroll.rule_ng_basic'),
+                ref('cleon_payroll.rule_ng_housing'),
+                ref('cleon_payroll.rule_ng_transport'),
+                ref('cleon_payroll.rule_ng_hazard'),
+                ref('cleon_payroll.rule_ng_pension_employee'),
+                ref('cleon_payroll.rule_ng_pension_employer'),
+                ref('cleon_payroll.rule_ng_nhf'),
+                ref('cleon_payroll.rule_ng_paye'),
+                ref('cleon_payroll.rule_ng_net')
+            ])]"/>
+        </record>
+
+        <record id="structure_ng_conmess"
+                model="cleon.payroll.structure">
+            <field name="name">CONMESS - Consolidated Medical Salary Structure</field>
+            <field name="code">NG_CONMESS</field>
+            <field name="country_id" ref="base.ng"/> 
+            <field name="is_government_structure" eval="True"/>
+            
+
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('cleon_payroll.rule_ng_basic'),
+                ref('cleon_payroll.rule_ng_housing'),
+                ref('cleon_payroll.rule_ng_transport'),
+                ref('cleon_payroll.rule_ng_hazard'),
+                ref('cleon_payroll.rule_ng_responsibility'),
+                ref('cleon_payroll.rule_ng_pension_employee'),
+                ref('cleon_payroll.rule_ng_pension_employer'),
+                ref('cleon_payroll.rule_ng_nhf'),
+                ref('cleon_payroll.rule_ng_paye'),
+                ref('cleon_payroll.rule_ng_net')
+            ])]"/>
+        </record>
+
+        <record id="structure_ng_conuass"
+                model="cleon.payroll.structure">
+            <field name="name">CONUASS - Consolidated University Academic Salary Structure</field>
+            <field name="code">NG_CONUASS</field>
+            <field name="country_id" ref="base.ng"/> 
+            <field name="is_government_structure" eval="True"/>
+            
+
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('cleon_payroll.rule_ng_basic'),
+                ref('cleon_payroll.rule_ng_housing'),
+                ref('cleon_payroll.rule_ng_transport'),
+                ref('cleon_payroll.rule_ng_responsibility'),
+                ref('cleon_payroll.rule_ng_pension_employee'),
+                ref('cleon_payroll.rule_ng_pension_employer'),
+                ref('cleon_payroll.rule_ng_nhf'),
+                ref('cleon_payroll.rule_ng_paye'),
+                ref('cleon_payroll.rule_ng_net')
+            ])]"/>
+        </record>
+
+        <record id="structure_ng_contiss2"
+                model="cleon.payroll.structure">
+            <field name="name">CONTISS II - Consolidated Tertiary Institutions Salary Structure</field>
+            <field name="code">NG_CONTISS2</field>
+            <field name="country_id" ref="base.ng"/> 
+            <field name="is_government_structure" eval="True"/>
+            
+
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('cleon_payroll.rule_ng_basic'),
+                ref('cleon_payroll.rule_ng_housing'),
+                ref('cleon_payroll.rule_ng_transport'),
+                ref('cleon_payroll.rule_ng_utility'),
+                ref('cleon_payroll.rule_ng_pension_employee'),
+                ref('cleon_payroll.rule_ng_pension_employer'),
+                ref('cleon_payroll.rule_ng_nhf'),
+                ref('cleon_payroll.rule_ng_paye'),
+                ref('cleon_payroll.rule_ng_net')
+            ])]"/>
+        </record>
+
+        <record id="structure_ng_contediss"
+                model="cleon.payroll.structure">
+            <field name="name">CONTEDISS - Consolidated Tertiary Education Institutions Salary Structure</field>
+            <field name="code">NG_CONTEDISS</field>
+            <field name="country_id" ref="base.ng"/> 
+            
+
+            <field name="is_government_structure" eval="True"/>
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('cleon_payroll.rule_ng_basic'),
+                ref('cleon_payroll.rule_ng_housing'),
+                ref('cleon_payroll.rule_ng_transport'),
+                ref('cleon_payroll.rule_ng_pension_employee'),
+                ref('cleon_payroll.rule_ng_pension_employer'),
+                ref('cleon_payroll.rule_ng_nhf'),
+                ref('cleon_payroll.rule_ng_paye'),
+                ref('cleon_payroll.rule_ng_net')
+            ])]"/>
+        </record>
+
+        <record id="structure_ng_conpcass"
+                model="cleon.payroll.structure">
+            <field name="name">CONPCASS - Consolidated Polytechnics and Colleges of Education Academic Staff Salary Structure</field>
+            <field name="code">NG_CONPCASS</field>
+            <field name="country_id" ref="base.ng"/> 
+            
+
+            <field name="is_government_structure" eval="True"/>
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('cleon_payroll.rule_ng_basic'),
+                ref('cleon_payroll.rule_ng_housing'),
+                ref('cleon_payroll.rule_ng_transport'),
+                ref('cleon_payroll.rule_ng_responsibility'),
+                ref('cleon_payroll.rule_ng_pension_employee'),
+                ref('cleon_payroll.rule_ng_pension_employer'),
+                ref('cleon_payroll.rule_ng_nhf'),
+                ref('cleon_payroll.rule_ng_paye'),
+                ref('cleon_payroll.rule_ng_net')
+            ])]"/>
+        </record>
+
+        <record id="structure_ng_conraiss" model="cleon.payroll.structure">
+            <field name="name">CONRAISS - Consolidated Research and Allied Institutions Salary Structure</field>
+            <field name="code">NG_CONRAISS</field>
+            <field name="country_id" ref="base.ng"/> 
+            
+
+            <field name="is_government_structure" eval="True"/>
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('cleon_payroll.rule_ng_basic'),
+                ref('cleon_payroll.rule_ng_housing'),
+                ref('cleon_payroll.rule_ng_transport'),
+                ref('cleon_payroll.rule_ng_utility'),
+                ref('cleon_payroll.rule_ng_pension_employee'),
+                ref('cleon_payroll.rule_ng_pension_employer'),
+                ref('cleon_payroll.rule_ng_nhf'),
+                ref('cleon_payroll.rule_ng_paye'),
+                ref('cleon_payroll.rule_ng_net')
+            ])]"/>
+        </record>
+
+        <record id="structure_ng_conposs" model="cleon.payroll.structure">
+        <field name="name">CONPOSS - Consolidated Police Salary Structure</field>
+        <field name="code">NG_CONPOSS</field>
+        <field name="country_id" ref="base.ng"/>
+        <field name="is_government_structure" eval="True"/>
+        <field name="active" eval="True"/>
+        <field name="rule_ids" eval="[(6, 0, [
+                ref('cleon_payroll.rule_ng_basic'),
+                ref('cleon_payroll.rule_ng_housing'),
+                ref('cleon_payroll.rule_ng_transport'),
+                ref('cleon_payroll.rule_ng_utility'),
+                ref('cleon_payroll.rule_ng_pension_employee'),
+                ref('cleon_payroll.rule_ng_pension_employer'),
+                ref('cleon_payroll.rule_ng_nhf'),
+                ref('cleon_payroll.rule_ng_paye'),
+                ref('cleon_payroll.rule_ng_net')
+            ])]"/>
+        </record>
+
+        <record id="structure_ng_conafss" model="cleon.payroll.structure">
+        <field name="name">CONAFSS - Consolidated Armed Forces Salary Structure</field>
+        <field name="code">NG_CONAFSS</field>
+        <field name="country_id" ref="base.ng"/>
+        <field name="is_government_structure" eval="True"/>
+        <field name="active" eval="True"/>
+        <field name="rule_ids" eval="[(6, 0, [
+                ref('cleon_payroll.rule_ng_basic'),
+                ref('cleon_payroll.rule_ng_housing'),
+                ref('cleon_payroll.rule_ng_transport'),
+                ref('cleon_payroll.rule_ng_utility'),
+                ref('cleon_payroll.rule_ng_pension_employee'),
+                ref('cleon_payroll.rule_ng_pension_employer'),
+                ref('cleon_payroll.rule_ng_nhf'),
+                ref('cleon_payroll.rule_ng_paye'),
+                ref('cleon_payroll.rule_ng_net')
+            ])]"/>
+        </record>
+
+        <record id="structure_ng_conicss" model="cleon.payroll.structure">
+            <field name="name">CONICSS - Consolidated Intelligence Community Salary Structure</field>
+            <field name="code">NG_CONICSS</field>
+            <field name="country_id" ref="base.ng"/>
+            <field name="is_government_structure" eval="True"/>
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                    ref('cleon_payroll.rule_ng_basic'),
+                    ref('cleon_payroll.rule_ng_housing'),
+                    ref('cleon_payroll.rule_ng_transport'),
+                    ref('cleon_payroll.rule_ng_utility'),
+                    ref('cleon_payroll.rule_ng_pension_employee'),
+                    ref('cleon_payroll.rule_ng_pension_employer'),
+                    ref('cleon_payroll.rule_ng_nhf'),
+                    ref('cleon_payroll.rule_ng_paye'),
+                    ref('cleon_payroll.rule_ng_net')
+                ])]"/>
+        </record>
+
+        <record id="structure_ng_contopsal" model="cleon.payroll.structure">
+            <field name="name">CONTOPSAL - Consolidated Top Federal Public Office Holders Salary Structure</field>
+            <field name="code">NG_CONTOPSAL</field>
+            <field name="country_id" ref="base.ng"/>
+            <field name="is_government_structure" eval="True"/>
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                    ref('cleon_payroll.rule_ng_basic'),
+                    ref('cleon_payroll.rule_ng_housing'),
+                    ref('cleon_payroll.rule_ng_transport'),
+                    ref('cleon_payroll.rule_ng_utility'),
+                    ref('cleon_payroll.rule_ng_pension_employee'),
+                    ref('cleon_payroll.rule_ng_pension_employer'),
+                    ref('cleon_payroll.rule_ng_nhf'),
+                    ref('cleon_payroll.rule_ng_paye'),
+                    ref('cleon_payroll.rule_ng_net')
+                ])]"/>
+        </record>
+
+        <record id="structure_ng_conjuss" model="cleon.payroll.structure">
+            <field name="name">CONJUSS - Judicial remuneration structure (verify official applicable scheme)</field>
+            <field name="code">NG_CONJUSS</field>
+            <field name="country_id" ref="base.ng"/>
+            <field name="is_government_structure" eval="True"/>
+            <field name="active" eval="True"/>
+            <field name="rule_ids" eval="[(6, 0, [
+                    ref('cleon_payroll.rule_ng_basic'),
+                    ref('cleon_payroll.rule_ng_housing'),
+                    ref('cleon_payroll.rule_ng_transport'),
+                    ref('cleon_payroll.rule_ng_utility'),
+                    ref('cleon_payroll.rule_ng_pension_employee'),
+                    ref('cleon_payroll.rule_ng_pension_employer'),
+                    ref('cleon_payroll.rule_ng_nhf'),
+                    ref('cleon_payroll.rule_ng_paye'),
+                    ref('cleon_payroll.rule_ng_net')
+                ])]"/>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,2661 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Shared levels: L1 through L15 -->
+        <record id="payroll_hr_level_1" model="hr.level">
+            <field name="name">L1</field>
+            <field name="description">Level 1</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_2" model="hr.level">
+            <field name="name">L2</field>
+            <field name="description">Level 2</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_3" model="hr.level">
+            <field name="name">L3</field>
+            <field name="description">Level 3</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_4" model="hr.level">
+            <field name="name">L4</field>
+            <field name="description">Level 4</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_5" model="hr.level">
+            <field name="name">L5</field>
+            <field name="description">Level 5</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_6" model="hr.level">
+            <field name="name">L6</field>
+            <field name="description">Level 6</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_7" model="hr.level">
+            <field name="name">L7</field>
+            <field name="description">Level 7</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_8" model="hr.level">
+            <field name="name">L8</field>
+            <field name="description">Level 8</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_9" model="hr.level">
+            <field name="name">L9</field>
+            <field name="description">Level 9</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_10" model="hr.level">
+            <field name="name">L10</field>
+            <field name="description">Level 10</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_11" model="hr.level">
+            <field name="name">L11</field>
+            <field name="description">Level 11</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_12" model="hr.level">
+            <field name="name">L12</field>
+            <field name="description">Level 12</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_13" model="hr.level">
+            <field name="name">L13</field>
+            <field name="description">Level 13</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_14" model="hr.level">
+            <field name="name">L14</field>
+            <field name="description">Level 14</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <record id="payroll_hr_level_15" model="hr.level">
+            <field name="name">L15</field>
+            <field name="description">Level 15</field>
+            <field name="salary">0</field>
+            <field name="country_id" ref="base.ng"/>
+        </record>
+
+        <!-- ================================================= -->
+        <!-- Level bands: L1-L15 for every configured grade     -->
+        <!-- salary is required on hr.level.band.          -->
+        <!-- ================================================= -->
+
+        <!-- CONPSS GL 01 -->
+        <record id="payroll_band_conpss_gl01_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl01_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 01</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl01"/>
+        </record>
+
+        <!-- CONPSS GL 02 -->
+        <record id="payroll_band_conpss_gl02_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl02_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 02</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl02"/>
+        </record>
+
+        <!-- CONPSS GL 03 -->
+        <record id="payroll_band_conpss_gl03_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl03_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 03</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl03"/>
+        </record>
+
+        <!-- CONPSS GL 04 -->
+        <record id="payroll_band_conpss_gl04_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl04_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 04</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl04"/>
+        </record>
+
+        <!-- CONPSS GL 05 -->
+        <record id="payroll_band_conpss_gl05_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl05_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 05</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl05"/>
+        </record>
+
+        <!-- CONPSS GL 06 -->
+        <record id="payroll_band_conpss_gl06_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl06_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 06</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl06"/>
+        </record>
+
+        <!-- CONPSS GL 07 -->
+        <record id="payroll_band_conpss_gl07_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl07_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 07</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl07"/>
+        </record>
+
+        <!-- CONPSS GL 08 -->
+        <record id="payroll_band_conpss_gl08_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl08_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 08</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl08"/>
+        </record>
+
+        <!-- CONPSS GL 09 -->
+        <record id="payroll_band_conpss_gl09_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl09_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 09</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl09"/>
+        </record>
+
+        <!-- CONPSS GL 10 -->
+        <record id="payroll_band_conpss_gl10_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl10_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 10</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl10"/>
+        </record>
+
+        <!-- CONPSS GL 11 -->
+        <record id="payroll_band_conpss_gl11_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl11_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 11</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl11"/>
+        </record>
+
+        <!-- CONPSS GL 12 -->
+        <record id="payroll_band_conpss_gl12_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl12_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 12</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl12"/>
+        </record>
+
+        <!-- CONPSS GL 13 -->
+        <record id="payroll_band_conpss_gl13_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl13_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 13</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl13"/>
+        </record>
+
+        <!-- CONPSS GL 14 -->
+        <record id="payroll_band_conpss_gl14_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl14_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 14</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl14"/>
+        </record>
+
+        <!-- CONPSS GL 15 -->
+        <record id="payroll_band_conpss_gl15_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl15_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 15</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl15"/>
+        </record>
+
+        <!-- CONPSS GL 16 -->
+        <record id="payroll_band_conpss_gl16_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl16_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 16</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl16"/>
+        </record>
+
+        <!-- CONPSS GL 17 -->
+        <record id="payroll_band_conpss_gl17_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <record id="payroll_band_conpss_gl17_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONPSS GL 17</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conpss_gl17"/>
+        </record>
+
+        <!-- CONUASS 1 - Graduate Assistant -->
+        <record id="payroll_band_conuass_01_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <record id="payroll_band_conuass_01_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONUASS 1 - Graduate Assistant</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_01"/>
+        </record>
+
+        <!-- CONUASS 2 - Assistant Lecturer -->
+        <record id="payroll_band_conuass_02_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <record id="payroll_band_conuass_02_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONUASS 2 - Assistant Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_02"/>
+        </record>
+
+        <!-- CONUASS 3 - Lecturer II -->
+        <record id="payroll_band_conuass_03_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <record id="payroll_band_conuass_03_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONUASS 3 - Lecturer II</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_03"/>
+        </record>
+
+        <!-- CONUASS 4 - Lecturer I -->
+        <record id="payroll_band_conuass_04_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <record id="payroll_band_conuass_04_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONUASS 4 - Lecturer I</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_04"/>
+        </record>
+
+        <!-- CONUASS 5 - Senior Lecturer -->
+        <record id="payroll_band_conuass_05_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <record id="payroll_band_conuass_05_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONUASS 5 - Senior Lecturer</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_05"/>
+        </record>
+
+        <!-- CONUASS 6 - Associate Professor / Reader -->
+        <record id="payroll_band_conuass_06_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <record id="payroll_band_conuass_06_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONUASS 6 - Associate Professor / Reader</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_06"/>
+        </record>
+
+        <!-- CONUASS 7 - Professor -->
+        <record id="payroll_band_conuass_07_l1" model="hr.level.band">
+            <field name="description">Level 1 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_1"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l2" model="hr.level.band">
+            <field name="description">Level 2 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_2"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l3" model="hr.level.band">
+            <field name="description">Level 3 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_3"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l4" model="hr.level.band">
+            <field name="description">Level 4 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_4"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l5" model="hr.level.band">
+            <field name="description">Level 5 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_5"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l6" model="hr.level.band">
+            <field name="description">Level 6 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_6"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l7" model="hr.level.band">
+            <field name="description">Level 7 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_7"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l8" model="hr.level.band">
+            <field name="description">Level 8 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_8"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l9" model="hr.level.band">
+            <field name="description">Level 9 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_9"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l10" model="hr.level.band">
+            <field name="description">Level 10 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_10"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l11" model="hr.level.band">
+            <field name="description">Level 11 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_11"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l12" model="hr.level.band">
+            <field name="description">Level 12 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_12"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l13" model="hr.level.band">
+            <field name="description">Level 13 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_13"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l14" model="hr.level.band">
+            <field name="description">Level 14 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_14"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+        <record id="payroll_band_conuass_07_l15" model="hr.level.band">
+            <field name="description">Level 15 band for CONUASS 7 - Professor</field>
+            <field name="salary">0</field>
+            <field name="level_id" ref="cleon_payroll.payroll_hr_level_15"/>
+            <field name="grade_id" ref="cleon_payroll.grade_conuass_07"/>
+        </record>
+
+    </data>
+</odoo>

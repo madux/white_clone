@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="grievance_stage_submitted" model="grievance.stage">
+        <field name="name">Submitted</field>
+        <field name="sequence">10</field>
+        <field name="is_locked">True</field>
+        <field name="color">4</field>
+    </record>
+    <record id="grievance_stage_under_review" model="grievance.stage">
+        <field name="name">Under Review</field>
+        <field name="sequence">20</field>
+        <field name="is_locked">True</field>
+        <field name="color">3</field>
+    </record>
+    <record id="grievance_stage_investigation" model="grievance.stage">
+        <field name="name">Investigation In Progress</field>
+        <field name="sequence">30</field>
+        <field name="is_locked">True</field>
+        <field name="color">2</field>
+    </record>
+    <record id="grievance_stage_escalated" model="grievance.stage">
+        <field name="name">Escalated</field>
+        <field name="sequence">40</field>
+        <field name="is_locked">True</field>
+        <field name="color">1</field>
+    </record>
+    <record id="grievance_stage_resolved" model="grievance.stage">
+        <field name="name">Resolved</field>
+        <field name="sequence">50</field>
+        <field name="is_locked">True</field>
+        <field name="is_closed">True</field>
+        <field name="color">10</field>
+    </record>
+    <record id="grievance_stage_closed" model="grievance.stage">
+        <field name="name">Closed</field>
+        <field name="sequence">60</field>
+        <field name="is_locked">True</field>
+        <field name="is_closed">True</field>
+        <field name="fold">True</field>
+        <field name="color">0</field>
+    </record>
+</odoo>

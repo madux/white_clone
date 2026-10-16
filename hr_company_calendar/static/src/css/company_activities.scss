@@ -33,7 +33,7 @@
     color: var(--cc-gray-800);
     background: var(--cc-white);
     padding: 0 !important;
-    max-width: 1100px;
+    // max-width: 1100px;
     margin: 0 auto;
 }
 
@@ -190,7 +190,7 @@
 .cc_tab {
     background: transparent;
     border: none;
-    border-bottom: 2.5px solid transparent;
+    border-bottom: 2.5px solid #19171773;
     margin-bottom: -1.5px;
     padding: 10px 20px;
     font-size: 13.5px;
@@ -204,7 +204,8 @@
     white-space: nowrap;
 }
 
-.cc_tab:hover { color: var(--cc-pink); background: transparent;}
+.cc_tab:hover { color: var(--cc-pink);}
+.cc_tab.hover { color: var(--cc-pink);}
 
 .cc_tab:active {
     border-bottom-color: var(--cc-pink);
@@ -212,13 +213,16 @@
     border-bottom-color: var(--cc-pink);
     border-right-color: var(--cc-pink);
     font-weight: 600;
+    background: #fd5b76;
 }
 
 .cc_tab.active {
-    color: var(--cc-pink);
+    color: #fefcfd;
     border-bottom-color: var(--cc-pink);
     border-right-color: var(--cc-pink);
     font-weight: 600;
+    background: #e91e8c;
+
 }
 
 .cc_badge {
@@ -300,7 +304,7 @@
 
 .cc-btn-primary {
     background: #c4176f;
-    color: #fff;
+    color: #ffffff;
     border: none;
     padding: 5px 8px;
     border-radius: 8px;

@@ -1,7 +1,9 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 import logging
+from dateutil.relativedelta import relativedelta
+ 
 
 _logger = logging.getLogger(__name__)
 
@@ -28,8 +30,9 @@ class hmoPlan(models.Model):
     hmo_marketplace_id = fields.Many2one('hmo.marketplace')
     hmo_plan_value_ids = fields.Many2many('hmo.plan.value', string="Plan Values")
     plan_price = fields.Float("Amount per Person")
-    active = fields.Boolean("Active")
+    active = fields.Boolean("Active", default=True)
     max_person = fields.Integer("Maximum Person", default=1)
+    key_benefits = fields.Text("Key benefits")
 
     def open_record(self):
         view_id = self.env.ref('hr_insurance.view_hmo_plan_form').id
@@ -42,7 +45,7 @@ class hmoPlan(models.Model):
             'res_id': self.id,
             'type': 'ir.actions.act_window',
             'domain': [],
-            'target': 'new'
+            'target': 'current'
             }
         return ret
 
@@ -111,28 +114,52 @@ class hmoHospital(models.Model):
             'res_id': self.id,
             'type': 'ir.actions.act_window',
             'domain': [],
-            'target': 'new'
+            'target': 'current'
             }
         return ret
+
+class hmoBenefit(models.Model):
+    _name = 'hmo.benefit'
+    _description = 'CLEONHR HMO PROVIDER' 
+    _rec_name = 'name'
+
+    name = fields.Char(
+        string='Name',
+        required=True,
+        copy=False, 
+    )
+
+    hmo_id = fields.Many2one("hmo.marketplace", "HMO", required=False)
+
+    def _add_name_prefix(self, name):
+        prefix = "✓ "
+
+        if name and not name.startswith(prefix):
+            return f"{prefix}{name}"
+
+        return name
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get("name"):
+                vals["name"] = self._add_name_prefix(vals["name"])
+
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if vals.get("name"):
+            vals["name"] = self._add_name_prefix(vals["name"])
+
+        return super().write(vals)
+
 
 class hmoMarketplace(models.Model):
     _name = 'hmo.marketplace'
     _description = 'CLEONHR HMO PROVIDER' 
     _rec_name = 'name'
 
-    # _inherits={
-    #     'res.partner': 'partner_id',
-    # }
-    # # _order = 'booking_date desc, booking_start_time'
-
-    # ── Identification ──────────────────────────────────────────────────────
-    # partner_id = fields.Many2one(
-    #     comodel_name="res.partner",
-    #     required=True,
-    #     ondelete="cascade",
-    #     readonly=False,
-    #     string="Associated group",
-    # )
+  
     name = fields.Char(
         string='Name',
         required=True,
@@ -150,6 +177,35 @@ class hmoMarketplace(models.Model):
     phone = fields.Char("Hospital Phone", required=True)
     email = fields.Char("Email", required=False)
     country_id = fields.Many2one("res.country", "Country", required=False)
+    start_date = fields.Date("Registration date", required=False)
+    years_of_operation = fields.Char(
+        string="Years of Operation",
+        compute="_compute_years_of_operation"
+    )
+
+
+    @api.depends("start_date")
+    def _compute_years_of_operation(self):
+        for record in self:
+            if not record.start_date:
+                record.years_of_operation = "0 years, 0 months, 0 days"
+                continue
+
+            start_date = record.start_date
+            today = fields.Date.context_today(record)
+
+            if start_date > today:
+                record.years_of_operation = "0 years, 0 months, 0 days"
+                continue
+
+            duration = relativedelta(today, start_date)
+
+            record.years_of_operation = (
+                f"{duration.years} years, "
+                f"{duration.months} months, "
+                f"{duration.days} days"
+            )
+
     state_id = fields.Many2one("res.country.state", "State", required=False)
     hmo_employee_ids = fields.Many2many(
         'hr.employee',
@@ -167,13 +223,15 @@ class hmoMarketplace(models.Model):
     )
     hmo_tag_ids = fields.Many2many(
         'hmo.tags',
-        string='HMO Tags',
+        string='HMO Coverage type',
     )
     hmo_plan_ids = fields.One2many(
         'hmo.plan',
         'hmo_marketplace_id',
         string='HMO Plans',
     )
+    service_area_ids = fields.Many2many('multi.branch', string="Service areas")
+    insurance_benefits = fields.Many2many('hmo.benefit')
     total_hospital = fields.Integer(
         string='Total Hospital',
         required=False,  
@@ -243,7 +301,7 @@ class hmoMarketplace(models.Model):
             'res_id': self.id,
             'type': 'ir.actions.act_window',
             'domain': [],
-            'target': 'new'
+            'target': 'current'
             }
         return ret
 

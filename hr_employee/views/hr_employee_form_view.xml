@@ -45,7 +45,7 @@
                                     <div class="profile-user-role"><field name="employee_number" readonly="1" nolabel="1"/></div>
                                 </div>
                                 <field name="is_present" readonly="1" invisible="1" nolabel="1"/>
-
+                                <field name="work_start_datetime" invisible="1"/>
                                 <span class="profile-badge-checkin"><field name="is_present_text" readonly="1" nolabel="1"/></span>
                                 <widget name="attendance_clock"/>
                                 <!-- <div class="profile-meta-row">

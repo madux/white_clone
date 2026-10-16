@@ -6,38 +6,42 @@
             <field name="model">hr.applicant.move.wizard</field>
             <field name="arch" type="xml">
                 <form string="Move Applicants">
-                    <group>
-                        <group colspan="2">
-                            <field name="stage_id" required="1"/>
-                            <field name="stage_type" required="0"/>
-                            <field name="interview_date" invisible="stage_type == 'is_interview_stage'" required="stage_type == 'is_interview_stages'"/>
-                        
+                    <header>
+                    </header>
+                    <sheet>
+                        <group>
+                            <group colspan="2">
+                                <field name="stage_id" string="Pipeline" required="1"/>
+                                <field name="stage_type" string="Pipeline type" required="0"/>
+                                <field name="interview_date" invisible="stage_type == 'is_interview_stage'" required="stage_type == 'is_interview_stages'"/>
+                            
+                                
+                            </group>
+                            <group colspan="2">
+                            <field name="send_mail"/>
+                                <field name="email_invite_template" invisible="send_mail == False" required="send_mail == True" domain="[('model', '=', 'hr.applicant.move.wizard')]"/>
+                                <field name="send_mail_unprogressed"/>
+                                <field name="email_template_unprogressed" invisible="send_mail_unprogressed == False"/>
+                            </group>
                             
                         </group>
-                        <group colspan="2">
-                        <field name="send_mail"/>
-                            <field name="email_invite_template" invisible="send_mail == False" required="send_mail == True" domain="[('model', '=', 'hr.applicant.move.wizard')]"/>
-                            <field name="send_mail_unprogressed"/>
-                            <field name="email_template_unprogressed" invisible="send_mail_unprogressed == False"/>
-                        </group>
-                          
-                    </group>
-                    <notebook>
-                        <page name="Applicants_move" string="Applicants">
-                            <field name="applicant_ids" context="{
-                                'form_view_ref': 'hr_recruitment.hr_applicant_view_form', 
-                                }">
-                                <tree string="Applicants">
-                                    <field name="partner_name"/>
-                                    <field name="email_from"/>
-                                    <field name="partner_phone"/>
-                                    <field name="type_id"/>
-                                    <field name="job_id"/>
-                                    <field name="stage_id"/>
-                                </tree>
-                            </field>
-                        </page>
-                    </notebook>
+                        <notebook>
+                            <page name="Applicants_move" string="Applicants">
+                                <field name="applicant_ids" context="{
+                                    'form_view_ref': 'hr_recruitment.hr_applicant_view_form', 
+                                    }">
+                                    <tree string="Applicants">
+                                        <field name="partner_name"/>
+                                        <field name="email_from"/>
+                                        <field name="partner_phone"/>
+                                        <field name="type_id"/>
+                                        <field name="job_id"/>
+                                        <field name="stage_id"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
                     <footer>
                         <button type="object" name="action_move_applicant"
                             string="Confirm" class="oe_highlight"/>

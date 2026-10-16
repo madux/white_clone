@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="grievance_management.Dashboard">
+        <div class="o_grievance_dashboard">
+            <div class="o_grievance_dashboard_header">
+                <h1><t t-esc="greeting"/>, <t t-esc="state.greeting_name"/>!</h1>
+                <p class="text-muted">Here's an overview of all employee grievance cases and recent activity.</p>
+            </div>
+
+            <div class="o_grievance_stat_row" t-if="!state.loading">
+                <t t-foreach="state.stat_cards" t-as="card" t-key="card.key">
+                    <div class="o_grievance_stat_card" t-on-click="() => this.openCases(card.label)"
+                         t-attf-style="border-top-color: #{cardColor(card.key)}">
+                        <div class="o_grievance_stat_count" t-attf-style="color: #{cardColor(card.key)}">
+                            <t t-esc="card.count"/>
+                        </div>
+                        <div class="o_grievance_stat_label"><t t-esc="card.label"/></div>
+                    </div>
+                </t>
+            </div>
+
+            <div class="o_grievance_panels" t-if="!state.loading">
+                <div class="o_grievance_panel">
+                    <h3>Monthly grievances</h3>
+                    <div class="o_grievance_chart_wrap">
+                        <canvas t-ref="barChart"/>
+                    </div>
+                </div>
+                <div class="o_grievance_panel">
+                    <h3>Grievances by type</h3>
+                    <div class="o_grievance_chart_wrap">
+                        <canvas t-ref="pieChart"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="o_grievance_loading" t-if="state.loading">
+                <i class="fa fa-circle-o-notch fa-spin"/> Loading dashboard...
+            </div>
+        </div>
+    </t>
+
+</templates>

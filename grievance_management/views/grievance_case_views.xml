@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- LIST VIEW (screenshot 2) -->
+    <record id="view_grievance_case_list" model="ir.ui.view">
+        <field name="name">grievance.case.list</field>
+        <field name="model">grievance.case</field>
+        <field name="arch" type="xml">
+            <tree string="Grievance Cases" decoration-danger="days_open &gt; 14 and not is_closed"
+                  decoration-muted="is_closed" js_class="grievance_management_dashboard_list">
+                <field name="name"/>
+                <field name="complainant_name" string="Complainant"/>
+                <field name="grievance_type_id" string="Type"/>
+                <field name="date_submitted" string="Date"/>
+                <field name="priority" widget="badge"
+                       decoration-danger="priority == 'high'"
+                       decoration-warning="priority == 'medium'"
+                       decoration-success="priority == 'low'"/>
+                <field name="stage_id" string="Status" widget="badge"/>
+                <field name="handler_id" string="Handler"/>
+                <field name="days_open" string="Days Open"
+                       decoration-danger="days_open &gt; 14"/>
+                <field name="escalated" optional="hide"/>
+                <field name="is_closed" column_invisible="1"/>
+                <field name="company_id" column_invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- KANBAN VIEW (workflow board) -->
+    <record id="view_grievance_case_kanban" model="ir.ui.view">
+        <field name="name">grievance.case.kanban</field>
+        <field name="model">grievance.case</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stage_id" class="o_kanban_small_column" records_draggable="1">
+                <field name="stage_id"/>
+                <field name="priority"/>
+                <field name="days_open"/>
+                <field name="escalated"/>
+                <progressbar field="priority" colors='{"high": "danger", "medium": "warning", "low": "success"}'/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click #{record.escalated.raw_value ? 'border border-danger' : ''}">
+                            <div class="o_kanban_record_top">
+                                <strong><field name="name"/></strong>
+                                <span class="float-end badge text-bg-secondary"><field name="days_open"/>d</span>
+                            </div>
+                            <div><field name="grievance_type_id"/></div>
+                            <div class="text-muted"><field name="complainant_name"/></div>
+                            <div class="mt-2">
+                                <field name="priority" widget="priority"/>
+                                <span t-if="record.escalated.raw_value" class="badge text-bg-danger float-end">Escalated</span>
+                            </div>
+                            <div class="o_kanban_record_bottom mt-2">
+                                <div class="oe_kanban_bottom_left">
+                                    <field name="handler_id" widget="many2one_avatar_user"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_grievance_case_form" model="ir.ui.view">
+        <field name="name">grievance.case.form</field>
+        <field name="model">grievance.case</field>
+        <field name="arch" type="xml">
+            <form string="Grievance Case">
+                <header>
+                    <field name="stage_id" widget="statusbar" options="{'clickable': '1'}"/>
+                    <button name="action_escalate_manually" type="object" string="Escalate"
+                            class="btn-secondary" invisible="escalated == True"/>
+                    <button name="action_resolve" type="object" string="Mark Resolved"
+                            class="btn-primary" invisible="is_closed == True"/>
+                </header>
+                <sheet>
+                    <field name="is_closed" invisible="1"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Complaint">
+                            <field name="is_anonymous"/>
+                            <field name="complainant_id" invisible="is_anonymous == True"
+                                   required="is_anonymous == False"/>
+                            <field name="grievance_type_id"/>
+                            <field name="category_id" readonly="1"/>
+                            <field name="date_submitted"/>
+                        </group>
+                        <group string="Triage">
+                            <field name="priority" widget="priority"/>
+                            <field name="severity"/>
+                            <field name="handler_id"/>
+                            <field name="panel_id"/>
+                            <field name="days_open"/>
+                            <field name="escalated" readonly="1"/>
+                            <field name="escalation_rule_id" readonly="1" invisible="escalated == False"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description">
+                            <field name="description" placeholder="Describe the grievance..."/>
+                        </page>
+                        <page string="Resolution">
+                            <field name="requires_compensation_amount" invisible="1"/>
+                            <field name="requires_followup_date" invisible="1"/>
+                            <field name="requires_restorative_action" invisible="1"/>
+                            <group>
+                                <field name="resolution_id"/>
+                                <field name="compensation_amount" invisible="requires_compensation_amount == False"/>
+                                <field name="follow_up_date" invisible="requires_followup_date == False"/>
+                            </group>
+                            <field name="restorative_action_plan"
+                                   invisible="requires_restorative_action == False"
+                                   placeholder="Describe the restorative action plan..."/>
+                            <field name="resolution_notes" placeholder="Additional resolution notes..."/>
+                            <field name="date_closed" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW -->
+    <record id="view_grievance_case_search" model="ir.ui.view">
+        <field name="name">grievance.case.search</field>
+        <field name="model">grievance.case</field>
+        <field name="arch" type="xml">
+            <search string="Search Grievance Cases">
+                <field name="name"/>
+                <field name="complainant_name"/>
+                <field name="grievance_type_id"/>
+                <field name="handler_id"/>
+                <filter string="My Cases" name="my_cases" domain="[('handler_id', '=', uid)]"/>
+                <filter string="Escalated" name="escalated" domain="[('escalated', '=', True)]"/>
+                <filter string="Open" name="open" domain="[('is_closed', '=', False)]"/>
+                <filter string="High Priority" name="high_priority" domain="[('priority', '=', 'high')]"/>
+                <separator/>
+                <filter string="Submitted This Month" name="this_month"
+                        domain="[('date_submitted', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_stage" context="{'group_by': 'stage_id'}"/>
+                    <filter string="Type" name="group_type" context="{'group_by': 'grievance_type_id'}"/>
+                    <filter string="Priority" name="group_priority" context="{'group_by': 'priority'}"/>
+                    <filter string="Handler" name="group_handler" context="{'group_by': 'handler_id'}"/>
+                    <filter string="Month" name="group_month" context="{'group_by': 'date_submitted:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- GRAPH: Monthly Grievances (bar) -->
+    <record id="view_grievance_case_graph_monthly" model="ir.ui.view">
+        <field name="name">grievance.case.graph.monthly</field>
+        <field name="model">grievance.case</field>
+        <field name="arch" type="xml">
+            <graph string="Monthly Grievances" type="bar">
+                <field name="date_submitted" type="row" interval="month"/>
+                <field name="stage_id" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- GRAPH: Grievances by Type (pie) -->
+    <record id="view_grievance_case_graph_by_type" model="ir.ui.view">
+        <field name="name">grievance.case.graph.by.type</field>
+        <field name="model">grievance.case</field>
+        <field name="arch" type="xml">
+            <graph string="Grievances by Type" type="pie">
+                <field name="grievance_type_id"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- PIVOT -->
+    <record id="view_grievance_case_pivot" model="ir.ui.view">
+        <field name="name">grievance.case.pivot</field>
+        <field name="model">grievance.case</field>
+        <field name="arch" type="xml">
+            <pivot string="Grievance Analysis">
+                <field name="grievance_type_id" type="row"/>
+                <field name="stage_id" type="col"/>
+                <field name="days_open" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ACTIONS -->
+    <record id="action_grievance_case_kanban" model="ir.actions.act_window">
+        <field name="name">Grievance Cases</field>
+        <field name="res_model">grievance.case</field>
+        <field name="view_mode">kanban,tree,form,pivot</field>
+        <field name="context">{'search_default_open': 1}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Log a new grievance case</p></field>
+    </record>
+
+    <record id="action_grievance_case_list" model="ir.actions.act_window">
+        <field name="name">All Cases (List)</field>
+        <field name="res_model">grievance.case</field>
+        <field name="view_mode">tree,kanban,form,pivot</field>
+    </record>
+
+    <record id="action_grievance_dashboard_monthly" model="ir.actions.act_window">
+        <field name="name">Monthly Grievances</field>
+        <field name="res_model">grievance.case</field>
+        <field name="view_mode">graph,pivot,tree</field>
+        <field name="view_id" ref="view_grievance_case_graph_monthly"/>
+    </record>
+
+    <record id="action_grievance_dashboard_by_type" model="ir.actions.act_window">
+        <field name="name">Grievances by Type</field>
+        <field name="res_model">grievance.case</field>
+        <field name="view_mode">graph,pivot,tree</field>
+        <field name="view_id" ref="view_grievance_case_graph_by_type"/>
+    </record>
+
+</odoo>

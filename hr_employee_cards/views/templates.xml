@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!-- Single card markup, reused by the grid and the load-more batch -->
+    <!-- ============================================================ -->
+    <template id="employee_cards_only" name="Employee Cards Only">
+        <t t-foreach="employees" t-as="emp">
+            <div class="card">
+                <div class="card-top">
+                    <div class="avatar">
+                        <img t-attf-src="/web/image/hr.employee/#{emp.id}/avatar_128"
+                             t-attf-alt="#{emp.name}"
+                             onerror="this.onerror=null;this.src=this.dataset.fallback;"
+                             t-attf-data-fallback="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%230a1526'/%3E%3Ctext x='50' y='58' font-family='sans-serif' font-size='30' font-weight='700' fill='%237fb9ff' text-anchor='middle'%3E#{(emp.name or '?')[0]}%3C/text%3E%3C/svg%3E"/>
+                    </div>
+                    <t t-if="emp.hr_presence_state == 'present'">
+                        <span class="status-chip live"><span class="pulse"/>Online</span>
+                    </t>
+                    <t t-elif="emp.hr_presence_state == 'to_define'">
+                        <span class="status-chip away">Away</span>
+                    </t>
+                    <t t-else="">
+                        <span class="status-chip offline">Offline</span>
+                    </t>
+                </div>
+
+                <div class="card-name" t-esc="emp.name"/>
+                <div class="card-job" t-esc="emp.job_title or (emp.job_id and emp.job_id.name) or 'No title set'"/>
+
+                <div class="card-meta">
+                    <div class="meta-row" t-if="emp.department_id">
+                        <span class="meta-label">Dept</span>
+                        <span t-esc="emp.department_id.name"/>
+                    </div>
+                    <div class="meta-row" t-if="emp.work_email">
+                        <span class="meta-label">Email</span>
+                        <a t-attf-href="mailto:#{emp.work_email}" t-esc="emp.work_email"/>
+                    </div>
+                    <div class="meta-row" t-if="emp.work_phone">
+                        <span class="meta-label">Phone</span>
+                        <span t-esc="emp.work_phone"/>
+                    </div>
+                </div>
+
+                <div class="card-foot">
+                    <span class="foot-label">employee id</span>
+                    <span class="foot-value" t-esc="'#%s' % emp.id"/>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================================ -->
+    <!-- Load-more control, reused normally (in-grid) and as an OOB   -->
+    <!-- swap target when appending a new batch of cards               -->
+    <!-- ============================================================ -->
+    <template id="load_more_control" name="Load More Control">
+        <t t-if="has_more">
+            <button id="load-more-btn" class="load-more" type="button"
+                    hx-get="/hr-employee"
+                    t-attf-hx-vals='{"offset": #{next_offset}, "search": "#{search}"}'
+                    hx-target="#employee-cards"
+                    hx-swap="beforeend"
+                    hx-indicator="#load-more-btn">
+                Load more
+            </button>
+        </t>
+        <t t-else="">
+            <div id="load-more-btn" class="end-of-list">
+                <span t-if="total">That's everyone — <t t-esc="total"/> total</span>
+                <span t-else="">No employees found</span>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================================ -->
+    <!-- Response for offset > 0 ("Load more" clicked): new cards to  -->
+    <!-- append, plus an out-of-band refresh of the load-more control -->
+    <!-- ============================================================ -->
+    <template id="employee_cards_batch" name="Employee Cards Batch">
+        <t t-call="hr_employee_cards.employee_cards_only"/>
+        <div hx-swap-oob="outerHTML:#load-more-btn">
+            <t t-call="hr_employee_cards.load_more_control"/>
+        </div>
+    </template>
+
+    <!-- ============================================================ -->
+    <!-- Response for offset == 0 htmx requests (search): the whole   -->
+    <!-- grid — result count, card wrapper, load-more control          -->
+    <!-- ============================================================ -->
+    <template id="employee_grid" name="Employee Grid">
+        <div id="employee-grid">
+            <div class="grid-head">
+                <span class="grid-count">
+                    <t t-esc="total"/> <t t-esc="'employee' if total == 1 else 'employees'"/>
+                </span>
+            </div>
+            <div id="employee-cards" class="card-grid">
+                <t t-call="hr_employee_cards.employee_cards_only"/>
+            </div>
+            <div class="load-more-wrap">
+                <t t-call="hr_employee_cards.load_more_control"/>
+            </div>
+        </div>
+    </template>
+
+    <!-- ============================================================ -->
+    <!-- Full page: shell, search bar, styles, htmx script, then the  -->
+    <!-- grid embedded directly for the very first paint (no extra    -->
+    <!-- round-trip on load)                                          -->
+    <!-- ============================================================ -->
+    <template id="employee_page" name="Employee Directory Page">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <title>Employee Directory</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+                <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="/hr_employee_cards/static/src/css/employee_cards.css" rel="stylesheet" crossorigin="anonymous"/>
+
+                <!-- <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/> -->
+            </head>
+            <body>
+                <div class="page">
+                    <div class="page-head">
+                        <div>
+                            <div class="eyebrow">HR directory</div>
+                            <h1>People</h1>
+                        </div>
+                        <div class="search-wrap">
+                            <input id="search-input"
+                                   type="search"
+                                   name="search"
+                                   placeholder="Search by name, title, department or email"
+                                   t-att-value="search"
+                                   hx-get="/hr-employee"
+                                   hx-trigger="keyup changed delay:400ms, search"
+                                   hx-target="#employee-grid"
+                                   hx-swap="outerHTML"
+                                   hx-include="this"
+                                   hx-indicator="#search-indicator"/>
+                            <span id="search-indicator" class="htmx-indicator">Searching…</span>
+                        </div>
+                    </div>
+
+                    <t t-call="hr_employee_cards.employee_grid"/>
+                </div>
+            </body>
+        </html>
+    </template>
+
+</odoo>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_grievance_root" name="Grievances Management" sequence="60"/>
+
+    <menuitem id="menu_grievance_dashboard" name="Dashboard"
+              parent="menu_grievance_root" sequence="10"
+              action="action_grievance_dashboard"/>
+
+    <menuitem id="menu_grievance_cases_root" name="Cases"
+              parent="menu_grievance_root" sequence="20"/>
+    <menuitem id="menu_grievance_cases_board" name="Workflow Board"
+              parent="menu_grievance_cases_root" sequence="10"
+              action="action_grievance_case_kanban"/>
+    <menuitem id="menu_grievance_cases_list" name="All Cases"
+              parent="menu_grievance_cases_root" sequence="20"
+              action="action_grievance_case_list"/>
+
+    <menuitem id="menu_grievance_reporting_root" name="Reporting"
+              parent="menu_grievance_root" sequence="30"/>
+    <menuitem id="menu_grievance_reporting_monthly" name="Monthly Grievances"
+              parent="menu_grievance_reporting_root" sequence="10"
+              action="action_grievance_dashboard_monthly"/>
+    <menuitem id="menu_grievance_reporting_by_type" name="Grievances by Type"
+              parent="menu_grievance_reporting_root" sequence="20"
+              action="action_grievance_dashboard_by_type"/>
+
+    <menuitem id="menu_grievance_config_root" name="Configuration"
+              parent="menu_grievance_root" sequence="90"
+              groups="grievance_management.group_grievance_manager"/>
+
+    <menuitem id="menu_grievance_config_types" name="Types &amp; Categories"
+              parent="menu_grievance_config_root" sequence="10"
+              action="action_grievance_types_categories"/>
+    <menuitem id="menu_grievance_config_categories" name="Categories"
+              parent="menu_grievance_config_root" sequence="15"
+              action="action_grievance_category"/>
+    <menuitem id="menu_grievance_config_stages" name="Statuses"
+              parent="menu_grievance_config_root" sequence="20"
+              action="action_grievance_stage"/>
+    <menuitem id="menu_grievance_config_escalation" name="Escalation Rules"
+              parent="menu_grievance_config_root" sequence="30"
+              action="action_grievance_escalation_rule"/>
+    <menuitem id="menu_grievance_config_resolution" name="Resolution &amp; Documents"
+              parent="menu_grievance_config_root" sequence="40"
+              action="action_grievance_resolution"/>
+    <menuitem id="menu_grievance_config_doc_templates" name="Document Templates"
+              parent="menu_grievance_config_root" sequence="50"
+              action="action_grievance_document_template"/>
+    <menuitem id="menu_grievance_config_panels" name="Grievance Panels"
+              parent="menu_grievance_config_root" sequence="60"
+              action="action_grievance_panel"/>
+</odoo>

@@ -1,65 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <record id="view_hrgrade_ai_form" model="ir.ui.view">
+        <field name="name">hr.grade_ai.form</field>
+        <field name="model">hr.grade_ai</field>
+        <field name="arch" type="xml">
+            <form string="Ai Result" create="0">
+                
+                <sheet>
+                    <div class="oe_title">
+                        <label for="amount"/>
+                        <h1>
+                            <field name="amount" placeholder="900,000"/>
+                        </h1>
+                        <div class="text-muted">
+                            This is the AI suggested amount for the structure. Please note that this is not 100% accurate
+                        </div> 
+                    </div>
+                    <group> 
+                        
+                        <field name="payment_type" nolabel="0" readonly="0"/>
+                        <field name="grade_id" nolabel="0" readonly="1" options="{'no_open': True, 'no_create': True}"/>
+                    </group>
+                    <!-- <div class="row">
+                        <field name="ai_response" readonly="1"/>
+                    </div> -->
+                    <div class="d-flex gap-2 m-2">
+                        <field name="ai_prompt" readonly="0" placeholder="AI will render you answers here..."/>
+                            <button name="ask_ai"
+                                type="object"
+                                string="Ask AI" 
+                                class="rc_ai_btn_primary o_ai_salary_button"/> 
+                            <button name="generate_salary_lines"
+                                type="object"
+                                string="Use for step-up"
+                                class="btn btn-primary"
+                                help="This will help generate wages for each and every level"/> 
+                    </div>
+                    <div class="text-muted">
+                        AI response ... 
+                    </div>
+                    
+                    <div class="d-flex gap-2 m-6">
+                        <field name="ai_response" readonly="0" placeholder="AI will render you answers here..."/>
+                       
+                    </div>
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
     <record id="view_core_grade_tree" model="ir.ui.view">
         <field name="name">hr.core.grade.tree</field>
-        <field name="model">hr.grade</field>
+        <field name="model">cleon.hr.grade</field>
         <field name="arch" type="xml">
-            <tree string="Grade" js_class="organisation_list" sample="1">
-                <field name="name"/>
-                <!-- <field name="leave_duration" required="1"/> -->
-                <!-- <field name="cash_advance_limit" required="1"/> -->
-                <field name="cash_approval_limit"/>
+            <tree string="Grade" sample="1">
+                <field name="name"/> 
+                <!-- <field name="cash_approval_limit"/> -->
                 <field name="salary_band"/>
                 <field name="employee_count" string="Employees"/>
             </tree>
         </field>
     </record>
 
+
     <record id="view_core_grade_form" model="ir.ui.view">
         <field name="name">hr.core.grade.form</field>
-        <field name="model">hr.grade</field>
+        <field name="model">cleon.hr.grade</field>
         <field name="arch" type="xml">
             <form string="Grade">
-                <sheet>
-                    <div class="oe_title">
-                        <label for="name"/>
+                <div class="o_hr_payroll_form_layout">
+                    <field name="show_payroll_link" widget="payroll_app_link"/>
+                    <div class="hd-main">
+                        <sheet>
+                            <div class="oe_title">
+                                <label for="name"/>
 
-                        <h1>
-                            <field name="name" placeholder="Grade 1"/>
-                        </h1>
+                                <h1>
+                                    <field name="name" placeholder="Grade 1"/>
+                                </h1>
 
-                        <div class="text-muted">
-                            Define and manage employee grade groups.
-                        </div>
+                                <div class="text-muted">
+                                    Define and manage employee grade groups.
+                                </div>
+                            </div>
+
+                            <group>
+                            
+                                <group>
+                                    <field name="minimum_salary_band" nolabel="0" readonly="0"/>
+                                    <field name="max_salary_band" nolabel="0" readonly="0"/>
+                                    <field name="salary_band" nolabel="0" readonly="1"/> 
+                                    <!-- <field name="structure_id" nolabel="0" readonly="0" />  -->
+                                </group>
+                                <group>
+                                    <field name="cash_advance_limit" nolabel="0" required="1"/>
+                                    <field name="cash_approval_limit" nolabel="0" required="1"/>
+                                </group>
+                                
+                            </group>
+                            <group>
+                                <group>
+                                    <field name="increment_percentage" nolabel="0" required="0"/>
+                                </group>
+                                <group>
+                                    <field name="starting_amount" placeholder="e.g Monthly wage - 166,000" string="Wage (Per month)" nolabel="0" required="0"/>
+                                    <field name="country_id" nolabel="0" required="0"/>
+                                </group>
+                            </group>
+                            <div class="text-muted">
+                                Auto generate salary amount using the buttons
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button name="action_generate_level_salaries"
+                                        type="object"
+                                        string="Auto set salary step"
+                                        class="btn btn-primary"/>
+
+                                <button name="action_generate_with_ai"
+                                    type="object"
+                                    string="Use AI"
+                                    class="rc_ai_btn_primary o_ai_salary_button"
+                                    help="AI fetches the expected salary for the grade structure"/>
+                            </div>
+                            
+                            <notebook>
+                                <page string="Levels / Step">
+                                    <field name="level_band_ids" readonly="0" required="1" context="{'default_grade_id': id}">
+                                        <tree string="" editable="bottom">
+                                            <field name="level_id"/>
+                                            <field name="salary"/>
+                                            <field name="grade_id" readonly="1"/>
+                                        </tree>
+                                    </field>
+                                </page>
+                                <page>
+                                    <field name="employee_ids" readonly="1" nolabel="1" colspan="2" options="{'no_open': true, 'no_create': true}"/>
+                                </page>
+                                
+                            </notebook>
+                        </sheet>
                     </div>
-
-                    <group>
-                    
-                        <group>
-                            <field name="min_salary_band" nolabel="0" readonly="0"/>
-                            <field name="max_salary_band" nolabel="0" readonly="0"/>
-                            <field name="salary_band" nolabel="0" readonly="1"/>
-                            <!-- <field name="leave_duration" nolabel="0" required="1"/> -->
-                        </group>
-                        <group>
-                            <field name="cash_advance_limit" nolabel="0" required="1"/>
-                            <field name="cash_approval_limit" nolabel="0" required="1"/>
-                        </group>
-                    </group>
-
-                    
-                    <notebook>
-                        <page>
-                            <field name="employee_ids" readonly="1" nolabel="1" colspan="2" options="{'no_open': true, 'no_create': true}"/>
-                        </page>
-                    </notebook>
-                </sheet>
+                </div>
             </form>
         </field>
         
     </record>
      
-    <record id="action_core_grade" model="ir.actions.act_window">
+    <!-- <record id="action_core_grade" model="ir.actions.act_window">
         <field name="name">Grade</field>
         <field name="res_model">hr.grade</field>
         <field name="view_mode">tree,form</field>
@@ -81,5 +170,5 @@
             </p>
             <p>Create a New record.</p>
         </field>
-    </record>
+    </record> -->
 </odoo>

@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cleon_pay_template_form_custom" model="ir.ui.view">
+        <field name="name">cleon.payroll.template.custom.form</field>
+        <field name="model">cleon.payroll.template</field>
+        <field name="arch" type="xml">
+            <form string="Pay template" class="cleon_pay_group_form">
+                <div class="o_hr_payroll_form_layout">
+                    <field name="show_payroll_link" widget="payroll_app_link"/>
+                     
+                    <div class="hd-main">
+                        <header>
+                            <button name="button_activate_government_structures"
+                                    type="object"
+                                    string="Activate Government Structures"
+                                    class="btn-primary m-4" invisible="is_government_structure == False"/>
+                        </header>
+                        <sheet>
+                            <div class="pg_header">
+                                <div class="pg_breadcrumb">
+                                    Configurations - Template - New
+                                </div>
+                                <div class="pg_title">
+                                    <h1>Template Name: </h1>
+                                    <span class="pg_draft"><field name="name" readonly="1"/></span>
+                                </div>
+                                <div class="pg_subtitle">
+                                    <field name="company_id" readonly="1" options="{'no_open': True, 'no_create': True}"/>
+                                </div>
+                            </div>
+
+                            <div class="pg_steps">
+                                <div class="pg_step active">
+                                    <span class="pg_number">1</span>
+                                    <div>
+                                        <strong>Basics</strong>
+                                        <small>currency, wage type, inherited defaults</small>
+                                    </div>
+                                </div>
+                                <div class="pg_step">
+                                    <span class="pg_number">2</span>
+                                    <div>
+                                        <strong>Members</strong>
+                                        <small>manual or by rule</small>
+                                    </div>
+                                </div>
+                                <div class="pg_step">
+                                    <span class="pg_number">3</span>
+                                    <div>
+                                        <strong>Package</strong>
+                                        <small>default Salary Structure, statutory</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pg_layout">
+                                <div class="pg_main"> 
+                                    <div class="pg_card">
+                                        <div class="pg_card_title">Information</div>
+
+                                        <div class="pg_grid">
+                                            <div class="pg_field">
+                                                <label for="name">Name *</label>
+                                                <field name="name"
+                                                    placeholder="Enter template name" required="1"/>
+                                            </div>
+                                            <div class="pg_field">
+                                                <label for="state">Status *</label>
+                                                <field name="state"
+                                                    placeholder="Not Approved" readonly="1"/>
+                                                <small>Current status</small>
+                                            </div>
+
+                                            <div class="pg_field">
+                                                <label for="is_government_structure">Is government Structure</label>
+                                                <field name="is_government_structure" widget="boolean_toggle"/>
+                                                <small>From PAYROLL GROUP</small><br/>
+                                                
+                                                <button name="button_activate_government_structures"
+                                                    type="object"
+                                                    string="Load Structures"
+                                                    class="btn btn-primary btm-sm" invisible="is_government_structure == False"/>
+                                            </div>
+                                            
+                                            
+                                            <div class="pg_field">
+                                                <label for="company_id">Company / Organisation</label>
+                                                <field name="company_id" required="1" readonly="0" options="{'no_open': True, 'no_create': True}"/>
+                                                <small>Setup company</small>
+                                            </div>
+                                            <div class="pg_field">
+                                                <label for="company_id">Country</label>
+                                                <field name="country_id" required="1" readonly="0" options="{'no_open': True, 'no_create': True}"/>
+                                                <small>Applicable Country</small>
+                                            </div>
+
+                                            
+                                        </div>
+                                    </div>
+
+                                    <div class="pg_card pg_defaults">
+                                        <div class="pg_section_heading">
+                                            <div>
+                                                <div class="pg_card_title">
+                                                    Inherited defaults
+                                                </div>
+                                                <p>
+                                                    Once you check the is government structure box,
+                                                    This pulls all the pay structure linked to government of 
+                                                    the country selected.
+                                                </p>
+                                            </div>
+                                            <span class="pg_help">Ensure Company  ↗</span>
+                                        </div>
+
+                                        <!-- <div class="pg_default_row">
+                                            <label for="active">Active *</label>
+                                            <div class="pg_default_control">
+                                                <field name="active" readonly="1"
+                                                    options="{'no_create': True}" widget="boolean_toggle"/>
+                                                <span class="pg_inherited">
+                                                    This indicate the activeness of this record
+                                                </span>
+                                            </div>
+                                        </div> -->
+
+                                        <div class="pg_default_row">
+                                            <label for="payroll_structure_ids">Working Schedule *</label>
+                                            <div class="pg_default_control">
+                                                <field name="payroll_structure_ids"
+                                                    options="{'no_create': True}"
+                                                    widget="many2many_tags"/>
+                                                <span class="pg_inherited">
+                                                    Inherited from Payroll structures
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div> <!-- End pg_defaults -->
+
+                                    <!-- <div class="pg_footer">
+                                        <button name="action_cancel_setup"
+                                                type="object"
+                                                string="Cancel"
+                                                class="btn btn-secondary"/>
+                                        <span class="pg_footer_note">
+                                            Defaults are inherited until overridden.
+                                        </span>
+                                        <button name="action_next_members"
+                                                type="object"
+                                                string="Next: Members"
+                                                class="btn btn-primary"/>
+                                    </div> -->
+                                </div> <!-- End pg_main -->
+
+                                <aside class="pg_summary">
+                                    <div class="pg_summary_title">
+                                        Detailed report
+                                    </div>
+                                    
+                                    <div class="pg_summary_row">
+                                        <span>People</span>
+                                        <strong><field name="paygroup_employee_count" readonly="1"/> People</strong>
+                                    </div>
+                                    <div class="pg_summary_row">
+                                        <span>Pay Groups</span>
+                                        <strong><field name="paygroup_count" readonly="1"/> Pay Groups ·</strong>
+                                    </div>
+                                    <div class="pg_summary_row">
+                                        <span>Pay Structures</span>
+                                        <strong><field name="paygroup_structure_count" readonly="1"/> Pay Structures ·</strong>
+                                    </div>
+                                    <div class="pg_preview">
+                                        Preview paydays
+                                    </div>
+                                </aside>
+                            </div> <!-- End pg_layout -->
+                        </sheet>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+     <record id="view_cleon_payroll_template_list" model="ir.ui.view">
+        <field name="name">cleon.payroll.template.list</field>
+        <field name="model">cleon.payroll.template</field>
+        <field name="arch" type="xml">
+            <tree string="Template">
+                <field name="name"/>
+                <field name="is_government_structure"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_cleon_payroll_template" model="ir.actions.act_window">
+        <field name="name">Payroll template</field>
+        <field name="res_model">cleon.payroll.template</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

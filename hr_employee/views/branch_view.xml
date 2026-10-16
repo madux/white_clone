@@ -4,7 +4,7 @@
         <field name="name">multi.branch.employee.tree</field>
         <field name="model">multi.branch</field>
         <field name="arch" type="xml">
-            <tree string="Branch" js_class="organisation_list">
+            <tree string="Branch">
                 <field name="name" string="Name"/>
                 <field name="code" string="Code"/>
                 <field name="street" string="Address"/>

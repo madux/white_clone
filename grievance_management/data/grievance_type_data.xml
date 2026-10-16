@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="grievance_type_unfair_treatment" model="grievance.type">
+        <field name="name">Unfair Treatment</field>
+        <field name="category_id" ref="grievance_category_management_relations"/>
+        <field name="default_priority">medium</field>
+        <field name="is_locked">True</field>
+    </record>
+    <record id="grievance_type_unsafe_work_env" model="grievance.type">
+        <field name="name">Unsafe Work Environment</field>
+        <field name="category_id" ref="grievance_category_workplace_conditions"/>
+        <field name="default_priority">high</field>
+        <field name="is_locked">True</field>
+    </record>
+    <record id="grievance_type_harassment" model="grievance.type">
+        <field name="name">Workplace Harassment</field>
+        <field name="category_id" ref="grievance_category_management_relations"/>
+        <field name="default_priority">high</field>
+        <field name="is_locked">True</field>
+    </record>
+    <record id="grievance_type_discrimination" model="grievance.type">
+        <field name="name">Discrimination</field>
+        <field name="category_id" ref="grievance_category_management_relations"/>
+        <field name="default_priority">high</field>
+        <field name="is_locked">True</field>
+    </record>
+    <record id="grievance_type_pay_dispute" model="grievance.type">
+        <field name="name">Pay Dispute</field>
+        <field name="category_id" ref="grievance_category_compensation"/>
+        <field name="default_priority">medium</field>
+        <field name="is_locked">True</field>
+    </record>
+</odoo>

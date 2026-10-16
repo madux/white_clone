@@ -247,7 +247,7 @@ class Hrofferwizard(models.TransientModel):
     
     salary_currency = fields.Many2one('res.currency', string="Currency")
     job_id = fields.Many2one('hr.job', string="Job Role")
-    # grade_id = fields.Many2one('hr.grade', string="Grade")
+    # grade_id = fields.Many2one('cleon.hr.grade', string="Grade")
  
     candidate_ids = fields.Many2many(
         'hr.applicant',
@@ -412,7 +412,7 @@ class Hrofferwizard(models.TransientModel):
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                     'params': {
-                        'title': _("Sucessfully sent offers"),
+                        'title': _("Successfully sent offers"),
                         'message':  _(f"A total of {len(self.candidate_ids.ids)} was send successfully "),
                         'type': 'success',
                         'sticky': False

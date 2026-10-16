@@ -1,0 +1,60 @@
+
+.o_ai_fullscreen_overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(20, 20, 30, 0.55);
+    backdrop-filter: blur(3px);
+
+    cursor: wait;
+}
+
+.o_ai_loading_content {
+    min-width: 300px;
+    padding: 35px 40px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+
+    text-align: center;
+}
+
+.o_ai_large_spinner {
+    width: 55px;
+    height: 55px;
+
+    border: 5px solid #f3d4e5;
+    border-top-color: #714b67;
+    border-radius: 50%;
+
+    animation: o_ai_spin 0.8s linear infinite;
+}
+
+.o_ai_loading_title {
+    margin-top: 22px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #34303a;
+}
+
+.o_ai_loading_message {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #777;
+}
+
+@keyframes o_ai_spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

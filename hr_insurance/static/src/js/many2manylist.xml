@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<templates xml:space="preserve">
+
+    <!-- ======================================================
+         MAIN FIELD
+         ====================================================== -->
+
+    <t
+        t-name="hr_insurance.InsuranceBenefitsField"
+        owl="1"
+    >
+
+        <div class="o_insurance_benefits">
+
+            <!-- ============================================
+                 EXISTING BENEFITS
+                 ============================================ -->
+
+            <t
+                t-if="records.length"
+                t-foreach="records"
+                t-as="benefit"
+                t-key="benefit.resId"
+            >
+
+                <div class="o_insurance_benefit_item">
+
+                    <!-- CHECK ICON -->
+
+                    <span class="o_insurance_benefit_icon">
+
+                        <i class="fa fa-check-circle"/>
+
+                    </span>
+
+
+                    <!-- NAME -->
+
+                    <span class="o_insurance_benefit_name">
+
+                        <t
+                            t-esc="
+                                benefit.data.display_name ||
+                                benefit.data.name
+                            "
+                        />
+
+                    </span>
+
+
+                    <!-- REMOVE -->
+
+                    <button
+                        t-if="!props.readonly"
+                        type="button"
+                        class="btn btn-link o_insurance_benefit_remove"
+                        title="Remove benefit"
+                        t-on-click="() => this.removeBenefit(benefit)"
+                    >
+
+                        <i class="fa fa-times"/>
+
+                    </button>
+
+                </div>
+
+            </t>
+
+
+            <!-- ============================================
+                 EMPTY STATE
+                 ============================================ -->
+
+            <div
+                t-if="!records.length"
+                class="o_insurance_benefits_empty"
+            >
+
+                No benefits selected.
+
+            </div>
+
+
+            <!-- ============================================
+                 ADD BUTTON
+                 ============================================ -->
+
+            <button
+                t-if="!props.readonly"
+                type="button"
+                class="btn btn-link o_insurance_add_benefit"
+                t-on-click="openBenefitSelector"
+            >
+
+                <i class="fa fa-plus"/>
+
+                <span>
+                    Add Benefit
+                </span>
+
+            </button>
+
+        </div>
+
+    </t>
+
+
+
+    <!-- ======================================================
+         BENEFIT SELECTOR DIALOG
+         ====================================================== -->
+
+    <t
+        t-name="hr_insurance.InsuranceBenefitSelector"
+        owl="1"
+    >
+
+        <Dialog
+            title="'Select Benefits'"
+            size="'medium'"
+        >
+
+            <div class="o_insurance_benefit_dialog">
+
+
+                <!-- ========================================
+                     SEARCH
+                     ======================================== -->
+
+                <div class="o_insurance_search">
+
+                    <div class="input-group">
+
+                        <span class="input-group-text">
+
+                            <i class="fa fa-search"/>
+
+                        </span>
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            placeholder="Search benefits..."
+                            t-att-value="state.search"
+                            t-on-input="onSearchInput"
+                        />
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- ========================================
+                     CREATE NEW
+                     ======================================== -->
+
+                <div class="o_insurance_create">
+
+                    <div class="o_insurance_create_title">
+
+                        <span>
+                            Add new benefit
+                        </span>
+
+                    </div>
+
+
+                    <div class="input-group">
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            placeholder="Enter benefit name..."
+                            t-att-value="state.newName"
+                            t-on-input="onNewNameInput"
+                            t-on-keydown="
+                                (event) => {
+                                    if (event.key === 'Enter') {
+                                        this.createBenefit();
+                                    }
+                                }
+                            "
+                        />
+
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            t-att-disabled="state.creating"
+                            t-on-click="createBenefit"
+                        >
+
+                            <i class="fa fa-plus"/>
+
+                            Create &amp; Add
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- ========================================
+                     SELECT ALL
+                     ======================================== -->
+
+                <div class="o_insurance_select_actions">
+
+                    <button
+                        type="button"
+                        class="btn btn-link btn-sm"
+                        t-on-click="selectAll"
+                    >
+
+                        Select All
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="btn btn-link btn-sm"
+                        t-on-click="clearVisibleSelection"
+                    >
+
+                        Clear Visible
+
+                    </button>
+
+                </div>
+
+
+
+                <!-- ========================================
+                     LOADING
+                     ======================================== -->
+
+                <div
+                    t-if="state.loading"
+                    class="o_insurance_loading"
+                >
+
+                    <i class="fa fa-spinner fa-spin"/>
+
+                    Loading benefits...
+
+                </div>
+
+
+
+                <!-- ========================================
+                     RECORDS
+                     ======================================== -->
+
+                <div
+                    t-if="!state.loading"
+                    class="o_insurance_benefit_list"
+                >
+
+                    <t
+                        t-if="state.records.length"
+                        t-foreach="state.records"
+                        t-as="benefit"
+                        t-key="benefit.id"
+                    >
+
+                        <label
+                            class="o_insurance_benefit_checkbox"
+                        >
+
+                            <input
+                                type="checkbox"
+                                t-att-checked="
+                                    this.isSelected(benefit.id)
+                                "
+                                t-on-change="
+                                    () => this.toggleRecord(benefit)
+                                "
+                            />
+
+
+                            <span class="o_insurance_custom_checkbox">
+
+                                <i class="fa fa-check"/>
+
+                            </span>
+
+
+                            <span class="o_insurance_checkbox_name">
+
+                                <t t-esc="benefit.display_name"/>
+
+                            </span>
+
+                        </label>
+
+                    </t>
+
+
+                    <!-- ====================================
+                         NO RESULTS
+                         ==================================== -->
+
+                    <div
+                        t-if="!state.records.length"
+                        class="o_insurance_no_results"
+                    >
+
+                        <i class="fa fa-search"/>
+
+                        <span>
+                            No benefits found.
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==========================================
+                 DIALOG FOOTER
+                 ========================================== -->
+
+            <t t-set-slot="footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    t-on-click="cancel"
+                >
+
+                    Cancel
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    t-on-click="apply"
+                >
+
+                    <i class="fa fa-check"/>
+
+                    Apply
+
+                </button>
+
+            </t>
+
+        </Dialog>
+
+    </t>
+
+</templates>

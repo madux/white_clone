@@ -1,44 +1,44 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
 
-class HrGrade(models.Model):
-    _inherit = 'hr.grade'
+# class HrGrade(models.Model):
+#     _inherit = 'hr.grade'
 
-    leave_duration = fields.Integer()
+#     name = fields.Char()
+#     leave_duration = fields.Integer()
 
-    employee_count = fields.Integer(
-            string="Employees count",
-            copy=True, 
-        )
-    min_salary_band = fields.Float(
-            string="Min Salary Band",
-            copy=False,
-        )
-    cash_advance_limit = fields.Float(
-            string="Cash Advance limit",
-            copy=True,
-            default=20000,
-        )
+#     employee_count = fields.Integer(
+#             string="Employees count",
+#             copy=True, 
+#         )
+#     min_salary_band = fields.Float(
+#             string="Min Salary Band",
+#             copy=False,
+#         )
+#     minimum_salary_band = fields.Float(
+#                 string="Min Salary Band",
+#                 copy=False,
+#             )
+#     cash_advance_limit = fields.Float(
+#             string="Cash Advance limit",
+#             copy=True,
+#             default=20000,
+#         )
 
-    cash_approval_limit = fields.Float(
-        string="Cash Approval limit",
-        copy=True,
-    ) 
 
-    max_salary_band = fields.Float(
-        string="Max Salary Band",
-        copy=False,
-    )
-    cash_approval_limit = fields.Float(
-            string="Cash Approval limit",
-            copy=True,
-        )
-    salary_band = fields.Char(
-        string="Salary Band",
-        store=True,
-        copy=False,
-    )
-
+#     max_salary_band = fields.Float(
+#         string="Max Salary Band",
+#         copy=False,
+#     )
+#     cash_approval_limit = fields.Float(
+#             string="Cash Approval limit",
+#             copy=True,
+#         )
+#     salary_band = fields.Char(
+#         string="Salary Band",
+#         store=True,
+#         copy=False,
+#     )
 
 class HrEmployee(models.Model):
     _inherit = "hr.employee"

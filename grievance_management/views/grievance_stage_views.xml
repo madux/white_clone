@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_grievance_stage_list" model="ir.ui.view">
+        <field name="name">grievance.stage.list</field>
+        <field name="model">grievance.stage</field>
+        <field name="arch" type="xml">
+            <tree string="Grievance Statuses" editable="bottom" js_class="grievance_management_dashboard_list">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="is_closed"/>
+                <field name="fold"/>
+                <field name="is_locked" readonly="1" string="System"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_grievance_stage" model="ir.actions.act_window">
+        <field name="name">Grievance Statuses</field>
+        <field name="res_model">grievance.stage</field>
+        <field name="view_mode">tree</field>
+    </record>
+</odoo>

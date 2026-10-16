@@ -170,6 +170,11 @@ class HrJob(models.Model):
         copy=True,
         default=0.0
     )
+    minimum_salary_band = fields.Float(
+        string="Min Salary",
+        copy=True,
+        default=0.0
+    )
 
     max_salary_band = fields.Float(
         string="Max Salary",
@@ -243,15 +248,15 @@ class HrJob(models.Model):
     @api.onchange('max_salary_band')
     def onchange_max_salary_band(self):
         if self.max_salary_band:
-            if self.max_salary_band < self.min_salary_band:
+            if self.max_salary_band < self.minimum_salary_band:
                 self.max_salary_band = False
                 raise UserError("Minimum salary cannot be greater than Maximum salary band")
 
-    @api.onchange('min_salary_band')
-    def onchange_min_salary_band(self):
-        if self.min_salary_band:
-            if self.max_salary_band > 0 and self.min_salary_band > self.max_salary_band:
-                self.min_salary_band = False
+    @api.onchange('minimum_salary_band')
+    def onchange_minimum_salary_band(self):
+        if self.minimum_salary_band:
+            if self.max_salary_band > 0 and self.minimum_salary_band > self.max_salary_band:
+                self.minimum_salary_band = False
                 raise UserError("Minimum salary cannot be greater than Maximum salary band")
 
 
@@ -318,6 +323,9 @@ class HrJob(models.Model):
         # return self._reopen(target='current', view_id=view_id, view_mode='form')
 
     def create_job_from_form(self):
+        self.write({
+                    'active': True
+                })
         view_id = view_id if view_id else self.env.ref(
                         'hr_cleon_recruitment.action_hr_recruitment_add_custom_job'
                     ).id
@@ -340,6 +348,9 @@ class HrJob(models.Model):
 
 
     def button_create_job(self):
+        self.write({
+                    'active': True
+                })
         view_id = self.env.ref(
             'hr_cleon_recruitment.job_creation_form_view'
         ).id
@@ -355,7 +366,7 @@ class HrJob(models.Model):
         }
 
     def button_create_candidate(self):
-        view_id = view_id if view_id else self.env.ref(
+        view_id = self.env.ref(
             'hr_cleon_recruitment.hr_recruitment_candidate_form_view'
         ).id
         return {
@@ -714,9 +725,23 @@ class HrJob(models.Model):
 
 
     def edit_btn(self):
+        self.ensure_one()
+
         self.with_context(from_edit_button=True).write({
             'is_editable': True
         })
+
+        view_id = self.env.ref('hr.view_hr_job_form').id
+
+        return {
+            'name': 'Job Details',
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'view_id': view_id,
+            'target': 'new',
+        }
 
     def write(self, vals):
         if 'is_editable' not in vals:

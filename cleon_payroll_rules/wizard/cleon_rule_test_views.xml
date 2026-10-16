@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cleon_rule_test_form" model="ir.ui.view">
+        <field name="name">cleon.payroll.rule.test.form</field>
+        <field name="model">cleon.payroll.rule.test</field>
+        <field name="arch" type="xml">
+            <form string="Test rule" class="o_qms_form">
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+                        </div>
+                        <span class="qms-card-title">Test rule on a real person</span>
+                    </div>
+                    <div class="pink-card-body">
+                        <group>
+                            <group>
+                                <field name="rule_id"/>
+                                <field name="employee_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="date"/>
+                            </group>
+                        </group>
+                        <button name="action_run" type="object" string="Run test" class="btn btn-success"/>
+                    </div>
+                    <div class="ash-card-body" invisible="not ran">
+                        <span class="qms-card-title">Result</span>
+                        <group>
+                            <field name="ran" invisible="1"/>
+                            <field name="condition_met"/>
+                            <field name="amount"/>
+                            <field name="message"/>
+                            <field name="trace"/>
+                        </group>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+</odoo>

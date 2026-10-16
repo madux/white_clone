@@ -27,6 +27,7 @@
     'assets': {
         'web.assets_frontend': [
             'cleon_settings/static/src/css/cleon_login.css',
+            
 
         ],
         'web.assets_backend': [

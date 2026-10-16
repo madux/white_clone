@@ -1,77 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- <record id="view_cleon_hr_grade_form" model="ir.ui.view">
-        <field name="name">hr.grade.form</field>
-        <field name="model">hr.grade</field>
+    <record id="view_core_grade_form_inherited" model="ir.ui.view">
+        <field name="name">cleon.hr.grade.inherited</field>
+        <field name="model">cleon.hr.grade</field>
+        <field name="inherit_id" ref="hr_employee.view_core_grade_form"/>
         <field name="arch" type="xml">
-            <form string="Grade grade" class="o_qms_form">
-                <header> 
-                </header>
-                <sheet>
-                    <div class="qms-card">
-                        <div class="qms-card-header">
-                            <div class="qms-card-icon">
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M4 4h16v16H4z"/>
-                                </svg>
-                            </div>
-                            <span class="qms-card-title">
-                                Grades &amp; Configuration
-                            </span>
-                        </div> 
 
-                        <div class="qms-card-header"> 
-                            <group>
-                                <group>
-                                    <field name="name"/>
-                                    <field name="min_salary_band"/>
-                                    <field name="max_salary_band"/>
-                                    <field name="salary_band"/>
-                                    
-                                </group>
-                                <group>
-                                    <field name="leave_duration"/>
-                                    <field name="employee_count"/>
-                                    <field name="cash_advance_limit"/>
-                                    <field name="active"
-                                        widget="boolean_toggle"/>
-                                </group>
-                            </group>
-                        </div> 
-                    </div>
-                </sheet>
-            </form>
+            <xpath expr="//field[@name='salary_band']" position="after">
+                <field name="structure_id" required="1"/>
+            </xpath>
         </field>
     </record>
 
-    <record id="view_cleon_grade_list" model="ir.ui.view">
-        <field name="name">hr.grade.list</field>
-        <field name="model">hr.grade</field>
+    <record id="view_cleon_hr_grade_search" model="ir.ui.view">
+        <field name="name">cleon.hr.grade.search</field>
+        <field name="model">cleon.hr.grade</field>
         <field name="arch" type="xml">
-            <tree string="Grade">
+            <search string="Search Salary Grades">
                 <field name="name"/>
-                <field name="min_salary_band"/>
-                <field name="max_salary_band"/> 
-                <field name="salary_band"/> 
-                 <field name="leave_duration"/>
-                <field name="cash_advance_limit"/>
-                <field name="employee_count"/>
-            </tree>
+                <field name="structure_id"/>
+                <field name="country_id"/>
+
+                <group expand="0" string="Group By">
+                    <filter
+                        name="group_by_structure"
+                        string="Salary Structure"
+                        context="{'group_by': 'structure_id'}"
+                    />
+                </group>
+            </search>
         </field>
-    </record> -->
-    <record id="view_payrollgrade_kanban_pink" model="ir.ui.view">
-        <field name="name">hr.grade.kanban.pink</field>
-        <field name="model">hr.grade</field>
+    </record>
+
+    <record id="view_payroll_grade_tree" model="ir.ui.view">
+        <field name="name">hr.grade.tree.pink</field>
+        <field name="model">cleon.hr.grade</field>
         <field name="arch" type="xml">
-            <kanban class="o_kanban_small_column" js_class="payroll_kanban_sidebar">
+            <tree string="Grades">
                 <field name="name"/>
-                <field name="min_salary_band"/>
+                <field name="minimum_salary_band"/>
                 <field name="max_salary_band"/>
                 <field name="salary_band"/>
                 <field name="employee_count"/>
-                <!-- <field name="cash_advance_limit"/> -->
+            </tree>
+         </field>
+    </record>
+
+    <record id="view_payrollgrade_kanban_pink" model="ir.ui.view">
+        <field name="name">hr.grade.kanban.pink</field>
+        <field name="model">cleon.hr.grade</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" js_class="payroll_kanban_sidebar">
+                <field name="name"/>
+                <field name="minimum_salary_band"/>
+                <field name="max_salary_band"/>
+                <field name="salary_band"/>
+                <field name="employee_count"/>
                 <field name="active"/>
+                <field name="create_date"/>
                 <templates>
                     <t t-name="kanban-box">
                         <div class="oe_kanban_global_click p-0 border-0 rounded-3 shadow-sm overflow-hidden position-relative" 
@@ -93,11 +80,11 @@
                             <!-- Card Body -->
                             <div class="row g-0 px-3 py-2 align-items-center">
                                 <!-- Left: Employee Avatar -->
-                                <div class="col-4 text-center">
+                                <!-- <div class="col-4 text-center">
                                     <div class="position-relative d-inline-block">
 
                                     </div>
-                                </div>
+                                </div> -->
 
                                 <!-- Right: Employee Details -->
                                 <div class="col-8 ps-3">
@@ -105,13 +92,13 @@
                                         <field name="name"/>
                                     </h5>
                                     <p class="text-muted mb-2 fw-semibold" style="font-size: 0.85rem; color: #880E4F !important;">
-                                        <field name="active" widget="badge"/>
+                                        <!-- <field name="active" widget="badge"/> -->
                                     </p>
                                     
                                     <div class="lh-sm" style="font-size: 0.78rem; color: #16090d;">
                                         <div class="mb-1">
                                             <span class="fw-bold">Min Salary Band:</span> 
-                                            <span class="color-darkred"><field name="min_salary_band"/></span>
+                                            <span class="color-darkred"><field name="minimum_salary_band"/></span>
                                         </div>
                                         <div class="mb-1 text-truncate">
                                             <span class="fw-bold">Max Salary band:</span> 
@@ -137,7 +124,10 @@
                                     <i class="fa fa-check-circle me-1"/> Active
                                 </span>
                                 <small style="color: #AD1457; font-weight: 500; font-size: 0.75rem;">
-                                    Create Date: <t t-esc="record.create_date.value || '2026'"/>
+                                    Create Date:
+                                    <t t-if="record.create_date and record.create_date.value"
+                                    t-esc="record.create_date.value"/>
+                                    <t t-else="">N/A</t>
                                 </small>
                             </div>
                         </div>
@@ -147,23 +137,100 @@
         </field>
     </record>
 
+
+
     <record id="action_cleon_grade_cycle" model="ir.actions.act_window">
         <field name="name">Grade</field>
-        <field name="res_model">hr.grade</field>
+        <field name="res_model">cleon.hr.grade</field>
         <field name="view_mode">kanban,tree,form</field>
-        <field name="target">current</field>
-        <!-- <field name="view_id" ref="cleon_payroll.view_cleon_grade_list"/> -->
-        <!-- <field name="view_ids" eval="[
-            (5, 0, 0),
-            (0, 0, {
-                'view_mode': 'tree',
-                'view_id': ref('cleon_payroll.view_cleon_grade_list'),
-            }),
-            (0, 0, {
-                'view_mode': 'form',
-                'view_id': ref('cleon_payroll.view_cleon_hr_grade_form'),
-            }),
-        ]"/> -->
+        <field name="target">current</field> 
+        <field name="search_view_id" ref="view_cleon_hr_grade_search"/>
+        <field name="context">
+            {'search_default_group_by_structure': 1}
+        </field>
+    </record>
+
+    <record id="view_hr_level_kanban_pink" model="ir.ui.view">
+        <field name="name">hr.level.kanban.pink</field>
+        <field name="model">hr.level</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" js_class="payroll_kanban_sidebar">
+                <field name="name"/>
+                <field name="country_id"/>
+                <field name="active"/>
+
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click"
+                            style="
+                                background: #FFF1F5;
+                                border: 1px solid #F8BBD0;
+                                border-radius: 12px;
+                                padding: 16px;
+                                box-shadow: 0 2px 6px rgba(173, 20, 87, 0.08);">
+
+                            <!-- Header -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span style="
+                                    color: #AD1457;
+                                    font-size: 16px;
+                                    font-weight: 700;">
+                                    <field name="name"/>
+                                </span>
+
+                                <field name="active"
+                                    widget="boolean_toggle"/>
+                            </div>
+
+                            <!-- Grade -->
+                            <div class="mb-3"
+                                style="
+                                    background: #FFFFFF;
+                                    border-radius: 8px;
+                                    padding: 10px;">
+                                <div style="
+                                    color: #AD1457;
+                                    font-size: 11px;
+                                    font-weight: 600;
+                                    text-transform: uppercase;
+                                    margin-bottom: 4px;">
+                                    Country Applicable
+                                </div>
+
+                                <div style="
+                                    color: #4A2535;
+                                    font-size: 14px;
+                                    font-weight: 500;">
+                                    <t t-if="record.country_id.raw_value">
+                                        <field name="country_id"/>
+                                    </t>
+                                     <t t-else="">
+                                        <span class="badge rounded-pill text-bg-primary">
+                                            N/A
+                                        </span>
+                                    </t> 
+                                </div>
+                            </div>
+
+                            <!-- Active Badge -->
+                            <div>
+                                <t t-if="record.active.raw_value">
+                                    <span class="badge rounded-pill text-bg-success">
+                                        Active
+                                    </span>
+                                </t>
+                                <t t-else="">
+                                    <span class="badge rounded-pill text-bg-secondary">
+                                        Inactive
+                                    </span>
+                                </t>
+                            </div>
+
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
     </record>
 
 </odoo>

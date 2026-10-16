@@ -9,7 +9,7 @@
         <field name="name">hr.benefit.tree</field>
         <field name="model">hr.benefit</field>
         <field name="arch" type="xml">
-            <tree decoration-danger="benefit_line_ids" js_class="organisation_list">
+            <tree decoration-danger="benefit_line_ids">
                 <field name="name"/>
                 <field name="benefit_line_ids" widget="many2many_tags"/>
             </tree>

@@ -31,6 +31,11 @@ class CleonPayslipRun(models.Model):
             help="This will help avoid duplicates", 
             default=True
         )
+    show_payroll_link = fields.Boolean(
+                    string="Payroll menu Link",
+                    default=True,
+                    help="Used to hold widget in form view"
+                )
     @api.depends("slip_ids")
     def _compute_slip_count(self):
         for rec in self:
@@ -106,6 +111,6 @@ class CleonPayslipRun(models.Model):
             'res_id': self.id,
             'type': 'ir.actions.act_window',
             'domain': [],
-            'target': 'new'
+            'target': 'current'
             }
         return ret

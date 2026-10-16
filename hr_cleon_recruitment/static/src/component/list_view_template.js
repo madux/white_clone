@@ -246,6 +246,14 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
         );
     }
 
+    async openEmployee(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_administration.action_view_employee_kanban_custom",
+            { target: "current" }
+        );
+    }
+
     async openDepartment(ev) {
         ev.preventDefault();
         await this.actionService.doAction(

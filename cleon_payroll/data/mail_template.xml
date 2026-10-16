@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Email to the approver -->
+        <record id="mail_template_structure_approval_request"
+                model="mail.template">
+            <field name="name">Payroll Structure - Approval Request</field>
+            <field name="model_id"
+                   ref="model_cleon_structure_approval"/>
+            <field name="subject">
+                Approval Required: ${object.structure_id.name}
+            </field>
+            <field name="email_from">
+                ${user.email_formatted or ''}
+            </field>
+            <field name="email_to">
+                ${object.approver_user_id.email or ''}
+            </field>
+            <field name="body_html" type="html">
+                <div>
+                    <p>Hello ${object.approver_user_id.name or 'Approver'},</p>
+
+                    <p>
+                        A payroll structure assignment request requires
+                        your approval.
+                    </p>
+
+                    <p>
+                        <strong>Reference:</strong>
+                        ${object.name}
+                    </p>
+
+                    <p>
+                        <strong>Payroll Structure:</strong>
+                        ${object.structure_id.name}
+                    </p>
+
+                    <p>
+                        <strong>Requested By:</strong>
+                        ${object.requested_by.name}
+                    </p>
+
+                    <p>
+                        <strong>Number of Employees:</strong>
+                        ${len(object.employee_ids)}
+                    </p>
+
+                    <p>
+                        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=cleon.structure.approval&amp;view_type=form">
+                            Open Approval Request
+                        </a>
+                    </p>
+
+                    <p>Please review the request and approve or refuse it.</p>
+
+                    <p>Regards,<br/>Cleon Payroll</p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="False"/>
+        </record>
+
+        <!-- Email to the requester after approval/refusal -->
+        <record id="mail_template_structure_approval_result"
+                model="mail.template">
+            <field name="name">Payroll Structure - Approval Result</field>
+            <field name="model_id"
+                   ref="model_cleon_structure_approval"/>
+            <field name="subject">
+                Payroll Structure Request ${object.state}: ${object.structure_id.name}
+            </field>
+            <field name="email_from">
+                ${user.email_formatted or ''}
+            </field>
+            <field name="email_to">
+                ${object.requested_by.email or ''}
+            </field>
+            <field name="body_html" type="html">
+                <div>
+                    <p>Hello ${object.requested_by.name or 'User'},</p>
+
+                    <p>Your payroll structure assignment request has been processed.</p>
+
+                    <p>
+                        <strong>Reference:</strong>
+                        ${object.name}
+                    </p>
+
+                    <p>
+                        <strong>Payroll Structure:</strong>
+                        ${object.structure_id.name}
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong>
+                        ${object.state}
+                    </p>
+
+                    <p>
+                        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=cleon.structure.approval&amp;view_type=form">
+                            View Approval Request
+                        </a>
+                    </p>
+
+                    <p>Regards,<br/>Cleon Payroll</p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="False"/>
+        </record>
+
+    </data>
+</odoo>

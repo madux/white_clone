@@ -231,8 +231,9 @@
 
                                     <div class="o_warning_status_main-white">
                                         <strong>Interim Measures</strong>
+                                                <!-- readonly="state in ['draft', 'under_investigation', 'closed']" -->
+
                                         <field name="interim_measure_ids"
-                                                readonly="state not in ['draft', 'under_investigation', 'hearing', 'appeal', 'closed']"
                                                 nolabel="1"
                                                 class="o_inline_field" context="{'default_employee_id': employee_id, 'default_warning_id': id}"/>
                                     </div>
@@ -244,8 +245,7 @@
                                             <div class="o_warning_status_sub">
                                             
                                                 <field name="investigation_note"
-                                                        readonly="state not in ['draft', 'under_investigation', 'hearing', 'appeal', 'closed']"
-                                                       nolabel="1" colspan="3"
+                                                       nolabel="1"
                                                        class="o_inline_field" placeholder="Enter Investigation Report"/>
                                             </div>
                                         </div>
@@ -280,6 +280,24 @@
                                     </group>
                                 </page>
 
+                                
+
+                                <page string="Appeal &amp; Resolution" name="Appeal">
+                                    <group>
+                                        <group>
+                                            <field name="appeal_date" readonly="0"/>
+                                            <field name="appeal_description" required="0" readonly="0"/>
+                                            <field name="appeal_officer_ids"
+                                            widget="many2many_tags" 
+                                            string="Appeal officers"/>
+
+                                        </group>
+                                        <group>
+                                            <field name="resolution_description" readonly="0"/>
+                                            <field name="resolution_date" readonly="0"/>
+                                        </group>
+                                    </group>
+                                </page>
                                 <page string="Audit" name="audit">
                                     <group>
                                         <field name="date_assigned" readonly="1"/>
@@ -301,24 +319,6 @@
                                         </div>
                                     </div>
                                 </page>
-
-                                <page string="Appeal &amp; Resolution" name="Appeal">
-                                    <group>
-                                        <group>
-                                            <field name="appeal_date" readonly="0"/>
-                                            <field name="appeal_description" readonly="0"/>
-                                            <field name="appeal_officer_ids"
-                                            widget="many2many_tags" 
-                                            string="Appeal officers"/>
-
-                                        </group>
-                                        <group>
-                                            <field name="resolution_description" readonly="0"/>
-                                            <field name="resolution_date" readonly="0"/>
-                                        </group>
-                                    </group>
-                                </page>
-                                
                             </notebook>
                         </div>
 

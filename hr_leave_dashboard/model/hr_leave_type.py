@@ -56,7 +56,7 @@ class HrLeaveType(models.Model):
     )
     eligible_department_ids = fields.Many2many("hr.department", string="Eligible Departments")
     eligible_unit_ids = fields.Many2many("hr.unit", string="Eligible Units")
-    eligible_grade_ids = fields.Many2many("hr.grade", string="Eligible Grade Levels")
+    eligible_grade_ids = fields.Many2many("cleon.hr.grade", string="Eligible Grade Levels")
     eligible_employee_ids = fields.Many2many("hr.employee", string="Eligible Employees")
     employee_type_ids = fields.Many2many("hr.core_employment_type", string="Applicable Employee Types")
     location_ids = fields.Many2many("hr.work.location", string="Applicable Locations")
@@ -260,7 +260,7 @@ class HrLeaveType(models.Model):
                 "visible_to_employees": bool(lt.visible_to_employees),
                 "department_ids": lt.eligible_department_ids.ids if "hr.department" in self.env else [],
                 "unit_ids": lt.eligible_unit_ids.ids if "hr.unit" in self.env and hasattr(lt, "eligible_unit_ids") else [],
-                "grade_ids": lt.eligible_grade_ids.ids if "hr.grade" in self.env and hasattr(lt, "eligible_grade_ids") else [],
+                "grade_ids": lt.eligible_grade_ids.ids if "cleon.hr.grade" in self.env and hasattr(lt, "eligible_grade_ids") else [],
                 "employee_ids": lt.eligible_employee_ids.ids if "hr.employee" in self.env else [],
                 "employee_type_ids": lt.employee_type_ids.ids if "hr.core_employment_type" in self.env and hasattr(lt, "employee_type_ids") else [],
                 "location_ids": lt.location_ids.ids if "hr.work.location" in self.env and hasattr(lt, "location_ids") else [],
@@ -344,7 +344,7 @@ class HrLeaveType(models.Model):
             values["eligible_department_ids"] = [(6, 0, vals.get("departmentIds", []))]
         if "hr.unit" in self.env:
             values["eligible_unit_ids"] = [(6, 0, vals.get("unitIds", []))]
-        if "hr.grade" in self.env:
+        if "cleon.hr.grade" in self.env:
             values["eligible_grade_ids"] = [(6, 0, vals.get("gradeIds", []))]
         if "hr.employee" in self.env:
             values["eligible_employee_ids"] = [(6, 0, vals.get("employeeIds", []))]

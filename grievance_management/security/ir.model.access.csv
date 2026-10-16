@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_grievance_case_user,grievance.case.user,model_grievance_case,group_grievance_user,1,1,1,0
+access_grievance_case_manager,grievance.case.manager,model_grievance_case,group_grievance_manager,1,1,1,1
+access_grievance_category_user,grievance.category.user,model_grievance_category,group_grievance_user,1,0,0,0
+access_grievance_category_manager,grievance.category.manager,model_grievance_category,group_grievance_manager,1,1,1,1
+access_grievance_type_user,grievance.type.user,model_grievance_type,group_grievance_user,1,0,0,0
+access_grievance_type_manager,grievance.type.manager,model_grievance_type,group_grievance_manager,1,1,1,1
+access_grievance_stage_user,grievance.stage.user,model_grievance_stage,group_grievance_user,1,0,0,0
+access_grievance_stage_manager,grievance.stage.manager,model_grievance_stage,group_grievance_manager,1,1,1,1
+access_grievance_resolution_user,grievance.resolution.user,model_grievance_resolution,group_grievance_user,1,0,0,0
+access_grievance_resolution_manager,grievance.resolution.manager,model_grievance_resolution,group_grievance_manager,1,1,1,1
+access_grievance_document_template_user,grievance.document.template.user,model_grievance_document_template,group_grievance_user,1,0,0,0
+access_grievance_document_template_manager,grievance.document.template.manager,model_grievance_document_template,group_grievance_manager,1,1,1,1
+access_grievance_panel_user,grievance.panel.user,model_grievance_panel,group_grievance_user,1,0,0,0
+access_grievance_panel_manager,grievance.panel.manager,model_grievance_panel,group_grievance_manager,1,1,1,1
+access_grievance_escalation_rule_user,grievance.escalation.rule.user,model_grievance_escalation_rule,group_grievance_user,1,0,0,0
+access_grievance_escalation_rule_manager,grievance.escalation.rule.manager,model_grievance_escalation_rule,group_grievance_manager,1,1,1,1

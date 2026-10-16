@@ -145,7 +145,7 @@
 ═══════════════════════════════════════════════ */
 .hd-main {
     flex: 1;
-    overflow-y: auto;
+    /* overflow-y: auto; */
     min-width: 0;
 }
 

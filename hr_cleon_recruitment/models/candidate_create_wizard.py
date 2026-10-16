@@ -42,6 +42,7 @@ class HrApplicantCandidateWizard(models.TransientModel):
     # ── Manual Entry fields ──────────────────────────────────────────────────
     first_name          = fields.Char(string='First Name')
     last_name           = fields.Char(string='Last Name')
+    middle_name           = fields.Char(string='Middle Name')
     email_from          = fields.Char(string='Email')
     partner_phone       = fields.Char(string='Phone')
     partner_name        = fields.Char(string='Location')
@@ -572,13 +573,16 @@ class HrApplicantCandidateWizard(models.TransientModel):
         if not self.email_from:
             raise UserError(_('Email is required.'))
         if not self.job_id.offer_report_ids:
-            raise UserError(_('Contact admin to set up an offer template.'))
+            raise UserError(_(f'Contact admin to set up an offer template on the selected Job {self.job_id.name.capitalize()}'))
         full_name = f"{self.first_name} {self.last_name}".strip()
 
         applicant = self.env['hr.applicant'].create({
             'name':     'Application for - ' + full_name or '',
             'partner_name':     full_name,
             'email_from':       self.email_from,
+            'middle_name': self.middle_name,
+            'last_name': self.last_name,
+            'first_name': self.first_name,
             'partner_phone':    self.partner_phone,
             'job_id':           self.job_id.id,
             'salary_expected':  self.salary_expected,

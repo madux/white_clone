@@ -34,7 +34,7 @@ class HMOsetting(models.Model):
     # model_id = fields.Many2one('ir.model', string="App")
 
     eligibilty_ids = fields.Many2many(
-        'hr.grade',
+        'cleon.hr.grade',
         string='Grade Eligible',
     )
     hmo_ids = fields.Many2many(

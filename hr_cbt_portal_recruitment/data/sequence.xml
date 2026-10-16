@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <record id="seq_hr_applicant_code" model="ir.sequence">
+        <field name="name">Applicant Code</field>
+        <field name="code">hr.applicant.code</field>
+        <field name="prefix">APP</field>
+        <field name="padding">5</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+    </record>
+</odoo>
+

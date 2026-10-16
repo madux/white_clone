@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_grievance_case" model="ir.sequence">
+        <field name="name">Grievance Case</field>
+        <field name="code">grievance.case</field>
+        <field name="prefix">GRV-%(year)s-</field>
+        <field name="padding">3</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

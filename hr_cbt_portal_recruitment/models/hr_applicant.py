@@ -191,6 +191,15 @@ class Applicant(models.Model):
     work_education_ids = fields.One2many('hr.work_education', 'applicant_id', string="Work education")
     work_skill_ids = fields.One2many('hr.work_skills', 'applicant_id', string="Work Skills")
 
+    @api.model
+    def create(self, vals):
+        if not vals.get('applicant_code'):
+            vals['applicant_code'] = self.env['ir.sequence'].next_by_code(
+                'hr.applicant.code'
+            )
+
+        return super().create(vals)
+    
     @api.depends('date_of_stage_changed')
     def _compute_days_in_pipeline(self):
         today = fields.Date.today()

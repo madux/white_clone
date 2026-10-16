@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="grievance_resolution_informal" model="grievance.resolution">
+        <field name="name">Informal Resolution</field>
+        <field name="description">Matter resolved through informal mediation or discussion</field>
+        <field name="requires_followup_date">True</field>
+        <field name="is_locked">True</field>
+    </record>
+    <record id="grievance_resolution_formal_apology" model="grievance.resolution">
+        <field name="name">Formal Apology</field>
+        <field name="description">Written or verbal formal apology issued to complainant</field>
+        <field name="requires_restorative_action">True</field>
+        <field name="is_locked">True</field>
+    </record>
+    <record id="grievance_resolution_policy_amendment" model="grievance.resolution">
+        <field name="name">Policy Amendment</field>
+        <field name="description">Workplace policy or procedure updated as a result</field>
+        <field name="requires_followup_date">True</field>
+        <field name="is_locked">True</field>
+    </record>
+    <record id="grievance_resolution_structured_settlement" model="grievance.resolution">
+        <field name="name">Structured Settlement</field>
+        <field name="description">Financial compensation agreed with the complainant</field>
+        <field name="requires_compensation_amount">True</field>
+        <field name="requires_followup_date">True</field>
+        <field name="is_locked">True</field>
+    </record>
+</odoo>

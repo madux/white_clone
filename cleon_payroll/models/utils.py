@@ -61,19 +61,14 @@ def extract_resume_text(file):
     #     print("CV parsing failed:", e)
     #     return None
 
-from odoo.exceptions import UserError
-import json
-import ollama
-import logging
+# from odoo.exceptions import UserError
+# import json
+# import ollama
+# import logging
 
-_logger = logging.getLogger(__name__)
+# _logger = logging.getLogger(__name__)
 
-
-import json
-import logging
-import ollama
-
-_logger = logging.getLogger(__name__)
+ 
 
 
 def generate_text_with_ai(raw_text, model="llama3"):

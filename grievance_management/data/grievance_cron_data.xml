@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="grievance_escalation_rule_overdue" model="grievance.escalation.rule">
+        <field name="name">Overdue Case Escalation</field>
+        <field name="trigger_type">deadline_exceeded</field>
+        <field name="deadline_days">7</field>
+        <field name="action_type">escalate_to_hr_director</field>
+    </record>
+    <record id="grievance_escalation_rule_severe" model="grievance.escalation.rule">
+        <field name="name">Severe Grievance Auto-Escalation</field>
+        <field name="trigger_type">severity_severe</field>
+        <field name="action_type">notify_legal</field>
+    </record>
+
+    <record id="ir_cron_grievance_escalation" model="ir.cron">
+        <field name="name">Grievance: Check Escalation Rules</field>
+        <field name="model_id" ref="model_grievance_case"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_check_escalations()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

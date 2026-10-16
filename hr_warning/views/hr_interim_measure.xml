@@ -16,7 +16,7 @@
                         <div class="measure-option" colspan="2">
                             <div class="measure-option-title-default">Restricted Access</div>
                             <div class="measure-option-subtitle">Employee remains at work but loses access to specific areas or systems</div>
-                            <field name="restricted_access" invisible="0"/>
+                            <field name="restricted_access" widget="boolean_toggle" invisible="0"/>
                         </div>
 
                         <div class="measure-option" colspan="2">
@@ -24,6 +24,7 @@
                             Redeployment
                             </div>
                             <div class="measure-option-subtitle">Employee temporarily moved to a different role or team</div>
+                            <field name="redeployment" widget="boolean_toggle" invisible="0"/>
                         </div>
 
                         <div class="measure-option" colspan="2">
@@ -94,7 +95,7 @@
         <field name="name">Interim measure .tree</field>
         <field name="model">hr.warning.interim_measure</field>
         <field name="arch" type="xml">
-            <tree string="Policies" create="0" edit="0" js_class="warning_dashboard_list">
+            <tree string="Policies" create="1" edit="1" js_class="warning_dashboard_list">
                 <field name="employee_id"/>
                 <field name="warning_id"/>
                 <field name="start_date"/>

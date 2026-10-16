@@ -205,7 +205,7 @@ class HomeMenuController(http.Controller):
         return request.not_found()
 
 
-    @http.route('/application-page', type='http', auth='user')
+    @http.route('/cleonHome', type='http', auth='public')
     def show_application_page(self, **kw):
         return request.render('cleon_home_menu.application_page', {})
 

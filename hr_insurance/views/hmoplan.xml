@@ -52,69 +52,164 @@
         <field name="arch" type="xml">
             <form string="HMO Market Place" class="o_qms_form">
                 <!-- ══ STATUS BAR ══ --> 
-                <sheet>
-                     
-                    <!-- ══ HERO HEADER BANNER ══ -->
-                    <div class="qms-header-hero">
-                        <div class="d-flex justify-content-between align-items-start">
+                <div class="o_hr_dashboard_layout">
+
+                    <!-- SIDEBAR -->
+                    <aside class="hd-sidebar">
+                        <div class="hd-sb-brand">
+                            <div class="hd-sb-mark">
+                                <i class="fa fa-user"/>
+                            </div>
                             <div>
-                                <div class="qms-hero-ref">
-                                    <field name="name" readonly="1" class="d-inline"/>
-                                </div>
-                                <div class="qms-hero-sub">HMO plan</div>
-                                <div class="qms-badge-row">
-                                    <!-- <field name="active" widget="boolean_toggle"/> -->
-                                </div>
-                            </div>
-                            <div class="text-end" style="color:rgba(255,255,255,.7); font-size:12px;">
-                                <div style="margin-top:4px;">
-                                    <!-- Responsible: <field name="create_uid" readonly="1"
-                                                        style="color:#FFC940; font-weight:600;"/>-->
-                                </div>     
+                                <div class="hd-brand-name">HR Admin</div>
+                                <div class="hd-brand-sub">Workforce Management</div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- ══ KPI STRIP ══ -->
-                    <!-- <div class="qms-kpi-strip">
-                        <div class="qms-kpi-box">
-                            <div class="qms-kpi-label">Code</div>
-                            <div class="qms-kpi-value">
-                                <field name="code" readonly="1"/>
-                            </div>
-                        </div>
-                        <div class="qms-kpi-box">
-                            <div class="qms-kpi-label">plan #</div>
-                            <div class="qms-kpi-value">
-                                <field name="plan_no" readonly="1"/>
-                            </div>
-                        </div>
-                         
-                    </div> -->
-                    <div class="qms-card">
-                        <div class="qms-card-header">
-                            <div class="qms-card-icon">
-                                <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                            </div>
-                            <span class="qms-card-title">Details</span>
-                        </div>
-                        <div class="qms-card-body">
-                            <group>
-                                <group col="4">
-                                    <field name="name" placeholder="HMEDIC" readonly="0"/>
-                                    <field name="hmo_marketplace_id" readonly="0"/>
-                                    <field name="hmo_plan_value_ids" widget="many2many_tags" string="Values" optional="show"/>
+                        <nav class="hd-sb-nav">
+                            <div class="hd-nav-label">Main</div>
 
-                                    <field name="plan_price"/>
-                                </group>
-                                <!-- <div class="qms-divider"/> -->
-                                <group>
-                                    <field name="max_person" string="Maximum Employee Allowed"/>
-                                </group>
-                            </group>
+                            <a href="#" class="hd-nl active">
+                                <i class="fa fa-th-large"/>
+                                Dashboard
+                            </a>
+
+                            <a type="action" name="%(hr_administration.action_view_employee_kanban_custom)d" class="hd-nl">
+                                <i class="fa fa-users"/>
+                                Employees
+                                <span class="hd-nl-badge">24</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-shopping-cart"/>
+                                HMO Marketplace
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-building"/>
+                                Company HMO
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_hospital" class="hd-nl">
+                                <i class="fa fa-h-square"/>
+                                Hospital Listing
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_enrollment" class="hd-nl">
+                                <i class="fa fa-check-circle"/>
+                                Approvals
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_tree_checklist" class="hd-nl">
+                                <i class="fa fa-map-marker"/>
+                                Checklist
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-bar-chart"/>
+                                Reports
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_tree_checklist" class="hd-nl">
+                                <i class="fa fa-cog"/>
+                                Settings
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-list-alt"/>
+                                Audit Logs
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+                        </nav>
+
+                        <div class="hd-sb-footer">
+                            <div class="hd-user-card">
+                                <div class="hd-user-av">HR</div>
+                                <div>
+                                    <div class="hd-user-name">Administrator</div>
+                                    <div class="hd-user-role">HR Administrator</div>
+                                </div>
+                            </div>
                         </div>
+
+                    </aside>
+
+                    <!-- MAIN CONTENT -->
+                    <div class="hd-main">
+                        <sheet>
+                            
+                            <!-- ══ HERO HEADER BANNER ══ -->
+                            <div class="qms-header-hero">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="qms-hero-ref">
+                                            <field name="name" readonly="1" class="d-inline"/>
+                                        </div>
+                                        <div class="qms-hero-sub">HMO plan</div>
+                                        <div class="qms-badge-row">
+                                            <!-- <field name="active" widget="boolean_toggle"/> -->
+                                        </div>
+                                    </div>
+                                    <div class="text-end" style="color:rgba(255,255,255,.7); font-size:12px;">
+                                        <div style="margin-top:4px;">
+                                            <!-- Responsible: <field name="create_uid" readonly="1"
+                                                                style="color:#FFC940; font-weight:600;"/>-->
+                                        </div>     
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ══ KPI STRIP ══ -->
+                            <!-- <div class="qms-kpi-strip">
+                                <div class="qms-kpi-box">
+                                    <div class="qms-kpi-label">Code</div>
+                                    <div class="qms-kpi-value">
+                                        <field name="code" readonly="1"/>
+                                    </div>
+                                </div>
+                                <div class="qms-kpi-box">
+                                    <div class="qms-kpi-label">plan #</div>
+                                    <div class="qms-kpi-value">
+                                        <field name="plan_no" readonly="1"/>
+                                    </div>
+                                </div>
+                                
+                            </div> -->
+                            <div class="qms-card">
+                                <div class="qms-card-header">
+                                    <div class="qms-card-icon">
+                                        <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    </div>
+                                    <span class="qms-card-title">Details</span>
+                                </div>
+                                <div class="qms-card-body">
+                                    <group>
+                                        <group col="4">
+                                            <field name="name" placeholder="HMEDIC" readonly="0"/>
+                                            <field name="hmo_marketplace_id" readonly="0"/>
+                                            <field name="hmo_plan_value_ids" widget="many2many_tags" string="Values" optional="show"/>
+
+                                            <field name="plan_price"/>
+                                        </group>
+                                        <!-- <div class="qms-divider"/> -->
+                                        <group>
+                                            <field name="max_person" string="Maximum Employee Allowed"/>
+                                        </group>
+                                    </group>
+                                </div>
+                            </div> 
+                        </sheet>
+
                     </div> 
-                </sheet>
+                </div> 
+
                 <!-- ── Chatter ── -->
                 <!-- <chatter/> -->
             </form>
@@ -130,6 +225,7 @@
         <field name="view_mode">kanban,list,form</field>
         <field name="search_view_id" ref="view_hmo_plan_search"/>
         <field name="context">{}</field>
+        <field name="target">current</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 No record found
@@ -151,10 +247,10 @@
                     records_draggable="0">
 
                 <field name="name" string="Name"/>
-                    <field name="hmo_marketplace_id" string="Name" optional="show"/>
-                    <field name="plan_price"/>
-                    <field name="max_person"/>
-                    <!-- <field name="active"/> -->
+                <field name="hmo_marketplace_id" string="Name" optional="show"/>
+                <field name="plan_price"/>
+                <field name="code"/>
+                <field name="max_person"/>
                 <!-- STATIC HEADER (unchanged) -->
                 <header>
                     <div class="marketplace-header">
@@ -165,8 +261,6 @@
                             </div>
                             <div class="top-actions">
                                 <button type="object" name="open_record" class="btn-hmo btn-primary-hmo">＋ Onboard Your HMO plans</button>
-                                <!-- <button type="object" name="open_record" class="btn-hmo btn-outline-hmo">⤴ Bulk Upload</button>
-                                <button name="open_record" type="object" class="btn-hmo btn-light-hmo">🛡 Take Tour</button> -->
                             </div>
                         </div>
                         <div class="toolbar">
@@ -178,16 +272,11 @@
                         </div>
                     </div>
                 </header>
-                <!-- CARD TEMPLATE -->
-                <!-- CARD TEMPLATE -->
                 <templates>
                     <t t-name="kanban-box">
 
                         <div class="oe_kanban_card ins_provider_card">
-
-                            <!-- Top row: avatar, name/contact, verified badge -->
                             <div class="ins_card_top">
-
                                 <div class="ins_avatar ins_avatar_pink">
                                     <t t-esc="record.code.value or (record.name.value and record.name.value.substring(0,2).toUpperCase())"/>
                                 </div>
@@ -216,18 +305,7 @@
                                     <i class="fa fa-check-circle"/>
                                 </div>
 
-                            </div>
-
-                            <!-- Tags: category tags (blue) + plan tags (purple) -->
-                            <!-- <div class="ins_tags_row">
-                                <div class="ins_tag_group ins_tag_group_type">
-                                    <field name="hmo_tag_ids" widget="many2many_tags" readonly="1"/>
-                                </div>
-                                <div class="ins_tag_group ins_tag_group_plan">
-                                    <field name="hmo_plan_ids" widget="many2many_tags" readonly="1"/>
-                                </div>
-                            </div>-->
-
+                            </div> 
                             <div class="ins_divider"/>
 
                             <div class="ins_card_footer">

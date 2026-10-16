@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cleon_rule_parameter_manager,cleon.rule.parameter.manager,model_cleon_payroll_rule_parameter,cleon_payroll.group_payroll_manager,1,1,1,1
+access_cleon_rule_parameter_officer,cleon.rule.parameter.officer,model_cleon_payroll_rule_parameter,cleon_payroll.group_payroll_officer,1,0,0,0
+access_cleon_rule_parameter_value_manager,cleon.rule.parameter.value.manager,model_cleon_payroll_rule_parameter_value,cleon_payroll.group_payroll_manager,1,1,1,1
+access_cleon_rule_parameter_value_officer,cleon.rule.parameter.value.officer,model_cleon_payroll_rule_parameter_value,cleon_payroll.group_payroll_officer,1,0,0,0
+access_cleon_lookup_table_manager,cleon.lookup.table.manager,model_cleon_payroll_lookup_table,cleon_payroll.group_payroll_manager,1,1,1,1
+access_cleon_lookup_table_officer,cleon.lookup.table.officer,model_cleon_payroll_lookup_table,cleon_payroll.group_payroll_officer,1,0,0,0
+access_cleon_lookup_row_manager,cleon.lookup.row.manager,model_cleon_payroll_lookup_row,cleon_payroll.group_payroll_manager,1,1,1,1
+access_cleon_lookup_row_officer,cleon.lookup.row.officer,model_cleon_payroll_lookup_row,cleon_payroll.group_payroll_officer,1,0,0,0
+access_cleon_rule_test_officer,cleon.rule.test.officer,model_cleon_payroll_rule_test,cleon_payroll.group_payroll_officer,1,1,1,1

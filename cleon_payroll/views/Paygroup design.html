@@ -1,0 +1,207 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_cleon_pay_group_form_custom" model="ir.ui.view">
+        <field name="name">cleon.pay.group.custom.form</field>
+        <field name="model">cleon.pay.group</field>
+        <field name="arch" type="xml">
+            <form string="New Pay Group" class="cleon_pay_group_form">
+                <header>
+                    <button name="action_save_and_exit"
+                            type="object"
+                            string="Save and exit"
+                            class="btn-primary"/>
+                </header>
+
+                <sheet>
+                    <div class="pg_header">
+                        <div class="pg_breadcrumb">
+                            Configurations / Pay Groups / New
+                        </div>
+                        <div class="pg_title">
+                            <h1>New Pay Group</h1>
+                            <span class="pg_draft">Draft</span>
+                        </div>
+                        <div class="pg_subtitle">
+                            Head Office Lagos · NGN · draft saved 10:42
+                        </div>
+                    </div>
+
+                    <div class="pg_steps">
+                        <div class="pg_step active">
+                            <span class="pg_number">1</span>
+                            <div>
+                                <strong>Basics</strong>
+                                <small>currency, wage type, inherited defaults</small>
+                            </div>
+                        </div>
+                        <div class="pg_step">
+                            <span class="pg_number">2</span>
+                            <div>
+                                <strong>Members</strong>
+                                <small>manual or by rule</small>
+                            </div>
+                        </div>
+                        <div class="pg_step">
+                            <span class="pg_number">3</span>
+                            <div>
+                                <strong>Package</strong>
+                                <small>default Salary Structure, statutory</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pg_layout">
+                        <div class="pg_main">
+
+                            <div class="pg_card">
+                                <div class="pg_card_title">Identity</div>
+
+                                <div class="pg_grid">
+                                    <div class="pg_field">
+                                        <label>Name *</label>
+                                        <field name="name"
+                                               placeholder="Enter pay group name"/>
+                                    </div>
+                                    <div class="pg_field">
+                                        <label>Code *</label>
+                                        <field name="code"
+                                               placeholder="HOL-NG"/>
+                                        <small>Suggested from the name</small>
+                                    </div>
+
+                                    <div class="pg_field">
+                                        <label>Payroll currency *</label>
+                                        <field name="currency_id"
+                                               options="{'no_create': True}"/>
+                                        <small>From PAYROLL GROUP</small>
+                                    </div>
+                                    <div class="pg_field">
+                                        <label>Effective from *</label>
+                                        <field name="effective_date"/>
+                                        <small>Periods come from the Pay Schedule</small>
+                                    </div>
+
+                                    <div class="pg_field">
+                                        <label>Wage type</label>
+                                        <field name="wage_type"/>
+                                        <small>Fixed wage or hourly wage</small>
+                                    </div>
+                                    <div class="pg_field">
+                                        <label>Copy from</label>
+                                        <field name="copy_from_id"
+                                               options="{'no_create': True}"/>
+                                        <small>Copy another Pay Group to start</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pg_card pg_defaults">
+                                <div class="pg_section_heading">
+                                    <div>
+                                        <div class="pg_card_title">
+                                            Inherited defaults
+                                        </div>
+                                        <p>
+                                            Each value is inherited from Payroll
+                                            Setup · Defaults. Choose another to
+                                            override it for this group only.
+                                        </p>
+                                    </div>
+                                    <span class="pg_help">each opens its owner ↗</span>
+                                </div>
+
+                                <div class="pg_default_row">
+                                    <label>Pay Schedule *</label>
+                                    <div class="pg_default_control">
+                                        <field name="pay_schedule_id"
+                                               options="{'no_create': True}"/>
+                                        <span class="pg_inherited">
+                                            Inherited from PAYROLL GROUP
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="pg_default_row">
+                                    <label>Working Schedule *</label>
+                                    <div class="pg_default_control">
+                                        <field name="working_schedule_id"
+                                               options="{'no_create': True}"/>
+                                        <span class="pg_inherited">
+                                            Inherited from PAYROLL GROUP
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="pg_default_row">
+                                    <label>Overtime Policy *</label>
+                                    <div class="pg_default_control">
+                                        <field name="overtime_policy_id"
+                                               options="{'no_create': True}"/>
+                                        <span class="pg_inherited">
+                                            Inherited from PAYROLL GROUP
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="pg_default_row">
+                                    <label>Payslip Template *</label>
+                                    <div class="pg_default_control">
+                                        <field name="payslip_template_id"
+                                               options="{'no_create': True}"/>
+                                        <span class="pg_inherited">
+                                            Inherited from PAYROLL GROUP
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pg_footer">
+                                <button name="action_cancel_setup"
+                                        type="object"
+                                        string="Cancel"
+                                        class="btn btn-secondary"/>
+                                <span class="pg_footer_note">
+                                    Defaults are inherited until overridden.
+                                </span>
+                                <button name="action_next_members"
+                                        type="object"
+                                        string="Next: Members"
+                                        class="btn btn-primary"/>
+                            </div>
+                        </div>
+
+                        <aside class="pg_summary">
+                            <div class="pg_summary_title">
+                                MONTHLY NGN · NEXT PERIOD
+                            </div>
+                            <div class="pg_summary_row">
+                                <span>Period</span>
+                                <strong>November 2026</strong>
+                            </div>
+                            <div class="pg_summary_row">
+                                <span>Cut-off</span>
+                                <strong>Fri 20 Nov</strong>
+                            </div>
+                            <div class="pg_summary_row">
+                                <span>Payday</span>
+                                <strong>Wed 25 Nov</strong>
+                            </div>
+                            <div class="pg_summary_row">
+                                <span>Funding</span>
+                                <strong>Access Bank ··· 0091</strong>
+                            </div>
+                            <div class="pg_summary_row">
+                                <span>Also on it</span>
+                                <strong>4 Pay Groups · 530 people</strong>
+                            </div>
+                            <div class="pg_preview">
+                                Preview paydays to March 2027
+                            </div>
+                        </aside>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

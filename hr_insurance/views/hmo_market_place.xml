@@ -50,127 +50,233 @@
         <field name="model">hmo.marketplace</field>
         <field name="arch" type="xml">
             <form string="HMO Market Place" class="o_qms_form">
-                <!-- ══ STATUS BAR ══ -->
-                 
-                <sheet>
-                     
-                    <!-- ══ HERO HEADER BANNER ══ -->
-                    <div class="qms-header-hero">
-                        <div class="d-flex justify-content-between align-items-start">
+                <div class="o_hr_dashboard_layout">
+
+                    <!-- SIDEBAR -->
+                    <aside class="hd-sidebar">
+                        <div class="hd-sb-brand">
+                            <div class="hd-sb-mark">
+                                <i class="fa fa-user"/>
+                            </div>
                             <div>
-                                <div class="qms-hero-ref">
-                                    <field name="name" readonly="1" class="d-inline"/>
-                                </div>
-                                <div class="qms-hero-sub">HMO MarketPlace</div>
-                                <div class="qms-badge-row">
-                                    <field name="is_registered" widget="boolean_toggle"/>
-                                </div>
-                            </div>
-                            <div class="text-end" style="color:rgba(255,255,255,.7); font-size:12px;">
-                                <div style="margin-top:4px;">
-                                    Responsible: <field name="create_uid" readonly="1"
-                                                        style="color:#FFC940; font-weight:600;"/></div>
-                                                    
-                                 
+                                <div class="hd-brand-name">HR Admin</div>
+                                <div class="hd-brand-sub">Workforce Management</div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- ══ KPI STRIP ══ -->
-                    <div class="qms-kpi-strip">
-                        <div class="qms-kpi-box">
-                            <div class="qms-kpi-label">Hospitals</div>
-                            <div class="qms-kpi-value">
-                                <field name="total_hospital" readonly="1"/>
-                            </div>
-                        </div>
-                        <div class="qms-kpi-box">
-                            <div class="qms-kpi-label">Employees</div>
-                            <div class="qms-kpi-value">
-                                <field name="total_employee"/>
-                            </div>
-                        </div>
-                        <div class="qms-kpi-box kpi-info">
-                            <div class="qms-kpi-label">Expiry date</div>
-                            <div class="qms-kpi-value">
-                                <field name="date_expiry" readonly="1"/>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="qms-card">
-                        <div class="qms-card-header">
-                            <div class="qms-card-icon">
-                                <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                            </div>
-                            <span class="qms-card-title">Details</span>
-                        </div>
-                        <div class="qms-card-body">
-                            <group col="4">
-                                <field name="name" placeholder="Add description" readonly="0"/>
-                                <field name="email" placeholder="Madukachris@gmail.com" readonly="0"/>
-                                <field name="phone" placeholder="+234902929999" readonly="0" size="14" widget="phone"/>
-                                <field name="street" placeholder="No 92 Godwin Maduka Street" readonly="0"/>
-                                <field name="country_id" readonly="0" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
-                                <field name="state_id" readonly="0" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
-                            </group>
-                            <div class="qms-divider"/>
-                            <group col="4">
-                                <field name="hmo_tag_ids" widget="many2many_tags"/>
-                                <field name="date_expiry"/>
-                            </group>
-                        </div>
-                    </div> 
+                        <nav class="hd-sb-nav">
+                            <div class="hd-nav-label">Main</div>
 
-                    <!-- ══ NOTEBOOKS / TABS ══ -->
-                    <notebook> 
-                        <page string="📋 Hospitals" name="hospital_line">
-                            <div class="qms-card" style="margin-bottom:0;">
-                                <div class="qms-card-header">
-                                    <div class="qms-card-icon" style="background:#DC3545;">
-                                        <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            <a href="#" class="hd-nl active">
+                                <i class="fa fa-th-large"/>
+                                Dashboard
+                            </a>
+
+                            <a type="action" name="%(hr_administration.action_view_employee_kanban_custom)d" class="hd-nl">
+                                <i class="fa fa-users"/>
+                                Employees
+                                <span class="hd-nl-badge">24</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-shopping-cart"/>
+                                HMO Marketplace
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-building"/>
+                                Company HMO
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_hospital" class="hd-nl">
+                                <i class="fa fa-h-square"/>
+                                Hospital Listing
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_enrollment" class="hd-nl">
+                                <i class="fa fa-check-circle"/>
+                                Approvals
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_tree_checklist" class="hd-nl">
+                                <i class="fa fa-map-marker"/>
+                                Checklist
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-bar-chart"/>
+                                Reports
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_tree_checklist" class="hd-nl">
+                                <i class="fa fa-cog"/>
+                                Settings
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-list-alt"/>
+                                Audit Logs
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+                        </nav>
+
+                        <div class="hd-sb-footer">
+                            <div class="hd-user-card">
+                                <div class="hd-user-av">HR</div>
+                                <div>
+                                    <div class="hd-user-name">Administrator</div>
+                                    <div class="hd-user-role">HR Administrator</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </aside>
+
+                    <!-- MAIN CONTENT -->
+                    <div class="hd-main">
+                 
+                    <sheet>
+                        
+                        <!-- ══ HERO HEADER BANNER ══ -->
+                        <div class="qms-header-hero">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="qms-hero-ref">
+                                        <field name="name" readonly="1" class="d-inline"/>
                                     </div>
-                                    <span class="qms-card-title">Section line</span>
+                                    <div class="qms-hero-sub">HMO MarketPlace</div>
+                                    <div class="qms-badge-row">
+                                        <field name="is_registered" widget="boolean_toggle"/>
+                                    </div>
                                 </div>
-                                <div class="qms-card-body" style="padding:0;">
-                                    <field name="hmo_hospital_ids"
-                                           widget="many2many">
-                                        <tree editable="bottom">
-                                            <field name="hospital_name" readonly="0"/>
-                                            <field name="hospital_no" optional="hide" readonly="1"/>
-                                            <field name="phone" readonly="0"/>
-                                            <field name="email" readonly="0"/>
-                                            <field name="street" readonly="0" optional="show"/>
-                                        </tree>
-                                    </field>
+                                <div class="text-end" style="color:rgba(255,255,255,.7); font-size:12px;">
+                                    <div style="margin-top:4px;">
+                                        Responsible: <field name="create_uid" readonly="1"
+                                                            style="color:#FFC940; font-weight:600;"/></div>
+                                                        
+                                    
                                 </div>
                             </div>
-                             
-                        </page>
+                        </div>
 
-                        <page string="📝 Employee details" name="employees">
-                            <field name="hmo_employee_ids"
-                                    widget="many2many" readonly="0">
-                                <tree>
-                                    <field name="name"/>
-                                    <field name="work_email" string="Email" optional="show" readonly="0"/>
-                                    <field name="work_phone" string="Phone" optional="show" readonly="0"/>
-                                </tree>
-                            </field>
-                        </page>
-                        <page string="📝 Plans" name="plans">
-                            <field name="hmo_plan_ids" readonly="0">
-                                <tree>
-                                    <field name="name"/>
-                                    <field name="hmo_marketplace_id" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
-                                    <field name="hmo_plan_value_ids" widget="many2many_tags" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
-                                    <field name="plan_price"/>
-                                    <field name="max_person"/>
+                        <!-- ══ KPI STRIP ══ -->
+                        <div class="qms-kpi-strip">
+                            <div class="qms-kpi-box">
+                                <div class="qms-kpi-label">Hospitals</div>
+                                <div class="qms-kpi-value">
+                                    <field name="total_hospital" readonly="1"/>
+                                </div>
+                            </div>
+                            <div class="qms-kpi-box">
+                                <div class="qms-kpi-label">Employees</div>
+                                <div class="qms-kpi-value">
+                                    <field name="total_employee"/>
+                                </div>
+                            </div>
+                            <div class="qms-kpi-box kpi-info">
+                                <div class="qms-kpi-label">Expiry date</div>
+                                <div class="qms-kpi-value">
+                                    <field name="date_expiry" readonly="1"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="qms-card">
+                            <div class="qms-card-header">
+                                <div class="qms-card-icon">
+                                    <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                </div>
+                                <span class="qms-card-title">Details</span>
+                            </div>
+                            <div class="qms-card-body">
+                                <group>
+                                    <group>
+                                        <field name="name" placeholder="Add description" readonly="0"/>
+                                        <field name="email" placeholder="Madukachris@gmail.com" readonly="0"/>
+                                        <field name="phone" placeholder="+234902929999" readonly="0" size="14" widget="phone"/>
+                                        <field name="street" placeholder="No 92 Godwin Maduka Street" readonly="0"/>
+                                        <field name="country_id" readonly="0" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
+                                        <field name="state_id" readonly="0" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
+                                    </group>
+                                    <group>
+                                        <field name="hmo_tag_ids" string="Coverage type" widget="many2many_tags"/>
+                                        <field name="hmo_tag_ids" string="Coverage type" widget="many2many_tags"/>
+                                        <field name="date_expiry"/>
+                                    </group>
+                                </group>
+                                <group>
+                                    <group>
+                                        <field name="start_date" readonly="0" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
+                                        <field name="years_of_operation" readonly="0" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
+                                    </group>
+                                    <group>
+                                        <field name="service_area_ids" string="Service Areas" widget="many2many_tags"/>
+                                        <!-- <field name="insurance_benefits" widget="many2many_avatar"/> -->
+                                        <field name="insurance_benefits" widget="insurance_benefits"/>
+                                    </group>
+                                </group>
+                            </div>
+                        </div> 
 
-                                </tree>
-                            </field>
-                        </page>
-                    </notebook>
-                </sheet>
+                        <!-- ══ NOTEBOOKS / TABS ══ -->
+                        <notebook> 
+                            <page string="🏢 Hospital Network" name="hospital_line">
+                                <div class="qms-card" style="margin-bottom:0;">
+                                    <div class="qms-card-header">
+                                        <div class="qms-card-icon" style="background:#DC3545;">
+                                            <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        </div>
+                                        <span class="qms-card-title">Section line</span>
+                                    </div>
+                                    <div class="qms-card-body" style="padding:0;">
+                                        <field name="hmo_hospital_ids"
+                                            widget="many2many">
+                                            <tree editable="bottom">
+                                                <field name="hospital_name" readonly="0"/>
+                                                <field name="hospital_no" optional="show" readonly="1"/>
+                                                <field name="phone" readonly="0"/>
+                                                <field name="email" readonly="0"/>
+                                                <field name="street" readonly="0" optional="show"/>
+                                                <field name="state_id" readonly="0" optional="show"/>
+                                            </tree>
+                                        </field>
+                                    </div>
+                                </div>
+                                
+                            </page>
+
+                            <page string="📝 Enrolled Employee" name="employees">
+                                <field name="hmo_employee_ids"
+                                        widget="many2many" readonly="0">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="work_email" string="Email" optional="show" readonly="0"/>
+                                        <field name="work_phone" string="Phone" optional="show" readonly="0"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="💰 Plans &amp; Pricing" name="plans">
+                                <field name="hmo_plan_ids" readonly="0">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="hmo_marketplace_id" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
+                                        <field name="hmo_plan_value_ids" widget="many2many_tags" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
+                                        <field name="plan_price"/>
+                                        <field name="max_person"/>
+
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </div>
+                </div>
                 <!-- ── Chatter ── -->
                 <!-- <chatter/> -->
             </form>

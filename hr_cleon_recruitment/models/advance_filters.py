@@ -28,7 +28,7 @@ class advanceFiltersWizard(models.TransientModel):
         )
         
     branch_id = fields.Many2one('multi.branch', string='Location')
-    grade_id = fields.Many2one('hr.grade', string='Grade')
+    grade_id = fields.Many2one('cleon.hr.grade', string='Grade')
     employee_type_id = fields.Many2one('hr.core_employment_type', string='Employment type')
     priority = fields.Selection([
             ('low', 'Low'),
@@ -149,6 +149,11 @@ class HrJob(models.Model):
         copy=True,
         default=0.0
     )
+    minimum_salary_band = fields.Float(
+            string="Min Salary",
+            copy=True,
+            default=0.0
+        )
 
     max_salary_band = fields.Float(
         string="Max Salary",
@@ -158,15 +163,15 @@ class HrJob(models.Model):
     @api.onchange('max_salary_band')
     def onchange_max_salary_band(self):
         if self.max_salary_band:
-            if self.max_salary_band < self.min_salary_band:
+            if self.max_salary_band < self.minimum_salary_band:
                 self.max_salary_band = False
                 raise UserError("Minimum salary cannot be greater than Maximum salary band")
 
-    @api.onchange('min_salary_band')
-    def onchange_min_salary_band(self):
-        if self.min_salary_band:
-            if self.max_salary_band > 0 and self.min_salary_band > self.max_salary_band:
-                self.min_salary_band = False
+    @api.onchange('minimum_salary_band')
+    def onchange_minimum_salary_band(self):
+        if self.minimum_salary_band:
+            if self.max_salary_band > 0 and self.minimum_salary_band > self.max_salary_band:
+                self.minimum_salary_band = False
                 raise UserError("Minimum salary cannot be greater than Maximum salary band")
 
 
@@ -213,6 +218,9 @@ class HrJob(models.Model):
 
     def _reopen(self, view_id=False, target='new', view_mode='form', context=False):
         """Return an action that re-opens this same wizard record (refreshes the view)."""
+        self.write({
+            'active': True
+        })
         view_id = view_id if view_id else self.env.ref(
                 'hr_cleon_recruitment.job_creation_form_view'
             ).id

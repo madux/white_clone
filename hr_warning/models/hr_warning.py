@@ -55,6 +55,9 @@ class HrWarningInterimmeasure(models.Model):
     restricted_access = fields.Boolean(
         string="Restricted Access",
     )
+    redeployment = fields.Boolean(
+            string="Redeployment",
+        )
 
     remote_work_restriction = fields.Boolean(
         string="Remote Work Restriction",
@@ -988,6 +991,8 @@ class HrWarning(models.Model):
     def action_close_case(self):
         """Close the incident: jump to the configured closed stage."""
         self.ensure_one()
+        if not self.resolution_description or not self.resolution_date:
+            raise ValidationError("Kindly provide resolutions: Date and description")
         closed_stage = self.env['hr.warning.stage'].search(
             [('is_closed', '=', True)], order='sequence', limit=1
         )

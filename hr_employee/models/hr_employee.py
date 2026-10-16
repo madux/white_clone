@@ -13,6 +13,22 @@ class irAttachment(models.Model):
 
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
+    #     _sql_constraints = [
+    #     (
+    #         'employee_number_unique',
+    #         'unique(employee_number)',
+    #         'Employee Number must be unique. An employee with this number already exists.'
+    #     ),
+    # ]
+
+    @api.model
+    def create(self, vals):
+        if not vals.get('employee_number'):
+            vals['employee_number'] = self.env['ir.sequence'].next_by_code(
+                'hr.employee.number'
+            )
+
+        return super().create(vals)
 
     @api.constrains('employee_number')
     def _check_duplicate_employee_number(self):
@@ -131,7 +147,8 @@ class HrEmployee(models.Model):
     first_name = fields.Char(string="First name", required=True, copy=False)
     middle_name = fields.Char(string="Middle name", copy=False)
     branch_id = fields.Many2one('multi.branch', string='Branch')
-    grade_id = fields.Many2one('hr.grade', string='Grade')
+    grade_id = fields.Many2one('cleon.hr.grade', string='Grade')
+    level_band_id = fields.Many2one('hr.level.band', string='Level / Step')
     employee_type_id = fields.Many2one('hr.core_employment_type', string='Employment type')
     
     last_name = fields.Char("Surname", required=True, copy=False)
@@ -168,12 +185,29 @@ class HrEmployee(models.Model):
         compute="_compute_formatted_date"
     )
 
-    work_start_datetime = fields.Datetime(default=fields.Datetime.now(), 
-    help="Linked with the user attendance app to determine working hours")
-
-    total_work_duration = fields.Char(
-        compute="_compute_total_duration"
+    work_start_datetime = fields.Datetime(
+        default=fields.Datetime.now(),
+        help="Linked with the user attendance app to determine working hours",
     )
+
+    work_end_datetime = fields.Datetime(
+            default=fields.Datetime.now(),
+            help="if user check out on attendance, Linked with the user attendance app to determine working hours",
+        ) 
+    total_work_duration = fields.Float(
+        compute="_compute_total_durations",
+        store=True,
+    )
+
+    def _compute_total_durations(self):
+        for rec in self:
+            if rec.work_start_datetime and rec.is_present:
+                now = fields.Datetime.now()
+                delta = now - rec.work_start_datetime
+                rec.total_work_duration = delta.total_seconds() / 3600.0
+            else:
+                rec.total_work_duration = 0.0
+    
     number_of_incidents = fields.Integer(
         compute="_compute_number_of_incidents",
         string="Number of Incidents"
@@ -382,9 +416,10 @@ class HrEmployee(models.Model):
     def _compute_checkins(self):
         if self.active:
             self.is_present_text = "Checked in"
+            self.is_present = True
         else:
             self.is_present_text = "Yet to Checkin"
-
+            self.is_present = False
 
         # today = fields.Date.today()
         # month_day = today.strftime('%m-%d')

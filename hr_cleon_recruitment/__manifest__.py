@@ -16,6 +16,7 @@
         'ik_multi_branch',
         'survey',
         'hr_employee',
+        'cleon_payroll',
         # 'hr_employee'
         ],
     'data': [

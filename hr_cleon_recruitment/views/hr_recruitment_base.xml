@@ -159,7 +159,7 @@
             </xpath>
         </field>
     </record> -->
-    <record id="hr_applicant_cleon_tree_view_inherit" model="ir.ui.view">
+    <record id="hr_applicant_cleon_list_view_inherit" model="ir.ui.view">
         <field name="name">hr.job.recruitment.view.inherit</field>
         <field name="model">hr.applicant</field>
         <field name="inherit_id" ref="hr_recruitment.hr_applicant_view_form"/>

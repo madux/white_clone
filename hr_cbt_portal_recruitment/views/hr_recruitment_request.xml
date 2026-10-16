@@ -9,10 +9,10 @@
 					<header>
 						 
 						<button name="action_start_recruit" invisible="state not in ['draft', 'confirmed', 'accepted','recruiting']"
-							string="Confirm Recruitment" type="object" class="oe_highlight"
+							string="Confirm Recruitment" confirm="Are you sure to confirm this?" type="object" class="oe_highlight"
 							/>
 						<button name="action_reset" invisible="state not in ['done', 'refused', 'refuse', 'accepted','recruiting']"
-							string="Set to Draft" type="object" class="btn-warning"
+							string="Set to Draft" confirm="Are you sure to reset?" type="object" class="btn-warning"
 							/>
 						<button name="action_refuse" invisible="state not in ['confirmed']"
 							string="Refuse" type="object" class="oe_highlight btn-danger"

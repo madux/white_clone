@@ -41,6 +41,7 @@
         'views/hr_recruitment_request.xml',
         'views/hr_recruitment_stage_inherit.xml',
         'data/hr_recruitment_data.xml',
+        'data/sequence.xml',
         'views/hr_documentation_view.xml',
         'views/survey_template_inherited_view.xml',
         # 'views/company_memo_inherit.xml',

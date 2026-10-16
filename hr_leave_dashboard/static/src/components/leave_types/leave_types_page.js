@@ -72,7 +72,7 @@ export class LeaveTypesPage extends Component {
 
             this.state.departments = await this.safeSearchRead("hr.department");
             this.state.units = await this.safeSearchRead("hr.unit");
-            this.state.grades = await this.safeSearchRead("hr.grade");
+            this.state.grades = await this.safeSearchRead("cleon.hr.grade");
             this.state.employees = await this.safeSearchRead("hr.employee", [["active", "=", true]], ["id", "name", "department_id"]);
             this.state.employmentTypes = await this.safeSearchRead("hr.core_employment_type");
             this.state.locations = await this.safeSearchRead("hr.work.location");

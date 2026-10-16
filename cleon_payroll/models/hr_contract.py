@@ -8,6 +8,9 @@ class HrContract(models.Model):
     cleon_structure_id = fields.Many2one(
         "cleon.payroll.structure", string="Payroll Structure",
         help="Determines which set of payroll rules apply to this contract.")
+    payroll_group_id = fields.Many2one(
+            "cleon.payroll.group", string="Payroll Group",
+            help="Determines which set of payroll rules apply to this contract.")
     cleon_schedule_pay = fields.Selection([
         ("daily", "Daily"),
         ("weekly", "Weekly"),
@@ -23,6 +26,16 @@ class HrContract(models.Model):
         related="employee_id.avatar_128",
         store=True
     )
+    active = fields.Boolean(
+                string="Active",
+                default=True,
+            )
+    show_payroll_link = fields.Boolean(
+                    string="Payroll menu Link",
+                    default=True,
+                    help="Used to hold widget in form view"
+                )
+     
     employee_photo_url = fields.Char(
         compute="_compute_employee_photo_url"
         )

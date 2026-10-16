@@ -10,3 +10,6 @@ access_hr_level_user,hr_level.user,model_hr_level,,1,1,1,1
 access_hr_grade_user,hr_grade.user,model_hr_grade,,1,1,1,1
 access_core_employment_type_user,core_employment_type.user,model_hr_core_employment_type,,1,1,1,1
 access_hr_reporting_structure_user,hr_reporting_structure.user,model_hr_reporting_structure,,1,1,1,1
+access_cleon_hr_grade_user,cleon_hr_grade.user,model_cleon_hr_grade,,1,1,1,1
+access_hr_level_band_user,hr_level_band.user,model_hr_level_band,,1,1,1,1
+access_hr_grade_ai_user,hr_grade_ai.user,model_hr_grade_ai,,1,1,1,1

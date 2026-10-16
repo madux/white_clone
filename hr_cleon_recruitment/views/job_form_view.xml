@@ -13,7 +13,7 @@
         <field name="name">hr.job.form</field>
         <field name="model">hr.job</field>
         <field name="arch" type="xml">
-            <form string="Create a Job" create="0">
+            <form string="Create a Job" create="0" js_class="recruitment_sidebar_items">
                 <sheet>
                 <!-- <div class="jb-jobs-view-wrapper"> -->
                     <div class="jb-bulk-action-toast-panel" id="bulkActionToast">

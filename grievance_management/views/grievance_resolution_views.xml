@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- RESOLUTION DEFINITIONS -->
+    <record id="view_grievance_resolution_kanban" model="ir.ui.view">
+        <field name="name">grievance.resolution.kanban</field>
+        <field name="model">grievance.resolution</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="is_locked"/>
+                <field name="requires_compensation_amount"/>
+                <field name="requires_followup_date"/>
+                <field name="requires_restorative_action"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click p-3 border rounded mb-2">
+                            <strong><field name="name"/></strong>
+                            <span t-if="record.is_locked.raw_value" class="fa fa-lock float-end text-muted" title="System resolution"/>
+                            <p class="text-muted"><field name="description"/></p>
+                            <div>
+                                <span t-if="record.requires_compensation_amount.raw_value" class="badge text-bg-light me-1">Compensation</span>
+                                <span t-if="record.requires_followup_date.raw_value" class="badge text-bg-light me-1">Follow-Up Date</span>
+                                <span t-if="record.requires_restorative_action.raw_value" class="badge text-bg-light me-1">Restorative Action</span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_grievance_resolution_form" model="ir.ui.view">
+        <field name="name">grievance.resolution.form</field>
+        <field name="model">grievance.resolution</field>
+        <field name="arch" type="xml">
+            <form string="Add Custom Resolution">
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" placeholder="e.g. Structured Settlement"/></h1></div>
+                    <field name="description" placeholder="Short description shown on resolution card"/>
+                    <group string="Field Requirements">
+                        <field name="requires_compensation_amount"/>
+                        <field name="requires_followup_date"/>
+                        <field name="requires_restorative_action"/>
+                    </group>
+                    <group>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_grievance_resolution_list" model="ir.ui.view">
+        <field name="name">grievance.resolution.list</field>
+        <field name="model">grievance.resolution</field>
+        <field name="arch" type="xml">
+            <tree string="Resolutions" js_class="grievance_management_dashboard_list">
+                <field name="name"/>
+                <field name="description"/>
+                <field name="case_count" string="# Cases"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_grievance_resolution" model="ir.actions.act_window">
+        <field name="name">Resolutions</field>
+        <field name="res_model">grievance.resolution</field>
+        <field name="target">new</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
+
+    <!-- DOCUMENT TEMPLATES -->
+    <record id="view_grievance_document_template_list" model="ir.ui.view">
+        <field name="name">grievance.document.template.list</field>
+        <field name="model">grievance.document.template</field>
+        <field name="arch" type="xml">
+            <tree string="Document Templates" js_class="grievance_management_dashboard_list">
+                <field name="name"/>
+                <field name="resolution_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_grievance_document_template_form" model="ir.ui.view">
+        <field name="name">grievance.document.template.form</field>
+        <field name="model">grievance.document.template</field>
+        <field name="arch" type="xml">
+            <form string="Document Template">
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <field name="resolution_id"/>
+                        <field name="description"/>
+                    </group>
+                    <field name="body"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_grievance_document_template" model="ir.actions.act_window">
+        <field name="name">Document Templates</field>
+        <field name="res_model">grievance.document.template</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- GRIEVANCE PANELS -->
+    <record id="view_grievance_panel_list" model="ir.ui.view">
+        <field name="name">grievance.panel.list</field>
+        <field name="model">grievance.panel</field>
+        <field name="arch" type="xml">
+            <tree string="Grievance Panels" js_class="grievance_management_dashboard_list">
+                <field name="name"/>
+                <field name="member_ids" widget="many2many_tags"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+    <record id="action_grievance_panel" model="ir.actions.act_window">
+        <field name="name">Grievance Panels</field>
+        <field name="res_model">grievance.panel</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>
