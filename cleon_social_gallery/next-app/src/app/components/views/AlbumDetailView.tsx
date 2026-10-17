@@ -329,6 +329,7 @@ export default function AlbumDetailView({
                   <MediaThumb
                     media={item}
                     showOverlay={false}
+                    showLikeBadge
                     showDescriptionOnHover={!!item.description}
                     description={item.description}
                   />

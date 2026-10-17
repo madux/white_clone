@@ -1,6 +1,6 @@
 "use client";
 
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { LayoutMode } from "@/lib/types";
 
@@ -114,20 +114,40 @@ export function useGalleryUploadHistory(enabled = true) {
   });
 }
 
-export function useGalleryAudit(params: Record<string, unknown> = {}, enabled = true) {
-  const query = useInfiniteQuery({
-    queryKey: [...galleryKeys.audit, params],
-    queryFn: ({ pageParam = 0 }) => api.audit({ ...params, offset: pageParam, limit: 100 }),
-    getNextPageParam: (lastPage) => {
-      const next = lastPage.offset + lastPage.items.length;
-      return next < lastPage.total ? next : undefined;
-    },
-    initialPageParam: 0,
+export const AUDIT_PAGE_SIZE = 10;
+
+export type GalleryAuditParams = {
+  search?: string;
+  event_type?: string;
+  entity_type?: string;
+  page?: number;
+};
+
+export function useGalleryAudit(params: GalleryAuditParams = {}, enabled = true) {
+  const page = Math.max(params.page ?? 1, 1);
+  const offset = (page - 1) * AUDIT_PAGE_SIZE;
+  const query = useQuery({
+    queryKey: [...galleryKeys.audit, { ...params, page }],
+    queryFn: () => api.audit({
+      search: params.search || undefined,
+      event_type: params.event_type || undefined,
+      entity_type: params.entity_type || undefined,
+      offset,
+      limit: AUDIT_PAGE_SIZE,
+    }),
     enabled,
+    placeholderData: keepPreviousData,
   });
-  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
-  const total = query.data?.pages[0]?.total ?? items.length;
-  return { ...query, items, total };
+  const total = query.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / AUDIT_PAGE_SIZE));
+  return {
+    ...query,
+    items: query.data?.items ?? [],
+    total,
+    page,
+    pageSize: AUDIT_PAGE_SIZE,
+    pageCount,
+  };
 }
 
 export function useGallerySettings(enabled = true) {

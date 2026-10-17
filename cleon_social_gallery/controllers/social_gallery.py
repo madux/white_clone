@@ -118,6 +118,55 @@ class SocialGalleryController(http.Controller):
             "metadata": metadata or {},
         })
 
+    @staticmethod
+    def _audit_search_domain(search):
+        term = (search or "").strip()
+        if not term:
+            return []
+        clauses = [
+            ("details", "ilike", term),
+            ("user_id.name", "ilike", term),
+            ("event_type", "ilike", term),
+            ("entity_type", "ilike", term),
+            ("album_id.name", "ilike", term),
+            ("media_id.display_name", "ilike", term),
+            ("media_id.file_name", "ilike", term),
+        ]
+        if term.isdigit():
+            num = int(term)
+            clauses.extend([
+                ("id", "=", num),
+                ("media_id", "=", num),
+                ("album_id", "=", num),
+                ("user_id", "=", num),
+            ])
+        if len(clauses) == 1:
+            return [clauses[0]]
+        return ["|"] * (len(clauses) - 1) + clauses
+
+    def _audit_log_data(self, log):
+        user = self._user()
+        media = log.media_id
+        album = log.album_id
+        media_available = bool(media) and media._user_can_view(user)
+        album_available = bool(album) and album._user_can_view(user)
+        return {
+            "id": log.id,
+            "event_type": log.event_type,
+            "entity_type": log.entity_type,
+            "album_id": album.id if album else False,
+            "album_name": album.name if album else "",
+            "album_available": album_available,
+            "media_id": media.id if media else False,
+            "media_name": media.display_name if media else "",
+            "media_available": media_available,
+            "user_id": log.user_id.id,
+            "user_name": log.user_id.name,
+            "details": log.details or "",
+            "metadata": log.metadata or {},
+            "create_date": fields.Datetime.to_string(log.create_date),
+        }
+
     def _album(self, album_id, edit=False):
         album = request.env["social.gallery.album"].sudo().browse(_int(album_id)).exists()
         if not album or album.company_id != self._company():
@@ -536,6 +585,15 @@ class SocialGalleryController(http.Controller):
                 "offset": offset,
                 "limit": limit,
             }
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/social-gallery/media/get", type="json", auth="user", methods=["POST"], csrf=False)
+    def media_get(self, id, **kwargs):
+        try:
+            media = self._media(_int(id))
+            user = self._user()
+            return {"success": True, "data": self._media_data(media, user)}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
@@ -1326,7 +1384,7 @@ class SocialGalleryController(http.Controller):
             return self._error(str(error))
 
     @http.route("/api/social-gallery/audit", type="json", auth="user", methods=["POST"], csrf=False)
-    def audit_log(self, event_type="", entity_type="", offset=0, limit=100, **kwargs):
+    def audit_log(self, event_type="", entity_type="", search="", offset=0, limit=10, **kwargs):
         try:
             if not self._is_admin():
                 raise AccessError(_("Only administrators can view audit logs."))
@@ -1335,23 +1393,17 @@ class SocialGalleryController(http.Controller):
                 domain.append(("event_type", "=", event_type))
             if entity_type:
                 domain.append(("entity_type", "=", entity_type))
+            search_domain = self._audit_search_domain(search)
+            if search_domain:
+                domain = ["&"] + domain + search_domain
             offset = max(_int(offset), 0)
-            limit = min(max(_int(limit, 100), 1), 200)
+            limit = min(max(_int(limit, 10), 1), 200)
             Audit = request.env["social.gallery.audit"].sudo()
             total = Audit.search_count(domain)
             logs = Audit.search(domain, order="create_date desc", offset=offset, limit=limit)
             return {
                 "success": True,
-                "data": [{
-                    "id": log.id,
-                    "event_type": log.event_type,
-                    "entity_type": log.entity_type,
-                    "album_id": log.album_id.id if log.album_id else False,
-                    "media_id": log.media_id.id if log.media_id else False,
-                    "user_name": log.user_id.name,
-                    "details": log.details or "",
-                    "create_date": fields.Datetime.to_string(log.create_date),
-                } for log in logs],
+                "data": [self._audit_log_data(log) for log in logs],
                 "total": total,
                 "offset": offset,
                 "limit": limit,

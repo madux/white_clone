@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bot, CheckCircle2, Copy, Flag, History, Recycle, ShieldAlert, Trash2, User,
+  Bot, CheckCircle2, Copy, Flag, History, Recycle, Search, ShieldAlert, SlidersHorizontal, Trash2, User,
 } from "lucide-react";
 import type { AuditLogEntry, DuplicateGroup, FlaggedReport, GalleryAlbum, GalleryMedia, UploadHistoryEntry } from "@/lib/types";
 import { formatBytes, formatDate } from "@/lib/api";
+import AuditLogDetailPanel from "../audit/AuditLogDetailPanel";
 import { MediaThumb, StatusBadge } from "../shared/MediaThumb";
 import { useGalleryMutations } from "@/hooks/useSocialGallery";
 import AppSelect from "../shared/AppSelect";
@@ -17,7 +18,7 @@ import { PageToolbar } from "../shared/PageToolbar";
 import { initials } from "../galleryUtils";
 import { formatStatusLabel } from "@/lib/statusUtils";
 import { QueryError } from "../shared/QueryError";
-import { useGalleryContributions } from "@/hooks/useSocialGallery";
+import { useGalleryAudit, useGalleryContributions } from "@/hooks/useSocialGallery";
 
 export function PendingReviewView({
   media, pendingAlbums = [], loading, albums, onRefresh, error, onError, isAdmin = false,
@@ -607,72 +608,170 @@ export function UploadHistoryView({
   );
 }
 
+const AUDIT_EVENT_OPTIONS = [
+  "created", "uploaded", "modified", "deleted", "restored",
+  "approved", "rejected", "reported", "shared", "exported", "withdrawn",
+];
+
+const AUDIT_ENTITY_OPTIONS = ["album", "media", "comment"];
+
 export function AuditLogView({
-  logs,
-  loading,
-  total,
-  onLoadMore,
-  loadingMore,
+  enabled = true,
+  onOpenAlbum,
+  onOpenMedia,
+  onCopied,
 }: {
-  logs: AuditLogEntry[];
-  loading: boolean;
-  total?: number;
-  onLoadMore?: () => void;
-  loadingMore?: boolean;
+  enabled?: boolean;
+  onOpenAlbum?: (albumId: number) => void;
+  onOpenMedia?: (mediaId: number) => void;
+  onCopied?: () => void;
 }) {
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [eventFilter, setEventFilter] = useState("");
   const [entityFilter, setEntityFilter] = useState("");
-  const events = useMemo(() => [...new Set(logs.map((log) => log.event_type))], [logs]);
-  const entities = useMemo(() => [...new Set(logs.map((log) => log.entity_type))], [logs]);
-  const filtered = logs.filter((log) => {
-    if (eventFilter && log.event_type !== eventFilter) return false;
-    if (entityFilter && log.entity_type !== entityFilter) return false;
-    return true;
-  });
+  const [page, setPage] = useState(1);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
+  const filterMenuRef = useRef<HTMLDivElement>(null);
 
-  if (loading) return <LoadingState message="Loading audit logs…" />;
-  if (logs.length === 0) {
-    return <EmptyState icon={ShieldAlert} title="No logs found" description="Gallery actions will be recorded here." />;
-  }
+  const activeFilterCount = (eventFilter ? 1 : 0) + (entityFilter ? 1 : 0);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!filterMenuRef.current?.contains(event.target as Node)) {
+        setFiltersOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [filtersOpen]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, eventFilter, entityFilter]);
+
+  const auditQuery = useGalleryAudit({
+    search: debouncedSearch,
+    event_type: eventFilter,
+    entity_type: entityFilter,
+    page,
+  }, enabled);
+
+  const { items: logs, total, pageCount, pageSize, isLoading, isFetching } = auditQuery;
+  const rangeStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = Math.min(page * pageSize, total);
+
+  if (isLoading && logs.length === 0) return <LoadingState message="Loading audit logs…" />;
 
   return (
     <div>
       <PageToolbar
-        left={(
-          <>
-            <div className="field">
-              <AppSelect
-                value={eventFilter}
-                placeholder="All events"
-                options={[
-                  { value: "", label: "All events" },
-                  ...events.map((event) => ({ value: event, label: event })),
-                ]}
-                onChange={setEventFilter}
-                ariaLabel="Filter audit events"
-              />
+        right={(
+          <div className="audit-toolbar-actions">
+            <div className="audit-filter-menu" ref={filterMenuRef}>
+              <button
+                type="button"
+                className={`secondary-button small audit-filter-trigger${activeFilterCount ? " is-active" : ""}`}
+                onClick={() => setFiltersOpen((open) => !open)}
+                aria-expanded={filtersOpen}
+                aria-haspopup="dialog"
+              >
+                <SlidersHorizontal size={16} aria-hidden />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="audit-filter-badge" aria-hidden>{activeFilterCount}</span>
+                )}
+              </button>
+              {filtersOpen && (
+                <div className="audit-filter-dropdown" role="dialog" aria-label="Audit log filters">
+                  <div className="field">
+                    <span className="audit-filter-label">Event</span>
+                    <AppSelect
+                      value={eventFilter}
+                      placeholder="All events"
+                      options={[
+                        { value: "", label: "All events" },
+                        ...AUDIT_EVENT_OPTIONS.map((event) => ({ value: event, label: event })),
+                      ]}
+                      onChange={setEventFilter}
+                      ariaLabel="Filter audit events"
+                    />
+                  </div>
+                  <div className="field">
+                    <span className="audit-filter-label">Entity</span>
+                    <AppSelect
+                      value={entityFilter}
+                      placeholder="All entities"
+                      options={[
+                        { value: "", label: "All entities" },
+                        ...AUDIT_ENTITY_OPTIONS.map((entity) => ({ value: entity, label: entity })),
+                      ]}
+                      onChange={setEntityFilter}
+                      ariaLabel="Filter audit entities"
+                    />
+                  </div>
+                  {activeFilterCount > 0 && (
+                    <button
+                      type="button"
+                      className="secondary-button small audit-filter-clear"
+                      onClick={() => {
+                        setEventFilter("");
+                        setEntityFilter("");
+                      }}
+                    >
+                      Clear filters
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="field">
-              <AppSelect
-                value={entityFilter}
-                placeholder="All entities"
-                options={[
-                  { value: "", label: "All entities" },
-                  ...entities.map((entity) => ({ value: entity, label: entity })),
-                ]}
-                onChange={setEntityFilter}
-                ariaLabel="Filter audit entities"
+            <label className="audit-search-field">
+              <Search size={18} className="audit-search-icon" aria-hidden />
+              <input
+                type="search"
+                className="audit-search-input"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search audit log…"
+                aria-label="Search audit log"
               />
-            </div>
-          </>
+            </label>
+          </div>
         )}
       />
+      {logs.length === 0 ? (
+        <EmptyState
+          icon={ShieldAlert}
+          title="No logs found"
+          description={debouncedSearch || eventFilter || entityFilter
+            ? "Try a different search or clear your filters."
+            : "Gallery actions will be recorded here."}
+        />
+      ) : (
       <div className="analytics-table-wrap">
         <table>
           <thead><tr><th>Date</th><th>User</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead>
           <tbody>
-            {filtered.map((log) => (
-              <tr key={log.id}>
+            {logs.map((log) => (
+              <tr
+                key={log.id}
+                className="audit-log-row"
+                tabIndex={0}
+                onClick={() => setSelectedLog(log)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedLog(log);
+                  }
+                }}
+              >
                 <td>{formatDate(log.create_date)}</td>
                 <td>{log.user_name}</td>
                 <td>{log.event_type}</td>
@@ -683,12 +782,47 @@ export function AuditLogView({
           </tbody>
         </table>
       </div>
-      {onLoadMore && (
-        <LoadMoreFooter
-          shown={filtered.length}
-          total={total ?? logs.length}
-          loading={loadingMore}
-          onLoadMore={onLoadMore}
+      )}
+      <div className="audit-pagination">
+        <span className="meta-muted">
+          {total === 0 ? "No results" : `Showing ${rangeStart}–${rangeEnd} of ${total}`}
+          {isFetching && !isLoading ? " · Updating…" : ""}
+        </span>
+        <div className="audit-pagination-controls">
+          <button
+            type="button"
+            className="secondary-button small"
+            disabled={page <= 1 || isFetching}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            Previous
+          </button>
+          <span className="audit-pagination-label">
+            Page {page} of {pageCount}
+          </span>
+          <button
+            type="button"
+            className="secondary-button small"
+            disabled={page >= pageCount || isFetching}
+            onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+      {selectedLog && (
+        <AuditLogDetailPanel
+          log={selectedLog}
+          onClose={() => setSelectedLog(null)}
+          onOpenAlbum={(albumId) => {
+            setSelectedLog(null);
+            onOpenAlbum?.(albumId);
+          }}
+          onOpenMedia={(mediaId) => {
+            setSelectedLog(null);
+            onOpenMedia?.(mediaId);
+          }}
+          onCopied={onCopied}
         />
       )}
     </div>

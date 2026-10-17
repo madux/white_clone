@@ -15,9 +15,11 @@ export type PolicyCreateDraft = {
   name: string;
   parent_folder_id?: number;
   category?: string;
+  category_id?: number;
   visibility: string;
   effective_date?: string;
   description?: string;
+  review_interval_months?: number;
 };
 
 export default function PolicyAdoptSuggestedFilesDialog({
@@ -87,9 +89,11 @@ export default function PolicyAdoptSuggestedFilesDialog({
         parent_folder_id: draft.parent_folder_id,
         document_ids: documentIds,
         category: draft.category,
+        category_id: draft.category_id,
         visibility: draft.visibility,
         effective_date: draft.effective_date,
         description: draft.description,
+        review_interval_months: draft.review_interval_months,
       });
       if (!result.success) {
         if (result.code === "duplicate_name" && result.data?.policy?.folder_id) {

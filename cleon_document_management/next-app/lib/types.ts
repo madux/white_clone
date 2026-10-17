@@ -530,6 +530,10 @@ export interface OrganizationalPolicy {
   id: number;
   name: string;
   category: string;
+  category_id?: number | false;
+  category_code?: string;
+  policy_code?: string;
+  review_interval_months?: number;
   description: string;
   lifecycle_status: "draft" | "active" | "archived";
   policy_visibility: "employees" | "hr_only";

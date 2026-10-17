@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ImageIcon, Play, Video } from "lucide-react";
+import { Heart, ImageIcon, Play, Video } from "lucide-react";
 import type { GalleryMedia } from "@/lib/types";
 import { api } from "@/lib/api";
 
@@ -12,6 +12,7 @@ export function MediaThumb({
   selected = false,
   onSelect,
   showOverlay = true,
+  showLikeBadge = false,
   showDescriptionOnHover = false,
   description,
 }: {
@@ -21,6 +22,7 @@ export function MediaThumb({
   selected?: boolean;
   onSelect?: (selected: boolean) => void;
   showOverlay?: boolean;
+  showLikeBadge?: boolean;
   /** SRS §3.4 FR-047: show description as overlay on hover (album detail grid). */
   showDescriptionOnHover?: boolean;
   description?: string;
@@ -58,6 +60,15 @@ export function MediaThumb({
           <span className="media-type-badge">{isVideo ? "Video" : "Photo"}</span>
           {isVideo && <span className="play-button"><Play size={18} fill="currentColor" /></span>}
         </>
+      )}
+      {showLikeBadge && (
+        <span
+          className={`media-like-badge${media.liked_by_me ? " is-liked" : ""}`}
+          aria-label={`${media.like_count} likes`}
+        >
+          <Heart size={12} fill={media.liked_by_me ? "currentColor" : "none"} aria-hidden />
+          {media.like_count}
+        </span>
       )}
       {showDescriptionOnHover && descText && (
         <div className="media-desc-overlay" aria-hidden>

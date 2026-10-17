@@ -252,19 +252,29 @@ export function LibraryContent({
               <p>Spaces you marked for quick access.</p>
             </div>
           </div>
-          <div className="folder-grid">
-            {favoriteFolders.map((folder) => (
-              <FolderCard
-                key={folder.id}
-                folder={folder}
-                canManage={canManage}
-                onOpen={() => onSelectFolder(folder)}
-                onAction={onFolderAction}
-                onEdit={() => onEditFolder(folder)}
-                onPin={() => onPinFolder(folder)}
-                onFavorite={() => onFavoriteFolder(folder)}
-              />
-            ))}
+          <div className={layoutMode === "list" ? "home-folder-list" : "folder-grid"}>
+            {favoriteFolders.map((folder) =>
+              layoutMode === "list" ? (
+                <HomeFolderRow
+                  key={folder.id}
+                  folder={folder}
+                  onOpen={() => onSelectFolder(folder)}
+                  onPin={() => onPinFolder(folder)}
+                  onFavorite={() => onFavoriteFolder(folder)}
+                />
+              ) : (
+                <FolderCard
+                  key={folder.id}
+                  folder={folder}
+                  canManage={canManage}
+                  onOpen={() => onSelectFolder(folder)}
+                  onAction={onFolderAction}
+                  onEdit={() => onEditFolder(folder)}
+                  onPin={() => onPinFolder(folder)}
+                  onFavorite={() => onFavoriteFolder(folder)}
+                />
+              ),
+            )}
             {!favoriteFolders.length && (
               <EmptyState
                 title="No favorite folders"

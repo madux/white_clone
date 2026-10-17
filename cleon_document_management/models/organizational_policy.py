@@ -26,6 +26,17 @@ class DocOrganizationalPolicy(models.Model):
         index=True,
     )
     category = fields.Char(string="Category")
+    category_id = fields.Many2one(
+        "doc.document.category",
+        string="Document category",
+        ondelete="set null",
+        index=True,
+    )
+    policy_code = fields.Char(string="Policy code", copy=False, index=True)
+    review_interval_months = fields.Integer(
+        string="Review interval (months)",
+        default=12,
+    )
     description = fields.Text()
     lifecycle_status = fields.Selection(
         [
@@ -67,6 +78,38 @@ class DocOrganizationalPolicy(models.Model):
             "Each policy folder can only have one registry entry.",
         ),
     ]
+
+    @api.model
+    def _generate_policy_code(self, category=None):
+        code = "GEN"
+        if category:
+            code = (category.code or category.name or "GEN").upper()
+            code = re.sub(r"[^A-Z0-9]+", "-", code).strip("-")[:16] or "GEN"
+        prefix = f"POL-{code}"
+        existing = self.search(
+            [("policy_code", "=like", f"{prefix}%")],
+            order="policy_code desc",
+            limit=1,
+        )
+        suffix = 1
+        if existing and existing.policy_code:
+            tail = existing.policy_code.rsplit("-", 1)[-1]
+            if tail.isdigit():
+                suffix = int(tail) + 1
+        return f"{prefix}-{suffix:03d}"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        Category = self.env["doc.document.category"]
+        for vals in vals_list:
+            category = Category.browse(vals.get("category_id")) if vals.get("category_id") else Category
+            if vals.get("category_id") and category:
+                vals.setdefault("category", category.name)
+            if not vals.get("policy_code"):
+                vals["policy_code"] = self._generate_policy_code(
+                    category if vals.get("category_id") else None
+                )
+        return super().create(vals_list)
 
     @api.constrains("folder_id")
     def _check_policy_folder_kind(self):
@@ -267,6 +310,10 @@ class DocOrganizationalPolicy(models.Model):
             "id": self.id,
             "name": self.name,
             "category": self.category or "",
+            "category_id": self.category_id.id or False,
+            "category_code": self.category_id.code if self.category_id else "",
+            "policy_code": self.policy_code or "",
+            "review_interval_months": self.review_interval_months or 12,
             "description": self.description or "",
             "lifecycle_status": self.lifecycle_status,
             "policy_visibility": self.policy_visibility,

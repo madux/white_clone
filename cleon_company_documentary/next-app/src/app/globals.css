@@ -3154,32 +3154,192 @@ h1 {
 }
 .media-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 .media-list-row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 112px minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
   background: #fff;
+  box-shadow: 0 1px 2px rgb(226 232 240 / 0.65);
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s,
+    transform 0.18s;
+}
+.media-list-row:hover {
+  border-color: rgb(232 62 140 / 0.28);
+  box-shadow: 0 8px 20px rgb(251 207 232 / 0.35);
 }
 .media-list-row.is-selected {
-  border-color: #efb8d3;
+  border-color: #e83e8c;
   background: #fff7fb;
+  box-shadow: 0 0 0 1px rgb(232 62 140 / 0.2);
+}
+.media-list-select {
+  display: flex;
+  align-items: center;
+  padding-left: 2px;
+}
+.media-list-select input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--pink);
+}
+.media-list-row:not(:has(.media-list-select)) {
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+}
+.media-list-thumb {
+  position: relative;
+  width: 112px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  background-size: cover;
+  background-position: center;
+}
+.media-list-thumb.rose {
+  background-color: #e11d48;
+}
+.media-list-thumb.lilac {
+  background-color: #7c3aed;
+}
+.media-list-thumb.peach {
+  background-color: #ea580c;
+}
+.media-list-thumb.berry {
+  background-color: #be1463;
+}
+.media-list-thumb.has-thumbnail {
+  background-color: #1e293b;
+}
+.media-list-thumb.is-uploading {
+  opacity: 0.85;
+}
+.media-list-thumb svg {
+  filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.35));
+}
+.media-list-duration {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgb(15 23 42 / 0.72);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.media-list-watch-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #be1463, #e83e8c);
+}
+.media-list-watch-bar.is-complete {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
 }
 .media-list-main {
+  min-width: 0;
   border: 0;
   background: transparent;
   text-align: left;
   display: grid;
+  gap: 6px;
+  padding: 2px 0;
+}
+.media-list-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.media-list-title-row strong {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.media-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+.media-list-meta span {
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
+}
+.media-list-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: var(--pink-dark);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 .media-list-actions {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 4px;
+  padding-right: 2px;
+}
+.media-upload-bar.list {
+  margin-top: 2px;
+}
+@media (max-width: 720px) {
+  .media-list-row {
+    grid-template-columns: auto 96px minmax(0, 1fr);
+    grid-template-areas:
+      "select thumb main"
+      "actions actions actions";
+    gap: 10px 12px;
+    padding: 10px;
+  }
+  .media-list-row:not(:has(.media-list-select)) {
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-areas:
+      "thumb main"
+      "actions actions";
+  }
+  .media-list-select {
+    grid-area: select;
+  }
+  .media-list-thumb {
+    grid-area: thumb;
+    width: 96px;
+    height: 60px;
+  }
+  .media-list-main {
+    grid-area: main;
+  }
+  .media-list-actions {
+    grid-area: actions;
+    justify-content: flex-end;
+    padding-top: 2px;
+    border-top: 1px solid #f1f5f9;
+  }
+  .media-list-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
 }
 .status-badge,
 .media-type-badge {

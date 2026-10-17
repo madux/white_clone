@@ -207,12 +207,49 @@ export function MediaCard({
     return (
       <article className={`media-list-row ${selected ? "is-selected" : ""}`}>
         {canManage && (
-          <input type="checkbox" checked={selected} onChange={onSelect} aria-label={`Select ${media.title}`} />
+          <label className="media-list-select">
+            <input type="checkbox" checked={selected} onChange={onSelect} aria-label={`Select ${media.title}`} />
+          </label>
         )}
-        <button className="media-list-main" onClick={handleOpen} disabled={isUploading}>
-          <span className={`media-type-badge ${badge?.variant || "approved"}`}>{badge?.label || "Ready"}</span>
-          <strong>{media.title}</strong>
-          <span>{media.folder_name} · {formatDuration(media.duration_seconds)} · {formatBytes(media.file_size)}</span>
+        <button
+          type="button"
+          className={`media-list-thumb ${palette}${thumbnailUrl ? " has-thumbnail" : ""}${isUploading ? " is-uploading" : ""}`}
+          style={thumbnailUrl ? { backgroundImage: `linear-gradient(#24162a44,#24162a44), url(${thumbnailUrl})` } : undefined}
+          onClick={handleOpen}
+          disabled={isUploading}
+          aria-label={`Play ${media.title}`}
+        >
+          {isUploading ? (
+            <LoaderCircle className="spin" size={22} />
+          ) : (
+            <Play size={18} fill="currentColor" />
+          )}
+          <span className="media-list-duration">{formatDuration(media.duration_seconds)}</span>
+          {showWatchProgress && progress && (
+            <span
+              className={`media-list-watch-bar${progress.completed ? " is-complete" : ""}`}
+              style={{ width: `${watchProgressPercent}%` }}
+            />
+          )}
+        </button>
+        <button type="button" className="media-list-main" onClick={handleOpen} disabled={isUploading}>
+          <div className="media-list-title-row">
+            <strong>{media.title}</strong>
+            {badge ? (
+              <span className={`status-badge ${badge.variant}`}>{badge.label}</span>
+            ) : null}
+          </div>
+          <p className="media-list-meta">
+            <span><Folder size={13} aria-hidden /> {media.folder_name}</span>
+            <span>{formatBytes(media.file_size)}</span>
+            <span>Updated {new Date(media.updated_at || media.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+          </p>
+          {showWatchProgress && progress && !progress.completed && (
+            <p className="media-list-progress">
+              <Clock3 size={13} aria-hidden />
+              {watchProgressPercent}% watched
+            </p>
+          )}
           {isUploading && uploadPct !== undefined && (
             <div className="media-upload-bar list">
               <div className="progress-track">
@@ -220,14 +257,29 @@ export function MediaCard({
               </div>
             </div>
           )}
-          {progress && !progress.completed && !isUploading && (
-            <span className="continue-meta"><Clock3 size={13} /> {Math.round(progress.completion_percent)}% watched</span>
-          )}
         </button>
         <div className="media-list-actions">
-          <button onClick={() => onAction(media, "favorite")} aria-label="Toggle favorite"><Star size={16} fill={media.favorite ? "currentColor" : "none"} /></button>
-          {onShare && <button onClick={onShare} aria-label="Share"><Share2 size={16} /></button>}
-          <button onClick={() => (canManage ? onEdit() : onOpen())} aria-label="Edit">{canManage ? <Settings2 size={16} /> : <MoreVertical size={16} />}</button>
+          <button
+            type="button"
+            className={`icon-button compact${media.favorite ? " is-active" : ""}`}
+            onClick={() => onAction(media, "favorite")}
+            aria-label="Toggle favorite"
+          >
+            <Star size={16} fill={media.favorite ? "currentColor" : "none"} />
+          </button>
+          {onShare && (
+            <button type="button" className="icon-button compact" onClick={onShare} aria-label="Share">
+              <Share2 size={16} />
+            </button>
+          )}
+          <button
+            type="button"
+            className="icon-button compact"
+            onClick={() => (canManage ? onEdit() : onOpen())}
+            aria-label={canManage ? "Edit video" : "View video"}
+          >
+            {canManage ? <Settings2 size={16} /> : <MoreVertical size={16} />}
+          </button>
         </div>
       </article>
     );

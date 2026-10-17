@@ -85,9 +85,11 @@ export default function PolicyCreateSelectExistingDialog({
         parent_folder_id: draft.parent_folder_id,
         document_ids: selectedDocumentIds,
         category: draft.category,
+        category_id: draft.category_id,
         visibility: draft.visibility,
         effective_date: draft.effective_date,
         description: draft.description,
+        review_interval_months: draft.review_interval_months,
       });
       if (!result.success) {
         if (result.code === "duplicate_name" && result.data?.policy?.folder_id) {

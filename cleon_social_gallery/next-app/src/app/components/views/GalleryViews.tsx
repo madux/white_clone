@@ -339,7 +339,7 @@ export default function GalleryFeedView({
                       aria-label={`Select ${item.display_name}`}
                     />
                   )}
-                  <MediaThumb media={item} showOverlay />
+                  <MediaThumb media={item} showOverlay showLikeBadge />
                 </div>
                 <div className="media-copy">
                   <div className="media-title-row">

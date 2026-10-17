@@ -231,6 +231,44 @@ class OrganizationalFilesController(http.Controller):
         }
 
     @http.route(
+        "/api/organizational/suggest-policy-description",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def suggest_policy_description(self, name=None, description=None, **kwargs):
+        perm = self._perm()
+        if not perm.user_can_manage_org_document(request.env.user):
+            return {
+                "success": False,
+                "message": "You do not have permission to suggest a policy description.",
+            }
+        policy_name = (name or "").strip()
+        if not policy_name:
+            return {"success": False, "message": "Policy name is required."}
+        if len(policy_name) > 120:
+            return {
+                "success": False,
+                "message": "Policy name must be 120 characters or fewer.",
+            }
+        brief = (description or kwargs.get("brief") or "").strip() or None
+        try:
+            suggested = organizational_openrouter.draft_policy_description(
+                request.env,
+                policy_name,
+                brief=brief,
+            )
+        except ValueError as error:
+            return {"success": False, "message": error.args[0]}
+        except RuntimeError as error:
+            return {"success": False, "message": error.args[0]}
+        return {
+            "success": True,
+            "data": {"description": suggested},
+        }
+
+    @http.route(
         "/api/organizational/summarize-document",
         type="json",
         auth="user",
@@ -698,6 +736,7 @@ class OrganizationalFilesController(http.Controller):
         folder_id=None,
         adopt_folder_id=None,
         browse_library=False,
+        unassigned_pool=False,
     ):
         Policy = env["doc.organizational.policy"]
         registered_doc_ids = Policy.registered_primary_document_ids()
@@ -709,6 +748,14 @@ class OrganizationalFilesController(http.Controller):
 
         Document = env["doc.document"]
         limit = 500 if browse_library else 300
+        if unassigned_pool and not (query or "").strip():
+            pool_domain = [
+                "|",
+                ("name", "ilike", "%policy%"),
+                ("is_policy", "=", True),
+            ]
+            search_domain = expression.AND([domain, pool_domain])
+            return Document.search(search_domain, order="name", limit=limit)
         if browse_library:
             if query:
                 name_domain = cls._policy_suggestion_name_domain(query)
@@ -794,7 +841,13 @@ class OrganizationalFilesController(http.Controller):
         adopt_folder_id = policy_folder_id or kwargs.get("policy_folder_id")
         preview_suggestions = bool(kwargs.get("preview_suggestions"))
         browse_library = bool(kwargs.get("browse_library"))
-        adopt_mode = bool(adopt_folder_id) or preview_suggestions or browse_library
+        unassigned_pool = bool(kwargs.get("unassigned_policy_files"))
+        adopt_mode = (
+            bool(adopt_folder_id)
+            or preview_suggestions
+            or browse_library
+            or unassigned_pool
+        )
         documents = self._search_policy_suggestion_documents(
             request.env,
             query,
@@ -802,6 +855,7 @@ class OrganizationalFilesController(http.Controller):
             folder_id=folder_id,
             adopt_folder_id=adopt_folder_id,
             browse_library=browse_library,
+            unassigned_pool=unassigned_pool,
         )
         items = self._build_policy_suggestion_items(
             request.env,
@@ -892,6 +946,28 @@ class OrganizationalFilesController(http.Controller):
             visibility = "employees"
         effective_date = kwargs.get("effective_date") or False
         category = (kwargs.get("category") or "").strip()
+        category_id = kwargs.get("category_id")
+        Category = request.env["doc.document.category"]
+        category_rec = Category.browse()
+        if category_id:
+            try:
+                category_rec = Category.browse(int(category_id)).exists()
+            except (TypeError, ValueError):
+                category_rec = Category.browse()
+            if category_rec:
+                category = category_rec.name
+                category_id = category_rec.id
+            else:
+                category_id = False
+        else:
+            category_id = False
+        review_interval_months = kwargs.get("review_interval_months")
+        try:
+            review_interval_months = int(review_interval_months)
+        except (TypeError, ValueError):
+            review_interval_months = 12
+        if review_interval_months not in (3, 6, 12, 24, 36):
+            review_interval_months = 12
         description = (kwargs.get("description") or "").strip()
         access_scope = kwargs.get("access_scope")
         if not access_scope and parent:
@@ -924,6 +1000,8 @@ class OrganizationalFilesController(http.Controller):
                 "name": title,
                 "folder_id": folder.id,
                 "category": category,
+                "category_id": category_id or False,
+                "review_interval_months": review_interval_months,
                 "description": description,
                 "lifecycle_status": "draft",
                 "policy_visibility": visibility,

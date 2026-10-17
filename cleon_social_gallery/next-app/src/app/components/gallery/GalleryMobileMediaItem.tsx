@@ -54,7 +54,7 @@ export function GalleryMobileMediaCard({
     >
       <div className="media-thumb-wrap gallery-mobile-thumb-wrap" {...longPress.bind()}>
         {selected && <span className="gallery-mobile-selected-badge" aria-hidden />}
-        <MediaThumb media={item} showOverlay className="gallery-mobile-card-thumb" />
+        <MediaThumb media={item} showOverlay showLikeBadge className="gallery-mobile-card-thumb" />
         {canManage && (
           <GalleryMediaItemMenu
             albums={albums}

@@ -217,18 +217,20 @@ export default function MediaDetailModal({
             <p className="meta-muted">
               {currentMedia.uploaded_by_name} · {currentMedia.album_name || "No album selected"}
             </p>
-            <StatusBadge status={currentMedia.approval_status} />
+            <div className="media-detail-status-row">
+              <StatusBadge status={currentMedia.approval_status} />
+            </div>
             {currentMedia.legal_hold && (
-              <p className="status-badge pending">Legal hold — deletion and disposal blocked</p>
+              <p className="media-detail-callout media-detail-callout--warn">Legal hold — deletion and disposal blocked</p>
             )}
             {currentMedia.disposition_state === "due" && (
-              <p className="status-badge pending">Disposition review required before purge</p>
+              <p className="media-detail-callout media-detail-callout--warn">Disposition review required before purge</p>
             )}
             {currentMedia.storage_tier === "cold" && (
               <p className="meta-muted">Storage tier: cold</p>
             )}
             {currentMedia.is_unassigned && (
-              <p className="status-badge pending">No album selected — reviewer must assign before approval.</p>
+              <p className="media-detail-callout media-detail-callout--warn">No album selected — reviewer must assign before approval.</p>
             )}
             <p className="meta-muted">{formatBytes(currentMedia.file_size)} · {formatDate(currentMedia.create_date)}</p>
 

@@ -293,9 +293,15 @@ export interface AuditLogEntry {
   event_type: string;
   entity_type: string;
   album_id: number | false;
+  album_name: string;
+  album_available: boolean;
   media_id: number | false;
+  media_name: string;
+  media_available: boolean;
+  user_id: number;
   user_name: string;
   details: string;
+  metadata: Record<string, unknown>;
   create_date: string;
 }
 

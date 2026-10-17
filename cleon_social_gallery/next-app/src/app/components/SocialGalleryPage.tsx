@@ -1,8 +1,10 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Upload } from "lucide-react";
 import type { GalleryMedia, LayoutMode } from "@/lib/types";
+import { api } from "@/lib/api";
 import type { GalleryStatusFilter } from "./gallery/GalleryLibraryChrome";
 import Sidebar from "./layout/Sidebar";
 import { GalleryHeader } from "./layout/GalleryHeader";
@@ -22,8 +24,9 @@ import { QueryError } from "./shared/QueryError";
 import type { GalleryView } from "@/lib/types";
 import { useNavigationHistory } from "@/hooks/useNavigationHistory";
 import {
-  normalizeLayout, useGalleryAlbums, useGalleryAudit,
+  normalizeLayout, useGalleryAlbums,
   useGalleryDashboard, useGalleryMedia, useGalleryPending,
+  galleryKeys,
   useGalleryRecycle, useGallerySettings, useGalleryUploadHistory, useGalleryUser,
 } from "@/hooks/useSocialGallery";
 import {
@@ -95,7 +98,7 @@ export default function SocialGalleryPage() {
   const pendingQuery = useGalleryPending(canAccessGalleryView(roleTier, "pending"));
   const recycleQuery = useGalleryRecycle(canAccessGalleryView(roleTier, "recycle"));
   const uploadHistoryQuery = useGalleryUploadHistory(true);
-  const auditQuery = useGalleryAudit({}, isAdmin);
+  const queryClient = useQueryClient();
   const settingsQuery = useGallerySettings(isAdmin);
   const { trackNavigation, registerRestore } = useNavigationHistory<GalleryNavState>();
 
@@ -131,6 +134,15 @@ export default function SocialGalleryPage() {
     setBrowseList(list.length ? list : [item]);
   };
 
+  const openMediaById = async (mediaId: number) => {
+    try {
+      const item = await api.mediaGet(mediaId);
+      openMedia(item, [item]);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Media is not available", true);
+    }
+  };
+
   const refreshAll = () => {
     if (!isEmployee) dashboardQuery.refetch();
     albumsQuery.refetch();
@@ -139,7 +151,7 @@ export default function SocialGalleryPage() {
       pendingQuery.refetch();
       recycleQuery.refetch();
     }
-    if (isAdmin) auditQuery.refetch();
+    if (isAdmin) queryClient.invalidateQueries({ queryKey: galleryKeys.audit });
     uploadHistoryQuery.refetch();
     if (isAdmin) settingsQuery.refetch();
   };
@@ -348,11 +360,10 @@ export default function SocialGalleryPage() {
         if (!canAccessGalleryView(roleTier, "audit")) return null;
         return (
           <AuditLogView
-            logs={auditQuery.items}
-            loading={auditQuery.isLoading}
-            total={auditQuery.total}
-            onLoadMore={() => auditQuery.fetchNextPage()}
-            loadingMore={auditQuery.isFetchingNextPage}
+            enabled={isAdmin}
+            onOpenAlbum={openAlbum}
+            onOpenMedia={openMediaById}
+            onCopied={() => showToast("Copied to clipboard")}
           />
         );
       case "settings":

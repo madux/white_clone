@@ -27,6 +27,7 @@ export default function AppSelect({
   ariaLabel,
   disabled,
   emptyLabel = DROPDOWN_EMPTY_LABEL,
+  size = "default",
 }: {
   value: string;
   options: SelectOption[];
@@ -37,6 +38,7 @@ export default function AppSelect({
   portaled?: boolean;
   disabled?: boolean;
   emptyLabel?: string;
+  size?: "sm" | "default" | "lg";
 }) {
   const items = useMemo(
     () =>
@@ -55,6 +57,7 @@ export default function AppSelect({
       disabled={disabled}
     >
       <SelectTrigger
+        size={size}
         className={cn(
           "!w-full max-w-full min-w-0 whitespace-normal [&_[data-slot=select-value]]:truncate",
           className,

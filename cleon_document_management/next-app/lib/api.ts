@@ -698,6 +698,8 @@ export const api = {
     folder_id?: number;
     policy_folder_id?: number;
     preview_suggestions?: boolean;
+    /** Org files named like policies / flagged is_policy, not already in a policy folder. */
+    unassigned_policy_files?: boolean;
     /** List eligible org library files (not only name-matched suggestions). */
     browse_library?: boolean;
   }) =>
@@ -757,9 +759,11 @@ export const api = {
     parent_folder_id?: number;
     document_ids: number[];
     category?: string;
+    category_id?: number;
     visibility?: string;
     effective_date?: string;
     description?: string;
+    review_interval_months?: number;
   }) =>
     rpc<{
       success: boolean;
@@ -1024,6 +1028,23 @@ export const api = {
       message?: string;
       data?: { description: string };
     }>("/api/organizational/suggest-description", payload, { timeout: 120000 });
+    if (!result?.success) {
+      throw new Error(result?.message || "Unable to suggest a description.");
+    }
+    return result;
+  },
+
+  suggestPolicyDescription: async (payload: {
+    name: string;
+    description?: string;
+  }) => {
+    const result = await rpc<{
+      success: boolean;
+      message?: string;
+      data?: { description: string };
+    }>("/api/organizational/suggest-policy-description", payload, {
+      timeout: 120000,
+    });
     if (!result?.success) {
       throw new Error(result?.message || "Unable to suggest a description.");
     }

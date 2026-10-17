@@ -3,6 +3,7 @@
 import { Maximize2, Minimize2, Minus, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 import { useFormWindowTray } from "./FormWindowProvider";
 
 export type FormWindowMode = "full" | "modal";
@@ -17,6 +18,8 @@ type FormWindowShellProps = {
   closeDisabled?: boolean;
   defaultMode?: FormWindowMode;
   zIndex?: number;
+  /** Extra classes on the modal panel (e.g. `max-w-3xl`). */
+  modalClassName?: string;
 };
 
 export default function FormWindowShell({
@@ -29,6 +32,7 @@ export default function FormWindowShell({
   closeDisabled = false,
   defaultMode = "modal",
   zIndex = 80,
+  modalClassName,
 }: FormWindowShellProps) {
   const pathname = usePathname();
   const trayId = useId();
@@ -81,11 +85,11 @@ export default function FormWindowShell({
         role="dialog"
         aria-modal="true"
         aria-labelledby="form-window-title"
-        className={`flex min-w-0 flex-col overflow-hidden bg-white shadow-2xl ${
-          isFull
-            ? "h-full w-full rounded-none"
-            : "max-h-[92vh] w-full max-w-2xl rounded-3xl"
-        }`}
+        className={cn(
+          "flex min-w-0 flex-col overflow-hidden bg-white shadow-2xl",
+          isFull ? "h-full w-full rounded-none" : "max-h-[92vh] w-full max-w-2xl rounded-3xl",
+          !isFull && modalClassName,
+        )}
       >
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-6 py-4 md:px-10">
           <div className="min-w-0">

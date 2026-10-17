@@ -143,6 +143,13 @@ export const api = {
     }>("/api/social-gallery/media", params));
   },
 
+  async mediaGet(id: number) {
+    return unwrap(await rpc<{ success: boolean; data: GalleryMedia; message?: string }>(
+      "/api/social-gallery/media/get",
+      { id },
+    ));
+  },
+
   async updateMedia(payload: Record<string, unknown>) {
     return unwrap(await rpc<{ success: boolean; data: GalleryMedia; message?: string }>("/api/social-gallery/media/update", payload));
   },
@@ -367,4 +374,15 @@ export function formatBytes(bytes: number): string {
 export function formatDate(value: string): string {
   if (!value) return "";
   return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+export function formatDateTime(value: string): string {
+  if (!value) return "";
+  return new Date(value).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }

@@ -42,6 +42,7 @@ import {
 } from "../../../lib/orgCollectionNameSuggestions";
 import { parentFolderId } from "../../../lib/organizationalFolderDetails";
 import { cn } from "@/lib/utils";
+import { ORG_FORM_INPUT_CLASS } from "../../../lib/orgFormFieldStyles";
 
 const NAME_MAX = 100;
 const DESCRIPTION_MAX = 500;
@@ -340,7 +341,7 @@ export default function CreateNamedFolderDialog({
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 placeholder="e.g. Legal & Statutory Onboarding"
-                className="h-12 rounded-xl border-slate-200 pl-11 text-base focus-visible:border-brand-pink focus-visible:ring-brand-pink/20"
+                className={cn(ORG_FORM_INPUT_CLASS, "pl-11")}
               />
             </div>
             {isOrgFolder ? (
